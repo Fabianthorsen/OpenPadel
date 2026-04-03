@@ -33,7 +33,7 @@ func (s *Store) CreateSession(courts, points int) (*domain.Session, error) {
 
 func (s *Store) GetSession(id string) (*domain.Session, error) {
 	row := s.db.QueryRow(
-		`SELECT id, admin_token, status, courts, points, rounds_total, created_at, updated_at
+		`SELECT id, admin_token, status, courts, points, rounds_total, creator_player_id, created_at, updated_at
 		 FROM sessions WHERE id = ?`, id,
 	)
 	sess, err := scanSession(row)
@@ -46,6 +46,14 @@ func (s *Store) GetSession(id string) (*domain.Session, error) {
 	}
 	sess.Players = players
 	return sess, nil
+}
+
+func (s *Store) SetCreatorPlayer(sessionID, playerID string) error {
+	_, err := s.db.Exec(
+		`UPDATE sessions SET creator_player_id = ?, updated_at = ? WHERE id = ?`,
+		playerID, time.Now().UTC().Format(time.RFC3339), sessionID,
+	)
+	return err
 }
 
 func (s *Store) StartSession(id string, roundsTotal int) error {
@@ -67,11 +75,12 @@ func (s *Store) CompleteSession(id string) error {
 func scanSession(row *sql.Row) (*domain.Session, error) {
 	var sess domain.Session
 	var roundsTotal sql.NullInt64
+	var creatorPlayerID sql.NullString
 	var createdAt, updatedAt string
 	err := row.Scan(
 		&sess.ID, &sess.AdminToken, &sess.Status,
 		&sess.Courts, &sess.Points, &roundsTotal,
-		&createdAt, &updatedAt,
+		&creatorPlayerID, &createdAt, &updatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -82,6 +91,9 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	if roundsTotal.Valid {
 		v := int(roundsTotal.Int64)
 		sess.RoundsTotal = &v
+	}
+	if creatorPlayerID.Valid {
+		sess.CreatorPlayerID = creatorPlayerID.String
 	}
 	sess.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
 	sess.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)

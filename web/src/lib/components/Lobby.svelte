@@ -1,6 +1,8 @@
 <script lang="ts">
   import { api } from '$lib/api/client';
 
+  import { Crown } from 'lucide-svelte';
+
   let {
     session,
     isAdmin,
@@ -149,9 +151,14 @@
               {player.name[0].toUpperCase()}
             </div>
             <span class="text-sm font-medium">{player.name}</span>
-            {#if player.id === myPlayerId}
-              <span class="ml-auto text-xs text-[var(--text-disabled)]">you</span>
-            {/if}
+            <div class="ml-auto flex items-center gap-1.5">
+              {#if player.id === session.creator_player_id}
+                <Crown size={13} class="text-[var(--primary)]" />
+              {/if}
+              {#if player.id === myPlayerId}
+                <span class="text-xs text-[var(--text-disabled)]">you</span>
+              {/if}
+            </div>
           </div>
         {/each}
       </div>

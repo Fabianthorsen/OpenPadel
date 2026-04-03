@@ -11,6 +11,7 @@ declare global {
       points: number;
       rounds_total?: number;
       current_round?: number;
+      creator_player_id?: string;
       players: Player[];
       created_at: string;
       updated_at: string;

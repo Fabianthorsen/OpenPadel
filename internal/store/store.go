@@ -27,21 +27,35 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) migrate() error {
-	_, err := s.db.Exec(schema)
-	return err
+	if _, err := s.db.Exec(schema); err != nil {
+		return err
+	}
+	// Additive column migrations — ignore "duplicate column" errors.
+	for _, stmt := range migrations {
+		s.db.Exec(stmt) //nolint:errcheck
+	}
+	return nil
+}
+
+// migrations contains ALTER TABLE statements for columns added after initial schema.
+// SQLite has no IF NOT EXISTS for ALTER TABLE, so we run and ignore duplicate errors.
+var migrations = []string{
+	`ALTER TABLE sessions ADD COLUMN creator_player_id TEXT`,
 }
 
 const schema = `
 CREATE TABLE IF NOT EXISTS sessions (
-	id           TEXT PRIMARY KEY,
-	admin_token  TEXT NOT NULL,
-	status       TEXT NOT NULL DEFAULT 'lobby',
-	courts       INTEGER NOT NULL,
-	points       INTEGER NOT NULL,
-	rounds_total INTEGER,
-	created_at   TEXT NOT NULL,
-	updated_at   TEXT NOT NULL
+	id                TEXT PRIMARY KEY,
+	admin_token       TEXT NOT NULL,
+	status            TEXT NOT NULL DEFAULT 'lobby',
+	courts            INTEGER NOT NULL,
+	points            INTEGER NOT NULL,
+	rounds_total      INTEGER,
+	creator_player_id TEXT,
+	created_at        TEXT NOT NULL,
+	updated_at        TEXT NOT NULL
 );
+
 
 CREATE TABLE IF NOT EXISTS players (
 	id         TEXT PRIMARY KEY,

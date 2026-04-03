@@ -294,4 +294,3 @@ func scanMatch(s interface {
 	}
 	return &m, nil
 }
-

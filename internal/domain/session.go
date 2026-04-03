@@ -11,16 +11,17 @@ const (
 )
 
 type Session struct {
-	ID           string        `json:"id"`
-	AdminToken   string        `json:"admin_token,omitempty"`
-	Status       SessionStatus `json:"status"`
-	Courts       int           `json:"courts"`
-	Points       int           `json:"points"`
-	RoundsTotal  *int          `json:"rounds_total,omitempty"`
-	CurrentRound *int          `json:"current_round,omitempty"`
-	Players      []Player      `json:"players"`
-	CreatedAt    time.Time     `json:"created_at"`
-	UpdatedAt    time.Time     `json:"updated_at"`
+	ID              string        `json:"id"`
+	AdminToken      string        `json:"admin_token,omitempty"`
+	Status          SessionStatus `json:"status"`
+	Courts          int           `json:"courts"`
+	Points          int           `json:"points"`
+	RoundsTotal     *int          `json:"rounds_total,omitempty"`
+	CurrentRound    *int          `json:"current_round,omitempty"`
+	CreatorPlayerID string        `json:"creator_player_id,omitempty"`
+	Players         []Player      `json:"players"`
+	CreatedAt       time.Time     `json:"created_at"`
+	UpdatedAt       time.Time     `json:"updated_at"`
 }
 
 type Player struct {

@@ -25,8 +25,8 @@ export const api = {
       request<App.Session>('POST', `/sessions/${id}/start`, undefined, token),
   },
   players: {
-    join: (sessionId: string, name: string) =>
-      request<App.Player>('POST', `/sessions/${sessionId}/players`, { name }),
+    join: (sessionId: string, name: string, token?: string) =>
+      request<App.Player>('POST', `/sessions/${sessionId}/players`, { name }, token),
     remove: (sessionId: string, playerId: string, token: string) =>
       request<{ id: string; active: boolean }>(
         'DELETE',

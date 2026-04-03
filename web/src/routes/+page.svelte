@@ -5,16 +5,21 @@
   let step = $state<'home' | 'setup'>('home');
   let courts = $state(2);
   let points = $state(24);
+  let name = $state('');
   let creating = $state(false);
   let error = $state('');
 
   async function create() {
+    if (!name.trim()) { error = 'Enter your name'; return; }
     creating = true;
     error = '';
     try {
       const session = await api.sessions.create(courts, points);
-      localStorage.setItem(`admin_token_${session.id}`, session.admin_token!);
-      goto(`/s/${session.id}?token=${session.admin_token}`);
+      const token = session.admin_token!;
+      localStorage.setItem(`admin_token_${session.id}`, token);
+      const player = await api.players.join(session.id, name.trim(), token);
+      localStorage.setItem(`player_id_${session.id}`, player.id);
+      goto(`/s/${session.id}?token=${token}`);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Something went wrong';
       creating = false;
@@ -104,6 +109,17 @@
         <div class="rounded-lg bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-secondary)]">
           {courts} {courts === 1 ? 'court' : 'courts'} · {courts * 4} players on court per round
           · {points} pts per game
+        </div>
+
+        <!-- Your name -->
+        <div class="space-y-2">
+          <p class="text-sm font-medium text-[var(--text-primary)]">Your name</p>
+          <input
+            bind:value={name}
+            placeholder="e.g. Fabian"
+            maxlength="32"
+            class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--primary)]/20"
+          />
         </div>
 
         {#if error}

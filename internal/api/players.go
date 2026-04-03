@@ -51,6 +51,12 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "could not join session")
 		return
 	}
+
+	// If the joiner is the admin and no creator is set yet, mark them as creator.
+	if isAdmin(extractAdminToken(r), sess.AdminToken) && sess.CreatorPlayerID == "" {
+		h.store.SetCreatorPlayer(id, player.ID) //nolint:errcheck
+	}
+
 	respond(w, http.StatusCreated, player)
 }
 
