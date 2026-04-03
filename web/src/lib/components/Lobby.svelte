@@ -125,24 +125,29 @@
     </p>
   </div>
 
-  <!-- Invite link (admin) -->
+  <!-- Join code — visible to all so anyone can share it verbally -->
+  <div class="rounded-lg bg-[var(--surface-raised)] px-4 py-3 flex items-center justify-between">
+    <div>
+      <p class="text-xs text-[var(--text-secondary)]">Join code</p>
+      <p class="text-2xl font-[650] tracking-widest text-[var(--text-primary)]">{session.id}</p>
+    </div>
+    <button
+      onclick={share}
+      class="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-raised)]"
+    >
+      Share link
+    </button>
+  </div>
+
+  <!-- Copy link (admin) -->
   {#if isAdmin}
-    <div class="space-y-2">
-      <p class="text-sm font-medium text-[var(--text-secondary)]">Invite players</p>
-      <div class="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5">
-        <span class="flex-1 truncate text-sm text-[var(--text-secondary)]">{joinUrl}</span>
-        <button
-          onclick={copyLink}
-          class="shrink-0 text-sm font-medium text-[var(--primary)] transition-colors hover:text-[var(--primary-hover)]"
-        >
-          {copied ? 'Copied!' : 'Copy'}
-        </button>
-      </div>
+    <div class="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5">
+      <span class="flex-1 truncate text-sm text-[var(--text-secondary)]">{joinUrl}</span>
       <button
-        onclick={share}
-        class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-raised)]"
+        onclick={copyLink}
+        class="shrink-0 text-sm font-medium text-[var(--primary)] transition-colors hover:text-[var(--primary-hover)]"
       >
-        Share link
+        {copied ? 'Copied!' : 'Copy link'}
       </button>
     </div>
   {/if}
