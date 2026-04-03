@@ -2,6 +2,8 @@ package ui
 
 import (
 	"embed"
+	"fmt"
+	"html"
 	"io"
 	"io/fs"
 	"log"
@@ -16,6 +18,24 @@ import (
 //
 //go:embed all:build
 var files embed.FS
+
+// IndexWithOG returns index.html with Open Graph meta tags injected before </head>.
+func IndexWithOG(title, description string) []byte {
+	sub, err := fs.Sub(files, "build")
+	if err != nil {
+		return nil
+	}
+	index, err := fs.ReadFile(sub, "index.html")
+	if err != nil {
+		return nil
+	}
+	og := fmt.Sprintf(
+		`<meta property="og:title" content="%s"><meta property="og:description" content="%s"><meta property="og:type" content="website">`,
+		html.EscapeString(title),
+		html.EscapeString(description),
+	)
+	return []byte(strings.Replace(string(index), "</head>", og+"</head>", 1))
+}
 
 // Handler returns an http.Handler that serves the SvelteKit SPA.
 // Static assets are served directly; everything else falls back to index.html.

@@ -38,6 +38,17 @@ func (s *Store) GetPlayers(sessionID string) ([]domain.Player, error) {
 	return scanPlayers(rows)
 }
 
+// GetCreatorName returns the name of the creator player for the given session,
+// or an empty string if the creator hasn't joined yet.
+func (s *Store) GetCreatorName(sessionID string) string {
+	var name string
+	s.db.QueryRow(`
+		SELECT p.name FROM players p
+		JOIN sessions s ON s.creator_player_id = p.id
+		WHERE s.id = ?`, sessionID).Scan(&name)
+	return name
+}
+
 func (s *Store) DeactivatePlayer(playerID string) error {
 	res, err := s.db.Exec(`UPDATE players SET active = 0 WHERE id = ?`, playerID)
 	if err != nil {

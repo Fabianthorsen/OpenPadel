@@ -34,6 +34,25 @@ func NewRouter(s *store.Store) http.Handler {
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
 
+	// Session invite pages get Open Graph tags injected so share previews show
+	// "<Creator> wants you to join this Padel tournament!"
+	r.Get("/s/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		creator := h.store.GetCreatorName(id)
+		title := "Join a Padel tournament!"
+		desc := "You've been invited to play Padel. Join now!"
+		if creator != "" {
+			title = creator + " wants you to join!"
+			desc = creator + " wants you to join this Padel tournament on NotTennis."
+		}
+		page := ui.IndexWithOG(title, desc)
+		if page == nil {
+			page = []byte("frontend not built")
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(page)
+	})
+
 	// Serve SvelteKit SPA for all non-API routes
 	r.Handle("/*", ui.Handler())
 
