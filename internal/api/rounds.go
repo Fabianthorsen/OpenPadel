@@ -62,10 +62,6 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "could not load session")
 		return
 	}
-	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin access required")
-		return
-	}
 	if sess.Status != domain.StatusActive {
 		respondError(w, http.StatusConflict, "session is not active")
 		return

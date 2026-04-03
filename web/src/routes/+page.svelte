@@ -10,11 +10,6 @@
   let error = $state('');
   let joinCode = $state('');
 
-  function joinByCode() {
-    const code = joinCode.trim().toUpperCase();
-    if (code) goto(`/s/${code}`);
-  }
-
   async function create() {
     if (!name.trim()) { error = 'Enter your name'; return; }
     creating = true;
@@ -31,24 +26,30 @@
       creating = false;
     }
   }
+
+  function joinByCode() {
+    const code = joinCode.trim().toUpperCase();
+    if (code) goto(`/s/${code}`);
+  }
 </script>
 
-<main class="flex min-h-svh flex-col items-center justify-center px-4">
-  <div class="w-full max-w-sm space-y-8">
-
-    {#if step === 'home'}
-      <!-- Landing -->
+{#if step === 'home'}
+  <main class="flex min-h-svh flex-col items-center px-6 py-12">
+  <div class="flex w-full max-w-sm flex-1 flex-col">
+    <div class="flex flex-1 flex-col justify-center space-y-12">
+      <!-- Brand -->
       <div class="space-y-1">
-        <h1 class="text-[26px] font-[650] text-[var(--text-primary)]">NotTennis</h1>
-        <p class="text-sm text-[var(--text-secondary)]">Padel, organised.</p>
+        <h1 class="text-[28px] font-[800] text-[var(--primary)]">NotTennis</h1>
+        <p class="text-[var(--text-secondary)]">Padel, organised.</p>
       </div>
 
+      <!-- Actions -->
       <div class="space-y-4">
         <button
           onclick={() => (step = 'setup')}
-          class="w-full rounded-lg bg-[var(--primary)] px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)]"
+          class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)]"
         >
-          Create session
+          Create Tournament →
         </button>
 
         <div class="flex items-center gap-3">
@@ -67,100 +68,133 @@
             autocorrect="off"
             autocapitalize="characters"
             spellcheck={false}
-            class="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--primary)]/20"
+            class="min-w-0 flex-1 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
           />
           <button
             type="submit"
             disabled={!joinCode.trim()}
-            class="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-raised)] disabled:opacity-40"
+            class="rounded-2xl bg-[var(--surface-raised)] px-5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--border)] disabled:opacity-40"
           >
             Join →
           </button>
         </form>
       </div>
+    </div>
 
-    {:else}
-      <!-- Setup -->
-      <div class="space-y-1">
-        <button
-          onclick={() => (step = 'home')}
-          class="mb-1 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-        >
-          ← Back
-        </button>
-        <h1 class="text-[22px] font-[650]">New session</h1>
-        <p class="text-sm text-[var(--text-secondary)]">
-          Players join after you share the link.
+    <footer class="pt-8 text-center">
+      <p class="text-[11px] font-medium uppercase tracking-widest text-[var(--text-disabled)]">
+        © NotTennis Nordic Athleticism
+      </p>
+    </footer>
+  </div>
+  </main>
+
+{:else}
+  <main class="flex min-h-svh flex-col items-center px-6 py-6">
+  <div class="w-full max-w-sm">
+    <!-- Nav -->
+    <nav class="flex items-center justify-between">
+      <button
+        onclick={() => (step = 'home')}
+        class="flex h-8 w-8 items-center justify-center rounded-full text-lg text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]"
+      >
+        ×
+      </button>
+      <span class="text-sm font-semibold text-[var(--primary)]">NotTennis</span>
+      <div class="w-8"></div>
+    </nav>
+
+    <!-- Header -->
+    <div class="mt-8 space-y-2">
+      <h1 class="text-[34px] font-[800]">Create New<br />Tournament</h1>
+      <p class="text-[var(--text-secondary)]">Set the stage for your next Padel session.</p>
+    </div>
+
+    <!-- Form -->
+    <div class="mt-8 space-y-7">
+
+      <!-- Game mode -->
+      <div class="space-y-2.5">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Game Mode</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white">
+            Americano
+          </span>
+          <span class="inline-flex items-center rounded-full bg-[var(--surface-raised)] px-4 py-2 text-sm text-[var(--text-disabled)]">
+            Mexicano (Coming soon)
+          </span>
+        </div>
+        <p class="text-xs text-[var(--text-secondary)]">Americano is currently the only supported mode.</p>
+      </div>
+
+      <!-- Courts -->
+      <div class="space-y-2.5">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Courts</p>
+        <div class="flex gap-2">
+          {#each [1, 2, 3, 4] as n}
+            <button
+              onclick={() => (courts = n)}
+              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courts === n
+                ? 'bg-[var(--primary)] text-white'
+                : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+            >
+              {n}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <!-- Points -->
+      <div class="space-y-2.5">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Points per game</p>
+        <div class="flex gap-2">
+          {#each [16, 24, 32] as p}
+            <button
+              onclick={() => (points = p)}
+              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {points === p
+                ? 'bg-[var(--primary)] text-white'
+                : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+            >
+              {p}
+            </button>
+          {/each}
+        </div>
+        <p class="text-xs text-[var(--text-secondary)]">
+          {points === 16 ? 'Quick format' : points === 24 ? 'Standard — recommended' : 'Long format'}
         </p>
       </div>
 
-      <div class="space-y-5">
-        <!-- Courts -->
-        <div class="space-y-2">
-          <p class="text-sm font-medium text-[var(--text-primary)]">Courts</p>
-          <div class="grid grid-cols-4 gap-2">
-            {#each [1, 2, 3, 4] as n}
-              <button
-                onclick={() => (courts = n)}
-                class="rounded-lg border py-2.5 text-sm font-semibold transition-colors {courts === n
-                  ? 'border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--primary)]'
-                  : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--surface-raised)]'}"
-              >
-                {n}
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <!-- Points -->
-        <div class="space-y-2">
-          <p class="text-sm font-medium text-[var(--text-primary)]">Points per game</p>
-          <div class="grid grid-cols-3 gap-2">
-            {#each [16, 24, 32] as p}
-              <button
-                onclick={() => (points = p)}
-                class="rounded-lg border py-2.5 text-sm font-semibold transition-colors {points === p
-                  ? 'border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--primary)]'
-                  : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--surface-raised)]'}"
-              >
-                {p}
-              </button>
-            {/each}
-          </div>
-          <p class="text-xs text-[var(--text-disabled)]">
-            {points === 16 ? 'Quick format' : points === 24 ? 'Standard — recommended' : 'Long format'}
-          </p>
-        </div>
-
-        <!-- Summary -->
-        <div class="rounded-lg bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-secondary)]">
-          4 players per court · {courts * 4} playing each round · {points} pts per game
-        </div>
-
-        <!-- Your name -->
-        <div class="space-y-2">
-          <p class="text-sm font-medium text-[var(--text-primary)]">Your name</p>
-          <input
-            bind:value={name}
-            placeholder="e.g. Fabian"
-            maxlength="32"
-            class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--primary)]/20"
-          />
-        </div>
-
-        {#if error}
-          <p class="text-sm text-[var(--destructive)]">{error}</p>
-        {/if}
-
-        <button
-          onclick={create}
-          disabled={creating}
-          class="w-full rounded-lg bg-[var(--primary)] px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
-        >
-          {creating ? 'Creating…' : 'Create & get link →'}
-        </button>
+      <!-- Your name -->
+      <div class="space-y-2.5">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Organiser name</p>
+        <input
+          bind:value={name}
+          placeholder="Your name"
+          maxlength="32"
+          class="w-full rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+        />
       </div>
-    {/if}
 
+      <!-- Info note -->
+      <div class="flex gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5">
+        <span class="mt-px shrink-0 text-[var(--text-secondary)]">ℹ</span>
+        <p class="text-sm text-[var(--text-secondary)]">
+          You'll be able to invite players after creating the session.
+        </p>
+      </div>
+
+      {#if error}
+        <p class="text-sm text-[var(--destructive)]">{error}</p>
+      {/if}
+
+      <button
+        onclick={create}
+        disabled={creating}
+        class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
+      >
+        {creating ? 'Creating…' : 'Create & Get Invite Link →'}
+      </button>
+    </div>
   </div>
-</main>
+  </main>
+{/if}

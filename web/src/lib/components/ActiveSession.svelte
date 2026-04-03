@@ -59,8 +59,7 @@
     submitting[matchId] = true;
     const s = scores[matchId];
     try {
-      const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
-      await api.scores.submit(session.id, matchId, s.a, s.b, adminToken);
+      await api.scores.submit(session.id, matchId, s.a, s.b, '');
       onRefresh();
     } catch (e) {
       submitError[matchId] = e instanceof Error ? e.message : 'Failed to submit';
@@ -134,19 +133,17 @@
               <span class="text-sm text-[var(--text-disabled)]">–</span>
               <span class="text-2xl font-bold tabular-nums">{match.score!.b}</span>
             </div>
-            {#if isAdmin}
-              <button
-                onclick={() => { scores[match.id] = { a: match.score!.a, b: match.score!.b }; }}
-                class="w-full text-xs text-[var(--text-disabled)] underline-offset-2 hover:underline"
-              >
-                Edit score
-              </button>
-            {/if}
+            <button
+              onclick={() => { scores[match.id] = { a: match.score!.a, b: match.score!.b }; }}
+              class="w-full text-xs text-[var(--text-disabled)] underline-offset-2 hover:underline"
+            >
+              Edit score
+            </button>
 
-          <!-- Score entry (admin, not yet scored) -->
-          {:else if isAdmin}
+          <!-- Score entry (not yet scored) -->
+          {:else}
             <div class="space-y-2">
-              {#each (['a', 'b'] as const) as team, i}
+              {#each (['a', 'b'] as const) as team}
                 <div class="space-y-1">
                   <p class="text-xs text-[var(--text-secondary)]">
                     {team === 'a'
@@ -198,10 +195,6 @@
                   {submitting[match.id] ? '…' : 'Confirm'}
                 </button>
               </div>
-            </div>
-          {:else}
-            <div class="rounded-lg bg-[var(--surface-raised)] py-3 text-center text-sm text-[var(--text-secondary)]">
-              Waiting for score…
             </div>
           {/if}
         </div>

@@ -2,30 +2,31 @@
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
 @import '@fontsource/inter/700.css';
+@import '@fontsource/inter/800.css';
 
 @import 'tailwindcss';
 
 :root {
   /* Surfaces */
-  --background: #f7f6f3;
-  --surface: #ffffff;
-  --surface-raised: #efede8;
-  --border: #e0ddd7;
-  --border-strong: #c8c4bc;
+  --background: #edeee8;
+  --surface: #f4f4f0;
+  --surface-raised: #e3e3dc;
+  --border: #d2d2cb;
+  --border-strong: #b2b2aa;
 
-  /* Primary — forest green */
-  --primary: #4a7856;
-  --primary-hover: #3d6348;
-  --primary-muted: #edf2ee;
+  /* Primary — dark forest green */
+  --primary: #2d5a1a;
+  --primary-hover: #234d13;
+  --primary-muted: #e2ede0;
   --primary-foreground: #ffffff;
 
   /* Text */
-  --text-primary: #1c1b19;
-  --text-secondary: #6b6860;
-  --text-disabled: #b5b2ab;
+  --text-primary: #1a1a16;
+  --text-secondary: #68685e;
+  --text-disabled: #aeaea4;
 
   /* Semantic */
-  --positive: #4a7856;
+  --positive: #2d5a1a;
   --destructive: #c0392b;
   --destructive-foreground: #ffffff;
 
@@ -43,7 +44,7 @@
   --accent-foreground: var(--primary);
   --input: var(--border);
   --ring: var(--primary);
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 }
 
 * {
@@ -67,6 +68,6 @@ body {
 h1,
 h2,
 h3 {
-  letter-spacing: -0.01em;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }

@@ -14,7 +14,7 @@
 
   // Poll faster in lobby so players see each other join without waiting
   const POLL_LOBBY = 3_000;
-  const POLL_ACTIVE = 15_000;
+  const POLL_ACTIVE = 5_000;
 
   const sessionId = $derived(page.params.id as string);
 
