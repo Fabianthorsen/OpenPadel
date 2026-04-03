@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/cors"
 
 	"github.com/fabianthorsen/nottennis/internal/store"
+	"github.com/fabianthorsen/nottennis/internal/ui"
 )
 
 type Handler struct {
@@ -25,6 +26,9 @@ func NewRouter(s *store.Store) http.Handler {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
+
+	// Serve SvelteKit SPA for all non-API routes
+	r.Handle("/*", ui.Handler())
 
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/sessions", h.createSession)

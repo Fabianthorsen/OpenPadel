@@ -1,0 +1,26 @@
+# Stage 1: build SvelteKit frontend
+FROM oven/bun:1 AS frontend
+WORKDIR /app/web
+COPY web/package.json web/bun.lock ./
+RUN bun install --frozen-lockfile
+COPY web/ ./
+RUN bun run build
+
+# Stage 2: build Go binary
+FROM golang:1.25-alpine AS backend
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+# Replace placeholder with real frontend build
+COPY --from=frontend /app/web/build ./internal/ui/build
+RUN go build -o bin/nottennis ./cmd/server
+
+# Final image
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
+COPY --from=backend /app/bin/nottennis ./nottennis
+RUN mkdir -p /data
+EXPOSE 8080
+CMD ["./nottennis"]

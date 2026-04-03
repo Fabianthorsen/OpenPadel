@@ -16,9 +16,10 @@ fmt:
 	gofmt -w .
 	cd web && bun run format
 
-## Build production binary (embeds web/build)
+## Build production binary (embeds web/build into Go binary)
 build:
 	cd web && bun run build
+	cp -r web/build internal/ui/build
 	go build -o $(BIN) ./cmd/server
 
 ## Run Go tests

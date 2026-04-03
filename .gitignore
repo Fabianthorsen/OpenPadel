@@ -7,6 +7,10 @@ web/node_modules/
 web/.svelte-kit/
 web/build/
 
+# Embedded UI build (populated at build time, placeholder kept)
+internal/ui/build/*
+!internal/ui/build/placeholder.txt
+
 # DB
 *.db
 *.db-shm
