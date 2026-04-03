@@ -4,9 +4,9 @@
   import { onMount, onDestroy } from 'svelte';
   import { api, ApiError } from '$lib/api/client';
   import Lobby from '$lib/components/Lobby.svelte';
+  import ActiveSession from '$lib/components/ActiveSession.svelte';
 
   let session = $state<App.Session | null>(null);
-  let _leaderboard = $state<App.Leaderboard | null>(null);
   let currentRound = $state<App.Round | null>(null);
   let error = $state('');
   let interval: ReturnType<typeof setInterval>;
@@ -29,10 +29,7 @@
     try {
       session = await api.sessions.get(sessionId, token);
       if (session.status !== 'lobby') {
-        [_leaderboard, currentRound] = await Promise.all([
-          api.leaderboard.get(sessionId),
-          api.rounds.current(sessionId).catch(() => null),
-        ]);
+        currentRound = await api.rounds.current(sessionId).catch(() => null);
       }
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
@@ -61,14 +58,15 @@
   </main>
 {:else if session.status === 'lobby'}
   <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} />
-{:else if session.status === 'active'}
-  <!-- Active round — coming next -->
-  <main class="mx-auto max-w-[480px] px-4 py-8">
-    <p class="text-sm text-[var(--text-secondary)]">Round {currentRound?.number} of {session.rounds_total}</p>
-  </main>
-{:else}
+{:else if session.status === 'active' && currentRound}
+  <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} />
+{:else if session.status === 'complete'}
   <!-- Complete — coming next -->
   <main class="mx-auto max-w-[480px] px-4 py-8">
     <p class="text-sm text-[var(--text-secondary)]">Session complete</p>
+  </main>
+{:else}
+  <main class="flex min-h-svh items-center justify-center px-4">
+    <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
   </main>
 {/if}

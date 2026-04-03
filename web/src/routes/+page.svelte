@@ -107,8 +107,7 @@
 
         <!-- Summary -->
         <div class="rounded-lg bg-[var(--surface-raised)] px-4 py-3 text-sm text-[var(--text-secondary)]">
-          {courts} {courts === 1 ? 'court' : 'courts'} · {courts * 4} players on court per round
-          · {points} pts per game
+          4 players per court · {courts * 4} playing each round · {points} pts per game
         </div>
 
         <!-- Your name -->
