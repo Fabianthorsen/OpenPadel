@@ -1,0 +1,3 @@
+#!/bin/sh
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT/web" && bunx --no-install commitlint --edit "$REPO_ROOT/$1"

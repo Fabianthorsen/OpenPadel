@@ -1,4 +1,4 @@
-.PHONY: dev build fmt lint test
+.PHONY: dev build fmt lint test setup
 
 # Go binary output
 BIN := bin/nottennis
@@ -29,3 +29,9 @@ test:
 ## Tidy Go deps
 tidy:
 	go mod tidy
+
+## Install git hooks (run once after cloning)
+setup:
+	cp scripts/commit-msg .git/hooks/commit-msg
+	chmod +x .git/hooks/commit-msg
+	@echo "Git hooks installed."
