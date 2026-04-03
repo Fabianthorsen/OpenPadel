@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
-  import { api } from '$lib/api/client';
+  import { api, ApiError } from '$lib/api/client';
   import Lobby from '$lib/components/Lobby.svelte';
 
   let session = $state<App.Session | null>(null);
@@ -34,6 +35,10 @@
         ]);
       }
     } catch (e) {
+      if (e instanceof ApiError && e.status === 404) {
+        goto('/');
+        return;
+      }
       error = e instanceof Error ? e.message : 'Failed to load session';
     }
   }

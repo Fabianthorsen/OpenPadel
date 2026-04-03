@@ -1,5 +1,14 @@
 const BASE = '/api';
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number
+  ) {
+    super(message);
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown, token?: string): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -10,8 +19,9 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
     body: body ? JSON.stringify(body) : undefined,
   });
 
+  if (res.status === 204) return undefined as T;
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? 'request failed');
+  if (!res.ok) throw new ApiError(data.error ?? 'request failed', res.status);
   return data as T;
 }
 
