@@ -2,9 +2,10 @@
   import { page } from '$app/state';
   import { onMount, onDestroy } from 'svelte';
   import { api } from '$lib/api/client';
+  import Lobby from '$lib/components/Lobby.svelte';
 
   let session = $state<App.Session | null>(null);
-  let leaderboard = $state<App.Leaderboard | null>(null);
+  let _leaderboard = $state<App.Leaderboard | null>(null);
   let currentRound = $state<App.Round | null>(null);
   let error = $state('');
   let interval: ReturnType<typeof setInterval>;
@@ -21,18 +22,13 @@
   }
 
   const isAdmin = $derived(!!getAdminToken());
-  const myPlayerId = $derived(
-    typeof localStorage !== 'undefined'
-      ? localStorage.getItem(`player_id_${sessionId}`)
-      : null
-  );
 
   async function load() {
     const token = getAdminToken() ?? undefined;
     try {
       session = await api.sessions.get(sessionId, token);
       if (session.status !== 'lobby') {
-        [leaderboard, currentRound] = await Promise.all([
+        [_leaderboard, currentRound] = await Promise.all([
           api.leaderboard.get(sessionId),
           api.rounds.current(sessionId).catch(() => null),
         ]);
@@ -59,17 +55,14 @@
     <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
   </main>
 {:else if session.status === 'lobby'}
-  <!-- Lobby — full component coming next -->
-  <main class="mx-auto max-w-[480px] px-4 py-8">
-    <p class="text-sm text-[var(--text-secondary)]">Lobby — {session.players.length} players joined</p>
-  </main>
+  <Lobby {session} {isAdmin} onStarted={load} />
 {:else if session.status === 'active'}
-  <!-- Active round — full component coming next -->
+  <!-- Active round — coming next -->
   <main class="mx-auto max-w-[480px] px-4 py-8">
     <p class="text-sm text-[var(--text-secondary)]">Round {currentRound?.number} of {session.rounds_total}</p>
   </main>
 {:else}
-  <!-- Complete — full component coming next -->
+  <!-- Complete — coming next -->
   <main class="mx-auto max-w-[480px] px-4 py-8">
     <p class="text-sm text-[var(--text-secondary)]">Session complete</p>
   </main>
