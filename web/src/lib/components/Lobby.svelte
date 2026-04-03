@@ -126,17 +126,23 @@
   </div>
 
   <!-- Join code — visible to all so anyone can share it verbally -->
-  <div class="rounded-lg bg-[var(--surface-raised)] px-4 py-3 flex items-center justify-between">
-    <div>
-      <p class="text-xs text-[var(--text-secondary)]">Join code</p>
-      <p class="text-2xl font-[650] tracking-widest text-[var(--text-primary)]">{session.id}</p>
+  <div class="rounded-lg bg-[var(--surface-raised)] px-4 py-4 space-y-3">
+    <p class="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">Join code</p>
+    <div class="flex items-center justify-between gap-4">
+      <div class="flex gap-2">
+        {#each session.id.split('') as char}
+          <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--surface)] border border-[var(--border)] text-xl font-[650] text-[var(--text-primary)] font-mono">
+            {char}
+          </div>
+        {/each}
+      </div>
+      <button
+        onclick={share}
+        class="shrink-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-raised)]"
+      >
+        Share
+      </button>
     </div>
-    <button
-      onclick={share}
-      class="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-raised)]"
-    >
-      Share link
-    </button>
   </div>
 
   <!-- Copy link (admin) -->

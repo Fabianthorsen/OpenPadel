@@ -11,7 +11,7 @@
   let joinCode = $state('');
 
   function joinByCode() {
-    const code = joinCode.trim();
+    const code = joinCode.trim().toUpperCase();
     if (code) goto(`/s/${code}`);
   }
 
@@ -60,8 +60,9 @@
         <form onsubmit={(e) => { e.preventDefault(); joinByCode(); }} class="flex gap-2">
           <input
             bind:value={joinCode}
+            oninput={(e) => { joinCode = (e.currentTarget as HTMLInputElement).value.toUpperCase(); }}
             placeholder="Session code"
-            maxlength="16"
+            maxlength="4"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="characters"
