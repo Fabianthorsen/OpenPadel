@@ -12,6 +12,10 @@
   let error = $state('');
   let interval: ReturnType<typeof setInterval>;
 
+  // Poll faster in lobby so players see each other join without waiting
+  const POLL_LOBBY = 3_000;
+  const POLL_ACTIVE = 15_000;
+
   const sessionId = $derived(page.params.id as string);
 
   function getAdminToken(): string | null {
@@ -41,11 +45,13 @@
     }
   }
 
-  onMount(() => {
-    load();
-    interval = setInterval(load, 15_000);
-  });
+  function scheduleNext() {
+    clearInterval(interval);
+    const delay = session?.status === 'lobby' ? POLL_LOBBY : POLL_ACTIVE;
+    interval = setInterval(() => { load().then(scheduleNext); }, delay);
+  }
 
+  onMount(() => { load().then(scheduleNext); });
   onDestroy(() => clearInterval(interval));
 </script>
 
