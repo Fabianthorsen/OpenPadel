@@ -6,10 +6,12 @@
   let {
     session,
     isAdmin,
+    onRefresh,
     onStarted,
   }: {
     session: App.Session;
     isAdmin: boolean;
+    onRefresh: () => void;
     onStarted: () => void;
   } = $props();
 
@@ -36,8 +38,12 @@
   }
 
   async function share() {
-    if (navigator.share) {
-      await navigator.share({ title: 'Join my padel session', url: joinUrl });
+    if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({ title: 'Join my padel session', url: joinUrl });
+      } catch {
+        // User dismissed — ignore
+      }
     } else {
       copyLink();
     }
@@ -52,6 +58,7 @@
       const player = await api.players.join(session.id, name);
       localStorage.setItem(`player_id_${session.id}`, player.id);
       joinName = '';
+      onRefresh();
     } catch (e) {
       joinError = e instanceof Error ? e.message : 'Could not join';
     } finally {

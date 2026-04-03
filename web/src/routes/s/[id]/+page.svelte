@@ -55,7 +55,7 @@
     <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
   </main>
 {:else if session.status === 'lobby'}
-  <Lobby {session} {isAdmin} onStarted={load} />
+  <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} />
 {:else if session.status === 'active'}
   <!-- Active round — coming next -->
   <main class="mx-auto max-w-[480px] px-4 py-8">
