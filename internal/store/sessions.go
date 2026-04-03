@@ -99,3 +99,13 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	sess.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
 	return &sess, nil
 }
+
+func (s *Store) DeleteSession(id string) error {
+	// Delete in dependency order due to foreign keys.
+	s.db.Exec(`DELETE FROM bench WHERE round_id IN (SELECT id FROM rounds WHERE session_id = ?)`, id)
+	s.db.Exec(`DELETE FROM matches WHERE round_id IN (SELECT id FROM rounds WHERE session_id = ?)`, id)
+	s.db.Exec(`DELETE FROM rounds WHERE session_id = ?`, id)
+	s.db.Exec(`DELETE FROM players WHERE session_id = ?`, id)
+	_, err := s.db.Exec(`DELETE FROM sessions WHERE id = ?`, id)
+	return err
+}

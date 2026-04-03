@@ -23,6 +23,8 @@ export const api = {
       request<App.Session>('GET', `/sessions/${id}`, undefined, token),
     start: (id: string, token: string) =>
       request<App.Session>('POST', `/sessions/${id}/start`, undefined, token),
+    cancel: (id: string, token: string) =>
+      request<void>('DELETE', `/sessions/${id}`, undefined, token),
   },
   players: {
     join: (sessionId: string, name: string, token?: string) =>

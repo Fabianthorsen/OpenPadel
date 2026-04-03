@@ -79,7 +79,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	active := activePlayers(sess.Players)
-	minPlayers := sess.Courts*4 + 1
+	minPlayers := sess.Courts * 4
 	if len(active) < minPlayers {
 		respondError(w, http.StatusUnprocessableEntity, "not enough players to start")
 		return
@@ -110,4 +110,30 @@ func activePlayers(players []domain.Player) []domain.Player {
 		}
 	}
 	return out
+}
+
+func (h *Handler) cancelSession(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	sess, err := h.store.GetSession(id)
+	if errors.Is(err, store.ErrNotFound) {
+		respondError(w, http.StatusNotFound, "session not found")
+		return
+	}
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "could not load session")
+		return
+	}
+	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
+		respondError(w, http.StatusForbidden, "admin access required")
+		return
+	}
+	if sess.Status == domain.StatusActive {
+		respondError(w, http.StatusConflict, "cannot cancel a session that has already started")
+		return
+	}
+	if err := h.store.DeleteSession(id); err != nil {
+		respondError(w, http.StatusInternalServerError, "could not cancel session")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

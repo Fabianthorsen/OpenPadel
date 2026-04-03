@@ -15,6 +15,7 @@
 
   let copied = $state(false);
   let starting = $state(false);
+  let cancelling = $state(false);
   let joinName = $state('');
   let joining = $state(false);
   let joinError = $state('');
@@ -26,7 +27,7 @@
   );
 
   const activePlayers = $derived(session.players.filter((p) => p.active));
-  const canStart = $derived(activePlayers.length >= session.courts * 4 + 1);
+  const canStart = $derived(activePlayers.length >= session.courts * 4);
 
   async function copyLink() {
     await navigator.clipboard.writeText(joinUrl);
@@ -55,6 +56,18 @@
       joinError = e instanceof Error ? e.message : 'Could not join';
     } finally {
       joining = false;
+    }
+  }
+
+  async function cancel() {
+    if (!confirm('Cancel this session? This cannot be undone.')) return;
+    cancelling = true;
+    try {
+      const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+      await api.sessions.cancel(session.id, adminToken);
+      location.href = '/';
+    } catch {
+      cancelling = false;
     }
   }
 
@@ -177,9 +190,16 @@
       </button>
       {#if !canStart}
         <p class="text-center text-xs text-[var(--text-disabled)]">
-          Need at least {session.courts * 4 + 1} players to start
+          Need at least {session.courts * 4} players to start
         </p>
       {/if}
+      <button
+        onclick={cancel}
+        disabled={cancelling}
+        class="w-full text-sm text-[var(--text-secondary)] underline-offset-2 hover:text-[var(--destructive)] hover:underline disabled:opacity-50"
+      >
+        {cancelling ? 'Cancelling…' : 'Cancel tournament'}
+      </button>
     </div>
   {:else if alreadyJoined}
     <div class="rounded-lg bg-[var(--surface-raised)] px-4 py-3 text-center">

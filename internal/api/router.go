@@ -31,6 +31,7 @@ func NewRouter(s *store.Store) http.Handler {
 
 		r.Route("/sessions/{id}", func(r chi.Router) {
 			r.Get("/", h.getSession)
+			r.Delete("/", h.cancelSession)
 			r.Post("/start", h.startSession)
 			r.Post("/players", h.joinSession)
 			r.Delete("/players/{playerID}", h.deactivatePlayer)
