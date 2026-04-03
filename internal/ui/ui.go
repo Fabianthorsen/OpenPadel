@@ -14,7 +14,7 @@ import (
 // Files holds the compiled SvelteKit output.
 // The `build` directory is populated by `bun run build` in web/ before `go build`.
 //
-//go:embed build
+//go:embed all:build
 var files embed.FS
 
 // Handler returns an http.Handler that serves the SvelteKit SPA.
