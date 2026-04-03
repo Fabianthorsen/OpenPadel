@@ -125,7 +125,7 @@
     </p>
   </div>
 
-  <!-- Join code — visible to all so anyone can share it verbally -->
+  <!-- Join code + share link -->
   <div class="rounded-lg bg-[var(--surface-raised)] px-4 py-4 space-y-3">
     <p class="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">Join code</p>
     <div class="flex items-center justify-between gap-4">
@@ -143,20 +143,16 @@
         Share
       </button>
     </div>
-  </div>
-
-  <!-- Copy link (admin) -->
-  {#if isAdmin}
-    <div class="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5">
+    <div class="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
       <span class="flex-1 truncate text-sm text-[var(--text-secondary)]">{joinUrl}</span>
       <button
         onclick={copyLink}
         class="shrink-0 text-sm font-medium text-[var(--primary)] transition-colors hover:text-[var(--primary-hover)]"
       >
-        {copied ? 'Copied!' : 'Copy link'}
+        {copied ? 'Copied!' : 'Copy'}
       </button>
     </div>
-  {/if}
+  </div>
 
   <!-- Join form (non-admin who hasn't joined yet) -->
   {#if !isAdmin && !alreadyJoined}
