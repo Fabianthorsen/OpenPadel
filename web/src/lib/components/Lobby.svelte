@@ -15,9 +15,13 @@
     onStarted: () => void;
   } = $props();
 
+  const isDev = import.meta.env.DEV;
+  const devNames = ['Alice', 'Bob', 'Carlos', 'Diana', 'Erik', 'Fiona', 'Gio', 'Hanna', 'Ivan', 'Julia', 'Karl', 'Lena'];
+
   let copied = $state(false);
   let starting = $state(false);
   let cancelling = $state(false);
+  let seeding = $state(false);
   let joinName = $state('');
   let joining = $state(false);
   let joinError = $state('');
@@ -64,6 +68,18 @@
     } finally {
       joining = false;
     }
+  }
+
+  async function seedPlayers() {
+    seeding = true;
+    const existing = new Set(activePlayers.map((p) => p.name));
+    const needed = session.courts * 4 + 2; // fill courts + 2 on bench
+    const toAdd = devNames.filter((n) => !existing.has(n)).slice(0, Math.max(0, needed - activePlayers.length));
+    for (const name of toAdd) {
+      await api.players.join(session.id, name).catch(() => {});
+    }
+    seeding = false;
+    onRefresh();
   }
 
   async function cancel() {
@@ -207,6 +223,15 @@
       >
         {cancelling ? 'Cancelling…' : 'Cancel tournament'}
       </button>
+      {#if isDev}
+        <button
+          onclick={seedPlayers}
+          disabled={seeding}
+          class="w-full text-sm text-[var(--text-disabled)] underline-offset-2 hover:underline disabled:opacity-50"
+        >
+          {seeding ? 'Adding…' : '[dev] Fill with test players'}
+        </button>
+      {/if}
     </div>
   {:else if alreadyJoined}
     <div class="rounded-lg bg-[var(--surface-raised)] px-4 py-3 text-center">

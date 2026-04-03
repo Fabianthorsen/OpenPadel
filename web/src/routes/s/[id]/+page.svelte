@@ -5,6 +5,7 @@
   import { api, ApiError } from '$lib/api/client';
   import Lobby from '$lib/components/Lobby.svelte';
   import ActiveSession from '$lib/components/ActiveSession.svelte';
+  import Leaderboard from '$lib/components/Leaderboard.svelte';
 
   let session = $state<App.Session | null>(null);
   let currentRound = $state<App.Round | null>(null);
@@ -61,10 +62,7 @@
 {:else if session.status === 'active' && currentRound}
   <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} />
 {:else if session.status === 'complete'}
-  <!-- Complete — coming next -->
-  <main class="mx-auto max-w-[480px] px-4 py-8">
-    <p class="text-sm text-[var(--text-secondary)]">Session complete</p>
-  </main>
+  <Leaderboard sessionId={session.id} complete />
 {:else}
   <main class="flex min-h-svh items-center justify-center px-4">
     <p class="text-sm text-[var(--text-secondary)]">Loading…</p>

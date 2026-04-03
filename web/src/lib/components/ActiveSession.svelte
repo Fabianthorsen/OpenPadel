@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { api } from '$lib/api/client';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
@@ -16,7 +17,7 @@
   } = $props();
 
   type Tab = 'round' | 'leaderboard';
-  let tab = $state<Tab>('round');
+  let tab = $state<Tab>(untrack(() => currentRound.matches.every((m) => m.score !== null)) ? 'leaderboard' : 'round');
 
   // Map player id → name
   const playerName = $derived(
@@ -45,16 +46,12 @@
 
   function adjust(matchId: string, team: 'a' | 'b', delta: number) {
     const s = scores[matchId] ?? { a: 0, b: 0 };
-    const other = team === 'a' ? 'b' : 'a';
-    const newVal = Math.max(0, Math.min(session.points, s[team] + delta));
-    const otherVal = session.points - newVal;
-    scores[matchId] = team === 'a' ? { a: newVal, b: otherVal } : { a: otherVal, b: newVal };
+    scores[matchId] = { ...s, [team]: Math.max(0, Math.min(session.points, s[team] + delta)) };
   }
 
   function setScore(matchId: string, team: 'a' | 'b', raw: string) {
-    const val = Math.max(0, Math.min(session.points, parseInt(raw) || 0));
-    const other = session.points - val;
-    scores[matchId] = team === 'a' ? { a: val, b: other } : { a: other, b: val };
+    const s = scores[matchId] ?? { a: 0, b: 0 };
+    scores[matchId] = { ...s, [team]: Math.max(0, parseInt(raw) || 0) };
   }
 
   async function submitScore(matchId: string) {
@@ -159,7 +156,8 @@
                   <div class="flex items-center gap-3">
                     <button
                       onclick={() => adjust(match.id, team, -1)}
-                      class="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] text-lg font-semibold hover:bg-[var(--surface-raised)]"
+                      disabled={s[team] === 0}
+                      class="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] text-lg font-semibold hover:bg-[var(--surface-raised)] disabled:opacity-30"
                     >−</button>
                     <input
                       type="number"
@@ -172,15 +170,22 @@
                     />
                     <button
                       onclick={() => adjust(match.id, team, 1)}
-                      class="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] text-lg font-semibold hover:bg-[var(--surface-raised)]"
+                      disabled={s.a + s.b >= session.points}
+                      class="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] text-lg font-semibold hover:bg-[var(--surface-raised)] disabled:opacity-30"
                     >+</button>
                   </div>
                 </div>
               {/each}
 
               <div class="flex items-center justify-between pt-1">
-                <p class="text-xs {s.a + s.b === session.points ? 'text-[var(--positive)]' : 'text-[var(--text-disabled)]'}">
-                  {s.a + s.b} / {session.points}
+                <p class="text-xs text-[var(--text-disabled)]">
+                  {#if s.a + s.b === session.points}
+                    ✓
+                  {:else if s.a + s.b < session.points}
+                    {session.points - s.a - s.b} left
+                  {:else}
+                    {s.a + s.b - session.points} over
+                  {/if}
                 </p>
                 {#if submitError[match.id]}
                   <p class="text-xs text-[var(--destructive)]">{submitError[match.id]}</p>
