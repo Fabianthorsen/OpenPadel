@@ -2,8 +2,12 @@ package ui
 
 import (
 	"embed"
+	"io"
 	"io/fs"
+	"log"
+	"mime"
 	"net/http"
+	"path/filepath"
 	"strings"
 )
 
@@ -20,30 +24,44 @@ func Handler() http.Handler {
 	if err != nil {
 		panic("ui: failed to sub embedded files: " + err.Error())
 	}
-	fileServer := http.FileServer(http.FS(sub))
 
 	index, err := fs.ReadFile(sub, "index.html")
 	if err != nil {
 		// No frontend build present — serve a placeholder during dev
+		log.Println("ui: no index.html found in embedded build, serving placeholder")
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/plain")
 			w.Write([]byte("frontend not built — run `make build`"))
 		})
 	}
 
+	log.Printf("ui: serving embedded frontend (%d byte index.html)", len(index))
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/")
 
 		// Try to serve the asset directly (JS, CSS, images, etc.)
+		// Serve using ServeContent to avoid any redirect behavior from http.FileServer.
 		if path != "" && path != "index.html" {
-			if f, err := sub.Open(path); err == nil {
+			f, err := sub.Open(path)
+			if err == nil {
+				stat, serr := f.Stat()
+				if serr == nil && !stat.IsDir() {
+					log.Printf("ui: static %s", r.URL.Path)
+					ctype := mime.TypeByExtension(filepath.Ext(path))
+					if ctype != "" {
+						w.Header().Set("Content-Type", ctype)
+					}
+					http.ServeContent(w, r, path, stat.ModTime(), f.(io.ReadSeeker))
+					f.Close()
+					return
+				}
 				f.Close()
-				fileServer.ServeHTTP(w, r)
-				return
 			}
 		}
 
-		// SPA fallback — serve index.html directly to avoid redirect loops
+		// SPA fallback — serve index.html for all unmatched routes
+		log.Printf("ui: spa fallback for %s", r.URL.Path)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write(index)
 	})
