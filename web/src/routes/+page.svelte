@@ -8,6 +8,12 @@
   let name = $state('');
   let creating = $state(false);
   let error = $state('');
+  let joinCode = $state('');
+
+  function joinByCode() {
+    const code = joinCode.trim();
+    if (code) goto(`/s/${code}`);
+  }
 
   async function create() {
     if (!name.trim()) { error = 'Enter your name'; return; }
@@ -37,19 +43,39 @@
         <p class="text-sm text-[var(--text-secondary)]">Padel, organised.</p>
       </div>
 
-      <div class="space-y-3">
+      <div class="space-y-4">
         <button
           onclick={() => (step = 'setup')}
           class="w-full rounded-lg bg-[var(--primary)] px-4 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)]"
         >
           Create session
         </button>
-        <p class="text-center text-sm text-[var(--text-secondary)]">
-          Have a link?
-          <a href="#join" class="text-[var(--primary)] underline-offset-2 hover:underline">
-            Join a session →
-          </a>
-        </p>
+
+        <div class="flex items-center gap-3">
+          <div class="h-px flex-1 bg-[var(--border)]"></div>
+          <span class="text-xs text-[var(--text-disabled)]">or join with a code</span>
+          <div class="h-px flex-1 bg-[var(--border)]"></div>
+        </div>
+
+        <form onsubmit={(e) => { e.preventDefault(); joinByCode(); }} class="flex gap-2">
+          <input
+            bind:value={joinCode}
+            placeholder="Session code"
+            maxlength="16"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="characters"
+            spellcheck={false}
+            class="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm outline-none focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[var(--primary)]/20"
+          />
+          <button
+            type="submit"
+            disabled={!joinCode.trim()}
+            class="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-raised)] disabled:opacity-40"
+          >
+            Join →
+          </button>
+        </form>
       </div>
 
     {:else}
