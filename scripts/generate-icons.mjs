@@ -15,4 +15,6 @@ function makeSVG(size) {
 
 await sharp(makeSVG(192)).png().toFile('web/static/icon-192.png');
 await sharp(makeSVG(512)).png().toFile('web/static/icon-512.png');
-console.log('Icons generated: web/static/icon-192.png, web/static/icon-512.png');
+// apple-touch-icon: iOS ignores the PWA manifest and requires this specific file
+await sharp(makeSVG(180)).png().toFile('web/static/apple-touch-icon.png');
+console.log('Icons generated: icon-192.png, icon-512.png, apple-touch-icon.png');
