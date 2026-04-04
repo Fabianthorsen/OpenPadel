@@ -81,11 +81,6 @@
       </div>
     </div>
 
-    <footer class="pt-8 text-center">
-      <p class="text-[11px] font-medium uppercase tracking-widest text-[var(--text-disabled)]">
-        © NotTennis Nordic Athleticism
-      </p>
-    </footer>
   </div>
   </main>
 
