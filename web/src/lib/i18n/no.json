@@ -3,6 +3,7 @@
 
   "home_tagline": "Padel, organisert.",
   "home_create_tournament": "Opprett turnering →",
+  "home_rejoin_label": "Fortsett sesjon",
   "home_join_code_divider": "eller bli med via kode",
   "home_join_code_placeholder": "Sesjonskode",
   "home_join_button": "Bli med →",
@@ -46,6 +47,7 @@
   "lobby_cancel": "Avbryt turnering",
   "lobby_cancelling": "Avbryter…",
   "lobby_waiting_admin": "Venter på at admin skal starte…",
+  "lobby_need_players": "Trenger minst {n} spillere for å starte",
   "lobby_dev_seed": "[dev] Fyll med testspillere",
   "lobby_dev_seeding": "Legger til…",
 
@@ -57,6 +59,8 @@
   "invite_join_button": "Bli med i turnering →",
   "invite_joining": "Blir med…",
 
+  "active_round_of": "Runde {current} av {total}",
+  "active_courts": "{n, plural, one {# bane} other {# baner}}",
   "active_tab_live": "Direkte",
   "active_tab_standings": "Stilling",
   "active_target_label": "Mål",
@@ -70,6 +74,8 @@
   "active_edit_score": "Rediger poeng",
   "active_edit_cancel": "Avbryt",
   "active_draw": "Uavgjort",
+  "active_serve": "Serve",
+  "active_serving": "Marker som server",
   "active_bench": "På benken",
   "active_next_round": "Neste runde →",
   "active_final_results": "Se sluttresultater →",

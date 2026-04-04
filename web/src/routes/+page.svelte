@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import { api } from '$lib/api/client';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -15,6 +16,19 @@
   let error = $state('');
   let shaking = $state(false);
   let joinCode = $state('');
+  let rejoinSession = $state<App.Session | null>(null);
+
+  onMount(async () => {
+    const lastId = localStorage.getItem('last_session_id');
+    if (!lastId) return;
+    try {
+      const token = localStorage.getItem(`admin_token_${lastId}`) ?? undefined;
+      const s = await api.sessions.get(lastId, token);
+      if (s.status === 'lobby' || s.status === 'active') rejoinSession = s;
+    } catch {
+      localStorage.removeItem('last_session_id');
+    }
+  });
 
   function shake() {
     shaking = false;
@@ -32,6 +46,7 @@
       localStorage.setItem(`admin_token_${session.id}`, token);
       const player = await api.players.join(session.id, name.trim(), token);
       localStorage.setItem(`player_id_${session.id}`, player.id);
+      localStorage.setItem('last_session_id', session.id);
       goto(`/s/${session.id}?token=${token}`);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Something went wrong';
@@ -57,6 +72,22 @@
 
       <!-- Actions -->
       <div class="space-y-4">
+        {#if rejoinSession}
+          <a
+            href="/s/{rejoinSession.id}{localStorage.getItem(`admin_token_${rejoinSession.id}`) ? `?token=${localStorage.getItem(`admin_token_${rejoinSession.id}`)}` : ''}"
+            class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 transition-colors hover:bg-[var(--border)]"
+          >
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)]">
+              <div class="h-2.5 w-2.5 rounded-full bg-[var(--primary)] animate-pulse"></div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('home_rejoin_label')}</p>
+              <p class="truncate text-sm font-semibold">{rejoinSession.name || 'NotTennis'}</p>
+            </div>
+            <span class="text-sm text-[var(--text-secondary)]">→</span>
+          </a>
+        {/if}
+
         <Button
           onclick={() => (step = 'setup')}
           class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"

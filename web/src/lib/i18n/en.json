@@ -3,6 +3,7 @@
 
   "home_tagline": "Padel, organised.",
   "home_create_tournament": "Create Tournament →",
+  "home_rejoin_label": "Continue session",
   "home_join_code_divider": "or join with a code",
   "home_join_code_placeholder": "Session code",
   "home_join_button": "Join →",
@@ -46,6 +47,7 @@
   "lobby_cancel": "Cancel tournament",
   "lobby_cancelling": "Cancelling…",
   "lobby_waiting_admin": "Waiting for the admin to start…",
+  "lobby_need_players": "Need at least {n} players to start",
   "lobby_dev_seed": "[dev] Fill with test players",
   "lobby_dev_seeding": "Adding…",
 
@@ -57,6 +59,8 @@
   "invite_join_button": "Join Tournament →",
   "invite_joining": "Joining…",
 
+  "active_round_of": "Round {current} of {total}",
+  "active_courts": "{n, plural, one {# court} other {# courts}}",
   "active_tab_live": "Live Score",
   "active_tab_standings": "Standings",
   "active_target_label": "Target",
@@ -70,6 +74,8 @@
   "active_edit_score": "Edit score",
   "active_edit_cancel": "Cancel",
   "active_draw": "Draw",
+  "active_serve": "Serve",
+  "active_serving": "Mark as serving",
   "active_bench": "On bench",
   "active_next_round": "Next round →",
   "active_final_results": "See final results →",

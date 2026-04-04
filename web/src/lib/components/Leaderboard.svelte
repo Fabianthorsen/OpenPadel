@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
+  import { Trophy } from 'lucide-svelte';
 
   let {
     sessionId,
@@ -88,7 +89,7 @@
 
           <!-- Trophy for winner -->
           {#if isFirst}
-            <span class="mb-1 text-2xl">🏆</span>
+            <div class="mb-1 text-[var(--primary)]"><Trophy size={28} /></div>
           {/if}
 
           <!-- Avatar -->

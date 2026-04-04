@@ -44,9 +44,13 @@
   const alreadyJoined = $derived(!!myPlayerId && activePlayers.some((p) => p.id === myPlayerId));
 
   async function copyLink() {
-    await navigator.clipboard.writeText(joinUrl);
-    copied = true;
-    setTimeout(() => (copied = false), 2000);
+    if (navigator.share) {
+      await navigator.share({ title: session.name || 'NotTennis', url: joinUrl }).catch(() => {});
+    } else {
+      await navigator.clipboard.writeText(joinUrl);
+      copied = true;
+      setTimeout(() => (copied = false), 2000);
+    }
   }
 
   async function join() {
@@ -59,6 +63,7 @@
       // Only claim this player as "you" if you're not already in the session
       if (!isAdmin) {
         localStorage.setItem(`player_id_${session.id}`, player.id);
+        localStorage.setItem('last_session_id', session.id);
       }
       joinName = '';
       onRefresh();
@@ -170,7 +175,7 @@
         <p class="text-sm font-semibold text-[var(--primary)]">{session.name || 'NotTennis'}</p>
       </div>
       <div class="text-right text-xs text-[var(--text-secondary)]">
-        {session.courts} {session.courts === 1 ? 'court' : 'courts'} · {session.points} pts · Americano
+        {$_('active_courts', { values: { n: session.courts } })} · {session.points} pts · Americano
       </div>
     </nav>
 
@@ -295,7 +300,7 @@
         </Button>
         {#if !canStart}
           <p class="text-center text-xs text-[var(--text-disabled)]">
-            Need at least {session.courts * 4} players to start
+            {$_('lobby_need_players', { values: { n: session.courts * 4 } })}
           </p>
         {/if}
         <button

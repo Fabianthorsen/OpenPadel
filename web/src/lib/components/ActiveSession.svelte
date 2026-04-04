@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
+  import { Activity, ChartBar } from 'lucide-svelte';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
@@ -29,6 +30,7 @@
   let submitting = $state<Record<string, boolean>>({});
   let submitError = $state<Record<string, string>>({});
   let editing = $state<Record<string, boolean>>({});
+  let serving = $state<Record<string, 'a' | 'b'>>({});
   let advancing = $state(false);
   let showCancelDialog = $state(false);
   let cancelling = $state(false);
@@ -40,6 +42,7 @@
       } else if (!(m.id in scores)) {
         scores[m.id] = { a: 0, b: 0 };
       }
+      if (!(m.id in serving)) serving[m.id] = 'a';
     }
   });
 
@@ -103,29 +106,34 @@
 {:else}
 
 <!-- Bottom nav -->
-<div class="fixed bottom-0 left-0 right-0 z-10 flex border-t border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-sm">
-  {#each (['round', 'leaderboard'] as const) as id}
-    <button
-      onclick={() => (tab = id)}
-      class="flex-1 py-3 text-xs font-semibold uppercase tracking-wide transition-colors
-        {tab === id ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
-    >
-      {id === 'round' ? $_('active_tab_live') : $_('active_tab_standings')}
-    </button>
-  {/each}
+<div class="fixed bottom-0 left-0 right-0 z-10 flex border-t border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+  <button
+    onclick={() => (tab = 'round')}
+    class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'round' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
+  >
+    <Activity size={20} />
+    <span class="text-[10px] font-semibold uppercase tracking-wide">{$_('active_tab_live')}</span>
+  </button>
+  <button
+    onclick={() => (tab = 'leaderboard')}
+    class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'leaderboard' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
+  >
+    <ChartBar size={20} />
+    <span class="text-[10px] font-semibold uppercase tracking-wide">{$_('active_tab_standings')}</span>
+  </button>
 </div>
 
 {#if tab === 'round'}
-  <main class="mx-auto max-w-[480px] px-4 pb-24 pt-6 space-y-4">
+  <main class="mx-auto max-w-[480px] px-4 pb-32 pt-6 space-y-4">
 
     <!-- Header -->
     <div class="flex items-start justify-between">
       <div>
         <h2 class="text-[32px] font-[800] leading-none tracking-tight">
-          Round {currentRound.number} of {session.rounds_total}
+          {$_('active_round_of', { values: { current: currentRound.number, total: session.rounds_total } })}
         </h2>
         <p class="mt-1 text-sm text-[var(--text-secondary)]">
-          Americano · {session.courts} {session.courts === 1 ? 'court' : 'courts'}
+          {$_('active_courts', { values: { n: session.courts } })}
         </p>
       </div>
       <div class="rounded-xl bg-[var(--surface-raised)] px-4 py-2 text-center">
@@ -268,14 +276,28 @@
             {@const teamPlayers = team === 'a'
               ? [playerName[match.team_a[0]], playerName[match.team_a[1]]]
               : [playerName[match.team_b[0]], playerName[match.team_b[1]]]}
+            {@const isServing = serving[match.id] === team}
             <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4">
-              <div class="mb-4 space-y-1">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
-                  {team === 'a' ? $_('active_team_a') : $_('active_team_b')}
-                </p>
-                {#each teamPlayers as pname, i}
-                  <p class="font-[700] text-[var(--text-primary)] {i > 0 ? 'opacity-75' : ''}">{pname}</p>
-                {/each}
+              <div class="mb-4 flex items-start justify-between">
+                <div class="space-y-1">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+                    {team === 'a' ? $_('active_team_a') : $_('active_team_b')}
+                  </p>
+                  {#each teamPlayers as pname, i}
+                    <p class="font-[700] text-[var(--text-primary)] {i > 0 ? 'opacity-75' : ''}">{pname}</p>
+                  {/each}
+                </div>
+                <button
+                  onclick={() => (serving[match.id] = team)}
+                  title={$_('active_serving')}
+                  class="mt-0.5 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors
+                    {isServing
+                      ? 'bg-[var(--primary)] text-white'
+                      : 'bg-[var(--surface)] text-[var(--text-disabled)] hover:text-[var(--text-secondary)]'}"
+                >
+                  <div class="h-1.5 w-1.5 rounded-full {isServing ? 'bg-white' : 'bg-[var(--text-disabled)]'}"></div>
+                  {$_('active_serve')}
+                </button>
               </div>
               <div class="flex items-center justify-between gap-4">
                 <button
