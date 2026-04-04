@@ -95,6 +95,13 @@
   const benchNames = $derived(currentRound.bench.map((id) => playerName[id] ?? id));
 </script>
 
+{#if cancelling}
+  <main class="flex min-h-svh flex-col items-center justify-center gap-3 px-6">
+    <div class="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--primary)]"></div>
+    <p class="text-sm text-[var(--text-secondary)]">{$_('lobby_cancelling')}</p>
+  </main>
+{:else}
+
 <!-- Bottom nav -->
 <div class="fixed bottom-0 left-0 right-0 z-10 flex border-t border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-sm">
   {#each (['round', 'leaderboard'] as const) as id}
@@ -358,6 +365,8 @@
   <div class="pb-16">
     <Leaderboard sessionId={session.id} />
   </div>
+{/if}
+
 {/if}
 
 <ConfirmDialog

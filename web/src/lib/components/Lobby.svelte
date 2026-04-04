@@ -110,8 +110,14 @@
   }
 </script>
 
+{#if cancelling}
+  <main class="flex min-h-svh flex-col items-center justify-center gap-3 px-6">
+    <div class="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--primary)]"></div>
+    <p class="text-sm text-[var(--text-secondary)]">{$_('lobby_cancelling')}</p>
+  </main>
+
 <!-- ── Join / invite screen (visitor hasn't joined yet) ── -->
-{#if !isAdmin && !alreadyJoined}
+{:else if !isAdmin && !alreadyJoined}
   <main class="flex min-h-svh flex-col px-6 py-12">
     <div class="flex flex-1 flex-col">
       <p class="text-center text-sm font-semibold text-[var(--primary)]">NotTennis</p>
