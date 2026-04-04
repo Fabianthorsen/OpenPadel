@@ -56,12 +56,9 @@
 
           <!-- Info -->
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-0.5">
+            <div class="mb-0.5">
               <span class="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
                 {$_('leaderboard_leader')}
-              </span>
-              <span class="text-[11px] font-bold uppercase tracking-widest text-white/60">
-                {$_('leaderboard_rank1')}
               </span>
             </div>
             <p class="text-2xl font-[800] text-white truncate">{leader.name}</p>
