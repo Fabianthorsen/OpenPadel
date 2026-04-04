@@ -123,25 +123,65 @@
         </p>
 
         {#if scored}
-          <!-- Scored: compact summary -->
-          <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4">
-            <div class="flex items-center justify-between">
-              <div class="space-y-0.5">
-                <p class="text-sm font-semibold">{playerName[match.team_a[0]]} · {playerName[match.team_a[1]]}</p>
-                <p class="text-xs text-[var(--text-secondary)]">{playerName[match.team_b[0]]} · {playerName[match.team_b[1]]}</p>
+          <!-- Scored: result summary -->
+          {@const sa = match.score!.a}
+          {@const sb = match.score!.b}
+          {@const isDraw = sa === sb}
+          <div class="rounded-2xl overflow-hidden">
+            <!-- Team A row -->
+            <div class="flex items-center justify-between px-5 py-3
+              {isDraw ? 'bg-[var(--surface-raised)]' : sa > sb ? 'bg-[var(--primary)]' : 'bg-[var(--surface-raised)]'}">
+              <div class="flex items-center gap-2">
+                {#if !isDraw && sa > sb}
+                  <span class="text-[10px] font-bold uppercase tracking-widest text-white/70">W</span>
+                {/if}
+                <p class="text-sm font-semibold
+                  {isDraw ? 'text-[var(--text-primary)]' : sa > sb ? 'text-white' : 'text-[var(--text-disabled)]'}">
+                  {playerName[match.team_a[0]]} · {playerName[match.team_a[1]]}
+                </p>
               </div>
-              <div class="flex items-center gap-3">
-                <span class="text-3xl font-[800] tabular-nums">{match.score!.a}</span>
-                <span class="text-sm text-[var(--text-disabled)]">–</span>
-                <span class="text-3xl font-[800] tabular-nums">{match.score!.b}</span>
-              </div>
+              <span class="text-2xl font-[800] tabular-nums
+                {isDraw ? 'text-[var(--text-primary)]' : sa > sb ? 'text-white' : 'text-[var(--text-disabled)]'}">
+                {sa}
+              </span>
             </div>
-            <button
-              onclick={() => { scores[match.id] = { a: match.score!.a, b: match.score!.b }; editing[match.id] = true; }}
-              class="mt-3 w-full text-xs text-[var(--text-disabled)] underline-offset-2 hover:underline"
-            >
-              {$_('active_edit_score')}
-            </button>
+
+            <!-- Divider / draw label -->
+            <div class="flex items-center bg-[var(--border)] px-5" style="height: 1px;">
+              {#if isDraw}
+                <span class="relative -top-2.5 rounded-full bg-[var(--border)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+                  {$_('active_draw')}
+                </span>
+              {/if}
+            </div>
+
+            <!-- Team B row -->
+            <div class="flex items-center justify-between px-5 py-3
+              {isDraw ? 'bg-[var(--surface-raised)]' : sb > sa ? 'bg-[var(--primary)]' : 'bg-[var(--surface-raised)]'}">
+              <div class="flex items-center gap-2">
+                {#if !isDraw && sb > sa}
+                  <span class="text-[10px] font-bold uppercase tracking-widest text-white/70">W</span>
+                {/if}
+                <p class="text-sm font-semibold
+                  {isDraw ? 'text-[var(--text-primary)]' : sb > sa ? 'text-white' : 'text-[var(--text-disabled)]'}">
+                  {playerName[match.team_b[0]]} · {playerName[match.team_b[1]]}
+                </p>
+              </div>
+              <span class="text-2xl font-[800] tabular-nums
+                {isDraw ? 'text-[var(--text-primary)]' : sb > sa ? 'text-white' : 'text-[var(--text-disabled)]'}">
+                {sb}
+              </span>
+            </div>
+
+            <!-- Edit button -->
+            <div class="bg-[var(--surface-raised)] px-5 pb-3 pt-1">
+              <button
+                onclick={() => { scores[match.id] = { a: sa, b: sb }; editing[match.id] = true; }}
+                class="w-full text-xs text-[var(--text-disabled)] underline-offset-2 hover:underline"
+              >
+                {$_('active_edit_score')}
+              </button>
+            </div>
           </div>
 
         {:else}
