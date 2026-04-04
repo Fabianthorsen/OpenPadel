@@ -1,5 +1,4 @@
 # Design — NotTennis
-### By Sofia
 
 ---
 

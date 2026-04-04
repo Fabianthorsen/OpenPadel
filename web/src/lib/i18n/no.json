@@ -83,6 +83,13 @@
   "leaderboard_player": "Spiller",
   "leaderboard_games": "Kamper",
   "leaderboard_new_session": "Ny økt →",
+  "leaderboard_ranking": "Rangering",
+
+  "final_summary_title": "Americano-oppsummering",
+  "final_summary_rounds": "Totalt runder",
+  "final_summary_rounds_unit": "runder",
+  "final_summary_date": "Dato spilt",
+  "final_summary_players": "spillere",
 
   "cancel_dialog_title": "Avslutt turneringen?",
   "cancel_dialog_desc": "Dette avslutter turneringen for alle. Dette kan ikke angres.",

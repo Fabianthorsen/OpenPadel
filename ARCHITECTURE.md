@@ -1,5 +1,4 @@
 # Architecture — NotTennis
-### By Marco
 
 ---
 

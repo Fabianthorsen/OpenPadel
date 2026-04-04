@@ -30,31 +30,126 @@
   onDestroy(() => clearInterval(interval));
 
   const leader = $derived(leaderboard?.standings[0] ?? null);
+
+  const podiumOrder = $derived(
+    leaderboard ? [
+      leaderboard.standings[1], // 2nd — left
+      leaderboard.standings[0], // 1st — centre
+      leaderboard.standings[2], // 3rd — right
+    ].filter(Boolean) : []
+  );
+
+  const dateStr = $derived(
+    leaderboard
+      ? new Date(leaderboard.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+      : ''
+  );
 </script>
 
-<main class="mx-auto max-w-[480px] px-4 pb-6 pt-4 space-y-6">
+<main class="mx-auto max-w-[480px] px-4 pb-24 pt-4 space-y-6">
   {#if !leaderboard}
     <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
 
+  {:else if complete}
+
+    <!-- ── Final Results ── -->
+
+    <!-- Podium -->
+    <div class="flex items-end justify-center gap-3 pt-6 pb-2">
+      {#each podiumOrder as s}
+        {@const isFirst = s.rank === 1}
+        <div class="flex flex-col items-center {isFirst ? 'order-2 -mb-0' : s.rank === 2 ? 'order-1' : 'order-3'} flex-1 max-w-[120px]">
+
+          <!-- Trophy for winner -->
+          {#if isFirst}
+            <span class="mb-1 text-2xl">🏆</span>
+          {/if}
+
+          <!-- Avatar -->
+          <div class="flex shrink-0 items-center justify-center rounded-full font-[800] text-white
+            {isFirst ? 'h-20 w-20 text-2xl bg-[var(--primary)] ring-4 ring-[var(--primary-muted)] shadow-lg' : 'h-14 w-14 text-base bg-[#4a7856] ring-2 ring-[var(--border)]'}">
+            {s.name[0].toUpperCase()}
+          </div>
+
+          <!-- Rank badge -->
+          <div class="mt-2 flex h-6 w-6 items-center justify-center rounded-full text-xs font-[800] text-white
+            {isFirst ? 'bg-[var(--primary)]' : 'bg-[#4a7856]'}">
+            {s.rank}
+          </div>
+
+          <p class="mt-1.5 text-sm font-[800] text-center truncate w-full {isFirst ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}">{s.name}</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest {isFirst ? 'text-[var(--primary)]' : 'text-[var(--text-disabled)]'}">{s.points} {$_('leaderboard_pts')}</p>
+
+          <!-- Podium bar -->
+          <div class="mt-3 w-full rounded-t-xl
+            {isFirst ? 'h-12 bg-[var(--primary)]' : s.rank === 2 ? 'h-8 bg-[#4a7856]/60' : 'h-5 bg-[#a8c5b0]/60'}">
+          </div>
+        </div>
+      {/each}
+    </div>
+
+    <!-- Rest of standings (4th+) -->
+    {#if leaderboard.standings.length > 3}
+      <div class="space-y-1">
+        <p class="px-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('leaderboard_ranking')}</p>
+        {#each leaderboard.standings.slice(3) as s (s.player_id)}
+          <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
+            <span class="w-6 text-sm font-[800] tabular-nums text-[var(--text-disabled)]">{s.rank}</span>
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+              {s.name[0].toUpperCase()}
+            </div>
+            <span class="flex-1 truncate text-sm font-semibold">{s.name}</span>
+            <span class="text-base font-[800] tabular-nums">{s.points}</span>
+            <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_('leaderboard_pts')}</span>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    <!-- Summary card -->
+    <div class="relative overflow-hidden rounded-2xl bg-[var(--text-primary)] px-6 py-6">
+      <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[var(--primary)]/30 blur-2xl"></div>
+      <div class="relative z-10 space-y-5">
+        <h2 class="text-xl font-[800] text-white">{$_('final_summary_title')}</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-0.5">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">{$_('final_summary_rounds')}</p>
+            <p class="text-lg font-[800] text-white">{leaderboard.total_rounds} {$_('final_summary_rounds_unit')}</p>
+          </div>
+          <div class="space-y-0.5 text-right">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">{$_('final_summary_date')}</p>
+            <p class="text-lg font-[800] text-white">{dateStr}</p>
+          </div>
+        </div>
+        <div class="border-t border-white/10 pt-4">
+          <p class="text-xs text-white/50">Americano · {leaderboard.standings.length} {$_('final_summary_players')}</p>
+        </div>
+      </div>
+    </div>
+
+    <a
+      href="/"
+      class="block w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+    >
+      {$_('leaderboard_new_session')}
+    </a>
+
   {:else}
+
+    <!-- ── Live Standings ── -->
 
     <!-- Leader hero card -->
     {#if leader}
       <div class="relative overflow-hidden rounded-2xl bg-[var(--primary)] px-6 py-6">
-        <!-- subtle court lines -->
         <svg class="absolute inset-0 h-full w-full opacity-10" preserveAspectRatio="none" viewBox="0 0 100 100">
           <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5"/>
           <line x1="0" y1="50" x2="100" y2="50" stroke="white" stroke-width="0.5"/>
           <rect x="20" y="20" width="60" height="60" fill="none" stroke="white" stroke-width="0.5"/>
         </svg>
-
         <div class="relative z-10 flex items-center gap-5">
-          <!-- Avatar -->
           <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl font-[800] text-white">
             {leader.name[0].toUpperCase()}
           </div>
-
-          <!-- Info -->
           <div class="flex-1 min-w-0">
             <div class="mb-0.5">
               <span class="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
@@ -84,7 +179,7 @@
     <div class="space-y-1">
       <div class="flex items-center justify-between px-1 pb-1">
         <h3 class="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-          {complete ? $_('leaderboard_final') : $_('leaderboard_current')}
+          {$_('leaderboard_current')}
         </h3>
         {#if leaderboard.current_round && leaderboard.total_rounds}
           <span class="text-xs text-[var(--text-disabled)]">
@@ -93,7 +188,6 @@
         {/if}
       </div>
 
-      <!-- Header -->
       <div class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] gap-2 px-4 pb-1">
         <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">#</span>
         <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_('leaderboard_player')}</span>
@@ -102,14 +196,11 @@
         <span class="text-right text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_('leaderboard_pts')}</span>
       </div>
 
-      <!-- Rows -->
       {#each leaderboard.standings as s, i (s.player_id)}
         {@const podiumBg = s.rank === 1 ? 'bg-[var(--primary)]' : s.rank === 2 ? 'bg-[#4a7856]' : s.rank === 3 ? 'bg-[#a8c5b0]' : i % 2 === 0 ? 'bg-[var(--surface-raised)]' : 'bg-transparent'}
         {@const isPodium = s.rank <= 3}
         <div class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] items-center gap-2 rounded-2xl px-4 py-3.5 {podiumBg}">
-          <span class="text-sm font-[800] tabular-nums {isPodium ? 'text-white' : 'text-[var(--text-disabled)]'}">
-            {s.rank}
-          </span>
+          <span class="text-sm font-[800] tabular-nums {isPodium ? 'text-white' : 'text-[var(--text-disabled)]'}">{s.rank}</span>
           <div class="flex items-center gap-2.5 min-w-0">
             <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {isPodium ? 'bg-white/20 text-white' : 'bg-[var(--primary-muted)] text-[var(--primary)]'} text-xs font-[800]">
               {s.name[0].toUpperCase()}
@@ -124,15 +215,6 @@
         </div>
       {/each}
     </div>
-
-    {#if complete}
-      <a
-        href="/"
-        class="block w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
-      >
-        {$_('leaderboard_new_session')}
-      </a>
-    {/if}
 
   {/if}
 </main>

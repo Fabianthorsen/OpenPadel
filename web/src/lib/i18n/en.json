@@ -83,6 +83,13 @@
   "leaderboard_player": "Player",
   "leaderboard_games": "Games",
   "leaderboard_new_session": "New session →",
+  "leaderboard_ranking": "Ranking",
+
+  "final_summary_title": "Americano Summary",
+  "final_summary_rounds": "Total Rounds",
+  "final_summary_rounds_unit": "rounds",
+  "final_summary_date": "Date Played",
+  "final_summary_players": "players",
 
   "cancel_dialog_title": "Cancel tournament?",
   "cancel_dialog_desc": "This will end the tournament for everyone. This cannot be undone.",
