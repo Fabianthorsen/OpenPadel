@@ -52,6 +52,8 @@ export const api = {
       request<{ rounds: App.Round[] }>('GET', `/sessions/${sessionId}/rounds`),
     current: (sessionId: string) =>
       request<App.Round>('GET', `/sessions/${sessionId}/rounds/current`),
+    advance: (sessionId: string, token: string) =>
+      request<void>('POST', `/sessions/${sessionId}/rounds/advance`, undefined, token),
   },
   scores: {
     submit: (sessionId: string, matchId: string, scoreA: number, scoreB: number, token: string) =>

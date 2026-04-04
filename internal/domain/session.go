@@ -61,6 +61,7 @@ type Standing struct {
 	Points      int    `json:"points"`
 	GamesPlayed int    `json:"games_played"`
 	Wins        int    `json:"wins"`
+	Draws       int    `json:"draws"`
 }
 
 type Leaderboard struct {

@@ -27,6 +27,8 @@
   let scores = $state<Record<string, { a: number; b: number }>>({});
   let submitting = $state<Record<string, boolean>>({});
   let submitError = $state<Record<string, string>>({});
+  let editing = $state<Record<string, boolean>>({});
+  let advancing = $state(false);
 
   $effect(() => {
     for (const m of currentRound.matches) {
@@ -51,11 +53,25 @@
     const s = scores[matchId];
     try {
       await api.scores.submit(session.id, matchId, s.a, s.b, '');
+      editing[matchId] = false;
       onRefresh();
     } catch (e) {
       submitError[matchId] = e instanceof Error ? e.message : 'Failed to submit';
     } finally {
       submitting[matchId] = false;
+    }
+  }
+
+  async function advanceRound() {
+    advancing = true;
+    try {
+      const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+      await api.rounds.advance(session.id, adminToken);
+      onRefresh();
+    } catch {
+      // ignore — button stays visible so admin can retry
+    } finally {
+      advancing = false;
     }
   }
 
@@ -99,7 +115,7 @@
     <!-- Court cards -->
     {#each currentRound.matches as match (match.id)}
       {@const s = scores[match.id] ?? { a: 0, b: 0 }}
-      {@const scored = match.score !== null}
+      {@const scored = match.score !== null && !editing[match.id]}
 
       <div class="space-y-2">
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
@@ -121,7 +137,7 @@
               </div>
             </div>
             <button
-              onclick={() => { scores[match.id] = { a: match.score!.a, b: match.score!.b }; }}
+              onclick={() => { scores[match.id] = { a: match.score!.a, b: match.score!.b }; editing[match.id] = true; }}
               class="mt-3 w-full text-xs text-[var(--text-disabled)] underline-offset-2 hover:underline"
             >
               {$_('active_edit_score')}
@@ -210,10 +226,11 @@
     <!-- Next round / waiting -->
     {#if allScored && isAdmin}
       <button
-        onclick={onRefresh}
-        class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98]"
+        onclick={currentRound.number === session.rounds_total ? onRefresh : advanceRound}
+        disabled={advancing}
+        class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
       >
-        {currentRound.number === session.rounds_total ? $_('active_final_results') : $_('active_next_round')}
+        {advancing ? '…' : currentRound.number === session.rounds_total ? $_('active_final_results') : $_('active_next_round')}
       </button>
     {:else if allScored}
       <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-center text-sm text-[var(--text-secondary)]">

@@ -103,6 +103,41 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, match)
 }
 
+func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
+	sessionID := chi.URLParam(r, "id")
+	sess, err := h.store.GetSession(sessionID)
+	if errors.Is(err, store.ErrNotFound) {
+		respondError(w, http.StatusNotFound, "session not found")
+		return
+	}
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "could not load session")
+		return
+	}
+	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
+		respondError(w, http.StatusForbidden, "admin access required")
+		return
+	}
+	if sess.Status != domain.StatusActive {
+		respondError(w, http.StatusConflict, "session is not active")
+		return
+	}
+	allScored, err := h.store.CurrentRoundAllScored(sessionID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "could not check round status")
+		return
+	}
+	if !allScored {
+		respondError(w, http.StatusConflict, "not all matches in this round are scored")
+		return
+	}
+	if err := h.store.AdvanceRound(sessionID); err != nil {
+		respondError(w, http.StatusInternalServerError, "could not advance round")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Handler) getLeaderboard(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)

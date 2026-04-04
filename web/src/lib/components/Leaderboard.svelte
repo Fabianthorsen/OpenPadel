@@ -70,10 +70,10 @@
                 <span class="text-xl font-[800] text-white">{leader.points}</span>
                 <span class="ml-1 text-[10px] font-bold uppercase tracking-wider text-white/60">{$_('leaderboard_pts')}</span>
               </div>
-              {#if leader.games_played > 0}
+              {#if (leader.games_played ?? 0) > 0}
                 <div class="h-6 w-px bg-white/20"></div>
                 <div>
-                  <span class="text-xl font-[800] text-white">{leader.wins}–{leader.games_played - leader.wins}</span>
+                  <span class="text-xl font-[800] text-white">{leader.wins ?? 0}/{leader.draws ?? 0}/{(leader.games_played ?? 0) - (leader.wins ?? 0) - (leader.draws ?? 0)}</span>
                   <span class="ml-1 text-[10px] font-bold uppercase tracking-wider text-white/60">{$_('leaderboard_wl')}</span>
                 </div>
               {/if}
@@ -118,9 +118,9 @@
             </div>
             <span class="truncate text-sm font-semibold">{s.name}</span>
           </div>
-          <span class="text-center text-sm text-[var(--text-secondary)]">{s.games_played}</span>
+          <span class="text-center text-sm text-[var(--text-secondary)]">{s.games_played ?? 0}</span>
           <span class="text-center text-sm font-semibold {s.rank === 1 ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}">
-            {s.wins}–{s.games_played - s.wins}
+            {s.wins ?? 0}/{s.draws ?? 0}/{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}
           </span>
           <span class="text-right text-base font-[800] tabular-nums">{s.points}</span>
         </div>

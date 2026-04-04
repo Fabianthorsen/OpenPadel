@@ -78,25 +78,22 @@ func (s *Store) GetRounds(sessionID string) ([]domain.Round, error) {
 }
 
 func (s *Store) GetCurrentRound(sessionID string) (*domain.Round, error) {
-	// Current round = lowest-numbered round with at least one unscored match.
-	// Falls back to the last round if all are scored.
-	row := s.db.QueryRow(`
-		SELECT r.id, r.number
-		FROM rounds r
-		JOIN matches m ON m.round_id = r.id
-		WHERE r.session_id = ? AND m.score_a IS NULL
-		ORDER BY r.number ASC
-		LIMIT 1`, sessionID,
-	)
+	// Use the session's tracked current_round number.
+	// Falls back to auto-detect for sessions created before this field existed.
 	var r domain.Round
 	r.SessionID = sessionID
-	if err := row.Scan(&r.ID, &r.Number); errors.Is(err, sql.ErrNoRows) {
-		// All scored — return last round
-		row2 := s.db.QueryRow(
+	err := s.db.QueryRow(`
+		SELECT r.id, r.number FROM rounds r
+		JOIN sessions sess ON sess.id = r.session_id
+		WHERE r.session_id = ? AND r.number = sess.current_round`,
+		sessionID,
+	).Scan(&r.ID, &r.Number)
+	if errors.Is(err, sql.ErrNoRows) {
+		// Fallback: return last round (handles legacy sessions or completed sessions)
+		if err2 := s.db.QueryRow(
 			`SELECT id, number FROM rounds WHERE session_id = ? ORDER BY number DESC LIMIT 1`,
 			sessionID,
-		)
-		if err2 := row2.Scan(&r.ID, &r.Number); errors.Is(err2, sql.ErrNoRows) {
+		).Scan(&r.ID, &r.Number); errors.Is(err2, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		} else if err2 != nil {
 			return nil, err2
@@ -105,7 +102,6 @@ func (s *Store) GetCurrentRound(sessionID string) (*domain.Round, error) {
 		return nil, err
 	}
 
-	var err error
 	r.Bench, err = s.getBench(r.ID)
 	if err != nil {
 		return nil, err
@@ -155,7 +151,10 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 					WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
 					ELSE 0
 				END
-			), 0) AS wins
+			), 0) AS wins,
+			COALESCE(SUM(
+				CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END
+			), 0) AS draws
 		FROM players p
 		LEFT JOIN rounds r ON r.session_id = p.session_id
 		LEFT JOIN matches m ON m.round_id = r.id
@@ -175,7 +174,7 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 	rank := 1
 	for rows.Next() {
 		var s domain.Standing
-		if err := rows.Scan(&s.PlayerID, &s.Name, &s.Points, &s.GamesPlayed, &s.Wins); err != nil {
+		if err := rows.Scan(&s.PlayerID, &s.Name, &s.Points, &s.GamesPlayed, &s.Wins, &s.Draws); err != nil {
 			return nil, err
 		}
 		s.Rank = rank

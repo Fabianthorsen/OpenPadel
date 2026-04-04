@@ -41,6 +41,7 @@ func (s *Store) migrate() error {
 // SQLite has no IF NOT EXISTS for ALTER TABLE, so we run and ignore duplicate errors.
 var migrations = []string{
 	`ALTER TABLE sessions ADD COLUMN creator_player_id TEXT`,
+	`ALTER TABLE sessions ADD COLUMN current_round INTEGER NOT NULL DEFAULT 1`,
 }
 
 const schema = `

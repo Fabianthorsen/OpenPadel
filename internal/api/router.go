@@ -60,6 +60,7 @@ func NewRouter(s *store.Store) http.Handler {
 			r.Delete("/players/{playerID}", h.deactivatePlayer)
 			r.Get("/rounds", h.getRounds)
 			r.Get("/rounds/current", h.getCurrentRound)
+			r.Post("/rounds/advance", h.advanceRound)
 			r.Get("/leaderboard", h.getLeaderboard)
 			r.Put("/matches/{matchID}/score", h.submitScore)
 		})

@@ -74,7 +74,7 @@
   "leaderboard_leader": "Leader",
   "leaderboard_rank1": "Rank #1",
   "leaderboard_pts": "Pts",
-  "leaderboard_wl": "W/L",
+  "leaderboard_wl": "W/D/L",
   "leaderboard_current": "Current Standings",
   "leaderboard_final": "Final Standings",
   "leaderboard_round_of": "Round {current} of {total}",

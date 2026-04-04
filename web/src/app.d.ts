@@ -49,6 +49,7 @@ declare global {
       points: number;
       games_played: number;
       wins: number;
+      draws: number;
     }
 
     interface Leaderboard {

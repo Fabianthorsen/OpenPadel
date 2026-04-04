@@ -33,7 +33,7 @@ func (s *Store) CreateSession(courts, points int) (*domain.Session, error) {
 
 func (s *Store) GetSession(id string) (*domain.Session, error) {
 	row := s.db.QueryRow(
-		`SELECT id, admin_token, status, courts, points, rounds_total, creator_player_id, created_at, updated_at
+		`SELECT id, admin_token, status, courts, points, rounds_total, creator_player_id, current_round, created_at, updated_at
 		 FROM sessions WHERE id = ?`, id,
 	)
 	sess, err := scanSession(row)
@@ -58,10 +58,30 @@ func (s *Store) SetCreatorPlayer(sessionID, playerID string) error {
 
 func (s *Store) StartSession(id string, roundsTotal int) error {
 	_, err := s.db.Exec(
-		`UPDATE sessions SET status = ?, rounds_total = ?, updated_at = ? WHERE id = ?`,
+		`UPDATE sessions SET status = ?, rounds_total = ?, current_round = 1, updated_at = ? WHERE id = ?`,
 		domain.StatusActive, roundsTotal, time.Now().UTC().Format(time.RFC3339), id,
 	)
 	return err
+}
+
+func (s *Store) AdvanceRound(id string) error {
+	_, err := s.db.Exec(
+		`UPDATE sessions SET current_round = current_round + 1, updated_at = ? WHERE id = ?`,
+		time.Now().UTC().Format(time.RFC3339), id,
+	)
+	return err
+}
+
+func (s *Store) CurrentRoundAllScored(sessionID string) (bool, error) {
+	var unscored int
+	err := s.db.QueryRow(`
+		SELECT COUNT(*) FROM matches m
+		JOIN rounds r ON r.id = m.round_id
+		JOIN sessions s ON s.id = r.session_id
+		WHERE s.id = ? AND r.number = s.current_round AND m.score_a IS NULL`,
+		sessionID,
+	).Scan(&unscored)
+	return unscored == 0, err
 }
 
 func (s *Store) CompleteSession(id string) error {
@@ -76,11 +96,12 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	var sess domain.Session
 	var roundsTotal sql.NullInt64
 	var creatorPlayerID sql.NullString
+	var currentRound sql.NullInt64
 	var createdAt, updatedAt string
 	err := row.Scan(
 		&sess.ID, &sess.AdminToken, &sess.Status,
 		&sess.Courts, &sess.Points, &roundsTotal,
-		&creatorPlayerID, &createdAt, &updatedAt,
+		&creatorPlayerID, &currentRound, &createdAt, &updatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -94,6 +115,10 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	}
 	if creatorPlayerID.Valid {
 		sess.CreatorPlayerID = creatorPlayerID.String
+	}
+	if currentRound.Valid {
+		v := int(currentRound.Int64)
+		sess.CurrentRound = &v
 	}
 	sess.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
 	sess.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
