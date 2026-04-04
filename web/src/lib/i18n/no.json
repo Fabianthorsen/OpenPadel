@@ -69,5 +69,16 @@
   "active_bench": "På benken",
   "active_next_round": "Neste runde →",
   "active_final_results": "Se sluttresultater →",
-  "active_round_complete": "Runden er ferdig — venter på at admin skal gå videre"
+  "active_round_complete": "Runden er ferdig — venter på at admin skal gå videre",
+
+  "leaderboard_leader": "Leder",
+  "leaderboard_rank1": "Plass #1",
+  "leaderboard_pts": "Pts",
+  "leaderboard_wl": "V/T",
+  "leaderboard_current": "Nåværende stilling",
+  "leaderboard_final": "Sluttresultat",
+  "leaderboard_round_of": "Runde {current} av {total}",
+  "leaderboard_player": "Spiller",
+  "leaderboard_games": "Kamper",
+  "leaderboard_new_session": "Ny økt →"
 }

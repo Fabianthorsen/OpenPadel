@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { api } from '$lib/api/client';
+  import { _ } from 'svelte-i18n';
 
   let {
     sessionId,
@@ -11,13 +12,11 @@
   } = $props();
 
   let leaderboard = $state<App.Leaderboard | null>(null);
-  let updatedAt = $state('');
   let interval: ReturnType<typeof setInterval>;
 
   async function load() {
     try {
       leaderboard = await api.leaderboard.get(sessionId);
-      updatedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } catch {
       // silently retry on next interval
     }
@@ -29,33 +28,101 @@
   });
 
   onDestroy(() => clearInterval(interval));
+
+  const leader = $derived(leaderboard?.standings[0] ?? null);
 </script>
 
-<main class="mx-auto max-w-[480px] px-4 py-6 space-y-4">
-  {#if complete}
-    <div class="space-y-1 pb-2">
-      <h1 class="text-[22px] font-[650]">Final standings</h1>
-      <p class="text-sm text-[var(--text-secondary)]">Session complete</p>
-    </div>
-  {/if}
-
+<main class="mx-auto max-w-[480px] px-4 pb-6 pt-4 space-y-6">
   {#if !leaderboard}
     <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
+
   {:else}
-    <div class="rounded-lg border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
-      <div class="grid grid-cols-[2rem_1fr_3rem] gap-2 border-b border-[var(--border)] px-4 py-2.5">
-        <span class="text-xs font-semibold uppercase tracking-wide text-[var(--text-disabled)]">#</span>
-        <span class="text-xs font-semibold uppercase tracking-wide text-[var(--text-disabled)]">Player</span>
-        <span class="text-right text-xs font-semibold uppercase tracking-wide text-[var(--text-disabled)]">Pts</span>
+
+    <!-- Leader hero card -->
+    {#if leader}
+      <div class="relative overflow-hidden rounded-2xl bg-[var(--primary)] px-6 py-6">
+        <!-- subtle court lines -->
+        <svg class="absolute inset-0 h-full w-full opacity-10" preserveAspectRatio="none" viewBox="0 0 100 100">
+          <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5"/>
+          <line x1="0" y1="50" x2="100" y2="50" stroke="white" stroke-width="0.5"/>
+          <rect x="20" y="20" width="60" height="60" fill="none" stroke="white" stroke-width="0.5"/>
+        </svg>
+
+        <div class="relative z-10 flex items-center gap-5">
+          <!-- Avatar -->
+          <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl font-[800] text-white">
+            {leader.name[0].toUpperCase()}
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
+                {$_('leaderboard_leader')}
+              </span>
+              <span class="text-[11px] font-bold uppercase tracking-widest text-white/60">
+                {$_('leaderboard_rank1')}
+              </span>
+            </div>
+            <p class="text-2xl font-[800] text-white truncate">{leader.name}</p>
+            <div class="mt-2 flex items-center gap-4">
+              <div>
+                <span class="text-xl font-[800] text-white">{leader.points}</span>
+                <span class="ml-1 text-[10px] font-bold uppercase tracking-wider text-white/60">{$_('leaderboard_pts')}</span>
+              </div>
+              {#if leader.games_played > 0}
+                <div class="h-6 w-px bg-white/20"></div>
+                <div>
+                  <span class="text-xl font-[800] text-white">{leader.wins}–{leader.games_played - leader.wins}</span>
+                  <span class="ml-1 text-[10px] font-bold uppercase tracking-wider text-white/60">{$_('leaderboard_wl')}</span>
+                </div>
+              {/if}
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Standings -->
+    <div class="space-y-1">
+      <div class="flex items-center justify-between px-1 pb-1">
+        <h3 class="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
+          {complete ? $_('leaderboard_final') : $_('leaderboard_current')}
+        </h3>
+        {#if leaderboard.current_round && leaderboard.total_rounds}
+          <span class="text-xs text-[var(--text-disabled)]">
+            {$_('leaderboard_round_of', { values: { current: leaderboard.current_round, total: leaderboard.total_rounds } })}
+          </span>
+        {/if}
       </div>
 
-      {#each leaderboard.standings as s (s.player_id)}
-        <div class="grid grid-cols-[2rem_1fr_3rem] items-center gap-2 border-b border-[var(--border)] px-4 py-3 last:border-0">
-          <span class="text-sm font-semibold tabular-nums {s.rank === 1 ? 'text-[var(--primary)]' : 'text-[var(--text-disabled)]'}">
+      <!-- Header -->
+      <div class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] gap-2 px-4 pb-1">
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">#</span>
+        <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_('leaderboard_player')}</span>
+        <span class="text-center text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_('leaderboard_games')}</span>
+        <span class="text-center text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_('leaderboard_wl')}</span>
+        <span class="text-right text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_('leaderboard_pts')}</span>
+      </div>
+
+      <!-- Rows -->
+      {#each leaderboard.standings as s, i (s.player_id)}
+        <div class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] items-center gap-2 rounded-2xl px-4 py-3.5
+          {i % 2 === 0 ? 'bg-[var(--surface-raised)]' : 'bg-transparent'}">
+          <span class="text-sm font-[800] tabular-nums {s.rank === 1 ? 'text-[var(--primary)]' : 'text-[var(--text-disabled)]'}">
             {s.rank}
           </span>
-          <span class="text-sm font-medium truncate">{s.name}</span>
-          <span class="text-right text-sm font-semibold tabular-nums">{s.points}</span>
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+              {s.name[0].toUpperCase()}
+            </div>
+            <span class="truncate text-sm font-semibold">{s.name}</span>
+          </div>
+          <span class="text-center text-sm text-[var(--text-secondary)]">{s.games_played}</span>
+          <span class="text-center text-sm font-semibold {s.rank === 1 ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}">
+            {s.wins}–{s.games_played - s.wins}
+          </span>
+          <span class="text-right text-base font-[800] tabular-nums">{s.points}</span>
         </div>
       {/each}
     </div>
@@ -63,12 +130,11 @@
     {#if complete}
       <a
         href="/"
-        class="block w-full rounded-lg bg-[var(--primary)] px-4 py-3 text-center text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)]"
+        class="block w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
       >
-        New session
+        {$_('leaderboard_new_session')}
       </a>
-    {:else if updatedAt}
-      <p class="text-center text-xs text-[var(--text-disabled)]">Updated {updatedAt}</p>
     {/if}
+
   {/if}
 </main>

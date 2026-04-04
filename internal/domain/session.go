@@ -55,10 +55,12 @@ type Score struct {
 }
 
 type Standing struct {
-	Rank     int    `json:"rank"`
-	PlayerID string `json:"player_id"`
-	Name     string `json:"name"`
-	Points   int    `json:"points"`
+	Rank        int    `json:"rank"`
+	PlayerID    string `json:"player_id"`
+	Name        string `json:"name"`
+	Points      int    `json:"points"`
+	GamesPlayed int    `json:"games_played"`
+	Wins        int    `json:"wins"`
 }
 
 type Leaderboard struct {

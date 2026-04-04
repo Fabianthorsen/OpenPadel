@@ -69,5 +69,16 @@
   "active_bench": "On bench",
   "active_next_round": "Next round →",
   "active_final_results": "See final results →",
-  "active_round_complete": "Round complete — waiting for admin to advance"
+  "active_round_complete": "Round complete — waiting for admin to advance",
+
+  "leaderboard_leader": "Leader",
+  "leaderboard_rank1": "Rank #1",
+  "leaderboard_pts": "Pts",
+  "leaderboard_wl": "W/L",
+  "leaderboard_current": "Current Standings",
+  "leaderboard_final": "Final Standings",
+  "leaderboard_round_of": "Round {current} of {total}",
+  "leaderboard_player": "Player",
+  "leaderboard_games": "Games",
+  "leaderboard_new_session": "New session →"
 }

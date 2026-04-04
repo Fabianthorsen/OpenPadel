@@ -147,7 +147,15 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 					WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
 					ELSE 0
 				END
-			), 0) AS points
+			), 0) AS points,
+			COUNT(m.id) AS games_played,
+			COALESCE(SUM(
+				CASE
+					WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
+					WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
+					ELSE 0
+				END
+			), 0) AS wins
 		FROM players p
 		LEFT JOIN rounds r ON r.session_id = p.session_id
 		LEFT JOIN matches m ON m.round_id = r.id
@@ -167,7 +175,7 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 	rank := 1
 	for rows.Next() {
 		var s domain.Standing
-		if err := rows.Scan(&s.PlayerID, &s.Name, &s.Points); err != nil {
+		if err := rows.Scan(&s.PlayerID, &s.Name, &s.Points, &s.GamesPlayed, &s.Wins); err != nil {
 			return nil, err
 		}
 		s.Rank = rank

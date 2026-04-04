@@ -47,6 +47,8 @@ declare global {
       player_id: string;
       name: string;
       points: number;
+      games_played: number;
+      wins: number;
     }
 
     interface Leaderboard {
