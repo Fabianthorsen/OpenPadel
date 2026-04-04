@@ -6,6 +6,10 @@
 
 @import 'tailwindcss';
 
+html {
+  touch-action: pan-x pan-y;
+}
+
 :root {
   /* Surfaces */
   --background: #edeee8;
