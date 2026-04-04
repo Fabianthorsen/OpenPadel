@@ -183,6 +183,31 @@
       </div>
     </div>
 
+    <!-- Admin: add player manually -->
+    {#if isAdmin}
+      <div class="space-y-2">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Add player</p>
+        <form onsubmit={(e) => { e.preventDefault(); join(); }} class="flex gap-2">
+          <input
+            bind:value={joinName}
+            placeholder="Player name"
+            maxlength="32"
+            class="flex-1 rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+          />
+          <button
+            type="submit"
+            disabled={joining || !joinName.trim()}
+            class="rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {joining ? '…' : 'Add'}
+          </button>
+        </form>
+        {#if joinError}
+          <p class="text-sm text-[var(--destructive)]">{joinError}</p>
+        {/if}
+      </div>
+    {/if}
+
     <!-- Player list -->
     <div class="space-y-2">
       <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
