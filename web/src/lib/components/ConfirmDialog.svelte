@@ -1,0 +1,70 @@
+<script lang="ts">
+  let {
+    open = $bindable(false),
+    title,
+    description,
+    confirmLabel,
+    cancelLabel = 'Cancel',
+    destructive = false,
+    onconfirm,
+  }: {
+    open: boolean;
+    title: string;
+    description?: string;
+    confirmLabel: string;
+    cancelLabel?: string;
+    destructive?: boolean;
+    onconfirm: () => void;
+  } = $props();
+
+  function confirm() {
+    open = false;
+    onconfirm();
+  }
+</script>
+
+{#if open}
+  <!-- Backdrop -->
+  <div
+    class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm pb-safe sm:items-center"
+    onclick={() => (open = false)}
+    onkeydown={(e) => e.key === 'Escape' && (open = false)}
+    role="presentation"
+    tabindex="-1"
+  >
+    <!-- Sheet -->
+    <div
+      class="w-full max-w-sm rounded-t-3xl bg-[var(--surface)] px-6 pb-8 pt-6 space-y-5 sm:rounded-3xl sm:mx-4"
+      onclick={(e) => e.stopPropagation()}
+      role="presentation"
+    >
+      <!-- Handle -->
+      <div class="mx-auto h-1 w-10 rounded-full bg-[var(--border)] sm:hidden"></div>
+
+      <div class="space-y-1.5">
+        <h2 class="text-[18px] font-[800] text-[var(--text-primary)]">{title}</h2>
+        {#if description}
+          <p class="text-sm text-[var(--text-secondary)]">{description}</p>
+        {/if}
+      </div>
+
+      <div class="space-y-2">
+        <button
+          onclick={confirm}
+          class="h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold transition-colors
+            {destructive
+              ? 'bg-[var(--destructive)] text-white hover:opacity-90'
+              : 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]'}"
+        >
+          {confirmLabel}
+        </button>
+        <button
+          onclick={() => (open = false)}
+          class="h-auto w-full rounded-2xl border border-[var(--border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-raised)]"
+        >
+          {cancelLabel}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

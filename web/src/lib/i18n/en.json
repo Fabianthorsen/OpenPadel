@@ -81,5 +81,10 @@
   "leaderboard_round_of": "Round {current} of {total}",
   "leaderboard_player": "Player",
   "leaderboard_games": "Games",
-  "leaderboard_new_session": "New session →"
+  "leaderboard_new_session": "New session →",
+
+  "cancel_dialog_title": "Cancel tournament?",
+  "cancel_dialog_desc": "This will end the tournament for everyone. This cannot be undone.",
+  "cancel_dialog_confirm": "Yes, cancel tournament",
+  "cancel_dialog_cancel": "Keep playing"
 }

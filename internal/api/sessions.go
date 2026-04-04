@@ -127,10 +127,6 @@ func (h *Handler) cancelSession(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusForbidden, "admin access required")
 		return
 	}
-	if sess.Status == domain.StatusActive {
-		respondError(w, http.StatusConflict, "cannot cancel a session that has already started")
-		return
-	}
 	if err := h.store.DeleteSession(id); err != nil {
 		respondError(w, http.StatusInternalServerError, "could not cancel session")
 		return

@@ -81,5 +81,10 @@
   "leaderboard_round_of": "Runde {current} av {total}",
   "leaderboard_player": "Spiller",
   "leaderboard_games": "Kamper",
-  "leaderboard_new_session": "Ny økt →"
+  "leaderboard_new_session": "Ny økt →",
+
+  "cancel_dialog_title": "Avslutt turneringen?",
+  "cancel_dialog_desc": "Dette avslutter turneringen for alle. Dette kan ikke angres.",
+  "cancel_dialog_confirm": "Ja, avslutt turnering",
+  "cancel_dialog_cancel": "Fortsett å spille"
 }

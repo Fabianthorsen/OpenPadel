@@ -4,6 +4,7 @@
   import { _ } from 'svelte-i18n';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
 
   let {
     session,
@@ -29,6 +30,8 @@
   let submitError = $state<Record<string, string>>({});
   let editing = $state<Record<string, boolean>>({});
   let advancing = $state(false);
+  let showCancelDialog = $state(false);
+  let cancelling = $state(false);
 
   $effect(() => {
     for (const m of currentRound.matches) {
@@ -59,6 +62,17 @@
       submitError[matchId] = e instanceof Error ? e.message : 'Failed to submit';
     } finally {
       submitting[matchId] = false;
+    }
+  }
+
+  async function cancelSession() {
+    cancelling = true;
+    try {
+      const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+      await api.sessions.cancel(session.id, adminToken);
+      location.href = '/';
+    } catch {
+      cancelling = false;
     }
   }
 
@@ -278,6 +292,19 @@
       </div>
     {/if}
 
+    <!-- Admin: cancel tournament -->
+    {#if isAdmin}
+      <div class="flex justify-center pb-2">
+        <button
+          onclick={() => (showCancelDialog = true)}
+          disabled={cancelling}
+          class="rounded-full border border-dashed border-[var(--border)] px-4 py-1.5 text-xs text-[var(--text-disabled)] transition-colors hover:border-[var(--destructive)] hover:text-[var(--destructive)] disabled:opacity-40"
+        >
+          {$_('lobby_cancel')}
+        </button>
+      </div>
+    {/if}
+
   </main>
 
 {:else}
@@ -285,3 +312,13 @@
     <Leaderboard sessionId={session.id} />
   </div>
 {/if}
+
+<ConfirmDialog
+  bind:open={showCancelDialog}
+  title={$_('cancel_dialog_title')}
+  description={$_('cancel_dialog_desc')}
+  confirmLabel={$_('cancel_dialog_confirm')}
+  cancelLabel={$_('cancel_dialog_cancel')}
+  destructive
+  onconfirm={cancelSession}
+/>

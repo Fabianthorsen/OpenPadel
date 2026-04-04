@@ -3,6 +3,7 @@
   import { Crown } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { _ } from 'svelte-i18n';
 
   let {
@@ -23,6 +24,7 @@
   let copied = $state(false);
   let starting = $state(false);
   let cancelling = $state(false);
+  let showCancelDialog = $state(false);
   let seeding = $state(false);
   let joinName = $state('');
   let joining = $state(false);
@@ -80,7 +82,6 @@
   }
 
   async function cancel() {
-    if (!confirm('Cancel this session? This cannot be undone.')) return;
     cancelling = true;
     try {
       const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
@@ -89,6 +90,12 @@
     } catch {
       cancelling = false;
     }
+  }
+
+  async function removePlayer(playerId: string) {
+    const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+    await api.players.remove(session.id, playerId, adminToken).catch(() => {});
+    onRefresh();
   }
 
   async function start() {
@@ -230,6 +237,15 @@
                 {#if player.id === myPlayerId}
                   <span class="text-xs text-[var(--text-disabled)]">{$_('lobby_you')}</span>
                 {/if}
+                {#if isAdmin && player.id !== session.creator_player_id}
+                  <button
+                    onclick={() => removePlayer(player.id)}
+                    class="ml-1 flex h-5 w-5 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
+                    aria-label="Remove player"
+                  >
+                    ×
+                  </button>
+                {/if}
               </div>
             </div>
           {/each}
@@ -277,7 +293,7 @@
           </p>
         {/if}
         <button
-          onclick={cancel}
+          onclick={() => (showCancelDialog = true)}
           disabled={cancelling}
           class="h-auto w-full rounded-2xl border border-[var(--border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:border-[var(--destructive)] hover:text-[var(--destructive)] disabled:opacity-40"
         >
@@ -302,3 +318,13 @@
     {/if}
   </main>
 {/if}
+
+<ConfirmDialog
+  bind:open={showCancelDialog}
+  title={$_('cancel_dialog_title')}
+  description={$_('cancel_dialog_desc')}
+  confirmLabel={$_('cancel_dialog_confirm')}
+  cancelLabel={$_('cancel_dialog_cancel')}
+  destructive
+  onconfirm={cancel}
+/>
