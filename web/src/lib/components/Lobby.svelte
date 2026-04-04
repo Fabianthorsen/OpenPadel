@@ -51,7 +51,10 @@
     joining = true;
     try {
       const player = await api.players.join(session.id, name);
-      localStorage.setItem(`player_id_${session.id}`, player.id);
+      // Only claim this player as "you" if you're not already in the session
+      if (!isAdmin) {
+        localStorage.setItem(`player_id_${session.id}`, player.id);
+      }
       joinName = '';
       onRefresh();
     } catch (e) {
