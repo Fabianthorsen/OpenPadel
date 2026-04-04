@@ -3,6 +3,7 @@
   import { Crown } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { _ } from 'svelte-i18n';
 
   let {
     session,
@@ -106,31 +107,26 @@
 {#if !isAdmin && !alreadyJoined}
   <main class="flex min-h-svh flex-col px-6 py-12">
     <div class="flex flex-1 flex-col">
-      <!-- Brand -->
       <p class="text-center text-sm font-semibold text-[var(--primary)]">NotTennis</p>
 
-      <!-- Headline -->
       <div class="mt-10 space-y-3">
         <h1 class="text-[32px] font-[800]">
           {#if creatorName}
-            {creatorName} invited you to this Americano Tournament
+            {$_('invite_title_with_creator', { values: { creator: creatorName } })}
           {:else}
-            Join this Americano Tournament
+            {$_('invite_title_generic')}
           {/if}
         </h1>
-        <p class="text-[var(--text-secondary)]">
-          Join the session to track your scores and see your ranking.
-        </p>
+        <p class="text-[var(--text-secondary)]">{$_('invite_subtitle')}</p>
       </div>
 
-      <!-- Join form -->
       <div class="mt-10 space-y-5">
         <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Your name</p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('invite_name_label')}</p>
           <form onsubmit={(e) => { e.preventDefault(); join(); }}>
             <Input
               bind:value={joinName}
-              placeholder="Enter your name"
+              placeholder={$_('invite_name_placeholder')}
               maxlength={32}
               class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
             />
@@ -146,20 +142,18 @@
           disabled={joining || !joinName.trim()}
           class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
         >
-          {joining ? 'Joining…' : 'Join Tournament →'}
+          {joining ? $_('invite_joining') : $_('invite_join_button')}
         </Button>
       </div>
     </div>
-
   </main>
 
 <!-- ── Lobby (admin or already joined) ── -->
 {:else}
   <main class="mx-auto max-w-[480px] px-6 py-6 space-y-6">
-    <!-- Nav -->
     <nav class="flex items-center justify-between">
       <div class="space-y-0.5">
-        <p class="text-xs text-[var(--text-secondary)]">Waiting to start</p>
+        <p class="text-xs text-[var(--text-secondary)]">{$_('lobby_waiting')}</p>
         <p class="text-sm font-semibold text-[var(--primary)]">NotTennis</p>
       </div>
       <div class="text-right text-xs text-[var(--text-secondary)]">
@@ -169,7 +163,7 @@
 
     <!-- Join code + share -->
     <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4 space-y-3">
-      <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Join code</p>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('lobby_join_code')}</p>
       <div class="flex gap-2">
         {#each session.id.split('') as char}
           <div class="flex flex-1 items-center justify-center rounded-xl bg-[var(--surface)] py-3 text-2xl font-[700] text-[var(--text-primary)] font-mono">
@@ -184,7 +178,7 @@
           variant="ghost"
           class="h-auto shrink-0 p-0 text-xs font-semibold text-[var(--primary)] hover:bg-transparent hover:text-[var(--primary-hover)]"
         >
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? $_('lobby_copied') : $_('lobby_copy')}
         </Button>
       </div>
     </div>
@@ -192,11 +186,11 @@
     <!-- Admin: add player manually -->
     {#if isAdmin}
       <div class="space-y-2">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Add player</p>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('lobby_add_player_label')}</p>
         <form onsubmit={(e) => { e.preventDefault(); join(); }} class="flex gap-2">
           <Input
             bind:value={joinName}
-            placeholder="Player name"
+            placeholder={$_('lobby_add_player_placeholder')}
             maxlength={32}
             class="flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3 text-sm"
           />
@@ -205,7 +199,7 @@
             disabled={joining || !joinName.trim()}
             class="h-auto rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white"
           >
-            {joining ? '…' : 'Add'}
+            {joining ? $_('lobby_add_loading') : $_('lobby_add_button')}
           </Button>
         </form>
         {#if joinError}
@@ -217,10 +211,10 @@
     <!-- Player list -->
     <div class="space-y-2">
       <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-        Players ({activePlayers.length})
+        {$_('lobby_players_label')} ({activePlayers.length})
       </p>
       {#if activePlayers.length === 0}
-        <p class="text-sm text-[var(--text-disabled)]">Waiting for players to join…</p>
+        <p class="text-sm text-[var(--text-disabled)]">{$_('lobby_waiting_players')}</p>
       {:else}
         <div class="rounded-2xl bg-[var(--surface-raised)] divide-y divide-[var(--border)]">
           {#each activePlayers as player (player.id)}
@@ -234,7 +228,7 @@
                   <Crown size={13} class="text-[var(--primary)]" />
                 {/if}
                 {#if player.id === myPlayerId}
-                  <span class="text-xs text-[var(--text-disabled)]">you</span>
+                  <span class="text-xs text-[var(--text-disabled)]">{$_('lobby_you')}</span>
                 {/if}
               </div>
             </div>
@@ -249,7 +243,7 @@
         <form onsubmit={(e) => { e.preventDefault(); join(); }} class="flex gap-2">
           <Input
             bind:value={joinName}
-            placeholder="Your name"
+            placeholder={$_('lobby_join_placeholder')}
             maxlength={32}
             class="flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3 text-sm"
           />
@@ -258,7 +252,7 @@
             disabled={joining || !joinName.trim()}
             class="h-auto rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white"
           >
-            {joining ? '…' : 'Join'}
+            {joining ? $_('lobby_join_loading') : $_('lobby_join_button')}
           </Button>
         </form>
         {#if joinError}
@@ -275,7 +269,7 @@
           disabled={starting || !canStart}
           class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
         >
-          {starting ? 'Starting…' : 'Start session →'}
+          {starting ? $_('lobby_start_loading') : $_('lobby_start_button')}
         </Button>
         {#if !canStart}
           <p class="text-center text-xs text-[var(--text-disabled)]">
@@ -288,7 +282,7 @@
           variant="ghost"
           class="h-auto w-full text-sm text-[var(--text-secondary)] underline-offset-2 hover:bg-transparent hover:text-[var(--destructive)] hover:underline"
         >
-          {cancelling ? 'Cancelling…' : 'Cancel tournament'}
+          {cancelling ? $_('lobby_cancelling') : $_('lobby_cancel')}
         </Button>
         {#if isDev}
           <Button
@@ -297,13 +291,13 @@
             variant="ghost"
             class="h-auto w-full text-sm text-[var(--text-disabled)] underline-offset-2 hover:bg-transparent hover:underline"
           >
-            {seeding ? 'Adding…' : '[dev] Fill with test players'}
+            {seeding ? $_('lobby_dev_seeding') : $_('lobby_dev_seed')}
           </Button>
         {/if}
       </div>
     {:else}
       <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-center">
-        <p class="text-sm text-[var(--text-secondary)]">Waiting for the admin to start…</p>
+        <p class="text-sm text-[var(--text-secondary)]">{$_('lobby_waiting_admin')}</p>
       </div>
     {/if}
   </main>

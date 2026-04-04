@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { api } from '$lib/api/client';
+  import { _ } from 'svelte-i18n';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
 
@@ -63,13 +64,13 @@
 
 <!-- Bottom nav -->
 <div class="fixed bottom-0 left-0 right-0 z-10 flex border-t border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-sm">
-  {#each ([['round', 'Live Score'], ['leaderboard', 'Standings']] as const) as [id, label]}
+  {#each (['round', 'leaderboard'] as const) as id}
     <button
       onclick={() => (tab = id)}
       class="flex-1 py-3 text-xs font-semibold uppercase tracking-wide transition-colors
         {tab === id ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
     >
-      {label}
+      {id === 'round' ? $_('active_tab_live') : $_('active_tab_standings')}
     </button>
   {/each}
 </div>
@@ -88,7 +89,7 @@
         </p>
       </div>
       <div class="rounded-xl bg-[var(--surface-raised)] px-4 py-2 text-center">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Target</p>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">{$_('active_target_label')}</p>
         <p class="text-xl font-[800] text-[var(--text-primary)]">{session.points}</p>
       </div>
     </div>
@@ -102,7 +103,7 @@
 
       <div class="space-y-2">
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-          Court {match.court}
+          {$_('active_court', { values: { n: match.court } })}
         </p>
 
         {#if scored}
@@ -123,7 +124,7 @@
               onclick={() => { scores[match.id] = { a: match.score!.a, b: match.score!.b }; }}
               class="mt-3 w-full text-xs text-[var(--text-disabled)] underline-offset-2 hover:underline"
             >
-              Edit score
+              {$_('active_edit_score')}
             </button>
           </div>
 
@@ -137,7 +138,7 @@
               <!-- Team label + players -->
               <div class="mb-4 space-y-1">
                 <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
-                  Team {team.toUpperCase()}
+                  {team === 'a' ? $_('active_team_a') : $_('active_team_b')}
                 </p>
                 {#each teamPlayers as pname, i}
                   <p class="font-[700] text-[var(--text-primary)] {i > 0 ? 'opacity-75' : ''}">{pname}</p>
@@ -171,11 +172,11 @@
           <div class="flex items-center justify-between px-1">
             <p class="text-sm text-[var(--text-disabled)]">
               {#if s.a + s.b === session.points}
-                ✓ All points accounted for
+                {$_('active_points_done')}
               {:else if s.a + s.b < session.points}
-                {session.points - s.a - s.b} points left
+                {$_('active_points_left', { values: { n: session.points - s.a - s.b } })}
               {:else}
-                {s.a + s.b - session.points} over target
+                {$_('active_points_over', { values: { n: s.a + s.b - session.points } })}
               {/if}
             </p>
             {#if submitError[match.id]}
@@ -188,7 +189,7 @@
             disabled={s.a + s.b !== session.points || submitting[match.id]}
             class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-40"
           >
-            {submitting[match.id] ? '…' : 'Finalise Match →'}
+            {submitting[match.id] ? '…' : $_('active_finalise')}
           </button>
         {/if}
       </div>
@@ -201,7 +202,7 @@
           {benchNames[0][0].toUpperCase()}
         </div>
         <p class="text-sm text-[var(--text-secondary)]">
-          On bench: <span class="font-semibold text-[var(--text-primary)]">{benchNames.join(', ')}</span>
+          {$_('active_bench')}: <span class="font-semibold text-[var(--text-primary)]">{benchNames.join(', ')}</span>
         </p>
       </div>
     {/if}
@@ -212,11 +213,11 @@
         onclick={onRefresh}
         class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98]"
       >
-        {currentRound.number === session.rounds_total ? 'See final results →' : 'Next round →'}
+        {currentRound.number === session.rounds_total ? $_('active_final_results') : $_('active_next_round')}
       </button>
     {:else if allScored}
       <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-center text-sm text-[var(--text-secondary)]">
-        Round complete — waiting for admin to advance
+        {$_('active_round_complete')}
       </div>
     {/if}
 
