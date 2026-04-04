@@ -276,23 +276,23 @@
             Need at least {session.courts * 4} players to start
           </p>
         {/if}
-        <Button
+        <button
           onclick={cancel}
           disabled={cancelling}
-          variant="ghost"
-          class="h-auto w-full text-sm text-[var(--text-secondary)] underline-offset-2 hover:bg-transparent hover:text-[var(--destructive)] hover:underline"
+          class="h-auto w-full rounded-2xl border border-[var(--border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:border-[var(--destructive)] hover:text-[var(--destructive)] disabled:opacity-40"
         >
           {cancelling ? $_('lobby_cancelling') : $_('lobby_cancel')}
-        </Button>
+        </button>
         {#if isDev}
-          <Button
-            onclick={seedPlayers}
-            disabled={seeding}
-            variant="ghost"
-            class="h-auto w-full text-sm text-[var(--text-disabled)] underline-offset-2 hover:bg-transparent hover:underline"
-          >
-            {seeding ? $_('lobby_dev_seeding') : $_('lobby_dev_seed')}
-          </Button>
+          <div class="flex justify-center pt-2">
+            <button
+              onclick={seedPlayers}
+              disabled={seeding}
+              class="rounded-full border border-dashed border-[var(--border)] px-4 py-1.5 text-xs text-[var(--text-disabled)] transition-colors hover:border-[var(--text-disabled)] hover:text-[var(--text-secondary)] disabled:opacity-40"
+            >
+              {seeding ? $_('lobby_dev_seeding') : $_('lobby_dev_seed')}
+            </button>
+          </div>
         {/if}
       </div>
     {:else}
