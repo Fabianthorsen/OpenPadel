@@ -7,6 +7,7 @@ declare global {
       id: string;
       admin_token?: string;
       status: SessionStatus;
+      name?: string;
       courts: number;
       points: number;
       rounds_total?: number;

@@ -68,7 +68,7 @@
 {:else if session.status === 'active' && currentRound}
   <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} />
 {:else if session.status === 'complete'}
-  <Leaderboard sessionId={session.id} complete />
+  <Leaderboard sessionId={session.id} sessionName={session.name} complete />
 {:else}
   <main class="flex min-h-svh items-center justify-center px-4">
     <p class="text-sm text-[var(--text-secondary)]">Loading…</p>

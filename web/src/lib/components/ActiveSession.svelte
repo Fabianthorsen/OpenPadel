@@ -363,7 +363,7 @@
 
 {:else}
   <div class="pb-16">
-    <Leaderboard sessionId={session.id} />
+    <Leaderboard sessionId={session.id} sessionName={session.name} />
   </div>
 {/if}
 

@@ -167,7 +167,7 @@
     <nav class="flex items-center justify-between">
       <div class="space-y-0.5">
         <p class="text-xs text-[var(--text-secondary)]">{$_('lobby_waiting')}</p>
-        <p class="text-sm font-semibold text-[var(--primary)]">NotTennis</p>
+        <p class="text-sm font-semibold text-[var(--primary)]">{session.name || 'NotTennis'}</p>
       </div>
       <div class="text-right text-xs text-[var(--text-secondary)]">
         {session.courts} {session.courts === 1 ? 'court' : 'courts'} · {session.points} pts · Americano

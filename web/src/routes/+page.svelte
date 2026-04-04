@@ -9,6 +9,7 @@
   let step = $state<'home' | 'setup'>('home');
   let courts = $state(2);
   let points = $state(24);
+  let tournamentName = $state('');
   let name = $state('');
   let creating = $state(false);
   let error = $state('');
@@ -26,7 +27,7 @@
     creating = true;
     error = '';
     try {
-      const session = await api.sessions.create(courts, points);
+      const session = await api.sessions.create(courts, points, tournamentName.trim());
       const token = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, token);
       const player = await api.players.join(session.id, name.trim(), token);
@@ -181,6 +182,17 @@
         <p class="text-xs text-[var(--text-secondary)]">
           {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
         </p>
+      </div>
+
+      <!-- Tournament name (optional) -->
+      <div class="space-y-2.5">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_tournament_name_label')}</p>
+        <Input
+          bind:value={tournamentName}
+          placeholder={$_('create_tournament_name_placeholder')}
+          maxlength={48}
+          class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+        />
       </div>
 
       <!-- Your name -->

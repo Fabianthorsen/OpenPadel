@@ -14,6 +14,7 @@ type Session struct {
 	ID              string        `json:"id"`
 	AdminToken      string        `json:"admin_token,omitempty"`
 	Status          SessionStatus `json:"status"`
+	Name            string        `json:"name,omitempty"`
 	Courts          int           `json:"courts"`
 	Points          int           `json:"points"`
 	RoundsTotal     *int          `json:"rounds_total,omitempty"`

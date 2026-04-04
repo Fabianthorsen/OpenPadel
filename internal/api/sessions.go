@@ -14,8 +14,9 @@ import (
 
 func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Courts int `json:"courts"`
-		Points int `json:"points"`
+		Courts int    `json:"courts"`
+		Points int    `json:"points"`
+		Name   string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
@@ -30,7 +31,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess, err := h.store.CreateSession(body.Courts, body.Points)
+	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not create session")
 		return

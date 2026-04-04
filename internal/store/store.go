@@ -42,6 +42,7 @@ func (s *Store) migrate() error {
 var migrations = []string{
 	`ALTER TABLE sessions ADD COLUMN creator_player_id TEXT`,
 	`ALTER TABLE sessions ADD COLUMN current_round INTEGER NOT NULL DEFAULT 1`,
+	`ALTER TABLE sessions ADD COLUMN name TEXT NOT NULL DEFAULT ''`,
 }
 
 const schema = `

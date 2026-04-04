@@ -5,9 +5,11 @@
 
   let {
     sessionId,
+    sessionName = '',
     complete = false,
   }: {
     sessionId: string;
+    sessionName?: string;
     complete?: boolean;
   } = $props();
 
@@ -39,9 +41,27 @@
     ].filter(Boolean) : []
   );
 
-  const dateStr = $derived(
-    new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-  );
+  const funStats = $derived.by(() => {
+    if (!leaderboard || leaderboard.standings.length === 0) return [];
+    const s = leaderboard.standings;
+
+    const mostWins = s.reduce((a, b) => (b.wins ?? 0) > (a.wins ?? 0) ? b : a);
+    const fewestLosses = s.reduce((a, b) => {
+      const la = (a.games_played ?? 0) - (a.wins ?? 0) - (a.draws ?? 0);
+      const lb = (b.games_played ?? 0) - (b.wins ?? 0) - (b.draws ?? 0);
+      return lb < la ? b : a;
+    });
+    const mostDraws = s.reduce((a, b) => (b.draws ?? 0) > (a.draws ?? 0) ? b : a);
+
+    const stats = [
+      { badge: 'W', label: 'stat_most_wins', name: mostWins.name, value: `${mostWins.wins ?? 0}W` },
+      { badge: 'L', label: 'stat_iron_wall', name: fewestLosses.name, value: `${(fewestLosses.games_played ?? 0) - (fewestLosses.wins ?? 0) - (fewestLosses.draws ?? 0)}L` },
+    ];
+    if ((mostDraws.draws ?? 0) > 0) {
+      stats.push({ badge: 'D', label: 'stat_diplomat', name: mostDraws.name, value: `${mostDraws.draws ?? 0}D` });
+    }
+    return stats;
+  });
 </script>
 
 <main class="mx-auto max-w-[480px] px-4 pb-24 pt-4 space-y-6">
@@ -51,6 +71,14 @@
   {:else if complete}
 
     <!-- ── Final Results ── -->
+
+    <!-- Heading -->
+    <div class="pt-4 text-center space-y-0.5">
+      <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('leaderboard_final')}</p>
+      {#if sessionName}
+        <p class="text-xl font-[800]">{sessionName}</p>
+      {/if}
+    </div>
 
     <!-- Podium -->
     <div class="flex items-end justify-center gap-3 pt-6 pb-2">
@@ -104,26 +132,22 @@
       </div>
     {/if}
 
-    <!-- Summary card -->
-    <div class="relative overflow-hidden rounded-2xl bg-[var(--text-primary)] px-6 py-6">
-      <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-[var(--primary)]/30 blur-2xl"></div>
-      <div class="relative z-10 space-y-5">
-        <h2 class="text-xl font-[800] text-white">{$_('final_summary_title')}</h2>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="space-y-0.5">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">{$_('final_summary_rounds')}</p>
-            <p class="text-lg font-[800] text-white">{leaderboard.total_rounds} {$_('final_summary_rounds_unit')}</p>
+    <!-- Fun stats -->
+    {#if funStats.length > 0}
+      <div class="space-y-1">
+        <p class="px-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('stat_title')}</p>
+        {#each funStats as stat}
+          <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">{stat.badge}</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_(stat.label)}</p>
+              <p class="text-sm font-semibold truncate">{stat.name}</p>
+            </div>
+            <span class="text-sm font-[800] tabular-nums text-[var(--primary)]">{stat.value}</span>
           </div>
-          <div class="space-y-0.5 text-right">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">{$_('final_summary_date')}</p>
-            <p class="text-lg font-[800] text-white">{dateStr}</p>
-          </div>
-        </div>
-        <div class="border-t border-white/10 pt-4">
-          <p class="text-xs text-white/50">Americano · {leaderboard.standings.length} {$_('final_summary_players')}</p>
-        </div>
+        {/each}
       </div>
-    </div>
+    {/if}
 
     <a
       href="/"

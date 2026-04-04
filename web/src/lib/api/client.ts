@@ -27,8 +27,8 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
 
 export const api = {
   sessions: {
-    create: (courts: number, points: number) =>
-      request<App.Session>('POST', '/sessions', { courts, points }),
+    create: (courts: number, points: number, name: string) =>
+      request<App.Session>('POST', '/sessions', { courts, points, name }),
     get: (id: string, token?: string) =>
       request<App.Session>('GET', `/sessions/${id}`, undefined, token),
     start: (id: string, token: string) =>
