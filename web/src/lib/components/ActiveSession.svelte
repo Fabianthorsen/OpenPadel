@@ -43,7 +43,10 @@
     }
   });
 
-  const allScored = $derived(currentRound.matches.every((m) => m.score !== null));
+  const allScored = $derived(
+    currentRound.matches.every((m) => m.score !== null) &&
+    currentRound.matches.every((m) => !editing[m.id])
+  );
 
   function adjust(matchId: string, team: 'a' | 'b', delta: number) {
     const s = scores[matchId] ?? { a: 0, b: 0 };
@@ -137,11 +140,14 @@
         </p>
 
         {#if scored}
-          <!-- Scored: result summary -->
+          <!-- Scored: tap anywhere to edit -->
           {@const sa = match.score!.a}
           {@const sb = match.score!.b}
           {@const isDraw = sa === sb}
-          <div class="rounded-2xl overflow-hidden">
+          <button
+            onclick={() => { scores[match.id] = { a: sa, b: sb }; editing[match.id] = true; }}
+            class="w-full rounded-2xl overflow-hidden text-left"
+          >
             <!-- Team A row -->
             <div class="flex items-center justify-between px-5 py-3
               {isDraw ? 'bg-[var(--surface-raised)]' : sa > sb ? 'bg-[var(--primary)]' : 'bg-[var(--surface-raised)]'}">
@@ -186,26 +192,72 @@
                 {sb}
               </span>
             </div>
+          </button>
 
-            <!-- Edit button -->
-            <div class="bg-[var(--surface-raised)] px-5 pb-3 pt-1">
+        {:else if editing[match.id]}
+          <!-- Edit mode: direct number inputs -->
+          <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4 space-y-4">
+            {#each (['a', 'b'] as const) as team}
+              {@const teamPlayers = team === 'a'
+                ? [playerName[match.team_a[0]], playerName[match.team_a[1]]]
+                : [playerName[match.team_b[0]], playerName[match.team_b[1]]]}
+              <div class="flex items-center justify-between gap-4">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-[var(--text-primary)]">{teamPlayers[0]} · {teamPlayers[1]}</p>
+                </div>
+                <input
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  max={session.points}
+                  value={s[team]}
+                  oninput={(e) => {
+                    const v = parseInt((e.currentTarget as HTMLInputElement).value) || 0;
+                    scores[match.id] = { ...s, [team]: Math.max(0, Math.min(session.points, v)) };
+                  }}
+                  class="w-20 shrink-0 rounded-xl border-0 bg-[var(--surface)] px-3 py-2 text-center text-2xl font-[800] tabular-nums text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                />
+              </div>
+            {/each}
+
+            <p class="text-center text-xs text-[var(--text-disabled)]">
+              {#if s.a + s.b === session.points}
+                {$_('active_points_done')}
+              {:else if s.a + s.b < session.points}
+                {$_('active_points_left', { values: { n: session.points - s.a - s.b } })}
+              {:else}
+                {$_('active_points_over', { values: { n: s.a + s.b - session.points } })}
+              {/if}
+            </p>
+
+            {#if submitError[match.id]}
+              <p class="text-xs text-[var(--destructive)]">{submitError[match.id]}</p>
+            {/if}
+
+            <div class="flex gap-2">
               <button
-                onclick={() => { scores[match.id] = { a: sa, b: sb }; editing[match.id] = true; }}
-                class="w-full text-xs text-[var(--text-disabled)] underline-offset-2 hover:underline"
+                onclick={() => { editing[match.id] = false; }}
+                class="flex-1 rounded-2xl border border-[var(--border)] px-4 py-3 text-sm font-semibold text-[var(--text-secondary)]"
               >
-                {$_('active_edit_score')}
+                {$_('active_edit_cancel')}
+              </button>
+              <button
+                onclick={() => submitScore(match.id)}
+                disabled={s.a + s.b !== session.points || submitting[match.id]}
+                class="flex-1 rounded-2xl bg-[var(--primary)] px-4 py-3 text-sm font-[700] text-white disabled:opacity-40"
+              >
+                {submitting[match.id] ? '…' : $_('active_finalise')}
               </button>
             </div>
           </div>
 
         {:else}
-          <!-- Score entry: two team cards -->
+          <!-- Score entry: two team cards with tapper -->
           {#each (['a', 'b'] as const) as team}
             {@const teamPlayers = team === 'a'
               ? [playerName[match.team_a[0]], playerName[match.team_a[1]]]
               : [playerName[match.team_b[0]], playerName[match.team_b[1]]]}
             <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4">
-              <!-- Team label + players -->
               <div class="mb-4 space-y-1">
                 <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                   {team === 'a' ? $_('active_team_a') : $_('active_team_b')}
@@ -214,31 +266,22 @@
                   <p class="font-[700] text-[var(--text-primary)] {i > 0 ? 'opacity-75' : ''}">{pname}</p>
                 {/each}
               </div>
-
-              <!-- Score tapper -->
               <div class="flex items-center justify-between gap-4">
                 <button
                   onclick={() => adjust(match.id, team, -1)}
                   disabled={s[team] === 0}
                   class="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface)] text-2xl font-bold text-[var(--text-secondary)] shadow-sm transition-all active:scale-95 disabled:opacity-30"
-                >
-                  −
-                </button>
-                <span class="text-[72px] font-[800] leading-none tabular-nums text-[var(--text-primary)]">
-                  {s[team]}
-                </span>
+                >−</button>
+                <span class="text-[72px] font-[800] leading-none tabular-nums text-[var(--text-primary)]">{s[team]}</span>
                 <button
                   onclick={() => adjust(match.id, team, 1)}
                   disabled={s.a + s.b >= session.points}
                   class="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--primary-muted)] text-2xl font-bold text-[var(--primary)] shadow-sm transition-all active:scale-95 disabled:opacity-30"
-                >
-                  +
-                </button>
+                >+</button>
               </div>
             </div>
           {/each}
 
-          <!-- Remaining + confirm -->
           <div class="flex items-center justify-between px-1">
             <p class="text-sm text-[var(--text-disabled)]">
               {#if s.a + s.b === session.points}
