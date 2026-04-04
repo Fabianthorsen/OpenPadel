@@ -40,9 +40,7 @@
   );
 
   const dateStr = $derived(
-    leaderboard
-      ? new Date(leaderboard.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-      : ''
+    new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
   );
 </script>
 
