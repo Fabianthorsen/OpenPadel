@@ -167,13 +167,17 @@
             </div>
 
             <!-- Divider / draw label -->
-            <div class="flex items-center bg-[var(--border)] px-5" style="height: 1px;">
-              {#if isDraw}
-                <span class="relative -top-2.5 rounded-full bg-[var(--border)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+            {#if isDraw}
+              <div class="flex items-center gap-3 bg-[var(--surface-raised)] px-5 py-2">
+                <div class="h-px flex-1 bg-[var(--border)]"></div>
+                <span class="rounded-full border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">
                   {$_('active_draw')}
                 </span>
-              {/if}
-            </div>
+                <div class="h-px flex-1 bg-[var(--border)]"></div>
+              </div>
+            {:else}
+              <div class="h-px bg-[var(--border)]"></div>
+            {/if}
 
             <!-- Team B row -->
             <div class="flex items-center justify-between px-5 py-3
