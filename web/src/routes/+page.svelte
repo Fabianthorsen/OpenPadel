@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { api } from '$lib/api/client';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
 
   let step = $state<'home' | 'setup'>('home');
   let courts = $state(2);
@@ -52,12 +54,12 @@
 
       <!-- Actions -->
       <div class="space-y-4">
-        <button
+        <Button
           onclick={() => (step = 'setup')}
-          class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)]"
+          class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
         >
           Create Tournament →
-        </button>
+        </Button>
 
         <div class="flex items-center gap-3">
           <div class="h-px flex-1 bg-[var(--border)]"></div>
@@ -66,24 +68,25 @@
         </div>
 
         <form onsubmit={(e) => { e.preventDefault(); joinByCode(); }} class="flex gap-2">
-          <input
+          <Input
             bind:value={joinCode}
-            oninput={(e) => { joinCode = (e.currentTarget as HTMLInputElement).value.toUpperCase(); }}
+            oninput={(e: Event) => { joinCode = (e.currentTarget as HTMLInputElement).value.toUpperCase(); }}
             placeholder="Session code"
-            maxlength="4"
+            maxlength={4}
             autocomplete="off"
             autocorrect="off"
             autocapitalize="characters"
             spellcheck={false}
-            class="min-w-0 flex-1 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+            class="min-w-0 flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
           />
-          <button
+          <Button
             type="submit"
             disabled={!joinCode.trim()}
-            class="rounded-2xl bg-[var(--surface-raised)] px-5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--border)] disabled:opacity-40"
+            variant="secondary"
+            class="h-auto rounded-2xl bg-[var(--surface-raised)] px-5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--border)]"
           >
             Join →
-          </button>
+          </Button>
         </form>
       </div>
     </div>
@@ -96,12 +99,13 @@
   <div class="w-full max-w-sm">
     <!-- Nav -->
     <nav class="flex items-center justify-between">
-      <button
+      <Button
         onclick={() => (step = 'home')}
-        class="flex h-8 w-8 items-center justify-center rounded-full text-lg text-[var(--text-secondary)] hover:bg-[var(--surface-raised)]"
+        variant="ghost"
+        class="flex h-8 w-8 items-center justify-center rounded-full p-0 text-lg text-[var(--text-secondary)]"
       >
         ×
-      </button>
+      </Button>
       <span class="text-sm font-semibold text-[var(--primary)]">NotTennis</span>
       <div class="w-8"></div>
     </nav>
@@ -169,12 +173,13 @@
       <!-- Your name -->
       <div class="space-y-2.5">
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Organiser name</p>
-        <input
+        <Input
           bind:value={name}
           oninput={() => (error = '')}
           placeholder="Your name"
-          maxlength="32"
-          class="w-full rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 text-sm outline-none ring-2 transition-colors {error ? 'ring-[var(--destructive)]/60' : 'ring-transparent focus:ring-[var(--primary)]/30'} {shaking ? 'shake' : ''}"
+          maxlength={32}
+          aria-invalid={!!error}
+          class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm {shaking ? 'shake' : ''}"
         />
       </div>
 
@@ -186,13 +191,13 @@
         </p>
       </div>
 
-      <button
+      <Button
         onclick={create}
         disabled={creating}
-        class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
+        class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
       >
         {creating ? 'Creating…' : 'Create & Get Invite Link →'}
-      </button>
+      </Button>
     </div>
   </div>
   </main>

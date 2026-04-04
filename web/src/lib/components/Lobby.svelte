@@ -1,6 +1,8 @@
 <script lang="ts">
   import { api } from '$lib/api/client';
   import { Crown } from 'lucide-svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
 
   let {
     session,
@@ -126,11 +128,11 @@
         <div class="space-y-2.5">
           <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Your name</p>
           <form onsubmit={(e) => { e.preventDefault(); join(); }}>
-            <input
+            <Input
               bind:value={joinName}
               placeholder="Enter your name"
-              maxlength="32"
-              class="w-full rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+              maxlength={32}
+              class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
             />
           </form>
         </div>
@@ -139,13 +141,13 @@
           <p class="text-sm text-[var(--destructive)]">{joinError}</p>
         {/if}
 
-        <button
+        <Button
           onclick={join}
           disabled={joining || !joinName.trim()}
-          class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
+          class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
         >
           {joining ? 'Joining…' : 'Join Tournament →'}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -177,12 +179,13 @@
       </div>
       <div class="flex items-center gap-2 rounded-xl bg-[var(--surface)] px-3 py-2.5">
         <span class="flex-1 truncate text-xs text-[var(--text-secondary)]">{joinUrl}</span>
-        <button
+        <Button
           onclick={copyLink}
-          class="shrink-0 text-xs font-semibold text-[var(--primary)] transition-colors hover:text-[var(--primary-hover)]"
+          variant="ghost"
+          class="h-auto shrink-0 p-0 text-xs font-semibold text-[var(--primary)] hover:bg-transparent hover:text-[var(--primary-hover)]"
         >
           {copied ? 'Copied!' : 'Copy'}
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -191,19 +194,19 @@
       <div class="space-y-2">
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Add player</p>
         <form onsubmit={(e) => { e.preventDefault(); join(); }} class="flex gap-2">
-          <input
+          <Input
             bind:value={joinName}
             placeholder="Player name"
-            maxlength="32"
-            class="flex-1 rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+            maxlength={32}
+            class="flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3 text-sm"
           />
-          <button
+          <Button
             type="submit"
             disabled={joining || !joinName.trim()}
-            class="rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white disabled:opacity-50"
+            class="h-auto rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white"
           >
             {joining ? '…' : 'Add'}
-          </button>
+          </Button>
         </form>
         {#if joinError}
           <p class="text-sm text-[var(--destructive)]">{joinError}</p>
@@ -244,19 +247,19 @@
     {#if !isAdmin && !alreadyJoined}
       <div class="space-y-2">
         <form onsubmit={(e) => { e.preventDefault(); join(); }} class="flex gap-2">
-          <input
+          <Input
             bind:value={joinName}
             placeholder="Your name"
-            maxlength="32"
-            class="flex-1 rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+            maxlength={32}
+            class="flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3 text-sm"
           />
-          <button
+          <Button
             type="submit"
             disabled={joining || !joinName.trim()}
-            class="rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white disabled:opacity-50"
+            class="h-auto rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white"
           >
             {joining ? '…' : 'Join'}
-          </button>
+          </Button>
         </form>
         {#if joinError}
           <p class="text-sm text-[var(--destructive)]">{joinError}</p>
@@ -267,33 +270,35 @@
     <!-- Admin controls -->
     {#if isAdmin}
       <div class="space-y-2">
-        <button
+        <Button
           onclick={start}
           disabled={starting || !canStart}
-          class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-40"
+          class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
         >
           {starting ? 'Starting…' : 'Start session →'}
-        </button>
+        </Button>
         {#if !canStart}
           <p class="text-center text-xs text-[var(--text-disabled)]">
             Need at least {session.courts * 4} players to start
           </p>
         {/if}
-        <button
+        <Button
           onclick={cancel}
           disabled={cancelling}
-          class="w-full text-sm text-[var(--text-secondary)] underline-offset-2 hover:text-[var(--destructive)] hover:underline disabled:opacity-50"
+          variant="ghost"
+          class="h-auto w-full text-sm text-[var(--text-secondary)] underline-offset-2 hover:bg-transparent hover:text-[var(--destructive)] hover:underline"
         >
           {cancelling ? 'Cancelling…' : 'Cancel tournament'}
-        </button>
+        </Button>
         {#if isDev}
-          <button
+          <Button
             onclick={seedPlayers}
             disabled={seeding}
-            class="w-full text-sm text-[var(--text-disabled)] underline-offset-2 hover:underline disabled:opacity-50"
+            variant="ghost"
+            class="h-auto w-full text-sm text-[var(--text-disabled)] underline-offset-2 hover:bg-transparent hover:underline"
           >
             {seeding ? 'Adding…' : '[dev] Fill with test players'}
-          </button>
+          </Button>
         {/if}
       </div>
     {:else}
