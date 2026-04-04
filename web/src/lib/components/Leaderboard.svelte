@@ -107,22 +107,23 @@
 
       <!-- Rows -->
       {#each leaderboard.standings as s, i (s.player_id)}
-        <div class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] items-center gap-2 rounded-2xl px-4 py-3.5
-          {i % 2 === 0 ? 'bg-[var(--surface-raised)]' : 'bg-transparent'}">
-          <span class="text-sm font-[800] tabular-nums {s.rank === 1 ? 'text-[var(--primary)]' : 'text-[var(--text-disabled)]'}">
+        {@const podiumBg = s.rank === 1 ? 'bg-[var(--primary)]' : s.rank === 2 ? 'bg-[#4a7856]' : s.rank === 3 ? 'bg-[#a8c5b0]' : i % 2 === 0 ? 'bg-[var(--surface-raised)]' : 'bg-transparent'}
+        {@const isPodium = s.rank <= 3}
+        <div class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] items-center gap-2 rounded-2xl px-4 py-3.5 {podiumBg}">
+          <span class="text-sm font-[800] tabular-nums {isPodium ? 'text-white' : 'text-[var(--text-disabled)]'}">
             {s.rank}
           </span>
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {isPodium ? 'bg-white/20 text-white' : 'bg-[var(--primary-muted)] text-[var(--primary)]'} text-xs font-[800]">
               {s.name[0].toUpperCase()}
             </div>
-            <span class="truncate text-sm font-semibold">{s.name}</span>
+            <span class="truncate text-sm font-semibold {isPodium ? 'text-white' : ''}">{s.name}</span>
           </div>
-          <span class="text-center text-sm text-[var(--text-secondary)]">{s.games_played ?? 0}</span>
-          <span class="text-center text-sm font-semibold {s.rank === 1 ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}">
+          <span class="text-center text-sm {isPodium ? 'text-white/70' : 'text-[var(--text-secondary)]'}">{s.games_played ?? 0}</span>
+          <span class="text-center text-sm font-semibold {isPodium ? 'text-white/70' : 'text-[var(--text-secondary)]'}">
             {s.wins ?? 0}/{s.draws ?? 0}/{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}
           </span>
-          <span class="text-right text-base font-[800] tabular-nums">{s.points}</span>
+          <span class="text-right text-base font-[800] tabular-nums {isPodium ? 'text-white' : ''}">{s.points}</span>
         </div>
       {/each}
     </div>
