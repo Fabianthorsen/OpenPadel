@@ -8,10 +8,17 @@
   let name = $state('');
   let creating = $state(false);
   let error = $state('');
+  let shaking = $state(false);
+
+  function shake() {
+    shaking = false;
+    requestAnimationFrame(() => { shaking = true; });
+    setTimeout(() => { shaking = false; }, 400);
+  }
   let joinCode = $state('');
 
   async function create() {
-    if (!name.trim()) { error = 'Enter your name'; return; }
+    if (!name.trim()) { error = 'Enter your name'; shake(); return; }
     creating = true;
     error = '';
     try {
@@ -164,9 +171,10 @@
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Organiser name</p>
         <input
           bind:value={name}
+          oninput={() => (error = '')}
           placeholder="Your name"
           maxlength="32"
-          class="w-full rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+          class="w-full rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 text-sm outline-none ring-2 transition-colors {error ? 'ring-[var(--destructive)]/60' : 'ring-transparent focus:ring-[var(--primary)]/30'} {shaking ? 'shake' : ''}"
         />
       </div>
 
@@ -177,10 +185,6 @@
           You'll be able to invite players after creating the session.
         </p>
       </div>
-
-      {#if error}
-        <p class="text-sm text-[var(--destructive)]">{error}</p>
-      {/if}
 
       <button
         onclick={create}
