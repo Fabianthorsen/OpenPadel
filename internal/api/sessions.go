@@ -86,7 +86,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totalRounds := len(active)
+	totalRounds := len(active) - 1
 	rounds := scheduler.Generate(active, sess.Courts, totalRounds)
 
 	if err := h.store.SaveRounds(id, rounds); err != nil {

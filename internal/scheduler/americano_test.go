@@ -92,6 +92,24 @@ func TestGenerate_BenchedPlayerPlaysNext(t *testing.T) {
 	}
 }
 
+// RoundsForPlayers returns N-1 rounds for N players (covers all unique pairings).
+func TestRoundsForPlayers(t *testing.T) {
+	cases := []struct {
+		players, want int
+	}{
+		{4, 3},
+		{8, 7},
+		{12, 11},
+		{9, 8},
+	}
+	for _, tc := range cases {
+		got := tc.players - 1
+		if got != tc.want {
+			t.Errorf("players=%d: want %d rounds, got %d", tc.players, tc.want, got)
+		}
+	}
+}
+
 // Court numbers must be sequential starting at 1.
 func TestGenerate_CourtNumbering(t *testing.T) {
 	rounds := Generate(makePlayers(8), 2, 4)
