@@ -60,7 +60,8 @@
   "invite_joining": "Blir med…",
 
   "active_round_of": "Runde {current} av {total}",
-  "active_courts": "{n, plural, one {# bane} other {# baner}}",
+  "active_courts_one": "{n} bane",
+  "active_courts_other": "{n} baner",
   "active_tab_live": "Direkte",
   "active_tab_standings": "Stilling",
   "active_target_label": "Mål",

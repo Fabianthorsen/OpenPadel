@@ -17,6 +17,7 @@
   let shaking = $state(false);
   let joinCode = $state('');
   let rejoinSession = $state<App.Session | null>(null);
+  let rejoinHref = $state('');
 
   onMount(async () => {
     const lastId = localStorage.getItem('last_session_id');
@@ -24,7 +25,10 @@
     try {
       const token = localStorage.getItem(`admin_token_${lastId}`) ?? undefined;
       const s = await api.sessions.get(lastId, token);
-      if (s.status === 'lobby' || s.status === 'active') rejoinSession = s;
+      if (s.status === 'lobby' || s.status === 'active') {
+        rejoinSession = s;
+        rejoinHref = token ? `/s/${lastId}?token=${token}` : `/s/${lastId}`;
+      }
     } catch {
       localStorage.removeItem('last_session_id');
     }
@@ -74,7 +78,7 @@
       <div class="space-y-4">
         {#if rejoinSession}
           <a
-            href="/s/{rejoinSession.id}{localStorage.getItem(`admin_token_${rejoinSession.id}`) ? `?token=${localStorage.getItem(`admin_token_${rejoinSession.id}`)}` : ''}"
+            href={rejoinHref}
             class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 transition-colors hover:bg-[var(--border)]"
           >
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)]">

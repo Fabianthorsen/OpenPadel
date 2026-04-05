@@ -175,7 +175,7 @@
         <p class="text-sm font-semibold text-[var(--primary)]">{session.name || 'NotTennis'}</p>
       </div>
       <div class="text-right text-xs text-[var(--text-secondary)]">
-        {$_('active_courts', { values: { n: session.courts } })} · {session.points} pts · Americano
+        {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · Americano
       </div>
     </nav>
 

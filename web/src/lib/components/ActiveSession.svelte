@@ -133,7 +133,7 @@
           {$_('active_round_of', { values: { current: currentRound.number, total: session.rounds_total } })}
         </h2>
         <p class="mt-1 text-sm text-[var(--text-secondary)]">
-          {$_('active_courts', { values: { n: session.courts } })}
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })}
         </p>
       </div>
       <div class="rounded-xl bg-[var(--surface-raised)] px-4 py-2 text-center">

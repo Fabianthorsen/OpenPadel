@@ -60,7 +60,8 @@
   "invite_joining": "Joining…",
 
   "active_round_of": "Round {current} of {total}",
-  "active_courts": "{n, plural, one {# court} other {# courts}}",
+  "active_courts_one": "{n} court",
+  "active_courts_other": "{n} courts",
   "active_tab_live": "Live Score",
   "active_tab_standings": "Standings",
   "active_target_label": "Target",
