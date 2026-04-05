@@ -7,27 +7,38 @@
   import { Input } from '$lib/components/ui/input';
   import { _ } from 'svelte-i18n';
 
+  const redirect = page.url.searchParams.get('redirect') ?? '';
+
   $effect(() => {
-    if (auth.ready && auth.user) goto('/profile');
+    if (auth.ready && auth.user) goto(redirect || '/profile');
   });
 
   const resetSuccess = page.url.searchParams.get('reset') === '1';
 
   let mode = $state<'login' | 'register'>(page.url.searchParams.get('register') === '1' ? 'register' : 'login');
-  let showBanner = $state(resetSuccess);
+  let banner = $state<{ text: string; kind: 'success' | 'error' } | null>(
+    resetSuccess ? { text: '', kind: 'success' } : null
+  );
   let email = $state('');
   let password = $state('');
   let firstName = $state('');
   let lastName = $state('');
-  let error = $state('');
   let loading = $state(false);
 
-  if (resetSuccess) {
-    setTimeout(() => { showBanner = false; }, 5000);
+  // Set success banner text once translations load
+  $effect(() => {
+    if (resetSuccess && banner?.kind === 'success') {
+      banner = { text: $_('reset_success_banner'), kind: 'success' };
+      setTimeout(() => { banner = null; }, 5000);
+    }
+  });
+
+  function showError(msg: string) {
+    banner = { text: msg, kind: 'error' };
   }
 
   async function submit() {
-    error = '';
+    banner = null;
     loading = true;
     try {
       if (mode === 'login') {
@@ -35,22 +46,26 @@
       } else {
         await auth.register(email, `${firstName.trim()} ${lastName.trim()}`.trim(), password);
       }
-      goto('/');
+      goto(redirect || '/');
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Something went wrong';
+      showError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
       loading = false;
     }
   }
 </script>
 
-{#if showBanner}
-  <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--primary)] px-4 py-3 text-sm font-semibold text-white">
-    {$_('reset_success_banner')}
+{#if banner}
+  <div
+    transition:fly={{ y: -48, duration: 400 }}
+    class="fixed inset-x-0 top-0 z-50 flex items-center justify-center px-4 py-3 text-sm font-semibold text-white
+      {banner.kind === 'error' ? 'bg-[var(--destructive)]' : 'bg-[var(--primary)]'}"
+  >
+    {banner.text}
   </div>
 {/if}
 
-<main class="flex min-h-svh flex-col items-center px-6 py-12" class:pt-16={showBanner}>
+<main class="flex min-h-svh flex-col items-center px-6 py-12" class:pt-16={!!banner}>
   <div class="flex w-full max-w-sm flex-1 flex-col justify-center space-y-8">
 
     <!-- Brand -->
@@ -107,10 +122,6 @@
           class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
         />
       </div>
-
-      {#if error}
-        <p class="text-sm text-[var(--destructive)]">{error}</p>
-      {/if}
 
       <Button
         type="submit"

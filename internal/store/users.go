@@ -129,6 +129,7 @@ func (s *Store) GetCareerStats(userID string) (*domain.CareerStats, error) {
 				END
 			), 0) AS total_points
 		FROM players p
+		JOIN sessions s ON s.id = p.session_id AND s.status = 'complete'
 		LEFT JOIN rounds r ON r.session_id = p.session_id
 		LEFT JOIN matches m ON m.round_id = r.id
 			AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
@@ -258,7 +259,7 @@ func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryE
 			rk.games_played
 		FROM ranked rk
 		JOIN sessions s ON s.id = rk.session_id
-		WHERE rk.user_id = ?
+		WHERE rk.user_id = ? AND s.status = 'complete'
 		ORDER BY s.created_at DESC`,
 		userID,
 	)
@@ -277,6 +278,49 @@ func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryE
 	}
 	if entries == nil {
 		entries = []domain.TournamentHistoryEntry{}
+	}
+	return entries, rows.Err()
+}
+
+func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, error) {
+	rows, err := s.db.Query(`
+		SELECT
+			s.id,
+			COALESCE(NULLIF(s.name, ''), 'NotTennis'),
+			s.status,
+			s.courts,
+			COUNT(p2.id) AS player_count,
+			s.scheduled_at
+		FROM players p
+		JOIN sessions s ON s.id = p.session_id
+		LEFT JOIN players p2 ON p2.session_id = s.id AND p2.active = 1
+		WHERE p.user_id = ? AND p.active = 1 AND s.status IN ('lobby', 'active')
+		GROUP BY s.id
+		ORDER BY s.status DESC, COALESCE(s.scheduled_at, s.created_at) ASC`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []domain.UpcomingEntry
+	for rows.Next() {
+		var e domain.UpcomingEntry
+		var scheduledAt *string
+		if err := rows.Scan(&e.SessionID, &e.Name, &e.Status, &e.Courts, &e.PlayerCount, &scheduledAt); err != nil {
+			return nil, err
+		}
+		if scheduledAt != nil {
+			t, err := time.Parse(time.RFC3339, *scheduledAt)
+			if err == nil {
+				e.ScheduledAt = &t
+			}
+		}
+		entries = append(entries, e)
+	}
+	if entries == nil {
+		entries = []domain.UpcomingEntry{}
 	}
 	return entries, rows.Err()
 }

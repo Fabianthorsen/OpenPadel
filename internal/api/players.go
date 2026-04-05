@@ -58,7 +58,12 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the joiner is the admin and no creator is set yet, mark them as creator.
-	if isAdmin(extractAdminToken(r), sess.AdminToken) && sess.CreatorPlayerID == "" {
+	// Accept admin token from Authorization header OR X-Admin-Token header.
+	adminToken := extractAdminToken(r)
+	if adminToken == "" {
+		adminToken = r.Header.Get("X-Admin-Token")
+	}
+	if isAdmin(adminToken, sess.AdminToken) && sess.CreatorPlayerID == "" {
 		h.store.SetCreatorPlayer(id, player.ID) //nolint:errcheck
 	}
 
@@ -78,7 +83,10 @@ func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "could not load session")
 		return
 	}
-	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
+	// Allow admin OR the player removing themselves (via their player token stored in localStorage key).
+	// We identify self-removal by a "Player-Id" header matching the target player ID.
+	selfRemoval := r.Header.Get("X-Player-Id") == playerID && playerID != ""
+	if !isAdmin(extractAdminToken(r), sess.AdminToken) && !selfRemoval {
 		respondError(w, http.StatusForbidden, "admin access required")
 		return
 	}

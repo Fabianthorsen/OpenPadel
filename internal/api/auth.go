@@ -130,7 +130,13 @@ func (h *Handler) history(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "could not load history")
 		return
 	}
-	respond(w, http.StatusOK, map[string]any{"tournaments": entries})
+	upcoming, err := h.store.GetUpcomingTournaments(user.ID)
+	if err != nil {
+		log.Printf("history: GetUpcomingTournaments failed: %v", err)
+		respondError(w, http.StatusInternalServerError, "could not load upcoming")
+		return
+	}
+	respond(w, http.StatusOK, map[string]any{"tournaments": entries, "upcoming": upcoming})
 }
 
 func (h *Handler) forgotPassword(w http.ResponseWriter, r *http.Request) {

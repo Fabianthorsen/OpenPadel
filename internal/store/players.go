@@ -33,7 +33,7 @@ func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, er
 
 func (s *Store) GetPlayers(sessionID string) ([]domain.Player, error) {
 	rows, err := s.db.Query(
-		`SELECT id, session_id, name, active, joined_at FROM players WHERE session_id = ? ORDER BY joined_at`,
+		`SELECT id, session_id, COALESCE(user_id, ''), name, active, joined_at FROM players WHERE session_id = ? ORDER BY joined_at`,
 		sessionID,
 	)
 	if err != nil {
@@ -72,7 +72,7 @@ func scanPlayers(rows *sql.Rows) ([]domain.Player, error) {
 		var p domain.Player
 		var active int
 		var joinedAt string
-		if err := rows.Scan(&p.ID, &p.SessionID, &p.Name, &active, &joinedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.SessionID, &p.UserID, &p.Name, &active, &joinedAt); err != nil {
 			return nil, err
 		}
 		p.Active = active == 1
