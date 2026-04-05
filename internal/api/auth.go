@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/fabianthorsen/nottennis/internal/store"
@@ -33,6 +34,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		log.Printf("register: CreateUser failed: %v", err)
 		respondError(w, http.StatusInternalServerError, "could not create user")
 		return
 	}
@@ -96,5 +98,23 @@ func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respond(w, http.StatusOK, user)
+}
+
+func (h *Handler) profile(w http.ResponseWriter, r *http.Request) {
+	user := userFromContext(r)
+	if user == nil {
+		respondError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+	stats, err := h.store.GetCareerStats(user.ID)
+	if err != nil {
+		log.Printf("profile: GetCareerStats failed: %v", err)
+		respondError(w, http.StatusInternalServerError, "could not load stats")
+		return
+	}
+	respond(w, http.StatusOK, map[string]any{
+		"user":  user,
+		"stats": stats,
+	})
 }
 

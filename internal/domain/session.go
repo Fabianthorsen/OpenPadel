@@ -15,6 +15,15 @@ type AuthToken struct {
 	UserID string `json:"user_id"`
 }
 
+type CareerStats struct {
+	GamesPlayed  int `json:"games_played"`
+	Wins         int `json:"wins"`
+	Draws        int `json:"draws"`
+	Losses       int `json:"losses"`
+	TotalPoints  int `json:"total_points"`
+	Tournaments  int `json:"tournaments"`
+}
+
 type SessionStatus string
 
 const (

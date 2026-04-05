@@ -119,6 +119,13 @@
   "auth_sign_in": "Logg inn",
   "auth_sign_out": "Logg ut",
 
+  "profile_tournaments": "Turneringer spilt",
+  "profile_games": "Kamper",
+  "profile_win_rate": "Seierrate",
+  "profile_total_points": "Totale poeng",
+  "profile_no_games": "Ingen kamper spilt ennå — bli med i en turnering for å komme i gang.",
+  "profile_new_tournament": "Ny turnering →",
+
   "cancel_dialog_title": "Avslutt turneringen?",
   "cancel_dialog_desc": "Dette avslutter turneringen for alle. Dette kan ikke angres.",
   "cancel_dialog_confirm": "Ja, avslutt turnering",

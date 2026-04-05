@@ -8,6 +8,15 @@ declare global {
       created_at: string;
     }
 
+    interface CareerStats {
+      games_played: number;
+      wins: number;
+      draws: number;
+      losses: number;
+      total_points: number;
+      tournaments: number;
+    }
+
     type SessionStatus = 'lobby' | 'active' | 'complete';
 
     interface Session {

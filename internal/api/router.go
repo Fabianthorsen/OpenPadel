@@ -55,6 +55,7 @@ func NewRouter(s *store.Store) http.Handler {
 		r.Post("/auth/login", h.login)
 		r.Post("/auth/logout", h.logout)
 		r.With(h.requireAuth).Get("/auth/me", h.me)
+		r.With(h.requireAuth).Get("/auth/profile", h.profile)
 
 		r.Post("/sessions", h.createSession)
 

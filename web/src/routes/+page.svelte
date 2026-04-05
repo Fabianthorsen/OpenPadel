@@ -12,7 +12,7 @@
   let courts = $state(2);
   let points = $state(24);
   let tournamentName = $state('');
-  let name = $state('');
+  let name = $state(auth.user?.display_name ?? '');
   let creating = $state(false);
   let error = $state('');
   let shaking = $state(false);
@@ -133,18 +133,13 @@
     <!-- Auth -->
     <div class="flex justify-center pt-6">
       {#if auth.user}
-        <div class="flex items-center gap-3">
+        <a href="/profile" class="flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-[var(--surface-raised)]">
           <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
             {auth.user.display_name[0].toUpperCase()}
           </div>
           <span class="text-sm font-semibold">{auth.user.display_name}</span>
-          <button
-            onclick={() => auth.logout()}
-            class="text-xs text-[var(--text-disabled)] hover:text-[var(--destructive)]"
-          >
-            {$_('auth_sign_out')}
-          </button>
-        </div>
+          <span class="text-xs text-[var(--text-disabled)]">→</span>
+        </a>
       {:else}
         <a href="/auth" class="text-sm font-semibold text-[var(--primary)] hover:text-[var(--primary-hover)]">
           {$_('auth_sign_in')} →

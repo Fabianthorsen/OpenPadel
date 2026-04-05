@@ -119,6 +119,13 @@
   "auth_sign_in": "Sign in",
   "auth_sign_out": "Sign out",
 
+  "profile_tournaments": "Tournaments played",
+  "profile_games": "Games",
+  "profile_win_rate": "Win rate",
+  "profile_total_points": "Total points",
+  "profile_no_games": "No games played yet — join a tournament to get started.",
+  "profile_new_tournament": "New tournament →",
+
   "cancel_dialog_title": "Cancel tournament?",
   "cancel_dialog_desc": "This will end the tournament for everyone. This cannot be undone.",
   "cancel_dialog_confirm": "Yes, cancel tournament",

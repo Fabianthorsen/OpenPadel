@@ -35,6 +35,8 @@ export const api = {
       request<void>('POST', '/auth/logout', undefined, token),
     me: (token: string) =>
       request<App.User>('GET', '/auth/me', undefined, token),
+    profile: (token: string) =>
+      request<{ user: App.User; stats: App.CareerStats }>('GET', '/auth/profile', undefined, token),
   },
   sessions: {
     create: (courts: number, points: number, name: string) =>

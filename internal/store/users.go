@@ -102,6 +102,44 @@ func (s *Store) DeleteAuthToken(token string) error {
 	return err
 }
 
+func (s *Store) GetCareerStats(userID string) (*domain.CareerStats, error) {
+	var stats domain.CareerStats
+	err := s.db.QueryRow(`
+		SELECT
+			COUNT(DISTINCT p.session_id) AS tournaments,
+			COUNT(m.id) AS games_played,
+			COALESCE(SUM(
+				CASE
+					WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
+					WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
+					ELSE 0
+				END
+			), 0) AS wins,
+			COALESCE(SUM(
+				CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END
+			), 0) AS draws,
+			COALESCE(SUM(
+				CASE
+					WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
+					WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
+					ELSE 0
+				END
+			), 0) AS total_points
+		FROM players p
+		LEFT JOIN rounds r ON r.session_id = p.session_id
+		LEFT JOIN matches m ON m.round_id = r.id
+			AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
+			AND m.score_a IS NOT NULL
+		WHERE p.user_id = ? AND p.active = 1`,
+		userID,
+	).Scan(&stats.Tournaments, &stats.GamesPlayed, &stats.Wins, &stats.Draws, &stats.TotalPoints)
+	if err != nil {
+		return nil, err
+	}
+	stats.Losses = stats.GamesPlayed - stats.Wins - stats.Draws
+	return &stats, nil
+}
+
 func scanUser(row *sql.Row) (*domain.User, error) {
 	var u domain.User
 	var createdAt string

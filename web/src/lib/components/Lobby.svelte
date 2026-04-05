@@ -1,5 +1,6 @@
 <script lang="ts">
   import { api } from '$lib/api/client';
+  import { auth } from '$lib/auth.svelte';
   import { Crown, Share2, Check } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -26,7 +27,7 @@
   let cancelling = $state(false);
   let showCancelDialog = $state(false);
   let seeding = $state(false);
-  let joinName = $state('');
+  let joinName = $state(auth.user?.display_name ?? '');
   let joining = $state(false);
   let joinError = $state('');
 
