@@ -30,7 +30,7 @@
   let submitting = $state<Record<string, boolean>>({});
   let submitError = $state<Record<string, string>>({});
   let editing = $state<Record<string, boolean>>({});
-  let serving = $state<Record<string, 'a' | 'b'>>({});
+  let initialServer = $state<Record<string, 'a' | 'b'>>({});
   let advancing = $state(false);
   let showCancelDialog = $state(false);
   let cancelling = $state(false);
@@ -42,7 +42,7 @@
       } else if (!(m.id in scores)) {
         scores[m.id] = { a: 0, b: 0 };
       }
-      if (!(m.id in serving)) serving[m.id] = 'a';
+      if (!(m.id in initialServer)) initialServer[m.id] = 'a';
     }
   });
 
@@ -272,11 +272,16 @@
 
         {:else}
           <!-- Score entry: two team cards with tapper -->
+          {@const totalPoints = s.a + s.b}
+          {@const rotations = Math.floor(totalPoints / 4)}
+          {@const currentServer = rotations % 2 === 0
+            ? (initialServer[match.id] ?? 'a')
+            : (initialServer[match.id] === 'a' ? 'b' : 'a')}
           {#each (['a', 'b'] as const) as team}
             {@const teamPlayers = team === 'a'
               ? [playerName[match.team_a[0]], playerName[match.team_a[1]]]
               : [playerName[match.team_b[0]], playerName[match.team_b[1]]]}
-            {@const isServing = serving[match.id] === team}
+            {@const isServing = currentServer === team}
             <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4">
               <div class="mb-4 flex items-start justify-between">
                 <div class="space-y-1">
@@ -287,17 +292,22 @@
                     <p class="font-[700] text-[var(--text-primary)] {i > 0 ? 'opacity-75' : ''}">{pname}</p>
                   {/each}
                 </div>
-                <button
-                  onclick={() => (serving[match.id] = team)}
-                  title={$_('active_serving')}
-                  class="mt-0.5 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest transition-colors
-                    {isServing
-                      ? 'bg-[var(--primary)] text-white'
-                      : 'bg-[var(--surface)] text-[var(--text-disabled)] hover:text-[var(--text-secondary)]'}"
-                >
-                  <div class="h-1.5 w-1.5 rounded-full {isServing ? 'bg-white' : 'bg-[var(--text-disabled)]'}"></div>
-                  {$_('active_serve')}
-                </button>
+                {#if isServing}
+                  <div class="mt-0.5 flex items-center gap-1.5 rounded-full bg-[var(--primary)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
+                    <div class="h-1.5 w-1.5 rounded-full bg-white"></div>
+                    {$_('active_serve')}
+                  </div>
+                {:else}
+                  <!-- tap to set who served first this match -->
+                  <button
+                    onclick={() => (initialServer[match.id] = team)}
+                    title={$_('active_serving')}
+                    class="mt-0.5 flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)] transition-colors hover:text-[var(--text-secondary)]"
+                  >
+                    <div class="h-1.5 w-1.5 rounded-full bg-[var(--text-disabled)]"></div>
+                    {$_('active_serve')}
+                  </button>
+                {/if}
               </div>
               <div class="flex items-center justify-between gap-4">
                 <button
