@@ -115,7 +115,7 @@ func (s *Store) GetCurrentRound(sessionID string) (*domain.Round, error) {
 
 func (s *Store) GetMatch(matchID string) (*domain.Match, error) {
 	row := s.db.QueryRow(
-		`SELECT id, round_id, court, p1, p2, p3, p4, score_a, score_b FROM matches WHERE id = ?`,
+		`SELECT id, round_id, court, p1, p2, p3, p4, score_a, score_b, live_a, live_b, server FROM matches WHERE id = ?`,
 		matchID,
 	)
 	return scanMatch(row)
@@ -123,13 +123,21 @@ func (s *Store) GetMatch(matchID string) (*domain.Match, error) {
 
 func (s *Store) UpdateScore(matchID string, scoreA, scoreB int) (*domain.Match, error) {
 	_, err := s.db.Exec(
-		`UPDATE matches SET score_a = ?, score_b = ? WHERE id = ?`,
+		`UPDATE matches SET score_a = ?, score_b = ?, live_a = NULL, live_b = NULL WHERE id = ?`,
 		scoreA, scoreB, matchID,
 	)
 	if err != nil {
 		return nil, err
 	}
 	return s.GetMatch(matchID)
+}
+
+func (s *Store) UpdateLiveScore(matchID, server string, a, b int) error {
+	_, err := s.db.Exec(
+		`UPDATE matches SET live_a = ?, live_b = ?, server = ? WHERE id = ?`,
+		a, b, server, matchID,
+	)
+	return err
 }
 
 func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
@@ -221,7 +229,7 @@ func (s *Store) getBench(roundID string) ([]string, error) {
 
 func (s *Store) getMatches(roundID string) ([]domain.Match, error) {
 	rows, err := s.db.Query(
-		`SELECT id, round_id, court, p1, p2, p3, p4, score_a, score_b FROM matches WHERE round_id = ? ORDER BY court`,
+		`SELECT id, round_id, court, p1, p2, p3, p4, score_a, score_b, live_a, live_b, server FROM matches WHERE round_id = ? ORDER BY court`,
 		roundID,
 	)
 	if err != nil {
@@ -235,6 +243,7 @@ func (s *Store) getMatches(roundID string) ([]domain.Match, error) {
 		if err := rows.Scan(
 			&row.vals[0], &row.vals[1], &row.vals[2], &row.vals[3], &row.vals[4],
 			&row.vals[5], &row.vals[6], &row.vals[7], &row.vals[8],
+			&row.vals[9], &row.vals[10], &row.vals[11],
 		); err != nil {
 			return nil, err
 		}
@@ -252,7 +261,7 @@ func (s *Store) getMatches(roundID string) ([]domain.Match, error) {
 
 // singleRow lets us reuse scanMatch for both sql.Row and sql.Rows.
 type singleRow struct {
-	vals [9]any
+	vals [12]any
 	idx  int
 }
 
@@ -276,6 +285,14 @@ func (r *singleRow) Scan(dest ...any) error {
 			case nil:
 				v.Valid = false
 			}
+		case *sql.NullString:
+			switch sv := r.vals[i].(type) {
+			case string:
+				v.String = sv
+				v.Valid = true
+			case nil:
+				v.Valid = false
+			}
 		}
 	}
 	return nil
@@ -286,10 +303,12 @@ func scanMatch(s interface {
 }) (*domain.Match, error) {
 	var m domain.Match
 	var scoreA, scoreB sql.NullInt64
+	var liveA, liveB sql.NullInt64
+	var server sql.NullString
 	if err := s.Scan(
 		&m.ID, &m.RoundID, &m.Court,
 		&m.TeamA[0], &m.TeamA[1], &m.TeamB[0], &m.TeamB[1],
-		&scoreA, &scoreB,
+		&scoreA, &scoreB, &liveA, &liveB, &server,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
@@ -298,6 +317,9 @@ func scanMatch(s interface {
 	}
 	if scoreA.Valid {
 		m.Score = &domain.Score{A: int(scoreA.Int64), B: int(scoreB.Int64)}
+	}
+	if liveA.Valid {
+		m.Live = &domain.LiveScore{A: int(liveA.Int64), B: int(liveB.Int64), Server: server.String}
 	}
 	return &m, nil
 }

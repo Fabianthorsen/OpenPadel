@@ -44,6 +44,20 @@ var migrations = []string{
 	`ALTER TABLE sessions ADD COLUMN current_round INTEGER NOT NULL DEFAULT 1`,
 	`ALTER TABLE sessions ADD COLUMN name TEXT NOT NULL DEFAULT ''`,
 	`ALTER TABLE players ADD COLUMN user_id TEXT REFERENCES users(id)`,
+	`ALTER TABLE sessions ADD COLUMN scheduled_at TEXT`,
+	`DROP INDEX IF EXISTS idx_players_session_name`,
+	`CREATE UNIQUE INDEX IF NOT EXISTS idx_players_session_name ON players(session_id, name) WHERE active = 1`,
+	`ALTER TABLE matches ADD COLUMN live_a INTEGER`,
+	`ALTER TABLE matches ADD COLUMN live_b INTEGER`,
+	`ALTER TABLE matches ADD COLUMN server TEXT`,
+	`CREATE TABLE IF NOT EXISTS push_subscriptions (
+		id         TEXT PRIMARY KEY,
+		user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		endpoint   TEXT NOT NULL UNIQUE,
+		p256dh     TEXT NOT NULL,
+		auth       TEXT NOT NULL,
+		created_at TEXT NOT NULL
+	)`,
 }
 
 const schema = `
@@ -88,7 +102,7 @@ CREATE TABLE IF NOT EXISTS players (
 	joined_at  TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_players_session_name ON players(session_id, name);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_players_session_name ON players(session_id, name) WHERE active = 1;
 CREATE INDEX IF NOT EXISTS idx_players_session ON players(session_id);
 
 CREATE TABLE IF NOT EXISTS rounds (

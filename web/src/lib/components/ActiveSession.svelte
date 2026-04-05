@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { fly } from 'svelte/transition';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { Activity, ChartBar } from 'lucide-svelte';
@@ -27,24 +28,52 @@
     Object.fromEntries(session.players.map((p) => [p.id, p.name]))
   );
 
-  let scores = $state<Record<string, { a: number; b: number }>>({});
+  // localScores: what this client has typed/tapped.
+  // Once set for a match, it is always authoritative for the display —
+  // no dirty flag needed, no jumping back to server state mid-tap.
+  let localScores = $state<Record<string, { a: number; b: number }>>({});
   let submitting = $state<Record<string, boolean>>({});
   let submitError = $state<Record<string, string>>({});
   let editing = $state<Record<string, boolean>>({});
   let initialServer = $state<Record<string, 'a' | 'b'>>({});
+  const saveTimeout: Record<string, ReturnType<typeof setTimeout>> = {};
   let advancing = $state(false);
   let showCancelDialog = $state(false);
   let cancelling = $state(false);
+  let showCloseDialog = $state(false);
+  let closing = $state(false);
+  let actionError = $state('');
 
-  $effect(() => {
+  // scores: computed without writing state — cannot cause reactive cycles.
+  // Priority: edit mode → confirmed score → local taps → server live → zero.
+  const scores = $derived.by(() => {
+    const result: Record<string, { a: number; b: number }> = {};
     for (const m of currentRound.matches) {
-      if (m.score && !(m.id in scores)) {
-        scores[m.id] = { a: m.score.a, b: m.score.b };
-      } else if (!(m.id in scores)) {
-        scores[m.id] = { a: 0, b: 0 };
+      if (editing[m.id]) {
+        result[m.id] = localScores[m.id] ?? { a: 0, b: 0 };
+      } else if (m.score) {
+        result[m.id] = { a: m.score.a, b: m.score.b };
+      } else if (localScores[m.id] !== undefined) {
+        result[m.id] = localScores[m.id];
+      } else if (m.live) {
+        result[m.id] = { a: m.live.a, b: m.live.b };
+      } else {
+        result[m.id] = { a: 0, b: 0 };
       }
-      if (!(m.id in initialServer)) initialServer[m.id] = 'a';
     }
+    return result;
+  });
+
+  // Seed initialServer from server data the first time a match is seen.
+  $effect(() => {
+    const matches = currentRound.matches;
+    untrack(() => {
+      for (const m of matches) {
+        if (!(m.id in initialServer)) {
+          initialServer[m.id] = m.live?.server ?? 'a';
+        }
+      }
+    });
   });
 
   const allScored = $derived(
@@ -52,12 +81,29 @@
     currentRound.matches.every((m) => !editing[m.id])
   );
 
+  function scheduleLiveSave(matchId: string) {
+    clearTimeout(saveTimeout[matchId]);
+    saveTimeout[matchId] = setTimeout(async () => {
+      const current = localScores[matchId];
+      if (!current) return;
+      const srv = initialServer[matchId] ?? 'a';
+      await api.scores.updateLive(session.id, matchId, current.a, current.b, srv).catch(() => {});
+    }, 400);
+  }
+
   function adjust(matchId: string, team: 'a' | 'b', delta: number) {
     const s = scores[matchId] ?? { a: 0, b: 0 };
-    scores[matchId] = { ...s, [team]: Math.max(0, Math.min(session.points, s[team] + delta)) };
+    localScores[matchId] = { ...s, [team]: Math.max(0, Math.min(session.points, s[team] + delta)) };
+    scheduleLiveSave(matchId);
+  }
+
+  function setServer(matchId: string, team: 'a' | 'b') {
+    initialServer[matchId] = team;
+    scheduleLiveSave(matchId);
   }
 
   async function submitScore(matchId: string) {
+    clearTimeout(saveTimeout[matchId]);
     submitError[matchId] = '';
     submitting[matchId] = true;
     const s = scores[matchId];
@@ -72,14 +118,31 @@
     }
   }
 
+  async function closeSession() {
+    closing = true;
+    actionError = '';
+    try {
+      const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+      await api.sessions.close(session.id, adminToken);
+      location.href = '/';
+    } catch (e) {
+      actionError = e instanceof Error ? e.message : 'Could not end tournament';
+      closing = false;
+      setTimeout(() => { actionError = ''; }, 4000);
+    }
+  }
+
   async function cancelSession() {
     cancelling = true;
+    actionError = '';
     try {
       const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
       await api.sessions.cancel(session.id, adminToken);
       location.href = '/';
-    } catch {
+    } catch (e) {
+      actionError = e instanceof Error ? e.message : 'Could not cancel tournament';
       cancelling = false;
+      setTimeout(() => { actionError = ''; }, 4000);
     }
   }
 
@@ -98,6 +161,12 @@
 
   const benchNames = $derived(currentRound.bench.map((id) => playerName[id] ?? id));
 </script>
+
+{#if actionError}
+  <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--destructive)] px-4 py-3 text-sm font-semibold text-white">
+    {actionError}
+  </div>
+{/if}
 
 {#if cancelling}
   <main class="flex min-h-svh flex-col items-center justify-center gap-3 px-6">
@@ -126,6 +195,16 @@
 
 {#if tab === 'round'}
   <main class="mx-auto max-w-[480px] px-4 pb-32 pt-6 space-y-4">
+
+    <!-- Nav -->
+    <div class="flex items-center justify-between">
+      <p class="text-sm font-semibold text-[var(--primary)]">{session.name || 'NotTennis'}</p>
+      <a
+        href="/"
+        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-secondary)]"
+        aria-label="Back to home"
+      >×</a>
+    </div>
 
     <!-- Header -->
     <div class="flex items-start justify-between">
@@ -161,7 +240,7 @@
           {@const sb = match.score!.b}
           {@const isDraw = sa === sb}
           <button
-            onclick={() => { scores[match.id] = { a: sa, b: sb }; editing[match.id] = true; }}
+            onclick={() => { localScores[match.id] = { a: sa, b: sb }; editing[match.id] = true; }}
             class="w-full rounded-2xl overflow-hidden text-left"
           >
             <!-- Team A row -->
@@ -233,7 +312,7 @@
                   value={s[team]}
                   oninput={(e) => {
                     const v = parseInt((e.currentTarget as HTMLInputElement).value) || 0;
-                    scores[match.id] = { ...s, [team]: Math.max(0, Math.min(session.points, v)) };
+                    localScores[match.id] = { ...s, [team]: Math.max(0, Math.min(session.points, v)) };
                   }}
                   class="w-20 shrink-0 rounded-xl border-0 bg-[var(--surface)] px-3 py-2 text-center text-2xl font-[800] tabular-nums text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--primary)]"
                 />
@@ -301,7 +380,7 @@
                 {:else}
                   <!-- tap to set who served first this match -->
                   <button
-                    onclick={() => (initialServer[match.id] = team)}
+                    onclick={() => setServer(match.id, team)}
                     title={$_('active_serving')}
                     class="mt-0.5 flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)] transition-colors hover:text-[var(--text-secondary)]"
                   >
@@ -379,15 +458,15 @@
       </div>
     {/if}
 
-    <!-- Admin: cancel tournament -->
+    <!-- Admin: end tournament -->
     {#if isAdmin}
       <div class="flex justify-center pb-2">
         <button
-          onclick={() => (showCancelDialog = true)}
-          disabled={cancelling}
-          class="rounded-full border border-dashed border-[var(--border)] px-4 py-1.5 text-xs text-[var(--text-disabled)] transition-colors hover:border-[var(--destructive)] hover:text-[var(--destructive)] disabled:opacity-40"
+          onclick={() => (showCloseDialog = true)}
+          disabled={closing}
+          class="rounded-full border border-dashed border-[var(--border)] px-4 py-1.5 text-xs text-[var(--text-disabled)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40"
         >
-          {$_('lobby_cancel')}
+          {$_('active_close')}
         </button>
       </div>
     {/if}
@@ -401,6 +480,16 @@
 {/if}
 
 {/if}
+
+<ConfirmDialog
+  bind:open={showCloseDialog}
+  title={$_('close_dialog_title')}
+  description={$_('close_dialog_desc')}
+  confirmLabel={$_('close_dialog_confirm')}
+  cancelLabel={$_('close_dialog_cancel')}
+  destructive
+  onconfirm={closeSession}
+/>
 
 <ConfirmDialog
   bind:open={showCancelDialog}

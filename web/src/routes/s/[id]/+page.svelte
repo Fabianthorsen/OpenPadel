@@ -12,9 +12,10 @@
   let error = $state('');
   let interval: ReturnType<typeof setInterval>;
 
-  // Poll faster in lobby so players see each other join without waiting
+  // Poll faster in lobby so players see each other join without waiting.
+  // Active sessions use 2s so live score taps are visible to other viewers quickly.
   const POLL_LOBBY = 3_000;
-  const POLL_ACTIVE = 5_000;
+  const POLL_ACTIVE = 2_000;
 
   const sessionId = $derived(page.params.id as string);
 
@@ -38,7 +39,7 @@
       }
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
-        goto('/');
+        goto('/?notfound=1');
         return;
       }
       error = e instanceof Error ? e.message : 'Failed to load session';

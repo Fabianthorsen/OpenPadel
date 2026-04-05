@@ -46,6 +46,15 @@ func (h *Handler) getCurrentRound(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "could not load round")
 		return
 	}
+	// Overlay in-memory live scores for matches that haven't been finalised yet.
+	for i := range round.Matches {
+		m := &round.Matches[i]
+		if m.Score == nil {
+			if ls, ok := h.live.Get(m.ID); ok {
+				m.Live = &domain.LiveScore{A: ls.A, B: ls.B, Server: ls.Server}
+			}
+		}
+	}
 	respond(w, http.StatusOK, round)
 }
 
@@ -93,6 +102,8 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "could not save score")
 		return
 	}
+	// Final score is now in the DB — clear any in-memory live score for this match.
+	h.live.Clear(matchID)
 
 	// Check if all rounds are now complete.
 	done, err := h.store.AllRoundsComplete(sessionID)
@@ -101,6 +112,25 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond(w, http.StatusOK, match)
+}
+
+func (h *Handler) updateLiveScore(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		A      int    `json:"a"`
+		B      int    `json:"b"`
+		Server string `json:"server"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if body.A < 0 || body.B < 0 {
+		respondError(w, http.StatusBadRequest, "scores cannot be negative")
+		return
+	}
+	matchID := chi.URLParam(r, "matchID")
+	h.live.Set(matchID, body.Server, body.A, body.B)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {

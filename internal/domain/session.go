@@ -34,6 +34,15 @@ type TournamentHistoryEntry struct {
 	GamesPlayed int    `json:"games_played"`
 }
 
+type UpcomingEntry struct {
+	SessionID   string     `json:"session_id"`
+	Name        string     `json:"name"`
+	Status      string     `json:"status"`
+	Courts      int        `json:"courts"`
+	PlayerCount int        `json:"player_count"`
+	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
+}
+
 type SessionStatus string
 
 const (
@@ -52,6 +61,7 @@ type Session struct {
 	RoundsTotal     *int          `json:"rounds_total,omitempty"`
 	CurrentRound    *int          `json:"current_round,omitempty"`
 	CreatorPlayerID string        `json:"creator_player_id,omitempty"`
+	ScheduledAt     *time.Time    `json:"scheduled_at,omitempty"`
 	Players         []Player      `json:"players"`
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
@@ -75,17 +85,24 @@ type Round struct {
 }
 
 type Match struct {
-	ID      string    `json:"id"`
-	RoundID string    `json:"round_id"`
-	Court   int       `json:"court"`
-	TeamA   [2]string `json:"team_a"`
-	TeamB   [2]string `json:"team_b"`
-	Score   *Score    `json:"score"`
+	ID      string     `json:"id"`
+	RoundID string     `json:"round_id"`
+	Court   int        `json:"court"`
+	TeamA   [2]string  `json:"team_a"`
+	TeamB   [2]string  `json:"team_b"`
+	Score   *Score     `json:"score"`
+	Live    *LiveScore `json:"live,omitempty"`
 }
 
 type Score struct {
 	A int `json:"a"`
 	B int `json:"b"`
+}
+
+type LiveScore struct {
+	A      int    `json:"a"`
+	B      int    `json:"b"`
+	Server string `json:"server,omitempty"`
 }
 
 type Standing struct {
