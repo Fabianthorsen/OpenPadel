@@ -1,7 +1,7 @@
 <script lang="ts">
   import { api } from '$lib/api/client';
-  import { auth } from '$lib/auth.svelte';
-  import { Crown, Share2, Check } from 'lucide-svelte';
+  import { Crown, Share, Check } from 'lucide-svelte';
+  import { initials } from '$lib/utils';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -27,7 +27,7 @@
   let cancelling = $state(false);
   let showCancelDialog = $state(false);
   let seeding = $state(false);
-  let joinName = $state(auth.user?.display_name ?? '');
+  let joinName = $state('');
   let joining = $state(false);
   let joinError = $state('');
 
@@ -200,7 +200,7 @@
           {#if copied}
             <Check size={16} />
           {:else}
-            <Share2 size={16} />
+            <Share size={16} />
           {/if}
         </Button>
       </div>
@@ -243,7 +243,7 @@
           {#each activePlayers as player (player.id)}
             <div class="flex items-center gap-3 px-4 py-3">
               <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-sm font-semibold text-[var(--primary)]">
-                {player.name[0].toUpperCase()}
+                {initials(player.name)}
               </div>
               <span class="text-sm font-medium">{player.name}</span>
               <div class="ml-auto flex items-center gap-1.5">

@@ -7,16 +7,19 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
+	"github.com/fabianthorsen/nottennis/internal/email"
 	"github.com/fabianthorsen/nottennis/internal/store"
 	"github.com/fabianthorsen/nottennis/internal/ui"
 )
 
 type Handler struct {
-	store *store.Store
+	store  *store.Store
+	email  *email.Client
+	appURL string
 }
 
-func NewRouter(s *store.Store) http.Handler {
-	h := &Handler{store: s}
+func NewRouter(s *store.Store, emailClient *email.Client, appURL string) http.Handler {
+	h := &Handler{store: s, email: emailClient, appURL: appURL}
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -56,6 +59,10 @@ func NewRouter(s *store.Store) http.Handler {
 		r.Post("/auth/logout", h.logout)
 		r.With(h.requireAuth).Get("/auth/me", h.me)
 		r.With(h.requireAuth).Get("/auth/profile", h.profile)
+		r.With(h.requireAuth).Get("/auth/history", h.history)
+		r.With(h.requireAuth).Delete("/auth/account", h.deleteAccount)
+		r.Post("/auth/forgot", h.forgotPassword)
+		r.Post("/auth/reset", h.resetPassword)
 
 		r.Post("/sessions", h.createSession)
 

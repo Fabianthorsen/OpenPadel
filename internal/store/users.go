@@ -2,6 +2,7 @@ package store
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"errors"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/fabianthorsen/nottennis/internal/domain"
 )
+
+var ErrInvalidOrExpiredToken = errors.New("invalid or expired token")
 
 var ErrEmailTaken = errors.New("email already registered")
 var ErrInvalidCredentials = errors.New("invalid email or password")
@@ -138,6 +141,163 @@ func (s *Store) GetCareerStats(userID string) (*domain.CareerStats, error) {
 	}
 	stats.Losses = stats.GamesPlayed - stats.Wins - stats.Draws
 	return &stats, nil
+}
+
+// CreatePasswordResetToken generates a secure token for the given email.
+// Returns the raw token (to be emailed) and ErrNotFound if the email doesn't exist.
+func (s *Store) CreatePasswordResetToken(email string) (rawToken string, err error) {
+	user, err := s.GetUserByEmail(email)
+	if err != nil {
+		return "", err
+	}
+
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	raw := hex.EncodeToString(b)
+	hash := sha256.Sum256([]byte(raw))
+	tokenHash := hex.EncodeToString(hash[:])
+	expiresAt := time.Now().UTC().Add(time.Hour).Format(time.RFC3339)
+
+	// Delete any existing token for this user first
+	s.db.Exec(`DELETE FROM password_reset_tokens WHERE user_id = ?`, user.ID)
+
+	_, err = s.db.Exec(
+		`INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)`,
+		tokenHash, user.ID, expiresAt,
+	)
+	return raw, err
+}
+
+// RedeemPasswordResetToken validates the raw token and updates the user's password.
+func (s *Store) RedeemPasswordResetToken(rawToken, newPassword string) error {
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	var userID, expiresAtStr string
+	err := s.db.QueryRow(
+		`SELECT user_id, expires_at FROM password_reset_tokens WHERE token_hash = ?`, tokenHash,
+	).Scan(&userID, &expiresAtStr)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrInvalidOrExpiredToken
+	}
+	if err != nil {
+		return err
+	}
+
+	expiresAt, _ := time.Parse(time.RFC3339, expiresAtStr)
+	if time.Now().UTC().After(expiresAt) {
+		s.db.Exec(`DELETE FROM password_reset_tokens WHERE token_hash = ?`, tokenHash)
+		return ErrInvalidOrExpiredToken
+	}
+
+	newHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`UPDATE users SET password_hash = ? WHERE id = ?`, string(newHash), userID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM password_reset_tokens WHERE token_hash = ?`, tokenHash); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryEntry, error) {
+	rows, err := s.db.Query(`
+		WITH player_stats AS (
+			SELECT
+				p.id AS player_id,
+				p.session_id,
+				p.user_id,
+				COALESCE(SUM(
+					CASE
+						WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
+						WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
+						ELSE 0
+					END
+				), 0) AS wins,
+				COALESCE(SUM(
+					CASE
+						WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
+						WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
+						ELSE 0
+					END
+				), 0) AS points,
+				COUNT(m.id) AS games_played
+			FROM players p
+			LEFT JOIN rounds r ON r.session_id = p.session_id
+			LEFT JOIN matches m ON m.round_id = r.id
+				AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
+				AND m.score_a IS NOT NULL
+			WHERE p.active = 1
+			GROUP BY p.id
+		),
+		ranked AS (
+			SELECT
+				ps.*,
+				RANK() OVER (PARTITION BY ps.session_id ORDER BY ps.points DESC, ps.wins DESC) AS rank
+			FROM player_stats ps
+		)
+		SELECT
+			s.id,
+			COALESCE(NULLIF(s.name, ''), 'NotTennis'),
+			s.status,
+			s.created_at,
+			rk.rank,
+			rk.points,
+			rk.games_played
+		FROM ranked rk
+		JOIN sessions s ON s.id = rk.session_id
+		WHERE rk.user_id = ?
+		ORDER BY s.created_at DESC`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []domain.TournamentHistoryEntry
+	for rows.Next() {
+		var e domain.TournamentHistoryEntry
+		if err := rows.Scan(&e.SessionID, &e.Name, &e.Status, &e.PlayedAt, &e.Rank, &e.Points, &e.GamesPlayed); err != nil {
+			return nil, err
+		}
+		entries = append(entries, e)
+	}
+	if entries == nil {
+		entries = []domain.TournamentHistoryEntry{}
+	}
+	return entries, rows.Err()
+}
+
+func (s *Store) DeleteUser(userID string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`DELETE FROM auth_tokens WHERE user_id = ?`, userID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`UPDATE players SET user_id = NULL WHERE user_id = ?`, userID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM users WHERE id = ?`, userID); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func scanUser(row *sql.Row) (*domain.User, error) {

@@ -37,6 +37,14 @@ export const api = {
       request<App.User>('GET', '/auth/me', undefined, token),
     profile: (token: string) =>
       request<{ user: App.User; stats: App.CareerStats }>('GET', '/auth/profile', undefined, token),
+    history: (token: string) =>
+      request<{ tournaments: App.TournamentEntry[] }>('GET', '/auth/history', undefined, token),
+    deleteAccount: (token: string) =>
+      request<void>('DELETE', '/auth/account', undefined, token),
+    forgotPassword: (email: string) =>
+      request<void>('POST', '/auth/forgot', { email }),
+    resetPassword: (token: string, password: string) =>
+      request<void>('POST', '/auth/reset', { token, password }),
   },
   sessions: {
     create: (courts: number, points: number, name: string) =>

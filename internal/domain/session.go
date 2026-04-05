@@ -24,6 +24,16 @@ type CareerStats struct {
 	Tournaments  int `json:"tournaments"`
 }
 
+type TournamentHistoryEntry struct {
+	SessionID   string `json:"session_id"`
+	Name        string `json:"name"`
+	Status      string `json:"status"`
+	PlayedAt    string `json:"played_at"`
+	Rank        int    `json:"rank"`
+	Points      int    `json:"points"`
+	GamesPlayed int    `json:"games_played"`
+}
+
 type SessionStatus string
 
 const (

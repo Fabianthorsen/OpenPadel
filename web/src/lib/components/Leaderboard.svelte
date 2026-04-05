@@ -3,6 +3,7 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { Trophy } from 'lucide-svelte';
+  import { initials } from '$lib/utils';
 
   let {
     sessionId,
@@ -95,7 +96,7 @@
           <!-- Avatar -->
           <div class="flex shrink-0 items-center justify-center rounded-full font-[800] text-white
             {isFirst ? 'h-20 w-20 text-2xl bg-[var(--primary)] ring-4 ring-[var(--primary-muted)] shadow-lg' : 'h-14 w-14 text-base bg-[#4a7856] ring-2 ring-[var(--border)]'}">
-            {s.name[0].toUpperCase()}
+            {initials(s.name)}
           </div>
 
           <!-- Rank badge -->
@@ -123,7 +124,7 @@
           <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
             <span class="w-6 text-sm font-[800] tabular-nums text-[var(--text-disabled)]">{s.rank}</span>
             <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
-              {s.name[0].toUpperCase()}
+              {initials(s.name)}
             </div>
             <span class="flex-1 truncate text-sm font-semibold">{s.name}</span>
             <span class="text-base font-[800] tabular-nums">{s.points}</span>
@@ -171,7 +172,7 @@
         </svg>
         <div class="relative z-10 flex items-center gap-5">
           <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl font-[800] text-white">
-            {leader.name[0].toUpperCase()}
+            {initials(leader.name)}
           </div>
           <div class="flex-1 min-w-0">
             <div class="mb-0.5">
@@ -226,7 +227,7 @@
           <span class="text-sm font-[800] tabular-nums {isPodium ? 'text-white' : 'text-[var(--text-disabled)]'}">{s.rank}</span>
           <div class="flex items-center gap-2.5 min-w-0">
             <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {isPodium ? 'bg-white/20 text-white' : 'bg-[var(--primary-muted)] text-[var(--primary)]'} text-xs font-[800]">
-              {s.name[0].toUpperCase()}
+              {initials(s.name)}
             </div>
             <span class="truncate text-sm font-semibold {isPodium ? 'text-white' : ''}">{s.name}</span>
           </div>

@@ -1,17 +1,30 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import { auth } from '$lib/auth.svelte';
+  import { fly } from 'svelte/transition';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { _ } from 'svelte-i18n';
 
-  let mode = $state<'login' | 'register'>('login');
+  $effect(() => {
+    if (auth.ready && auth.user) goto('/profile');
+  });
+
+  const resetSuccess = page.url.searchParams.get('reset') === '1';
+
+  let mode = $state<'login' | 'register'>(page.url.searchParams.get('register') === '1' ? 'register' : 'login');
+  let showBanner = $state(resetSuccess);
   let email = $state('');
   let password = $state('');
   let firstName = $state('');
   let lastName = $state('');
   let error = $state('');
   let loading = $state(false);
+
+  if (resetSuccess) {
+    setTimeout(() => { showBanner = false; }, 5000);
+  }
 
   async function submit() {
     error = '';
@@ -31,7 +44,13 @@
   }
 </script>
 
-<main class="flex min-h-svh flex-col items-center px-6 py-12">
+{#if showBanner}
+  <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--primary)] px-4 py-3 text-sm font-semibold text-white">
+    {$_('reset_success_banner')}
+  </div>
+{/if}
+
+<main class="flex min-h-svh flex-col items-center px-6 py-12" class:pt-16={showBanner}>
   <div class="flex w-full max-w-sm flex-1 flex-col justify-center space-y-8">
 
     <!-- Brand -->
@@ -100,20 +119,17 @@
       >
         {loading ? '…' : mode === 'login' ? $_('auth_login_button') : $_('auth_register_button')}
       </Button>
+
+      {#if mode === 'login'}
+        <div class="flex justify-center">
+          <a href="/forgot" class="text-xs text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">
+            {$_('auth_forgot_password')}
+          </a>
+        </div>
+      {/if}
     </form>
 
-    <!-- Toggle mode -->
-    <p class="text-center text-sm text-[var(--text-secondary)]">
-      {mode === 'login' ? $_('auth_no_account') : $_('auth_have_account')}
-      <button
-        onclick={() => { mode = mode === 'login' ? 'register' : 'login'; error = ''; }}
-        class="font-semibold text-[var(--primary)] hover:text-[var(--primary-hover)]"
-      >
-        {mode === 'login' ? $_('auth_switch_register') : $_('auth_switch_login')}
-      </button>
-    </p>
-
-    <!-- Back to home -->
+    <!-- Back -->
     <div class="flex justify-center">
       <a href="/" class="text-xs text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">
         ← {$_('auth_back_home')}

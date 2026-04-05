@@ -61,6 +61,12 @@ CREATE TABLE IF NOT EXISTS auth_tokens (
 	created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+	token_hash TEXT PRIMARY KEY,
+	user_id    TEXT NOT NULL REFERENCES users(id),
+	expires_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
 	id                TEXT PRIMARY KEY,
 	admin_token       TEXT NOT NULL,

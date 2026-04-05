@@ -3,6 +3,7 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { Activity, ChartBar } from 'lucide-svelte';
+  import { initials } from '$lib/utils';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
@@ -355,7 +356,7 @@
     {#if benchNames.length > 0}
       <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
         <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--border)] text-[11px] font-bold text-[var(--text-secondary)]">
-          {benchNames[0][0].toUpperCase()}
+          {initials(benchNames[0])}
         </div>
         <p class="text-sm text-[var(--text-secondary)]">
           {$_('active_bench')}: <span class="font-semibold text-[var(--text-primary)]">{benchNames.join(', ')}</span>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client';
   import { auth } from '$lib/auth.svelte';
@@ -7,49 +8,63 @@
   import { Input } from '$lib/components/ui/input';
   import { setLocale, locale } from '$lib/i18n';
   import { _ } from 'svelte-i18n';
+  import { initials } from '$lib/utils';
+  import { fly } from 'svelte/transition';
 
   let step = $state<'home' | 'setup'>('home');
   let courts = $state(2);
   let points = $state(24);
   let tournamentName = $state('');
-  let name = $state(auth.user?.display_name ?? '');
   let creating = $state(false);
   let error = $state('');
-  let shaking = $state(false);
   let joinCode = $state('');
   let rejoinSession = $state<App.Session | null>(null);
   let rejoinHref = $state('');
+  let showDeletedBanner = $state(false);
 
   onMount(async () => {
+    // If ?create=1, go straight to setup (used by profile "New tournament" link)
+    if (page.url.searchParams.get('create') === '1') {
+      step = 'setup';
+    }
+
+    if (page.url.searchParams.get('deleted') === '1') {
+      showDeletedBanner = true;
+      setTimeout(() => { showDeletedBanner = false; }, 5000);
+    }
+
+    // Load rejoin session in parallel with auth check
     const lastId = localStorage.getItem('last_session_id');
-    if (!lastId) return;
-    try {
-      const token = localStorage.getItem(`admin_token_${lastId}`) ?? undefined;
-      const s = await api.sessions.get(lastId, token);
-      if (s.status === 'lobby' || s.status === 'active') {
-        rejoinSession = s;
-        rejoinHref = token ? `/s/${lastId}?token=${token}` : `/s/${lastId}`;
+    if (lastId) {
+      try {
+        const token = localStorage.getItem(`admin_token_${lastId}`) ?? undefined;
+        const s = await api.sessions.get(lastId, token);
+        if (s.status === 'lobby' || s.status === 'active') {
+          rejoinSession = s;
+          rejoinHref = token ? `/s/${lastId}?token=${token}` : `/s/${lastId}`;
+        }
+      } catch {
+        localStorage.removeItem('last_session_id');
       }
-    } catch {
-      localStorage.removeItem('last_session_id');
     }
   });
 
-  function shake() {
-    shaking = false;
-    requestAnimationFrame(() => { shaking = true; });
-    setTimeout(() => { shaking = false; }, 400);
-  }
+  // Redirect logged-in users to profile (unless they came here to create)
+  $effect(() => {
+    if (auth.ready && auth.user && step === 'home' && page.url.searchParams.get('create') !== '1') {
+      goto('/profile');
+    }
+  });
 
   async function create() {
-    if (!name.trim()) { error = $_('create_error_name'); shake(); return; }
+    const effectiveName = auth.user!.display_name;
     creating = true;
     error = '';
     try {
       const session = await api.sessions.create(courts, points, tournamentName.trim());
       const token = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, token);
-      const player = await api.players.join(session.id, name.trim(), token);
+      const player = await api.players.join(session.id, effectiveName, token);
       localStorage.setItem(`player_id_${session.id}`, player.id);
       localStorage.setItem('last_session_id', session.id);
       goto(`/s/${session.id}?token=${token}`);
@@ -66,7 +81,12 @@
 </script>
 
 {#if step === 'home'}
-  <main class="flex min-h-svh flex-col items-center px-6 py-12">
+  {#if showDeletedBanner}
+    <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--primary)] px-4 py-3 text-sm font-semibold text-white">
+      {$_('home_account_deleted')}
+    </div>
+  {/if}
+  <main class="flex min-h-svh flex-col items-center px-6 py-12" class:pt-16={showDeletedBanner}>
   <div class="flex w-full max-w-sm flex-1 flex-col">
     <div class="flex flex-1 flex-col justify-center space-y-12">
       <!-- Brand -->
@@ -93,12 +113,20 @@
           </a>
         {/if}
 
-        <Button
-          onclick={() => (step = 'setup')}
-          class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
-        >
-          {$_('home_create_tournament')}
-        </Button>
+        {#if auth.ready && !auth.user}
+          <a
+            href="/auth"
+            class="flex h-auto w-full items-center justify-center rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+          >
+            {$_('auth_sign_in')} →
+          </a>
+          <p class="text-center text-sm text-[var(--text-secondary)]">
+            {$_('auth_no_account')}
+            <a href="/auth?register=1" class="font-semibold text-[var(--primary)] hover:text-[var(--primary-hover)]">
+              {$_('auth_switch_register')}
+            </a>
+          </p>
+        {/if}
 
         <div class="flex items-center gap-3">
           <div class="h-px flex-1 bg-[var(--border)]"></div>
@@ -130,22 +158,18 @@
       </div>
     </div>
 
-    <!-- Auth -->
+    <!-- Auth (logged-in pill — guests see the sign-in button above instead) -->
+    {#if auth.user}
     <div class="flex justify-center pt-6">
-      {#if auth.user}
-        <a href="/profile" class="flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-[var(--surface-raised)]">
-          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
-            {auth.user.display_name[0].toUpperCase()}
-          </div>
-          <span class="text-sm font-semibold">{auth.user.display_name}</span>
-          <span class="text-xs text-[var(--text-disabled)]">→</span>
-        </a>
-      {:else}
-        <a href="/auth" class="text-sm font-semibold text-[var(--primary)] hover:text-[var(--primary-hover)]">
-          {$_('auth_sign_in')} →
-        </a>
-      {/if}
+      <a href="/profile" class="flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-[var(--surface-raised)]">
+        <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+          {initials(auth.user.display_name)}
+        </div>
+        <span class="text-sm font-semibold">{auth.user.display_name}</span>
+        <span class="text-xs text-[var(--text-disabled)]">→</span>
+      </a>
     </div>
+    {/if}
 
     <!-- Language toggle -->
     <div class="flex justify-center gap-3 pt-4">
@@ -167,7 +191,7 @@
     <!-- Nav -->
     <nav class="flex items-center justify-between">
       <Button
-        onclick={() => (step = 'home')}
+        onclick={() => goto('/profile')}
         variant="ghost"
         class="flex h-8 w-8 items-center justify-center rounded-full p-0 text-lg text-[var(--text-secondary)]"
       >
@@ -248,17 +272,15 @@
         />
       </div>
 
-      <!-- Your name -->
+      <!-- Organiser (always logged in at this point) -->
       <div class="space-y-2.5">
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_organiser_label')}</p>
-        <Input
-          bind:value={name}
-          oninput={() => (error = '')}
-          placeholder={$_('create_organiser_placeholder')}
-          maxlength={32}
-          aria-invalid={!!error}
-          class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm {shaking ? 'shake' : ''}"
-        />
+        <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5">
+          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+            {auth.user ? initials(auth.user.display_name) : '?'}
+          </div>
+          <span class="text-sm font-semibold">{auth.user?.display_name}</span>
+        </div>
       </div>
 
       <!-- Info note -->
@@ -266,6 +288,10 @@
         <span class="mt-px shrink-0 text-[var(--text-secondary)]">ℹ</span>
         <p class="text-sm text-[var(--text-secondary)]">{$_('create_info_note')}</p>
       </div>
+
+      {#if error}
+        <p class="text-sm text-[var(--destructive)]">{error}</p>
+      {/if}
 
       <Button
         onclick={create}

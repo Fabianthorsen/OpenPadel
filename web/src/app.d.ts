@@ -69,6 +69,16 @@ declare global {
       draws: number;
     }
 
+    interface TournamentEntry {
+      session_id: string;
+      name: string;
+      status: string;
+      played_at: string;
+      rank: number;
+      points: number;
+      games_played: number;
+    }
+
     interface Leaderboard {
       session_id: string;
       status: SessionStatus;
