@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api } from '$lib/api/client';
-  import { Crown } from 'lucide-svelte';
+  import { Crown, Share2, Check } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -194,9 +194,13 @@
         <Button
           onclick={copyLink}
           variant="ghost"
-          class="h-auto shrink-0 p-0 text-xs font-semibold text-[var(--primary)] hover:bg-transparent hover:text-[var(--primary-hover)]"
+          class="h-auto shrink-0 p-1.5 text-[var(--primary)] hover:bg-transparent hover:text-[var(--primary-hover)]"
         >
-          {copied ? $_('lobby_copied') : $_('lobby_copy')}
+          {#if copied}
+            <Check size={16} />
+          {:else}
+            <Share2 size={16} />
+          {/if}
         </Button>
       </div>
     </div>
