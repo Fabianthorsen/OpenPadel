@@ -1,16 +1,17 @@
 package scheduler
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/fabianthorsen/nottennis/internal/domain"
 )
 
 func makePlayers(n int) []domain.Player {
-	names := []string{"Alice", "Bob", "Carlos", "Diana", "Erik", "Fiona", "Gio", "Hanna", "Ivan", "Julia", "Karl", "Lena"}
 	players := make([]domain.Player, n)
 	for i := range players {
-		players[i] = domain.Player{ID: names[i], Name: names[i]}
+		id := fmt.Sprintf("P%02d", i+1)
+		players[i] = domain.Player{ID: id, Name: id}
 	}
 	return players
 }
@@ -169,26 +170,128 @@ func TestGenerate_PartnerVariety(t *testing.T) {
 
 // Bench slots should be distributed fairly — no player sits more than once extra vs others.
 func TestGenerate_BenchFairness(t *testing.T) {
-	players := makePlayers(9) // 1 bench per round
-	rounds := Generate(players, 2, 9)
+	cases := []struct {
+		name          string
+		players, courts, rounds int
+	}{
+		{"9p 2c 1bench/round", 9, 2, 8},
+		{"10p 2c 2bench/round", 10, 2, 9},
+		{"11p 2c 3bench/round", 11, 2, 10},
+		{"13p 3c 1bench/round", 13, 3, 12},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rounds := Generate(makePlayers(tc.players), tc.courts, tc.rounds)
 
-	benchCount := map[string]int{}
-	for _, r := range rounds {
-		for _, id := range r.Bench {
-			benchCount[id]++
+			benchCount := map[string]int{}
+			for _, r := range rounds {
+				for _, id := range r.Bench {
+					benchCount[id]++
+				}
+			}
+
+			min, max := 999, 0
+			for _, c := range benchCount {
+				if c < min { min = c }
+				if c > max { max = c }
+			}
+			if max-min > 1 {
+				t.Errorf("bench distribution unfair: min=%d max=%d (diff should be ≤1)", min, max)
+			}
+		})
+	}
+}
+
+// Every player should play the same number of matches, or at most 1 apart.
+func TestGenerate_GamesPlayedEquality(t *testing.T) {
+	cases := []struct {
+		name          string
+		players, courts, rounds int
+	}{
+		{"4p 1c no bench", 4, 1, 3},
+		{"8p 2c no bench", 8, 2, 7},
+		{"9p 2c 1bench/round", 9, 2, 8},
+		{"10p 2c 2bench/round", 10, 2, 9},
+		{"11p 2c 3bench/round", 11, 2, 10},
+		{"12p 3c no bench", 12, 3, 11},
+		{"13p 3c 1bench/round", 13, 3, 12},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rounds := Generate(makePlayers(tc.players), tc.courts, tc.rounds)
+
+			gamesPlayed := map[string]int{}
+			for _, r := range rounds {
+				for _, m := range r.Matches {
+					for _, id := range []string{m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]} {
+						gamesPlayed[id]++
+					}
+				}
+			}
+
+			min, max := 999, 0
+			for _, g := range gamesPlayed {
+				if g < min { min = g }
+				if g > max { max = g }
+			}
+			if max-min > 1 {
+				t.Errorf("games played unfair: min=%d max=%d (diff should be ≤1)", min, max)
+			}
+		})
+	}
+}
+
+// With no bench (players == courts*4), every player plays every round.
+func TestGenerate_NoMissedRounds_NoBench(t *testing.T) {
+	cases := []struct{ players, courts int }{
+		{4, 1},
+		{8, 2},
+		{12, 3},
+	}
+	for _, tc := range cases {
+		players := makePlayers(tc.players)
+		rounds := Generate(players, tc.courts, tc.players-1)
+		allIDs := make(map[string]bool)
+		for _, p := range players {
+			allIDs[p.ID] = true
+		}
+		for _, r := range rounds {
+			active := map[string]bool{}
+			for _, m := range r.Matches {
+				for _, id := range []string{m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]} {
+					active[id] = true
+				}
+			}
+			for id := range allIDs {
+				if !active[id] {
+					t.Errorf("round %d: player %s was unexpectedly benched (no-bench scenario)", r.Number, id)
+				}
+			}
+			if len(r.Bench) != 0 {
+				t.Errorf("round %d: expected empty bench, got %v", r.Number, r.Bench)
+			}
 		}
 	}
+}
 
-	min, max := 999, 0
-	for _, c := range benchCount {
-		if c < min {
-			min = c
-		}
-		if c > max {
-			max = c
-		}
+// No player should ever appear on both teams in the same match.
+func TestGenerate_NoSelfOpposition(t *testing.T) {
+	cases := []struct{ players, courts, rounds int }{
+		{8, 2, 7},
+		{9, 2, 8},
+		{12, 3, 11},
 	}
-	if max-min > 1 {
-		t.Errorf("bench distribution unfair: min=%d max=%d (diff should be ≤1)", min, max)
+	for _, tc := range cases {
+		rounds := Generate(makePlayers(tc.players), tc.courts, tc.rounds)
+		for _, r := range rounds {
+			for _, m := range r.Matches {
+				aSet := map[string]bool{m.TeamA[0]: true, m.TeamA[1]: true}
+				for _, id := range []string{m.TeamB[0], m.TeamB[1]} {
+					if aSet[id] {
+						t.Errorf("round %d court %d: player %s appears on both teams", r.Number, m.Court, id)
+					}
+				}
+			}
+		}
 	}
 }
