@@ -3,7 +3,6 @@ declare global {
   namespace App {
     interface User {
       id: string;
-      username: string;
       email: string;
       display_name: string;
       created_at: string;

@@ -27,8 +27,8 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
 
 export const api = {
   auth: {
-    register: (email: string, username: string, displayName: string, password: string) =>
-      request<{ token: string; user: App.User }>('POST', '/auth/register', { email, username, display_name: displayName, password }),
+    register: (email: string, displayName: string, password: string) =>
+      request<{ token: string; user: App.User }>('POST', '/auth/register', { email, display_name: displayName, password }),
     login: (email: string, password: string) =>
       request<{ token: string; user: App.User }>('POST', '/auth/login', { email, password }),
     logout: (token: string) =>

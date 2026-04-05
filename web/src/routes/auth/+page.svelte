@@ -8,8 +8,8 @@
   let mode = $state<'login' | 'register'>('login');
   let email = $state('');
   let password = $state('');
-  let username = $state('');
-  let displayName = $state('');
+  let firstName = $state('');
+  let lastName = $state('');
   let error = $state('');
   let loading = $state(false);
 
@@ -20,7 +20,7 @@
       if (mode === 'login') {
         await auth.login(email, password);
       } else {
-        await auth.register(email, username, displayName, password);
+        await auth.register(email, `${firstName.trim()} ${lastName.trim()}`.trim(), password);
       }
       goto('/');
     } catch (e) {
@@ -43,26 +43,27 @@
     <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="space-y-4">
 
       {#if mode === 'register'}
-        <div class="space-y-2">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('auth_display_name_label')}</p>
-          <Input
-            bind:value={displayName}
-            placeholder={$_('auth_display_name_placeholder')}
-            maxlength={32}
-            autocomplete="name"
-            class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
-          />
-        </div>
-
-        <div class="space-y-2">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('auth_username_label')}</p>
-          <Input
-            bind:value={username}
-            placeholder={$_('auth_username_placeholder')}
-            maxlength={32}
-            autocomplete="username"
-            class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
-          />
+        <div class="flex gap-3">
+          <div class="flex-1 space-y-2">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('auth_first_name_label')}</p>
+            <Input
+              bind:value={firstName}
+              placeholder={$_('auth_first_name_placeholder')}
+              maxlength={32}
+              autocomplete="given-name"
+              class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+            />
+          </div>
+          <div class="flex-1 space-y-2">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('auth_last_name_label')}</p>
+            <Input
+              bind:value={lastName}
+              placeholder={$_('auth_last_name_placeholder')}
+              maxlength={32}
+              autocomplete="family-name"
+              class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+            />
+          </div>
         </div>
       {/if}
 

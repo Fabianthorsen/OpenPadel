@@ -30,8 +30,8 @@ function createAuthStore() {
     localStorage.setItem(TOKEN_KEY, res.token);
   }
 
-  async function register(email: string, username: string, displayName: string, password: string) {
-    const res = await api.auth.register(email, username, displayName, password);
+  async function register(email: string, displayName: string, password: string) {
+    const res = await api.auth.register(email, displayName, password);
     token = res.token;
     user = res.user;
     localStorage.setItem(TOKEN_KEY, res.token);

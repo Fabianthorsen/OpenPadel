@@ -11,7 +11,6 @@ import (
 func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Email       string `json:"email"`
-		Username    string `json:"username"`
 		DisplayName string `json:"display_name"`
 		Password    string `json:"password"`
 	}
@@ -19,8 +18,8 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if body.Email == "" || body.Username == "" || body.DisplayName == "" || body.Password == "" {
-		respondError(w, http.StatusBadRequest, "email, username, display_name and password are required")
+	if body.Email == "" || body.DisplayName == "" || body.Password == "" {
+		respondError(w, http.StatusBadRequest, "email, display_name and password are required")
 		return
 	}
 	if len(body.Password) < 8 {
@@ -28,13 +27,9 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.store.CreateUser(body.Email, body.Username, body.DisplayName, body.Password)
+	user, err := h.store.CreateUser(body.Email, body.DisplayName, body.Password)
 	if errors.Is(err, store.ErrEmailTaken) {
 		respondError(w, http.StatusConflict, "email already registered")
-		return
-	}
-	if errors.Is(err, store.ErrUsernameTaken) {
-		respondError(w, http.StatusConflict, "username already taken")
 		return
 	}
 	if err != nil {

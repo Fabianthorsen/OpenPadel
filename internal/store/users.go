@@ -13,10 +13,9 @@ import (
 )
 
 var ErrEmailTaken = errors.New("email already registered")
-var ErrUsernameTaken = errors.New("username already taken")
 var ErrInvalidCredentials = errors.New("invalid email or password")
 
-func (s *Store) CreateUser(email, username, displayName, password string) (*domain.User, error) {
+func (s *Store) CreateUser(email, displayName, password string) (*domain.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -25,24 +24,20 @@ func (s *Store) CreateUser(email, username, displayName, password string) (*doma
 	user := &domain.User{
 		ID:           newUserID(),
 		Email:        email,
-		Username:     username,
 		DisplayName:  displayName,
 		PasswordHash: string(hash),
 		CreatedAt:    time.Now().UTC(),
 	}
 
 	_, err = s.db.Exec(
-		`INSERT INTO users (id, username, email, display_name, password_hash, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?)`,
-		user.ID, user.Username, user.Email, user.DisplayName, user.PasswordHash,
+		`INSERT INTO users (id, email, display_name, password_hash, created_at)
+		 VALUES (?, ?, ?, ?, ?)`,
+		user.ID, user.Email, user.DisplayName, user.PasswordHash,
 		user.CreatedAt.Format(time.RFC3339),
 	)
 	if err != nil {
 		if isUniqueConstraint(err, "email") {
 			return nil, ErrEmailTaken
-		}
-		if isUniqueConstraint(err, "username") {
-			return nil, ErrUsernameTaken
 		}
 		return nil, err
 	}
@@ -51,13 +46,13 @@ func (s *Store) CreateUser(email, username, displayName, password string) (*doma
 
 func (s *Store) GetUserByEmail(email string) (*domain.User, error) {
 	return scanUser(s.db.QueryRow(
-		`SELECT id, username, email, display_name, password_hash, created_at FROM users WHERE email = ?`, email,
+		`SELECT id, email, display_name, password_hash, created_at FROM users WHERE email = ?`, email,
 	))
 }
 
 func (s *Store) GetUserByID(id string) (*domain.User, error) {
 	return scanUser(s.db.QueryRow(
-		`SELECT id, username, email, display_name, password_hash, created_at FROM users WHERE id = ?`, id,
+		`SELECT id, email, display_name, password_hash, created_at FROM users WHERE id = ?`, id,
 	))
 }
 
@@ -110,7 +105,7 @@ func (s *Store) DeleteAuthToken(token string) error {
 func scanUser(row *sql.Row) (*domain.User, error) {
 	var u domain.User
 	var createdAt string
-	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.DisplayName, &u.PasswordHash, &createdAt)
+	err := row.Scan(&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &createdAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
