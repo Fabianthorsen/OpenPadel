@@ -6,21 +6,37 @@
   import { auth } from '$lib/auth.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
-  import { setLocale, locale } from '$lib/i18n';
+  import Footer from '$lib/components/Footer.svelte';
   import { _ } from 'svelte-i18n';
   import { initials } from '$lib/utils';
   import { fly } from 'svelte/transition';
+  import { Calendar } from '$lib/components/ui/calendar';
+  import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
 
   let step = $state<'home' | 'setup'>('home');
   let courts = $state(2);
   let points = $state(24);
   let tournamentName = $state('');
+  let scheduleEnabled = $state(false);
+  let calendarDate = $state<DateValue | undefined>(undefined);
+  // Slider: 0 = 08:00, 1 = 08:30, ..., 27 = 21:30
+  let timeSlot = $state(20); // default 18:00
+
+  function slotToLabel(slot: number) {
+    const totalMins = 8 * 60 + slot * 30;
+    const h = String(Math.floor(totalMins / 60)).padStart(2, '0');
+    const m = String(totalMins % 60).padStart(2, '0');
+    return `${h}:${m}`;
+  }
+
+  const scheduleTime = $derived(slotToLabel(timeSlot));
   let creating = $state(false);
   let error = $state('');
   let joinCode = $state('');
   let rejoinSession = $state<App.Session | null>(null);
   let rejoinHref = $state('');
   let showDeletedBanner = $state(false);
+  let showNotFoundBanner = $state(false);
 
   onMount(async () => {
     // If ?create=1, go straight to setup (used by profile "New tournament" link)
@@ -31,6 +47,10 @@
     if (page.url.searchParams.get('deleted') === '1') {
       showDeletedBanner = true;
       setTimeout(() => { showDeletedBanner = false; }, 5000);
+    }
+    if (page.url.searchParams.get('notfound') === '1') {
+      showNotFoundBanner = true;
+      setTimeout(() => { showNotFoundBanner = false; }, 5000);
     }
 
     // Load rejoin session in parallel with auth check
@@ -52,7 +72,8 @@
   // Redirect logged-in users to profile (unless they came here to create)
   $effect(() => {
     if (auth.ready && auth.user && step === 'home' && page.url.searchParams.get('create') !== '1') {
-      goto('/profile');
+      const notfound = page.url.searchParams.get('notfound');
+      goto(notfound ? '/profile?notfound=1' : '/profile');
     }
   });
 
@@ -61,13 +82,20 @@
     creating = true;
     error = '';
     try {
-      const session = await api.sessions.create(courts, points, tournamentName.trim());
-      const token = session.admin_token!;
-      localStorage.setItem(`admin_token_${session.id}`, token);
-      const player = await api.players.join(session.id, effectiveName, token);
+      let iso: string | undefined;
+      if (scheduleEnabled && calendarDate) {
+        const [h, m] = scheduleTime.split(':').map(Number);
+        const d = calendarDate.toDate(getLocalTimeZone());
+        d.setHours(h, m, 0, 0);
+        iso = d.toISOString();
+      }
+      const session = await api.sessions.create(courts, points, tournamentName.trim(), iso);
+      const adminToken = session.admin_token!;
+      localStorage.setItem(`admin_token_${session.id}`, adminToken);
+      const player = await api.players.join(session.id, effectiveName, auth.token ?? undefined, adminToken);
       localStorage.setItem(`player_id_${session.id}`, player.id);
       localStorage.setItem('last_session_id', session.id);
-      goto(`/s/${session.id}?token=${token}`);
+      goto(`/s/${session.id}?token=${adminToken}`);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Something went wrong';
       creating = false;
@@ -86,7 +114,12 @@
       {$_('home_account_deleted')}
     </div>
   {/if}
-  <main class="flex min-h-svh flex-col items-center px-6 py-12" class:pt-16={showDeletedBanner}>
+  {#if showNotFoundBanner}
+    <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--destructive)] px-4 py-3 text-sm font-semibold text-white">
+      {$_('home_session_not_found')}
+    </div>
+  {/if}
+  <main class="flex min-h-svh flex-col items-center px-6 py-12" class:pt-16={showDeletedBanner || showNotFoundBanner}>
   <div class="flex w-full max-w-sm flex-1 flex-col">
     <div class="flex flex-1 flex-col justify-center space-y-12">
       <!-- Brand -->
@@ -171,18 +204,8 @@
     </div>
     {/if}
 
-    <!-- Language toggle -->
-    <div class="flex justify-center gap-3 pt-4">
-      {#each [['en', 'EN'], ['no', 'NO']] as [lang, label]}
-        <button
-          onclick={() => setLocale(lang)}
-          class="text-xs font-semibold transition-colors {$locale === lang ? 'text-[var(--primary)]' : 'text-[var(--text-disabled)] hover:text-[var(--text-secondary)]'}"
-        >
-          {label}
-        </button>
-      {/each}
-    </div>
   </div>
+  <Footer />
   </main>
 
 {:else}
@@ -270,6 +293,44 @@
           maxlength={48}
           class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
         />
+      </div>
+
+      <!-- Schedule (optional) -->
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_schedule_label')}</p>
+          <button
+            type="button"
+            onclick={() => { scheduleEnabled = !scheduleEnabled; if (!scheduleEnabled) { calendarDate = undefined; timeSlot = 20; } }}
+            aria-label={$_('create_schedule_label')}
+            class="relative h-6 w-11 rounded-full transition-colors {scheduleEnabled ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'}"
+          >
+            <span class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform {scheduleEnabled ? 'translate-x-5' : 'translate-x-0'}"></span>
+          </button>
+        </div>
+        {#if scheduleEnabled}
+          <div class="rounded-2xl bg-[var(--surface-raised)] overflow-hidden">
+            <Calendar bind:value={calendarDate} minValue={today(getLocalTimeZone())} weekStartsOn={1} />
+            <div class="px-4 pb-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('create_schedule_time_label')}</p>
+                <p class="text-sm font-[800] text-[var(--primary)]">{scheduleTime}</p>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="27"
+                step="1"
+                bind:value={timeSlot}
+                class="w-full accent-[var(--primary)]"
+              />
+              <div class="flex justify-between text-[10px] text-[var(--text-disabled)]">
+                <span>08:00</span>
+                <span>21:30</span>
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
 
       <!-- Organiser (always logged in at this point) -->

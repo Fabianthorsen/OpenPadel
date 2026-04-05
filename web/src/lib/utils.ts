@@ -6,6 +6,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Returns "Firstname L." for multi-word names, or just the name if single word. "Fabian Thorsen" → "Fabian T." */
+export function shortName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= 1) return name.trim();
+  return `${words[0]} ${words[words.length - 1][0].toUpperCase()}.`;
+}
+
 /** Returns up to 2 uppercase initials from a display name. "Fabian Thorsen" → "FT" */
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);

@@ -6,6 +6,9 @@
   import { Input } from '$lib/components/ui/input';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { _ } from 'svelte-i18n';
+  import { auth } from '$lib/auth.svelte';
+  import Footer from '$lib/components/Footer.svelte';
+  import { fly } from 'svelte/transition';
 
   let {
     session,
@@ -31,6 +34,13 @@
   let joining = $state(false);
   let joinError = $state('');
 
+  // Pre-fill name from account when on the invite screen
+  $effect(() => {
+    if (auth.user && !isAdmin && !alreadyJoined && !joinName) {
+      joinName = auth.user.display_name;
+    }
+  });
+
   const joinUrl = $derived(
     typeof location !== 'undefined' ? `${location.origin}/s/${session.id}` : ''
   );
@@ -42,7 +52,10 @@
   const myPlayerId = $derived(
     typeof localStorage !== 'undefined' ? localStorage.getItem(`player_id_${session.id}`) : null
   );
-  const alreadyJoined = $derived(!!myPlayerId && activePlayers.some((p) => p.id === myPlayerId));
+  const alreadyJoined = $derived(
+    (!!myPlayerId && activePlayers.some((p) => p.id === myPlayerId)) ||
+    (!!auth.user && activePlayers.some((p) => p.user_id === auth.user!.id))
+  );
 
   async function copyLink() {
     if (navigator.share) {
@@ -60,8 +73,7 @@
     if (!name) return;
     joining = true;
     try {
-      const player = await api.players.join(session.id, name);
-      // Only claim this player as "you" if you're not already in the session
+      const player = await api.players.join(session.id, name, isAdmin ? undefined : (auth.token ?? undefined));
       if (!isAdmin) {
         localStorage.setItem(`player_id_${session.id}`, player.id);
         localStorage.setItem('last_session_id', session.id);
@@ -70,6 +82,7 @@
       onRefresh();
     } catch (e) {
       joinError = e instanceof Error ? e.message : 'Could not join';
+      setTimeout(() => { joinError = ''; }, 4000);
     } finally {
       joining = false;
     }
@@ -116,6 +129,12 @@
   }
 </script>
 
+{#if joinError}
+  <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--destructive)] px-4 py-3 text-sm font-semibold text-white">
+    {joinError}
+  </div>
+{/if}
+
 {#if cancelling}
   <main class="flex min-h-svh flex-col items-center justify-center gap-3 px-6">
     <div class="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--primary)]"></div>
@@ -124,47 +143,91 @@
 
 <!-- ── Join / invite screen (visitor hasn't joined yet) ── -->
 {:else if !isAdmin && !alreadyJoined}
-  <main class="flex min-h-svh flex-col px-6 py-12">
-    <div class="flex flex-1 flex-col">
-      <p class="text-center text-sm font-semibold text-[var(--primary)]">NotTennis</p>
+  <main class="flex min-h-svh flex-col items-center px-6 py-12">
+    <div class="flex w-full max-w-sm justify-end">
+      <a href="/" class="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-secondary)]" aria-label="Back">×</a>
+    </div>
+    <div class="flex w-full max-w-sm flex-1 flex-col justify-center space-y-8">
 
-      <div class="mt-10 space-y-3">
-        <h1 class="text-[32px] font-[800]">
+      <!-- Brand + session info -->
+      <div class="space-y-1">
+        <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--primary)]">NotTennis</p>
+        <h1 class="text-[28px] font-[800] leading-tight">
           {#if creatorName}
             {$_('invite_title_with_creator', { values: { creator: creatorName } })}
           {:else}
             {$_('invite_title_generic')}
           {/if}
         </h1>
-        <p class="text-[var(--text-secondary)]">{$_('invite_subtitle')}</p>
+        {#if session.name}
+          <p class="text-[var(--text-secondary)]">{session.name}</p>
+        {/if}
+        <p class="text-sm text-[var(--text-secondary)]">
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} {$_('invite_points')} · Americano{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
+        </p>
       </div>
 
-      <div class="mt-10 space-y-5">
-        <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('invite_name_label')}</p>
-          <form onsubmit={(e) => { e.preventDefault(); join(); }}>
+      <div class="space-y-4">
+        {#if auth.user}
+          <!-- Logged in: show account card + join -->
+          <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 flex items-center gap-3">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-sm font-[800] text-white">
+              {initials(auth.user.display_name)}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold truncate">{auth.user.display_name}</p>
+              <p class="text-xs text-[var(--text-secondary)] truncate">{auth.user.email}</p>
+            </div>
+          </div>
+
+          <Button
+            onclick={join}
+            disabled={joining || !joinName.trim()}
+            class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+          >
+            {joining ? $_('invite_joining') : $_('invite_join_button')}
+          </Button>
+        {:else}
+          <!-- Not logged in: account options first, guest below -->
+          <a
+            href="/auth?redirect=/s/{session.id}"
+            class="flex h-auto w-full items-center justify-center rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+          >
+            {$_('invite_sign_in')}
+          </a>
+          <p class="text-center text-sm text-[var(--text-secondary)]">
+            {$_('invite_no_account')}
+            <a href="/auth?register=1&redirect=/s/{session.id}" class="font-semibold text-[var(--primary)]">{$_('invite_create_account')}</a>
+          </p>
+
+          <div class="flex items-center gap-3">
+            <div class="h-px flex-1 bg-[var(--border)]"></div>
+            <span class="text-xs text-[var(--text-disabled)]">{$_('invite_or_guest')}</span>
+            <div class="h-px flex-1 bg-[var(--border)]"></div>
+          </div>
+
+          <!-- Guest fallback -->
+          <form onsubmit={(e) => { e.preventDefault(); join(); }} class="flex gap-2">
             <Input
               bind:value={joinName}
               placeholder={$_('invite_name_placeholder')}
               maxlength={32}
-              class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+              class="flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3 text-sm"
             />
+            <Button
+              type="submit"
+              disabled={joining || !joinName.trim()}
+              class="h-auto rounded-2xl bg-[var(--surface-raised)] px-4 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] shadow-none"
+            >
+              {joining ? '…' : $_('invite_guest_join')}
+            </Button>
           </form>
-        </div>
 
-        {#if joinError}
-          <p class="text-sm text-[var(--destructive)]">{joinError}</p>
         {/if}
-
-        <Button
-          onclick={join}
-          disabled={joining || !joinName.trim()}
-          class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
-        >
-          {joining ? $_('invite_joining') : $_('invite_join_button')}
-        </Button>
       </div>
+
     </div>
+    <Footer />
   </main>
 
 <!-- ── Lobby (admin or already joined) ── -->
@@ -172,11 +235,26 @@
   <main class="mx-auto max-w-[480px] px-6 py-6 space-y-6">
     <nav class="flex items-center justify-between">
       <div class="space-y-0.5">
-        <p class="text-xs text-[var(--text-secondary)]">{$_('lobby_waiting')}</p>
+        <p class="text-xs text-[var(--text-secondary)]">
+          {#if session.scheduled_at}
+            {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          {:else}
+            {$_('lobby_waiting')}
+          {/if}
+        </p>
         <p class="text-sm font-semibold text-[var(--primary)]">{session.name || 'NotTennis'}</p>
       </div>
-      <div class="text-right text-xs text-[var(--text-secondary)]">
-        {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · Americano
+      <div class="flex items-center gap-3">
+        <div class="text-right text-xs text-[var(--text-secondary)]">
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · Americano
+        </div>
+        {#if isAdmin || alreadyJoined}
+          <a
+            href="/"
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-secondary)]"
+            aria-label="Back to home"
+          >×</a>
+        {/if}
       </div>
     </nav>
 
@@ -225,9 +303,6 @@
             {joining ? $_('lobby_add_loading') : $_('lobby_add_button')}
           </Button>
         </form>
-        {#if joinError}
-          <p class="text-sm text-[var(--destructive)]">{joinError}</p>
-        {/if}
       </div>
     {/if}
 
@@ -242,7 +317,8 @@
         <div class="rounded-2xl bg-[var(--surface-raised)] divide-y divide-[var(--border)]">
           {#each activePlayers as player (player.id)}
             <div class="flex items-center gap-3 px-4 py-3">
-              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-sm font-semibold text-[var(--primary)]">
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold
+                {player.user_id ? 'bg-[var(--primary-muted)] text-[var(--primary)]' : 'bg-[var(--border)] text-[var(--text-disabled)]'}">
                 {initials(player.name)}
               </div>
               <span class="text-sm font-medium">{player.name}</span>
@@ -253,7 +329,7 @@
                 {#if player.id === myPlayerId}
                   <span class="text-xs text-[var(--text-disabled)]">{$_('lobby_you')}</span>
                 {/if}
-                {#if isAdmin && player.id !== session.creator_player_id}
+                {#if isAdmin && player.id !== session.creator_player_id && player.id !== myPlayerId}
                   <button
                     onclick={() => removePlayer(player.id)}
                     class="ml-1 flex h-5 w-5 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
@@ -287,9 +363,6 @@
             {joining ? $_('lobby_join_loading') : $_('lobby_join_button')}
           </Button>
         </form>
-        {#if joinError}
-          <p class="text-sm text-[var(--destructive)]">{joinError}</p>
-        {/if}
       </div>
     {/if}
 
