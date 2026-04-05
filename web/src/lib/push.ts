@@ -13,12 +13,17 @@ export async function subscribeToPush(token: string): Promise<boolean> {
   }
 
   const permission = await Notification.requestPermission();
+  if (permission === 'denied') throw new Error('notifications_blocked');
   if (permission !== 'granted') return false;
 
-  const reg = await Promise.race([
-    navigator.serviceWorker.ready,
-    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Service worker timed out')), 5000)),
-  ]) as ServiceWorkerRegistration;
+  // Use an existing active registration if available, otherwise wait for ready
+  const existing = await navigator.serviceWorker.getRegistration('/');
+  const reg = existing?.active
+    ? existing
+    : await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('sw_timeout')), 20000)),
+      ]) as ServiceWorkerRegistration;
 
   const { public_key } = await api.push.getVapidKey();
 

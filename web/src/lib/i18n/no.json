@@ -149,6 +149,8 @@
   "pref_section": "Innstillinger",
   "pref_notifications_title": "Varslinger",
   "pref_notifications_desc": "Få varsel når en turnering starter",
+  "pref_notifications_blocked": "Varslinger er blokkert. Gå til Innstillinger → {app} → Varsler for å aktivere dem.",
+  "pref_notifications_sw_timeout": "Kunne ikke koble til appens bakgrunnstjeneste. Prøv å lukke og åpne appen på nytt, og prøv igjen.",
   "pwa_ios_title": "Legg til på startskjermen for varsler",
   "pwa_ios_tap": "Trykk på",
   "pwa_ios_then": "og deretter",

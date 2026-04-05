@@ -145,7 +145,8 @@
       }
       await checkPushState();
     } catch (e) {
-      pushError = e instanceof Error ? e.message : 'Something went wrong';
+      const msg = e instanceof Error ? e.message : 'unknown';
+      pushError = msg === 'notifications_blocked' || msg === 'sw_timeout' ? msg : msg;
     } finally {
       pushToggling = false;
     }
@@ -231,7 +232,13 @@
               </button>
             </div>
             {#if pushError}
-              <p class="px-1 text-xs text-[var(--destructive)]">{pushError}</p>
+              <p class="px-1 text-xs text-[var(--destructive)]">
+                {pushError === 'notifications_blocked'
+                  ? $_('pref_notifications_blocked', { values: { app: 'NotTennis' } })
+                  : pushError === 'sw_timeout'
+                  ? $_('pref_notifications_sw_timeout')
+                  : pushError}
+              </p>
             {/if}
           {/if}
 

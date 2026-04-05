@@ -149,6 +149,8 @@
   "pref_section": "Settings",
   "pref_notifications_title": "Notifications",
   "pref_notifications_desc": "Get notified when a tournament starts",
+  "pref_notifications_blocked": "Notifications are blocked. Go to Settings → {app} → Notifications to enable them.",
+  "pref_notifications_sw_timeout": "Could not connect to the app's background service. Try closing and reopening the app, then try again.",
   "pwa_ios_title": "Add to Home Screen for notifications",
   "pwa_ios_tap": "Tap",
   "pwa_ios_then": "then",

@@ -13,14 +13,9 @@ export default defineConfig({
     tailwindcss(),
     sveltekit(),
     VitePWA({
-      registerType: 'autoUpdate',
-      strategies: 'injectManifest',
-      srcDir: 'src',
-      filename: 'service-worker.ts',
-      devOptions: { enabled: true, type: 'module' },
-      injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webmanifest}'],
-      },
+      strategies: 'generateSW',
+      injectRegister: null,
+      selfDestroying: false,
       manifest: {
         name: 'NotTennis',
         short_name: 'NotTennis',
