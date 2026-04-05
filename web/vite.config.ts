@@ -14,31 +14,12 @@ export default defineConfig({
     sveltekit(),
     VitePWA({
       registerType: 'autoUpdate',
-      devOptions: { enabled: false },
-      workbox: {
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'service-worker.ts',
+      devOptions: { enabled: true, type: 'module' },
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webmanifest}'],
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [
-          {
-            // API calls are never cached
-            urlPattern: /^\/api\//,
-            handler: 'NetworkOnly',
-          },
-          {
-            // Immutable assets (content-hashed) cached forever
-            urlPattern: /\/_app\/immutable\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'immutable-assets',
-              expiration: { maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [200] },
-            },
-          },
-        ],
       },
       manifest: {
         name: 'NotTennis',

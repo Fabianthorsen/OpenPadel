@@ -20,6 +20,8 @@ func main() {
 	appURL := env("APP_URL", "http://localhost:5173")
 	resendKey := env("RESEND_API_KEY", "")
 	resendFrom := env("RESEND_FROM", "NotTennis <noreply@nottennis.app>")
+	vapidPrivate := env("VAPID_PRIVATE_KEY", "")
+	vapidPublic := env("VAPID_PUBLIC_KEY", "")
 
 	s, err := store.Open(dbPath)
 	if err != nil {
@@ -28,7 +30,7 @@ func main() {
 	defer s.Close()
 
 	emailClient := email.NewClient(resendKey, resendFrom)
-	r := api.NewRouter(s, emailClient, appURL)
+	r := api.NewRouter(s, emailClient, appURL, vapidPrivate, vapidPublic)
 
 	log.Printf("listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
