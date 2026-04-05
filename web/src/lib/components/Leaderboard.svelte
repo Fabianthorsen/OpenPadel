@@ -3,7 +3,7 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { Trophy } from 'lucide-svelte';
-  import { initials } from '$lib/utils';
+  import { initials, shortName } from '$lib/utils';
 
   let {
     sessionId,
@@ -33,6 +33,7 @@
 
   onDestroy(() => clearInterval(interval));
 
+
   const leader = $derived(leaderboard?.standings[0] ?? null);
 
   const podiumOrder = $derived(
@@ -43,27 +44,6 @@
     ].filter(Boolean) : []
   );
 
-  const funStats = $derived.by(() => {
-    if (!leaderboard || leaderboard.standings.length === 0) return [];
-    const s = leaderboard.standings;
-
-    const mostWins = s.reduce((a, b) => (b.wins ?? 0) > (a.wins ?? 0) ? b : a);
-    const fewestLosses = s.reduce((a, b) => {
-      const la = (a.games_played ?? 0) - (a.wins ?? 0) - (a.draws ?? 0);
-      const lb = (b.games_played ?? 0) - (b.wins ?? 0) - (b.draws ?? 0);
-      return lb < la ? b : a;
-    });
-    const mostDraws = s.reduce((a, b) => (b.draws ?? 0) > (a.draws ?? 0) ? b : a);
-
-    const stats = [
-      { badge: 'W', label: 'stat_most_wins', name: mostWins.name, value: `${mostWins.wins ?? 0}W` },
-      { badge: 'L', label: 'stat_iron_wall', name: fewestLosses.name, value: `${(fewestLosses.games_played ?? 0) - (fewestLosses.wins ?? 0) - (fewestLosses.draws ?? 0)}L` },
-    ];
-    if ((mostDraws.draws ?? 0) > 0) {
-      stats.push({ badge: 'D', label: 'stat_diplomat', name: mostDraws.name, value: `${mostDraws.draws ?? 0}D` });
-    }
-    return stats;
-  });
 </script>
 
 <main class="mx-auto max-w-[480px] px-4 pb-24 pt-4 space-y-6">
@@ -105,8 +85,15 @@
             {s.rank}
           </div>
 
-          <p class="mt-1.5 text-sm font-[800] text-center truncate w-full {isFirst ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}">{s.name}</p>
+          <p class="mt-1.5 text-sm font-[800] text-center truncate w-full {isFirst ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}">{shortName(s.name)}</p>
           <p class="text-[10px] font-bold uppercase tracking-widest {isFirst ? 'text-[var(--primary)]' : 'text-[var(--text-disabled)]'}">{s.points} {$_('leaderboard_pts')}</p>
+          <div class="mt-1 flex items-center gap-1.5 text-[11px] font-bold tabular-nums">
+            <span class="text-[var(--primary)]">{s.wins ?? 0}W</span>
+            <span class="text-[var(--text-disabled)]">·</span>
+            <span class="text-[var(--text-disabled)]">{s.draws ?? 0}D</span>
+            <span class="text-[var(--text-disabled)]">·</span>
+            <span class="text-[#c0392b]">{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}L</span>
+          </div>
 
           <!-- Podium bar -->
           <div class="mt-3 w-full rounded-t-xl
@@ -126,7 +113,14 @@
             <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
               {initials(s.name)}
             </div>
-            <span class="flex-1 truncate text-sm font-semibold">{s.name}</span>
+            <span class="flex-1 truncate text-sm font-semibold">{shortName(s.name)}</span>
+            <div class="flex items-center gap-1 text-[11px] font-bold tabular-nums">
+              <span class="text-[var(--primary)]">{s.wins ?? 0}W</span>
+              <span class="text-[var(--text-disabled)]">·</span>
+              <span class="text-[var(--text-disabled)]">{s.draws ?? 0}D</span>
+              <span class="text-[var(--text-disabled)]">·</span>
+              <span class="text-[#c0392b]">{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}L</span>
+            </div>
             <span class="text-base font-[800] tabular-nums">{s.points}</span>
             <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_('leaderboard_pts')}</span>
           </div>
@@ -134,29 +128,16 @@
       </div>
     {/if}
 
-    <!-- Fun stats -->
-    {#if funStats.length > 0}
-      <div class="space-y-1">
-        <p class="px-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('stat_title')}</p>
-        {#each funStats as stat}
-          <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">{stat.badge}</div>
-            <div class="flex-1 min-w-0">
-              <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_(stat.label)}</p>
-              <p class="text-sm font-semibold truncate">{stat.name}</p>
-            </div>
-            <span class="text-sm font-[800] tabular-nums text-[var(--primary)]">{stat.value}</span>
-          </div>
-        {/each}
-      </div>
-    {/if}
 
-    <a
-      href="/"
-      class="block w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
-    >
-      {$_('leaderboard_new_session')}
-    </a>
+    <div class="flex justify-center">
+      <a
+        href="/"
+        class="rounded-full border border-[var(--border)] px-5 py-2 text-sm text-[var(--text-secondary)] hover:border-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+      >
+        ✕ {$_('leaderboard_close')}
+      </a>
+    </div>
+
 
   {:else}
 
@@ -229,7 +210,7 @@
             <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {isPodium ? 'bg-white/20 text-white' : 'bg-[var(--primary-muted)] text-[var(--primary)]'} text-xs font-[800]">
               {initials(s.name)}
             </div>
-            <span class="truncate text-sm font-semibold {isPodium ? 'text-white' : ''}">{s.name}</span>
+            <span class="truncate text-sm font-semibold {isPodium ? 'text-white' : ''}">{shortName(s.name)}</span>
           </div>
           <span class="text-center text-sm {isPodium ? 'text-white/70' : 'text-[var(--text-secondary)]'}">{s.games_played ?? 0}</span>
           <span class="text-center text-sm font-semibold {isPodium ? 'text-white/70' : 'text-[var(--text-secondary)]'}">

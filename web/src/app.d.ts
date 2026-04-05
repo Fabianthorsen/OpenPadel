@@ -29,6 +29,7 @@ declare global {
       rounds_total?: number;
       current_round?: number;
       creator_player_id?: string;
+      scheduled_at?: string;
       players: Player[];
       created_at: string;
       updated_at: string;
@@ -37,6 +38,7 @@ declare global {
     interface Player {
       id: string;
       session_id: string;
+      user_id?: string;
       name: string;
       active: boolean;
       joined_at: string;
@@ -57,6 +59,7 @@ declare global {
       team_a: [string, string];
       team_b: [string, string];
       score: { a: number; b: number } | null;
+      live?: { a: number; b: number; server?: 'a' | 'b' };
     }
 
     interface Standing {
@@ -77,6 +80,15 @@ declare global {
       rank: number;
       points: number;
       games_played: number;
+    }
+
+    interface UpcomingEntry {
+      session_id: string;
+      name: string;
+      status: 'lobby' | 'active';
+      courts: number;
+      player_count: number;
+      scheduled_at?: string;
     }
 
     interface Leaderboard {

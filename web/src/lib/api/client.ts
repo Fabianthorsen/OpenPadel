@@ -9,9 +9,10 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: string, path: string, body?: unknown, token?: string): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, token?: string, extraHeaders?: Record<string, string>): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (extraHeaders) Object.assign(headers, extraHeaders);
 
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -38,7 +39,7 @@ export const api = {
     profile: (token: string) =>
       request<{ user: App.User; stats: App.CareerStats }>('GET', '/auth/profile', undefined, token),
     history: (token: string) =>
-      request<{ tournaments: App.TournamentEntry[] }>('GET', '/auth/history', undefined, token),
+      request<{ tournaments: App.TournamentEntry[]; upcoming: App.UpcomingEntry[] }>('GET', '/auth/history', undefined, token),
     deleteAccount: (token: string) =>
       request<void>('DELETE', '/auth/account', undefined, token),
     forgotPassword: (email: string) =>
@@ -47,24 +48,34 @@ export const api = {
       request<void>('POST', '/auth/reset', { token, password }),
   },
   sessions: {
-    create: (courts: number, points: number, name: string) =>
-      request<App.Session>('POST', '/sessions', { courts, points, name }),
+    create: (courts: number, points: number, name: string, scheduledAt?: string) =>
+      request<App.Session>('POST', '/sessions', { courts, points, name, scheduled_at: scheduledAt }),
     get: (id: string, token?: string) =>
       request<App.Session>('GET', `/sessions/${id}`, undefined, token),
     start: (id: string, token: string) =>
       request<App.Session>('POST', `/sessions/${id}/start`, undefined, token),
     cancel: (id: string, token: string) =>
       request<void>('DELETE', `/sessions/${id}`, undefined, token),
+    close: (id: string, token: string) =>
+      request<void>('POST', `/sessions/${id}/close`, undefined, token),
   },
   players: {
-    join: (sessionId: string, name: string, token?: string) =>
-      request<App.Player>('POST', `/sessions/${sessionId}/players`, { name }, token),
+    join: (sessionId: string, name: string, token?: string, adminToken?: string) =>
+      request<App.Player>('POST', `/sessions/${sessionId}/players`, { name }, token, adminToken ? { 'X-Admin-Token': adminToken } : undefined),
     remove: (sessionId: string, playerId: string, token: string) =>
       request<{ id: string; active: boolean }>(
         'DELETE',
         `/sessions/${sessionId}/players/${playerId}`,
         undefined,
         token
+      ),
+    leave: (sessionId: string, playerId: string) =>
+      request<{ id: string; active: boolean }>(
+        'DELETE',
+        `/sessions/${sessionId}/players/${playerId}`,
+        undefined,
+        undefined,
+        { 'X-Player-Id': playerId }
       ),
   },
   rounds: {
@@ -82,9 +93,19 @@ export const api = {
         score_b: scoreB,
         token,
       }, token),
+    updateLive: (sessionId: string, matchId: string, a: number, b: number, server: string) =>
+      request<void>('PATCH', `/sessions/${sessionId}/matches/${matchId}/score`, { a, b, server }),
   },
   leaderboard: {
     get: (sessionId: string) =>
       request<App.Leaderboard>('GET', `/sessions/${sessionId}/leaderboard`),
+  },
+  push: {
+    getVapidKey: () =>
+      request<{ public_key: string }>('GET', '/push/vapid-public-key'),
+    subscribe: (token: string, endpoint: string, p256dh: string, auth: string) =>
+      request<void>('POST', '/push/subscribe', { endpoint, p256dh, auth }, token),
+    unsubscribe: (token: string, endpoint: string) =>
+      request<void>('DELETE', '/push/subscribe', { endpoint }, token),
   },
 };

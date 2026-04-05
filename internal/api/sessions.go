@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -14,9 +16,10 @@ import (
 
 func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Courts int    `json:"courts"`
-		Points int    `json:"points"`
-		Name   string `json:"name"`
+		Courts      int     `json:"courts"`
+		Points      int     `json:"points"`
+		Name        string  `json:"name"`
+		ScheduledAt *string `json:"scheduled_at"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
@@ -31,7 +34,17 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name)
+	var scheduledAt *time.Time
+	if body.ScheduledAt != nil && *body.ScheduledAt != "" {
+		t, err := time.Parse(time.RFC3339, *body.ScheduledAt)
+		if err != nil {
+			respondError(w, http.StatusBadRequest, "invalid scheduled_at format, use RFC3339")
+			return
+		}
+		scheduledAt = &t
+	}
+
+	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, scheduledAt)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not create session")
 		return
@@ -99,8 +112,40 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sess, _ = h.store.GetSession(id)
+
+	// Fan out push notifications to all subscribed players in the session.
+	adminName := ""
+	for _, p := range sess.Players {
+		if p.ID == sess.CreatorPlayerID {
+			adminName = p.Name
+			break
+		}
+	}
+	if adminName == "" {
+		adminName = "Admin"
+	}
+	name := playerShortName(adminName)
+	tournamentName := sess.Name
+	var notifBody string
+	if tournamentName != "" {
+		notifBody = name + " just started \"" + tournamentName + "\", tap to watch scores!"
+	} else {
+		notifBody = name + " just started the tournament, tap to watch scores!"
+	}
+	go h.sendPushToSession(id, "Tournament started!", notifBody)
+
 	sess.AdminToken = ""
 	respond(w, http.StatusOK, sess)
+}
+
+// playerShortName returns "Firstname L." for multi-word names, or the name as-is.
+func playerShortName(name string) string {
+	words := strings.Fields(name)
+	if len(words) <= 1 {
+		return name
+	}
+	last := words[len(words)-1]
+	return words[0] + " " + strings.ToUpper(string([]rune(last)[0])) + "."
 }
 
 func activePlayers(players []domain.Player) []domain.Player {
@@ -111,6 +156,32 @@ func activePlayers(players []domain.Player) []domain.Player {
 		}
 	}
 	return out
+}
+
+func (h *Handler) closeSession(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	sess, err := h.store.GetSession(id)
+	if errors.Is(err, store.ErrNotFound) {
+		respondError(w, http.StatusNotFound, "session not found")
+		return
+	}
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "could not load session")
+		return
+	}
+	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
+		respondError(w, http.StatusForbidden, "admin access required")
+		return
+	}
+	if sess.Status == domain.StatusComplete {
+		respondError(w, http.StatusConflict, "session already ended")
+		return
+	}
+	if err := h.store.DeleteSession(id); err != nil {
+		respondError(w, http.StatusInternalServerError, "could not close session")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) cancelSession(w http.ResponseWriter, r *http.Request) {

@@ -10,31 +10,37 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-func (s *Store) CreateSession(courts, points int, name string) (*domain.Session, error) {
+func (s *Store) CreateSession(courts, points int, name string, scheduledAt *time.Time) (*domain.Session, error) {
 	now := time.Now().UTC()
 	sess := &domain.Session{
-		ID:         newID(),
-		AdminToken: newAdminToken(),
-		Status:     domain.StatusLobby,
-		Name:       name,
-		Courts:     courts,
-		Points:     points,
-		Players:    []domain.Player{},
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:          newID(),
+		AdminToken:  newAdminToken(),
+		Status:      domain.StatusLobby,
+		Name:        name,
+		Courts:      courts,
+		Points:      points,
+		ScheduledAt: scheduledAt,
+		Players:     []domain.Player{},
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	var scheduledAtStr *string
+	if scheduledAt != nil {
+		s := scheduledAt.UTC().Format(time.RFC3339)
+		scheduledAtStr = &s
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO sessions (id, admin_token, status, name, courts, points, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO sessions (id, admin_token, status, name, courts, points, scheduled_at, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.AdminToken, sess.Status, sess.Name, sess.Courts, sess.Points,
-		sess.CreatedAt.Format(time.RFC3339), sess.UpdatedAt.Format(time.RFC3339),
+		scheduledAtStr, sess.CreatedAt.Format(time.RFC3339), sess.UpdatedAt.Format(time.RFC3339),
 	)
 	return sess, err
 }
 
 func (s *Store) GetSession(id string) (*domain.Session, error) {
 	row := s.db.QueryRow(
-		`SELECT id, admin_token, status, name, courts, points, rounds_total, creator_player_id, current_round, created_at, updated_at
+		`SELECT id, admin_token, status, name, courts, points, rounds_total, creator_player_id, current_round, scheduled_at, created_at, updated_at
 		 FROM sessions WHERE id = ?`, id,
 	)
 	sess, err := scanSession(row)
@@ -99,11 +105,12 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	var creatorPlayerID sql.NullString
 	var currentRound sql.NullInt64
 	var name sql.NullString
+	var scheduledAt sql.NullString
 	var createdAt, updatedAt string
 	err := row.Scan(
 		&sess.ID, &sess.AdminToken, &sess.Status, &name,
 		&sess.Courts, &sess.Points, &roundsTotal,
-		&creatorPlayerID, &currentRound, &createdAt, &updatedAt,
+		&creatorPlayerID, &currentRound, &scheduledAt, &createdAt, &updatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -124,6 +131,10 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	if currentRound.Valid {
 		v := int(currentRound.Int64)
 		sess.CurrentRound = &v
+	}
+	if scheduledAt.Valid {
+		t, _ := time.Parse(time.RFC3339, scheduledAt.String)
+		sess.ScheduledAt = &t
 	}
 	sess.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
 	sess.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)

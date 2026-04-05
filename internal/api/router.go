@@ -8,25 +8,36 @@ import (
 	"github.com/go-chi/cors"
 
 	"github.com/fabianthorsen/nottennis/internal/email"
+	"github.com/fabianthorsen/nottennis/internal/livescores"
 	"github.com/fabianthorsen/nottennis/internal/store"
 	"github.com/fabianthorsen/nottennis/internal/ui"
 )
 
 type Handler struct {
-	store  *store.Store
-	email  *email.Client
-	appURL string
+	store        *store.Store
+	live         *livescores.Store
+	email        *email.Client
+	appURL       string
+	vapidPrivate string
+	vapidPublic  string
 }
 
-func NewRouter(s *store.Store, emailClient *email.Client, appURL string) http.Handler {
-	h := &Handler{store: s, email: emailClient, appURL: appURL}
+func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, vapidPublic string) http.Handler {
+	h := &Handler{
+		store:        s,
+		live:         livescores.New(),
+		email:        emailClient,
+		appURL:       appURL,
+		vapidPrivate: vapidPrivate,
+		vapidPublic:  vapidPublic,
+	}
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
 
@@ -64,12 +75,17 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL string) http.Ha
 		r.Post("/auth/forgot", h.forgotPassword)
 		r.Post("/auth/reset", h.resetPassword)
 
+		r.Get("/push/vapid-public-key", h.vapidPublicKey)
+		r.With(h.requireAuth).Post("/push/subscribe", h.subscribePush)
+		r.With(h.requireAuth).Delete("/push/subscribe", h.unsubscribePush)
+
 		r.Post("/sessions", h.createSession)
 
 		r.Route("/sessions/{id}", func(r chi.Router) {
 			r.Get("/", h.getSession)
 			r.Delete("/", h.cancelSession)
-			r.Post("/start", h.startSession)
+			r.Post("/close", h.closeSession)
+r.Post("/start", h.startSession)
 			r.With(h.optionalAuth).Post("/players", h.joinSession)
 			r.Delete("/players/{playerID}", h.deactivatePlayer)
 			r.Get("/rounds", h.getRounds)
@@ -77,6 +93,7 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL string) http.Ha
 			r.Post("/rounds/advance", h.advanceRound)
 			r.Get("/leaderboard", h.getLeaderboard)
 			r.Put("/matches/{matchID}/score", h.submitScore)
+			r.Patch("/matches/{matchID}/score", h.updateLiveScore)
 		})
 	})
 
