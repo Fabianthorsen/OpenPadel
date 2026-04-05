@@ -8,12 +8,18 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export async function subscribeToPush(token: string): Promise<boolean> {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    throw new Error('Push not supported in this browser');
+  }
 
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return false;
 
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Service worker timed out')), 5000)),
+  ]) as ServiceWorkerRegistration;
+
   const { public_key } = await api.push.getVapidKey();
 
   const sub = await reg.pushManager.subscribe({

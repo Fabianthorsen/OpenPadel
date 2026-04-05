@@ -146,7 +146,6 @@
       await checkPushState();
     } catch (e) {
       pushError = e instanceof Error ? e.message : 'Something went wrong';
-      setTimeout(() => { pushError = ''; }, 4000);
     } finally {
       pushToggling = false;
     }
@@ -283,25 +282,25 @@
 
         {#if showStats}
           <div transition:slide={{ duration: 200 }} class="grid grid-cols-2 gap-3">
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4 space-y-0.5">
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center justify-center gap-1">
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_tournaments')}</p>
               <p class="text-3xl font-[800]">{stats.tournaments}</p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4 space-y-0.5">
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center justify-center gap-1">
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_win_rate')}</p>
               <p class="text-3xl font-[800]">{winRate}<span class="text-lg text-[var(--text-secondary)]">%</span></p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4 space-y-0.5">
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center justify-center gap-1">
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_games')}</p>
               <p class="text-3xl font-[800]">{stats.games_played}</p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4 space-y-1.5 flex flex-col items-center justify-center">
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center justify-center gap-1.5">
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('leaderboard_wl')}</p>
-              <div class="flex items-center gap-2 text-2xl font-[800] tabular-nums">
+              <div class="flex items-center gap-1.5 text-2xl font-[800] tabular-nums">
                 <span class="text-[var(--primary)]">{stats.wins}V</span>
-                <span class="text-[var(--text-disabled)] text-lg">·</span>
+                <span class="text-[var(--text-disabled)] text-base">·</span>
                 <span class="text-[var(--text-disabled)]">{stats.draws}U</span>
-                <span class="text-[var(--text-disabled)] text-lg">·</span>
+                <span class="text-[var(--text-disabled)] text-base">·</span>
                 <span class="text-[#c0392b]">{stats.losses}T</span>
               </div>
             </div>
