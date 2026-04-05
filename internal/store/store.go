@@ -43,9 +43,25 @@ var migrations = []string{
 	`ALTER TABLE sessions ADD COLUMN creator_player_id TEXT`,
 	`ALTER TABLE sessions ADD COLUMN current_round INTEGER NOT NULL DEFAULT 1`,
 	`ALTER TABLE sessions ADD COLUMN name TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE players ADD COLUMN user_id TEXT REFERENCES users(id)`,
 }
 
 const schema = `
+CREATE TABLE IF NOT EXISTS users (
+	id            TEXT PRIMARY KEY,
+	username      TEXT NOT NULL UNIQUE,
+	email         TEXT NOT NULL UNIQUE,
+	display_name  TEXT NOT NULL,
+	password_hash TEXT NOT NULL,
+	created_at    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS auth_tokens (
+	token      TEXT PRIMARY KEY,
+	user_id    TEXT NOT NULL REFERENCES users(id),
+	created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
 	id                TEXT PRIMARY KEY,
 	admin_token       TEXT NOT NULL,

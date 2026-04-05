@@ -26,6 +26,16 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
 }
 
 export const api = {
+  auth: {
+    register: (email: string, username: string, displayName: string, password: string) =>
+      request<{ token: string; user: App.User }>('POST', '/auth/register', { email, username, display_name: displayName, password }),
+    login: (email: string, password: string) =>
+      request<{ token: string; user: App.User }>('POST', '/auth/login', { email, password }),
+    logout: (token: string) =>
+      request<void>('POST', '/auth/logout', undefined, token),
+    me: (token: string) =>
+      request<App.User>('GET', '/auth/me', undefined, token),
+  },
   sessions: {
     create: (courts: number, points: number, name: string) =>
       request<App.Session>('POST', '/sessions', { courts, points, name }),

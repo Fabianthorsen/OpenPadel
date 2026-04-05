@@ -50,13 +50,19 @@ func NewRouter(s *store.Store) http.Handler {
 	r.Handle("/*", ui.Handler())
 
 	r.Route("/api", func(r chi.Router) {
+		// Auth
+		r.Post("/auth/register", h.register)
+		r.Post("/auth/login", h.login)
+		r.Post("/auth/logout", h.logout)
+		r.With(h.requireAuth).Get("/auth/me", h.me)
+
 		r.Post("/sessions", h.createSession)
 
 		r.Route("/sessions/{id}", func(r chi.Router) {
 			r.Get("/", h.getSession)
 			r.Delete("/", h.cancelSession)
 			r.Post("/start", h.startSession)
-			r.Post("/players", h.joinSession)
+			r.With(h.optionalAuth).Post("/players", h.joinSession)
 			r.Delete("/players/{playerID}", h.deactivatePlayer)
 			r.Get("/rounds", h.getRounds)
 			r.Get("/rounds/current", h.getCurrentRound)

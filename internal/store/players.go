@@ -7,18 +7,23 @@ import (
 	"github.com/fabianthorsen/nottennis/internal/domain"
 )
 
-func (s *Store) CreatePlayer(sessionID, name string) (*domain.Player, error) {
+func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, error) {
 	now := time.Now().UTC()
 	p := &domain.Player{
 		ID:        newID(),
 		SessionID: sessionID,
+		UserID:    userID,
 		Name:      name,
 		Active:    true,
 		JoinedAt:  now,
 	}
+	var uid *string
+	if userID != "" {
+		uid = &userID
+	}
 	_, err := s.db.Exec(
-		`INSERT INTO players (id, session_id, name, active, joined_at) VALUES (?, ?, ?, 1, ?)`,
-		p.ID, p.SessionID, p.Name, p.JoinedAt.Format(time.RFC3339),
+		`INSERT INTO players (id, session_id, user_id, name, active, joined_at) VALUES (?, ?, ?, ?, 1, ?)`,
+		p.ID, p.SessionID, uid, p.Name, p.JoinedAt.Format(time.RFC3339),
 	)
 	if err != nil {
 		return nil, err

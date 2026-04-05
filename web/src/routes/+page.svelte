@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { api } from '$lib/api/client';
+  import { auth } from '$lib/auth.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { setLocale, locale } from '$lib/i18n';
@@ -129,8 +130,30 @@
       </div>
     </div>
 
+    <!-- Auth -->
+    <div class="flex justify-center pt-6">
+      {#if auth.user}
+        <div class="flex items-center gap-3">
+          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+            {auth.user.display_name[0].toUpperCase()}
+          </div>
+          <span class="text-sm font-semibold">{auth.user.display_name}</span>
+          <button
+            onclick={() => auth.logout()}
+            class="text-xs text-[var(--text-disabled)] hover:text-[var(--destructive)]"
+          >
+            {$_('auth_sign_out')}
+          </button>
+        </div>
+      {:else}
+        <a href="/auth" class="text-sm font-semibold text-[var(--primary)] hover:text-[var(--primary-hover)]">
+          {$_('auth_sign_in')} →
+        </a>
+      {/if}
+    </div>
+
     <!-- Language toggle -->
-    <div class="flex justify-center gap-3 pt-8">
+    <div class="flex justify-center gap-3 pt-4">
       {#each [['en', 'EN'], ['no', 'NO']] as [lang, label]}
         <button
           onclick={() => setLocale(lang)}

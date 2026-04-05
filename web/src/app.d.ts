@@ -1,6 +1,14 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 declare global {
   namespace App {
+    interface User {
+      id: string;
+      username: string;
+      email: string;
+      display_name: string;
+      created_at: string;
+    }
+
     type SessionStatus = 'lobby' | 'active' | 'complete';
 
     interface Session {

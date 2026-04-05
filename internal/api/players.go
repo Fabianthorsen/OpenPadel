@@ -42,7 +42,12 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player, err := h.store.CreatePlayer(id, body.Name)
+	var userID string
+	if u := userFromContext(r); u != nil {
+		userID = u.ID
+	}
+
+	player, err := h.store.CreatePlayer(id, body.Name, userID)
 	if err != nil {
 		if isUniqueConstraintError(err) {
 			respondError(w, http.StatusConflict, "Oops, somebody already took that name")

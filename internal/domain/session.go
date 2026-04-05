@@ -2,6 +2,20 @@ package domain
 
 import "time"
 
+type User struct {
+	ID           string    `json:"id"`
+	Username     string    `json:"username"`
+	Email        string    `json:"email"`
+	DisplayName  string    `json:"display_name"`
+	PasswordHash string    `json:"-"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type AuthToken struct {
+	Token  string `json:"token"`
+	UserID string `json:"user_id"`
+}
+
 type SessionStatus string
 
 const (
@@ -28,6 +42,7 @@ type Session struct {
 type Player struct {
 	ID        string    `json:"id"`
 	SessionID string    `json:"session_id"`
+	UserID    string    `json:"user_id,omitempty"`
 	Name      string    `json:"name"`
 	Active    bool      `json:"active"`
 	JoinedAt  time.Time `json:"joined_at"`
