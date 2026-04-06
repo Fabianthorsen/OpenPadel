@@ -4,7 +4,7 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { Activity, ChartBar } from 'lucide-svelte';
-  import { initials } from '$lib/utils';
+  import { initials, sessionName } from '$lib/utils';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
@@ -198,7 +198,7 @@
 
     <!-- Nav -->
     <div class="flex items-center justify-between">
-      <p class="text-sm font-semibold text-[var(--primary)]">{session.name || 'NotTennis'}</p>
+      <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       <a
         href="/"
         class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-secondary)]"

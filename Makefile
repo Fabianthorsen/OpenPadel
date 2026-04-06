@@ -32,7 +32,7 @@ tidy:
 
 ## Clear all game data (sessions, rounds, matches, players) — keeps users & auth
 db/reset:
-	sqlite3 nottennis.db "DELETE FROM bench; DELETE FROM matches; DELETE FROM rounds; DELETE FROM players; DELETE FROM sessions;"
+	sqlite3 nottennis.db "DELETE FROM bench; DELETE FROM matches; DELETE FROM rounds; DELETE FROM tennis_matches; DELETE FROM tennis_teams; DELETE FROM players; DELETE FROM sessions;"
 	@echo "Game data cleared."
 
 ## Install git hooks (run once after cloning)

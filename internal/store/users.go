@@ -105,8 +105,8 @@ func (s *Store) DeleteAuthToken(token string) error {
 	return err
 }
 
-func (s *Store) GetCareerStats(userID string) (*domain.CareerStats, error) {
-	var stats domain.CareerStats
+func (s *Store) GetCareerStats(userID string) (*domain.AmericanoCareerStats, error) {
+	var stats domain.AmericanoCareerStats
 	err := s.db.QueryRow(`
 		SELECT
 			COUNT(DISTINCT p.session_id) AS tournaments,
@@ -129,7 +129,7 @@ func (s *Store) GetCareerStats(userID string) (*domain.CareerStats, error) {
 				END
 			), 0) AS total_points
 		FROM players p
-		JOIN sessions s ON s.id = p.session_id AND s.status = 'complete'
+		JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'americano'
 		LEFT JOIN rounds r ON r.session_id = p.session_id
 		LEFT JOIN matches m ON m.round_id = r.id
 			AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
@@ -141,6 +141,31 @@ func (s *Store) GetCareerStats(userID string) (*domain.CareerStats, error) {
 		return nil, err
 	}
 	stats.Losses = stats.GamesPlayed - stats.Wins - stats.Draws
+	return &stats, nil
+}
+
+// GetTennisCareerStats returns wins/losses/tournaments for tennis (2v2) sessions.
+func (s *Store) GetTennisCareerStats(userID string) (*domain.TennisCareerStats, error) {
+	var stats domain.TennisCareerStats
+	err := s.db.QueryRow(`
+		SELECT
+			COUNT(DISTINCT p.session_id) AS tournaments,
+			COALESCE(SUM(
+				CASE WHEN json_extract(tm.state, '$.winner') = tt.team THEN 1 ELSE 0 END
+			), 0) AS wins,
+			COALESCE(SUM(
+				CASE WHEN json_extract(tm.state, '$.winner') != '' AND json_extract(tm.state, '$.winner') != tt.team THEN 1 ELSE 0 END
+			), 0) AS losses
+		FROM players p
+		JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'tennis'
+		JOIN tennis_teams tt ON tt.session_id = p.session_id AND tt.player_id = p.id
+		JOIN tennis_matches tm ON tm.session_id = p.session_id
+		WHERE p.user_id = ? AND p.active = 1`,
+		userID,
+	).Scan(&stats.Tournaments, &stats.Wins, &stats.Losses)
+	if err != nil {
+		return nil, err
+	}
 	return &stats, nil
 }
 

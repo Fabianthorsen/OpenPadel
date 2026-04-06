@@ -13,6 +13,12 @@ export function shortName(name: string): string {
   return `${words[0]} ${words[words.length - 1][0].toUpperCase()}.`;
 }
 
+/** Returns a display name for a session, falling back to a mode-aware default. */
+export function sessionName(session: { name?: string; game_mode?: string }): string {
+  if (session.name) return session.name;
+  return session.game_mode === 'tennis' ? 'NotTennis 2v2' : 'NotTennis Americano';
+}
+
 /** Returns up to 2 uppercase initials from a display name. "Fabian Thorsen" → "FT" */
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);

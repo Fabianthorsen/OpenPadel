@@ -112,9 +112,16 @@ func (h *Handler) profile(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "could not load stats")
 		return
 	}
+	tennisStats, err := h.store.GetTennisCareerStats(user.ID)
+	if err != nil {
+		log.Printf("profile: GetTennisCareerStats failed: %v", err)
+		respondError(w, http.StatusInternalServerError, "could not load stats")
+		return
+	}
 	respond(w, http.StatusOK, map[string]any{
-		"user":  user,
-		"stats": stats,
+		"user":         user,
+		"stats":        stats,
+		"tennis_stats": tennisStats,
 	})
 }
 

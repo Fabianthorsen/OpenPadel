@@ -11,7 +11,8 @@
   import { fly, slide } from 'svelte/transition';
   import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
 
-  let stats = $state<App.CareerStats | null>(null);
+  let stats = $state<App.AmericanoCareerStats | null>(null);
+  let tennisStats = $state<App.TennisCareerStats | null>(null);
   let tournaments = $state<App.TournamentEntry[]>([]);
   let upcoming = $state<App.UpcomingEntry[]>([]);
   let loading = $state(true);
@@ -78,6 +79,7 @@
         api.auth.history(auth.token),
       ]);
       stats = profileRes.stats;
+      tennisStats = profileRes.tennis_stats;
       tournaments = historyRes.tournaments;
       upcoming = historyRes.upcoming;
       showUpcoming = upcoming.length > 0;
@@ -118,6 +120,12 @@
   const winRate = $derived(
     stats && stats.games_played > 0
       ? Math.round((stats.wins / stats.games_played) * 100)
+      : 0
+  );
+
+  const tennisWinRate = $derived(
+    tennisStats && (tennisStats.wins + tennisStats.losses) > 0
+      ? Math.round((tennisStats.wins / (tennisStats.wins + tennisStats.losses)) * 100)
       : 0
   );
 
@@ -193,6 +201,34 @@
       {#if memberSince}
         <p class="text-sm text-[var(--text-secondary)]">Member since {memberSince}</p>
       {/if}
+    </div>
+  </div>
+
+  <!-- New tournament + join code -->
+  <div class="space-y-3">
+    <a href="/?create=1" class="block w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-[15px] font-semibold text-white">
+      {$_('profile_new_tournament')}
+    </a>
+    <div class="flex items-center gap-3">
+      <div class="h-px flex-1 bg-[var(--border)]"></div>
+      <span class="text-xs text-[var(--text-disabled)]">{$_('home_join_code_divider')}</span>
+      <div class="h-px flex-1 bg-[var(--border)]"></div>
+    </div>
+    <div class="flex justify-center gap-2" onpaste={onJoinPaste}>
+      {#each joinChars as _, i}
+        <input
+          bind:this={joinInputs[i]}
+          value={joinChars[i]}
+          oninput={(e) => onJoinInput(i, e)}
+          onkeydown={(e) => onJoinKeydown(i, e)}
+          maxlength={1}
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="characters"
+          spellcheck={false}
+          class="w-12 rounded-xl bg-[var(--surface-raised)] py-2.5 text-center text-lg font-[700] font-mono text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--primary)] transition-shadow"
+        />
+      {/each}
     </div>
   </div>
 
@@ -277,43 +313,62 @@
 
     {#if stats}
 
-      <!-- Stats -->
+      <!-- Americano stats -->
       <div class="space-y-3">
         <button
           onclick={() => showStats = !showStats}
           class="flex w-full items-center justify-between"
         >
-          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('profile_stats_section')}</p>
+          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Americano</p>
           <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showStats ? 'rotate-180' : ''}" />
         </button>
 
         {#if showStats}
           <div transition:slide={{ duration: 200 }} class="grid grid-cols-2 gap-3">
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center justify-center gap-1">
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+              <p class="text-3xl font-[800] leading-none">{stats.tournaments}</p>
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_tournaments')}</p>
-              <p class="text-3xl font-[800]">{stats.tournaments}</p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center justify-center gap-1">
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_win_rate')}</p>
-              <p class="text-3xl font-[800]">{winRate}<span class="text-lg text-[var(--text-secondary)]">%</span></p>
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+              <p class="text-3xl font-[800] leading-none">{winRate}</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_win_rate')} %</p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center justify-center gap-1">
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+              <p class="text-3xl font-[800] leading-none">{stats.games_played}</p>
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_games')}</p>
-              <p class="text-3xl font-[800]">{stats.games_played}</p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center justify-center gap-1.5">
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('leaderboard_wl')}</p>
-              <div class="flex items-center gap-1.5 text-2xl font-[800] tabular-nums">
-                <span class="text-[var(--primary)]">{stats.wins}V</span>
-                <span class="text-[var(--text-disabled)] text-base">·</span>
-                <span class="text-[var(--text-disabled)]">{stats.draws}U</span>
-                <span class="text-[var(--text-disabled)] text-base">·</span>
-                <span class="text-[#c0392b]">{stats.losses}T</span>
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+              <div class="flex items-baseline gap-1 leading-none font-[800] tabular-nums">
+                <span class="text-2xl text-[var(--primary)]">{stats.wins}V</span>
+                <span class="text-base text-[var(--text-disabled)]">·</span>
+                <span class="text-2xl text-[var(--text-disabled)]">{stats.draws}U</span>
+                <span class="text-base text-[var(--text-disabled)]">·</span>
+                <span class="text-2xl text-[#c0392b]">{stats.losses}T</span>
               </div>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('leaderboard_wl')}</p>
             </div>
           </div>
         {/if}
       </div>
+
+      <!-- Tennis (2v2) stats -->
+      {#if tennisStats}
+        <div class="space-y-3">
+          <div class="flex w-full items-center justify-between">
+            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_mode_tennis')}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+              <p class="text-3xl font-[800] leading-none">{tennisStats.tournaments}</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_tournaments')}</p>
+            </div>
+            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+              <p class="text-3xl font-[800] leading-none">{tennisWinRate}</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_win_rate')} %</p>
+            </div>
+          </div>
+        </div>
+      {/if}
 
       <!-- Upcoming -->
       <div class="space-y-3">
@@ -389,33 +444,6 @@
 
     <!-- Actions -->
     <div class="space-y-3">
-      <a href="/?create=1" class="block w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-[15px] font-semibold text-white">
-        {$_('profile_new_tournament')}
-      </a>
-
-      <div class="flex items-center gap-3">
-        <div class="h-px flex-1 bg-[var(--border)]"></div>
-        <span class="text-xs text-[var(--text-disabled)]">{$_('home_join_code_divider')}</span>
-        <div class="h-px flex-1 bg-[var(--border)]"></div>
-      </div>
-
-      <div class="flex justify-center gap-2" onpaste={onJoinPaste}>
-        {#each joinChars as _, i}
-          <input
-            bind:this={joinInputs[i]}
-            value={joinChars[i]}
-            oninput={(e) => onJoinInput(i, e)}
-            onkeydown={(e) => onJoinKeydown(i, e)}
-            maxlength={1}
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="characters"
-            spellcheck={false}
-            class="w-12 rounded-xl bg-[var(--surface-raised)] py-2.5 text-center text-lg font-[700] font-mono text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--primary)] transition-shadow"
-          />
-        {/each}
-      </div>
-
       <div class="pt-2 space-y-2">
         <button
           onclick={() => auth.logout().then(() => goto('/'))}
