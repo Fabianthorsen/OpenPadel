@@ -3,7 +3,7 @@ package store_test
 import (
 	"testing"
 
-	"github.com/fabianthorsen/nottennis/internal/store"
+	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
 func createSession(t *testing.T, s *store.Store) string {

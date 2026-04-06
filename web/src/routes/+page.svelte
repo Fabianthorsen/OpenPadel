@@ -128,7 +128,7 @@
     <div class="flex flex-1 flex-col justify-center space-y-12">
       <!-- Brand -->
       <div class="space-y-1">
-        <h1 class="text-[28px] font-[800] text-[var(--primary)]">NotTennis</h1>
+        <h1 class="text-[28px] font-[800] text-[var(--primary)]">OpenPadel</h1>
         <p class="text-[var(--text-secondary)]">{$_('home_tagline')}</p>
       </div>
 
@@ -144,7 +144,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('home_rejoin_label')}</p>
-              <p class="truncate text-sm font-semibold">{rejoinSession.name || 'NotTennis'}</p>
+              <p class="truncate text-sm font-semibold">{rejoinSession.name || 'OpenPadel'}</p>
             </div>
             <span class="text-sm text-[var(--text-secondary)]">→</span>
           </a>
@@ -224,7 +224,7 @@
       >
         ×
       </Button>
-      <span class="text-sm font-semibold text-[var(--primary)]">NotTennis</span>
+      <span class="text-sm font-semibold text-[var(--primary)]">OpenPadel</span>
       <div class="w-8"></div>
     </nav>
 

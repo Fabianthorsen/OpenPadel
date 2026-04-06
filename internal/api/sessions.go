@@ -9,9 +9,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/fabianthorsen/nottennis/internal/domain"
-	"github.com/fabianthorsen/nottennis/internal/scheduler"
-	"github.com/fabianthorsen/nottennis/internal/store"
+	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/scheduler"
+	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
 func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {

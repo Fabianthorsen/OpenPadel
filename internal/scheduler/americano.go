@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/fabianthorsen/nottennis/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
 // Generate produces all rounds for an Americano session upfront.

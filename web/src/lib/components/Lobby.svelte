@@ -265,7 +265,7 @@
 
       <!-- Brand + session info -->
       <div class="space-y-1">
-        <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--primary)]">NotTennis</p>
+        <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--primary)]">OpenPadel</p>
         <h1 class="text-[28px] font-[800] leading-tight">
           {#if creatorName}
             {$_('invite_title_with_creator', { values: { creator: creatorName } })}

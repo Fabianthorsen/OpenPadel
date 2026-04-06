@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/fabianthorsen/nottennis/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
 var ErrInvalidOrExpiredToken = errors.New("invalid or expired token")
@@ -276,7 +276,7 @@ func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryE
 		)
 		SELECT
 			s.id,
-			COALESCE(NULLIF(s.name, ''), 'NotTennis'),
+			COALESCE(NULLIF(s.name, ''), 'OpenPadel'),
 			s.status,
 			s.created_at,
 			rk.rank,
@@ -311,7 +311,7 @@ func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, e
 	rows, err := s.db.Query(`
 		SELECT
 			s.id,
-			COALESCE(NULLIF(s.name, ''), 'NotTennis'),
+			COALESCE(NULLIF(s.name, ''), 'OpenPadel'),
 			s.status,
 			s.game_mode,
 			s.courts,

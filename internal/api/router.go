@@ -7,10 +7,10 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
-	"github.com/fabianthorsen/nottennis/internal/email"
-	"github.com/fabianthorsen/nottennis/internal/livescores"
-	"github.com/fabianthorsen/nottennis/internal/store"
-	"github.com/fabianthorsen/nottennis/internal/ui"
+	"github.com/fabianthorsen/openpadel/internal/email"
+	"github.com/fabianthorsen/openpadel/internal/livescores"
+	"github.com/fabianthorsen/openpadel/internal/store"
+	"github.com/fabianthorsen/openpadel/internal/ui"
 )
 
 type Handler struct {
@@ -50,7 +50,7 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 		desc := "You've been invited to play Padel. Join now!"
 		if creator != "" {
 			title = creator + " wants you to join!"
-			desc = creator + " wants you to join this Padel tournament on NotTennis."
+			desc = creator + " wants you to join this Padel tournament on OpenPadel."
 		}
 		page := ui.IndexWithOG(title, desc)
 		if page == nil {

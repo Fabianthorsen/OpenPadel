@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/fabianthorsen/nottennis/internal/domain"
-	"github.com/fabianthorsen/nottennis/internal/store"
+	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
 // sendInvite lets the session admin invite a contact by user_id.

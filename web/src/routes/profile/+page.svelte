@@ -355,7 +355,7 @@
             {#if pushError}
               <p class="px-1 text-xs text-[var(--destructive)]">
                 {pushError === 'notifications_blocked'
-                  ? $_('pref_notifications_blocked', { values: { app: 'NotTennis' } })
+                  ? $_('pref_notifications_blocked', { values: { app: 'OpenPadel' } })
                   : pushError === 'sw_timeout'
                   ? $_('pref_notifications_sw_timeout')
                   : pushError}

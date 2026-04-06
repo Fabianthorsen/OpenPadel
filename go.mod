@@ -1,4 +1,4 @@
-module github.com/fabianthorsen/nottennis
+module github.com/fabianthorsen/openpadel
 
 go 1.25.0
 

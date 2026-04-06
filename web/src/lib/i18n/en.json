@@ -167,7 +167,7 @@
   "pwa_ios_share": "Share",
   "pwa_ios_add": "Add to Home Screen",
   "pwa_android_title": "Install app for notifications",
-  "pwa_android_desc": "Install NotTennis to your home screen to receive match notifications.",
+  "pwa_android_desc": "Install OpenPadel to your home screen to receive match notifications.",
   "pwa_install_btn": "Install",
 
   "profile_delete_account": "Delete account",

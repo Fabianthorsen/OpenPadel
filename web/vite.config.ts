@@ -17,8 +17,8 @@ export default defineConfig({
       injectRegister: null,
       selfDestroying: false,
       manifest: {
-        name: 'NotTennis',
-        short_name: 'NotTennis',
+        name: 'OpenPadel',
+        short_name: 'OpenPadel',
         description: 'Padel, organised.',
         theme_color: '#4A7856',
         background_color: '#f7f6f3',

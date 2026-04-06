@@ -1,4 +1,4 @@
-# NotTennis — Padel Game Manager
+# OpenPadel — Padel Game Manager
 
 ## Overview
 
@@ -105,7 +105,7 @@ remaining active players fill future rounds normally.
 
 ```
 1. SETUP     Admin creates session, picks courts, rounds, points target
-                └── Gets a join link (e.g. nottennis.app/s/abc123)
+                └── Gets a join link (e.g. openpadel.app/s/abc123)
 
 2. LOBBY     Admin shares link (WhatsApp etc.)
                 └── Players open link, enter their name → join the session

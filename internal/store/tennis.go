@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/fabianthorsen/nottennis/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
 // SaveTennisTeams replaces all team assignments for a session.

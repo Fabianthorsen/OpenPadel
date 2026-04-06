@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/fabianthorsen/nottennis/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
 var ErrAlreadyInvited = errors.New("user already invited to this session")
@@ -34,7 +34,7 @@ func (s *Store) GetPendingInvites(toUserID string) ([]domain.Invite, error) {
 	rows, err := s.db.Query(`
 		SELECT
 			i.id, i.session_id,
-			COALESCE(NULLIF(s.name, ''), 'NotTennis') AS session_name,
+			COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS session_name,
 			i.from_user_id, u.display_name,
 			i.to_user_id, i.status, i.created_at
 		FROM invites i
@@ -116,7 +116,7 @@ func (s *Store) getInviteByID(id string) (*domain.Invite, error) {
 	row := s.db.QueryRow(`
 		SELECT
 			i.id, i.session_id,
-			COALESCE(NULLIF(s.name, ''), 'NotTennis') AS session_name,
+			COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS session_name,
 			i.from_user_id, u.display_name,
 			i.to_user_id, i.status, i.created_at
 		FROM invites i

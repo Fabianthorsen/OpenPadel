@@ -20,7 +20,7 @@ func (c *Client) SendPasswordReset(toEmail, toName, resetURL string) error {
 	body := map[string]any{
 		"from":    c.from,
 		"to":      []string{toEmail},
-		"subject": "Reset your NotTennis password",
+		"subject": "Reset your OpenPadel password",
 		"html": fmt.Sprintf(`
 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:40px 24px">
   <h1 style="font-size:24px;font-weight:800;margin:0 0 8px">Reset your password</h1>

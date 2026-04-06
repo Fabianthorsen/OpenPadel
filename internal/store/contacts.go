@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/fabianthorsen/nottennis/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
 // AddContact adds contact_user_id as a contact of user_id.

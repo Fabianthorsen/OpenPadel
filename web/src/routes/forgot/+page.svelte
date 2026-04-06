@@ -25,7 +25,7 @@
   <div class="flex w-full max-w-sm flex-1 flex-col justify-center space-y-8">
 
     <div class="space-y-1">
-      <h1 class="text-[28px] font-[800] text-[var(--primary)]">NotTennis</h1>
+      <h1 class="text-[28px] font-[800] text-[var(--primary)]">OpenPadel</h1>
       <p class="text-[var(--text-secondary)]">{$_('forgot_subtitle')}</p>
     </div>
 

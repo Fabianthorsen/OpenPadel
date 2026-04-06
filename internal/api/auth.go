@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/fabianthorsen/nottennis/internal/store"
+	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
 func (h *Handler) register(w http.ResponseWriter, r *http.Request) {

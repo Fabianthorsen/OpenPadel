@@ -16,7 +16,7 @@ export function shortName(name: string): string {
 /** Returns a display name for a session, falling back to a mode-aware default. */
 export function sessionName(session: { name?: string; game_mode?: string }): string {
   if (session.name) return session.name;
-  return session.game_mode === 'tennis' ? 'NotTennis 2v2' : 'NotTennis Americano';
+  return session.game_mode === 'tennis' ? 'OpenPadel 2v2' : 'OpenPadel Americano';
 }
 
 /** Returns up to 2 uppercase initials from a display name. "Fabian Thorsen" → "FT" */

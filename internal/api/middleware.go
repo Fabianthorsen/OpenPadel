@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/fabianthorsen/nottennis/internal/domain"
-	"github.com/fabianthorsen/nottennis/internal/store"
+	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
 type contextKey string

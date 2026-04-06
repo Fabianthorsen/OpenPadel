@@ -1,4 +1,4 @@
-# Design — NotTennis
+# Design — OpenPadel
 
 ---
 
@@ -91,7 +91,7 @@ Minimal. Logo + one action.
 ┌─────────────────────────┐
 │                         │
 │                         │
-│   NotTennis             │  ← wordmark, H1, Text primary
+│   OpenPadel             │  ← wordmark, H1, Text primary
 │   Padel, organised.     │  ← Small, Text secondary
 │                         │
 │                         │
@@ -124,7 +124,7 @@ Grouped, not a form dump. Segmented controls over dropdowns.
   ─────────────────────────────
 
   Share link
-  nottennis.app/s/abc123  [Copy]
+  openpadel.app/s/abc123  [Copy]
 
   [ Share ]                      ← native OS share sheet
 

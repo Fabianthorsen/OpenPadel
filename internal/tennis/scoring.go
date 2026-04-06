@@ -3,7 +3,7 @@
 // best of N sets, golden point at deuce (40:40 → next point wins).
 package tennis
 
-import "github.com/fabianthorsen/nottennis/internal/domain"
+import "github.com/fabianthorsen/openpadel/internal/domain"
 
 // AddPoint applies a point to team "a" or "b" and returns the updated state.
 // If the match already has a winner, state is returned unchanged.

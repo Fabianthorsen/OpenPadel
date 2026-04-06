@@ -4,12 +4,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fabianthorsen/nottennis/internal/store"
+	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
 func newTestStore(t *testing.T) *store.Store {
 	t.Helper()
-	f, err := os.CreateTemp("", "nottennis-test-*.db")
+	f, err := os.CreateTemp("", "openpadel-test-*.db")
 	if err != nil {
 		t.Fatal(err)
 	}

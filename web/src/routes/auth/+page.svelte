@@ -70,7 +70,7 @@
 
     <!-- Brand -->
     <div class="space-y-1">
-      <h1 class="text-[28px] font-[800] text-[var(--primary)]">NotTennis</h1>
+      <h1 class="text-[28px] font-[800] text-[var(--primary)]">OpenPadel</h1>
       <p class="text-[var(--text-secondary)]">{mode === 'login' ? $_('auth_login_subtitle') : $_('auth_register_subtitle')}</p>
     </div>
 

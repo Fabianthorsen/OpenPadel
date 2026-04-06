@@ -1,4 +1,4 @@
-# Architecture — NotTennis
+# Architecture — OpenPadel
 
 ---
 
@@ -16,7 +16,7 @@ Deployed as a single Fly.io machine.
 │  ├── /api/*        → REST handlers  │
 │  └── /*            → SvelteKit PWA  │
 │                                     │
-│  nottennis.db      SQLite file      │
+│  openpadel.db      SQLite file      │
 │  litestream        → S3 backup      │
 └─────────────────────────────────────┘
 ```
@@ -26,7 +26,7 @@ Deployed as a single Fly.io machine.
 ## Project Structure
 
 ```
-nottennis/
+openpadel/
 ├── cmd/
 │   └── server/
 │       └── main.go           entry point, wires everything together
@@ -391,11 +391,11 @@ func generateAdminToken() string // "tok_" + 32 random base58 chars
 ```yaml
 # fly.toml
 [mounts]
-  source = "nottennis_data"
+  source = "openpadel_data"
   destination = "/data"   # SQLite file lives here
 ```
 
-litestream runs as a sidecar process, replicating `/data/nottennis.db` to S3 every 1s.
+litestream runs as a sidecar process, replicating `/data/openpadel.db` to S3 every 1s.
 
 ---
 

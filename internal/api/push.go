@@ -81,7 +81,7 @@ func (h *Handler) sendPushToSession(sessionID, title, body string) {
 		resp, err := webpush.SendNotification(payload, s, &webpush.Options{
 			VAPIDPublicKey:  h.vapidPublic,
 			VAPIDPrivateKey: h.vapidPrivate,
-			Subscriber:      fmt.Sprintf("mailto:noreply@%s", "nottennis.app"),
+			Subscriber:      fmt.Sprintf("mailto:noreply@%s", "openpadel.app"),
 			TTL:             60,
 		})
 		if err != nil {

@@ -1,4 +1,4 @@
-# NotTennis
+# OpenPadel
 
 A lightweight padel tournament app. Supports Americano (rotating partners, point-based) and Regular 2v2 (fixed teams, tennis scoring).
 
@@ -50,7 +50,7 @@ make dev/web
 ## Building for production
 
 ```bash
-make build   # builds frontend then compiles Go binary to bin/nottennis
+make build   # builds frontend then compiles Go binary to bin/openpadel
 ```
 
 ## Deploying
@@ -59,7 +59,7 @@ make build   # builds frontend then compiles Go binary to bin/nottennis
 fly deploy
 ```
 
-The database is persisted on a Fly volume at `/data/nottennis.db`.
+The database is persisted on a Fly volume at `/data/openpadel.db`.
 
 ## Useful commands
 

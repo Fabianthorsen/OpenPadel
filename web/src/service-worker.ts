@@ -36,7 +36,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
-  let title = 'NotTennis';
+  let title = 'OpenPadel';
   let body = 'Something happened!';
   let url = '/';
 

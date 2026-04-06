@@ -1,14 +1,14 @@
-app = 'nottennis'
+app = 'openpadel'
 primary_region = 'arn'
 
 [build]
 
 [env]
   PORT = '8080'
-  DB_PATH = '/data/nottennis.db'
+  DB_PATH = '/data/openpadel.db'
 
 [mounts]
-  source = 'nottennis_data'
+  source = 'openpadel_data'
   destination = '/data'
 
 [http_service]

@@ -7,19 +7,19 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"github.com/fabianthorsen/nottennis/internal/api"
-	"github.com/fabianthorsen/nottennis/internal/email"
-	"github.com/fabianthorsen/nottennis/internal/store"
+	"github.com/fabianthorsen/openpadel/internal/api"
+	"github.com/fabianthorsen/openpadel/internal/email"
+	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
 func main() {
 	// Load .env if present (local dev). Silently ignored in production.
 	godotenv.Load()
-	dbPath := env("DB_PATH", "nottennis.db")
+	dbPath := env("DB_PATH", "openpadel.db")
 	port := env("PORT", "8080")
 	appURL := env("APP_URL", "http://localhost:5173")
 	resendKey := env("RESEND_API_KEY", "")
-	resendFrom := env("RESEND_FROM", "NotTennis <noreply@nottennis.app>")
+	resendFrom := env("RESEND_FROM", "OpenPadel <noreply@openpadel.app>")
 	vapidPrivate := env("VAPID_PRIVATE_KEY", "")
 	vapidPublic := env("VAPID_PUBLIC_KEY", "")
 

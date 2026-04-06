@@ -38,7 +38,7 @@
   async function share() {
     const text = `${winnerNames} beat ${finalistNames} — ${sets.map((s, i) => `${winnerSetScore(i)}-${finalistSetScore(i)}`).join(', ')}`;
     if (navigator.share) {
-      await navigator.share({ title: 'NotTennis', text }).catch(() => {});
+      await navigator.share({ title: 'OpenPadel', text }).catch(() => {});
     } else {
       await navigator.clipboard.writeText(text).catch(() => {});
     }
