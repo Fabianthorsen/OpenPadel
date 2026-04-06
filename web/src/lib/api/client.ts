@@ -37,7 +37,7 @@ export const api = {
     me: (token: string) =>
       request<App.User>('GET', '/auth/me', undefined, token),
     profile: (token: string) =>
-      request<{ user: App.User; stats: App.CareerStats }>('GET', '/auth/profile', undefined, token),
+      request<{ user: App.User; stats: App.AmericanoCareerStats; tennis_stats: App.TennisCareerStats }>('GET', '/auth/profile', undefined, token),
     history: (token: string) =>
       request<{ tournaments: App.TournamentEntry[]; upcoming: App.UpcomingEntry[] }>('GET', '/auth/history', undefined, token),
     deleteAccount: (token: string) =>
@@ -48,8 +48,8 @@ export const api = {
       request<void>('POST', '/auth/reset', { token, password }),
   },
   sessions: {
-    create: (courts: number, points: number, name: string, scheduledAt?: string) =>
-      request<App.Session>('POST', '/sessions', { courts, points, name, scheduled_at: scheduledAt }),
+    create: (courts: number, points: number, name: string, gameMode: string, setsToWin: number, gamesPerSet: number, scheduledAt?: string) =>
+      request<App.Session>('POST', '/sessions', { courts, points, name, game_mode: gameMode, sets_to_win: setsToWin, games_per_set: gamesPerSet, scheduled_at: scheduledAt }),
     get: (id: string, token?: string) =>
       request<App.Session>('GET', `/sessions/${id}`, undefined, token),
     start: (id: string, token: string) =>
@@ -95,6 +95,16 @@ export const api = {
       }, token),
     updateLive: (sessionId: string, matchId: string, a: number, b: number, server: string) =>
       request<void>('PATCH', `/sessions/${sessionId}/matches/${matchId}/score`, { a, b, server }),
+  },
+  tennis: {
+    setTeams: (sessionId: string, teams: { player_id: string; team: 'a' | 'b' }[], adminToken: string) =>
+      request<void>('PUT', `/sessions/${sessionId}/tennis/teams`, { teams }, adminToken),
+    getMatch: (sessionId: string) =>
+      request<App.TennisMatch>('GET', `/sessions/${sessionId}/tennis/match`),
+    addPoint: (sessionId: string, team: 'a' | 'b') =>
+      request<App.TennisMatch>('POST', `/sessions/${sessionId}/tennis/point/${team}`),
+    setServer: (sessionId: string, team: 'a' | 'b') =>
+      request<App.TennisMatch>('POST', `/sessions/${sessionId}/tennis/server/${team}`),
   },
   leaderboard: {
     get: (sessionId: string) =>

@@ -15,13 +15,19 @@ type AuthToken struct {
 	UserID string `json:"user_id"`
 }
 
-type CareerStats struct {
+type AmericanoCareerStats struct {
 	GamesPlayed  int `json:"games_played"`
 	Wins         int `json:"wins"`
 	Draws        int `json:"draws"`
 	Losses       int `json:"losses"`
 	TotalPoints  int `json:"total_points"`
 	Tournaments  int `json:"tournaments"`
+}
+
+type TennisCareerStats struct {
+	Tournaments int `json:"tournaments"`
+	Wins        int `json:"wins"`
+	Losses      int `json:"losses"`
 }
 
 type TournamentHistoryEntry struct {
@@ -56,6 +62,9 @@ type Session struct {
 	AdminToken      string        `json:"admin_token,omitempty"`
 	Status          SessionStatus `json:"status"`
 	Name            string        `json:"name,omitempty"`
+	GameMode        string        `json:"game_mode"`
+	SetsToWin       int           `json:"sets_to_win"`
+	GamesPerSet     int           `json:"games_per_set"`
 	Courts          int           `json:"courts"`
 	Points          int           `json:"points"`
 	RoundsTotal     *int          `json:"rounds_total,omitempty"`
@@ -65,6 +74,41 @@ type Session struct {
 	Players         []Player      `json:"players"`
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
+}
+
+// Tennis types
+
+type TennisTeam struct {
+	PlayerID string `json:"player_id"`
+	Name     string `json:"name"`
+	Team     string `json:"team"` // "a" or "b"
+}
+
+type TennisState struct {
+	Sets       [][2]int `json:"sets"`
+	GamesA     int      `json:"games_a"`
+	GamesB     int      `json:"games_b"`
+	PointsA    int      `json:"points_a"`
+	PointsB    int      `json:"points_b"`
+	InTiebreak bool     `json:"in_tiebreak"`
+	TiebreakA  int      `json:"tiebreak_a"`
+	TiebreakB  int      `json:"tiebreak_b"`
+	Server     string   `json:"server"` // "a" or "b"
+	Winner     string   `json:"winner"` // "a", "b", or ""
+}
+
+type TennisMatch struct {
+	ID        string      `json:"id"`
+	SessionID string      `json:"session_id"`
+	State     TennisState `json:"state"`
+	Teams     TennisTeams `json:"teams"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+type TennisTeams struct {
+	A []TennisTeam `json:"a"`
+	B []TennisTeam `json:"b"`
 }
 
 type Player struct {

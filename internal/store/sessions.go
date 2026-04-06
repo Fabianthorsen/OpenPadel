@@ -10,13 +10,25 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-func (s *Store) CreateSession(courts, points int, name string, scheduledAt *time.Time) (*domain.Session, error) {
+func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, scheduledAt *time.Time) (*domain.Session, error) {
 	now := time.Now().UTC()
+	if gameMode == "" {
+		gameMode = "americano"
+	}
+	if setsToWin == 0 {
+		setsToWin = 2
+	}
+	if gamesPerSet != 4 && gamesPerSet != 6 {
+		gamesPerSet = 6
+	}
 	sess := &domain.Session{
 		ID:          newID(),
 		AdminToken:  newAdminToken(),
 		Status:      domain.StatusLobby,
 		Name:        name,
+		GameMode:    gameMode,
+		SetsToWin:   setsToWin,
+		GamesPerSet: gamesPerSet,
 		Courts:      courts,
 		Points:      points,
 		ScheduledAt: scheduledAt,
@@ -30,17 +42,18 @@ func (s *Store) CreateSession(courts, points int, name string, scheduledAt *time
 		scheduledAtStr = &s
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO sessions (id, admin_token, status, name, courts, points, scheduled_at, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		sess.ID, sess.AdminToken, sess.Status, sess.Name, sess.Courts, sess.Points,
-		scheduledAtStr, sess.CreatedAt.Format(time.RFC3339), sess.UpdatedAt.Format(time.RFC3339),
+		`INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, scheduled_at, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		sess.ID, sess.AdminToken, sess.Status, sess.Name, sess.GameMode, sess.SetsToWin, sess.GamesPerSet,
+		sess.Courts, sess.Points, scheduledAtStr,
+		sess.CreatedAt.Format(time.RFC3339), sess.UpdatedAt.Format(time.RFC3339),
 	)
 	return sess, err
 }
 
 func (s *Store) GetSession(id string) (*domain.Session, error) {
 	row := s.db.QueryRow(
-		`SELECT id, admin_token, status, name, courts, points, rounds_total, creator_player_id, current_round, scheduled_at, created_at, updated_at
+		`SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, current_round, scheduled_at, created_at, updated_at
 		 FROM sessions WHERE id = ?`, id,
 	)
 	sess, err := scanSession(row)
@@ -104,11 +117,13 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	var roundsTotal sql.NullInt64
 	var creatorPlayerID sql.NullString
 	var currentRound sql.NullInt64
-	var name sql.NullString
+	var name, gameMode sql.NullString
+	var setsToWin, gamesPerSet sql.NullInt64
 	var scheduledAt sql.NullString
 	var createdAt, updatedAt string
 	err := row.Scan(
 		&sess.ID, &sess.AdminToken, &sess.Status, &name,
+		&gameMode, &setsToWin, &gamesPerSet,
 		&sess.Courts, &sess.Points, &roundsTotal,
 		&creatorPlayerID, &currentRound, &scheduledAt, &createdAt, &updatedAt,
 	)
@@ -120,6 +135,18 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	}
 	if name.Valid {
 		sess.Name = name.String
+	}
+	sess.GameMode = "americano"
+	if gameMode.Valid && gameMode.String != "" {
+		sess.GameMode = gameMode.String
+	}
+	sess.SetsToWin = 2
+	if setsToWin.Valid && setsToWin.Int64 > 0 {
+		sess.SetsToWin = int(setsToWin.Int64)
+	}
+	sess.GamesPerSet = 6
+	if gamesPerSet.Valid && gamesPerSet.Int64 > 0 {
+		sess.GamesPerSet = int(gamesPerSet.Int64)
 	}
 	if roundsTotal.Valid {
 		v := int(roundsTotal.Int64)
@@ -143,6 +170,8 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 
 func (s *Store) DeleteSession(id string) error {
 	// Delete in dependency order due to foreign keys.
+	s.db.Exec(`DELETE FROM tennis_matches WHERE session_id = ?`, id)
+	s.db.Exec(`DELETE FROM tennis_teams WHERE session_id = ?`, id)
 	s.db.Exec(`DELETE FROM bench WHERE round_id IN (SELECT id FROM rounds WHERE session_id = ?)`, id)
 	s.db.Exec(`DELETE FROM matches WHERE round_id IN (SELECT id FROM rounds WHERE session_id = ?)`, id)
 	s.db.Exec(`DELETE FROM rounds WHERE session_id = ?`, id)

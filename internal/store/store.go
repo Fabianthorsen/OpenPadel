@@ -58,6 +58,22 @@ var migrations = []string{
 		auth       TEXT NOT NULL,
 		created_at TEXT NOT NULL
 	)`,
+	`ALTER TABLE sessions ADD COLUMN game_mode TEXT NOT NULL DEFAULT 'americano'`,
+	`ALTER TABLE sessions ADD COLUMN sets_to_win INTEGER NOT NULL DEFAULT 2`,
+	`ALTER TABLE sessions ADD COLUMN games_per_set INTEGER NOT NULL DEFAULT 6`,
+	`CREATE TABLE IF NOT EXISTS tennis_teams (
+		session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+		player_id  TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+		team       TEXT NOT NULL,
+		PRIMARY KEY (session_id, player_id)
+	)`,
+	`CREATE TABLE IF NOT EXISTS tennis_matches (
+		id         TEXT PRIMARY KEY,
+		session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+		state      TEXT NOT NULL DEFAULT '{}',
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL
+	)`,
 }
 
 const schema = `

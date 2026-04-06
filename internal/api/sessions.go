@@ -19,19 +19,42 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		Courts      int     `json:"courts"`
 		Points      int     `json:"points"`
 		Name        string  `json:"name"`
+		GameMode    string  `json:"game_mode"`
+		SetsToWin   int     `json:"sets_to_win"`
+		GamesPerSet int     `json:"games_per_set"`
 		ScheduledAt *string `json:"scheduled_at"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if body.Courts < 1 || body.Courts > 4 {
-		respondError(w, http.StatusBadRequest, "courts must be between 1 and 4")
+	if body.GameMode == "" {
+		body.GameMode = "americano"
+	}
+	if body.GameMode != "americano" && body.GameMode != "tennis" {
+		respondError(w, http.StatusBadRequest, "game_mode must be 'americano' or 'tennis'")
 		return
 	}
-	if body.Points != 16 && body.Points != 24 && body.Points != 32 {
-		respondError(w, http.StatusBadRequest, "points must be 16, 24, or 32")
-		return
+
+	if body.GameMode == "americano" {
+		if body.Courts < 1 || body.Courts > 4 {
+			respondError(w, http.StatusBadRequest, "courts must be between 1 and 4")
+			return
+		}
+		if body.Points != 16 && body.Points != 24 && body.Points != 32 {
+			respondError(w, http.StatusBadRequest, "points must be 16, 24, or 32")
+			return
+		}
+	} else {
+		// Tennis: fixed 1 court, no points concept.
+		body.Courts = 1
+		body.Points = 0
+		if body.SetsToWin != 2 && body.SetsToWin != 3 {
+			body.SetsToWin = 2 // default best of 3
+		}
+		if body.GamesPerSet != 4 && body.GamesPerSet != 6 {
+			body.GamesPerSet = 6 // default
+		}
 	}
 
 	var scheduledAt *time.Time
@@ -44,7 +67,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		scheduledAt = &t
 	}
 
-	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, scheduledAt)
+	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, scheduledAt)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not create session")
 		return
@@ -93,22 +116,27 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	active := activePlayers(sess.Players)
-	minPlayers := sess.Courts * 4
-	if len(active) < minPlayers {
-		respondError(w, http.StatusUnprocessableEntity, "not enough players to start")
-		return
-	}
 
-	totalRounds := len(active) - 1
-	rounds := scheduler.Generate(active, sess.Courts, totalRounds)
-
-	if err := h.store.SaveRounds(id, rounds); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not generate rounds")
-		return
-	}
-	if err := h.store.StartSession(id, totalRounds); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not start session")
-		return
+	if sess.GameMode == "tennis" {
+		if err := h.startTennisSession(w, id, active); err != nil {
+			return
+		}
+	} else {
+		minPlayers := sess.Courts * 4
+		if len(active) < minPlayers {
+			respondError(w, http.StatusUnprocessableEntity, "not enough players to start")
+			return
+		}
+		totalRounds := len(active) - 1
+		rounds := scheduler.Generate(active, sess.Courts, totalRounds)
+		if err := h.store.SaveRounds(id, rounds); err != nil {
+			respondError(w, http.StatusInternalServerError, "could not generate rounds")
+			return
+		}
+		if err := h.store.StartSession(id, totalRounds); err != nil {
+			respondError(w, http.StatusInternalServerError, "could not start session")
+			return
+		}
 	}
 
 	sess, _ = h.store.GetSession(id)

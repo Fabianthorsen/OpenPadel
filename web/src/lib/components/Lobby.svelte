@@ -1,7 +1,7 @@
 <script lang="ts">
   import { api } from '$lib/api/client';
   import { Crown, Share, Check } from 'lucide-svelte';
-  import { initials } from '$lib/utils';
+  import { initials, sessionName } from '$lib/utils';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -45,9 +45,114 @@
     typeof location !== 'undefined' ? `${location.origin}/s/${session.id}` : ''
   );
 
+  const isTennis = $derived(session.game_mode === 'tennis');
   const activePlayers = $derived(session.players.filter((p) => p.active));
-  const canStart = $derived(activePlayers.length >= session.courts * 4);
+
+  // Tennis team state — maps player_id → 'a' | 'b' | null
+  let teamAssignments = $state<Record<string, 'a' | 'b'>>({});
+  let savingTeams = $state(false);
+  let draggingId = $state<string | null>(null);
+  let dragOverZone = $state<'a' | 'b' | 'pool' | null>(null);
+
+  // Touch drag state
+  let touchGhost = $state<{ name: string; x: number; y: number } | null>(null);
+  let zoneAEl = $state<HTMLElement | null>(null);
+  let zoneBEl = $state<HTMLElement | null>(null);
+  let zonePoolEl = $state<HTMLElement | null>(null);
+
+  function getZoneAtPoint(x: number, y: number): 'a' | 'b' | 'pool' | null {
+    for (const [zone, el] of [['a', zoneAEl], ['b', zoneBEl], ['pool', zonePoolEl]] as const) {
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return zone;
+    }
+    return null;
+  }
+
+  function onTouchStart(e: TouchEvent, playerId: string, name: string) {
+    const t = e.touches[0];
+    draggingId = playerId;
+    touchGhost = { name, x: t.clientX, y: t.clientY };
+  }
+
+  function onTouchMove(e: TouchEvent) {
+    if (!draggingId) return;
+    try { e.preventDefault(); } catch {}
+    const t = e.touches[0];
+    const player = activePlayers.find(p => p.id === draggingId);
+    if (player) touchGhost = { name: player.name, x: t.clientX, y: t.clientY };
+    dragOverZone = getZoneAtPoint(t.clientX, t.clientY);
+  }
+
+  // Svelte makes touchmove passive by default — use an action to register non-passive.
+  function nonPassiveTouchMove(node: HTMLElement) {
+    node.addEventListener('touchmove', onTouchMove, { passive: false });
+    return { destroy() { node.removeEventListener('touchmove', onTouchMove); } };
+  }
+
+  function onTouchEnd(e: TouchEvent) {
+    if (!draggingId) return;
+    const t = e.changedTouches[0];
+    const zone = getZoneAtPoint(t.clientX, t.clientY);
+    if (zone === 'pool') {
+      unassignPlayer(draggingId);
+    } else if (zone === 'a' || zone === 'b') {
+      assignPlayer(draggingId, zone);
+    }
+    draggingId = null;
+    touchGhost = null;
+    dragOverZone = null;
+  }
+
+  const teamA = $derived(activePlayers.filter((p) => teamAssignments[p.id] === 'a'));
+  const teamB = $derived(activePlayers.filter((p) => teamAssignments[p.id] === 'b'));
+  const unassigned = $derived(activePlayers.filter((p) => !teamAssignments[p.id]));
+
+  const canStart = $derived(
+    isTennis
+      ? teamA.length === 2 && teamB.length === 2
+      : activePlayers.length >= session.courts * 4
+  );
+
   const creatorName = $derived(activePlayers.find((p) => p.id === session.creator_player_id)?.name ?? '');
+
+  function unassignPlayer(playerId: string) {
+    const next = { ...teamAssignments };
+    delete next[playerId];
+    teamAssignments = next;
+    saveTeams();
+  }
+
+  function assignPlayer(playerId: string, team: 'a' | 'b') {
+    const current = teamAssignments[playerId];
+    // Clicking a player already on this team moves them back to pool
+    if (current === team) {
+      unassignPlayer(playerId);
+      return;
+    }
+    // Check team capacity
+    const count = activePlayers.filter((p) => teamAssignments[p.id] === team).length;
+    if (count >= 2) return;
+    teamAssignments = { ...teamAssignments, [playerId]: team };
+    saveTeams();
+  }
+
+  async function saveTeams() {
+    if (!isAdmin) return;
+    savingTeams = true;
+    const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+    const teams = activePlayers
+      .filter((p) => teamAssignments[p.id])
+      .map((p) => ({ player_id: p.id, team: teamAssignments[p.id] as 'a' | 'b' }));
+    try {
+      await api.tennis.setTeams(session.id, teams, adminToken);
+    } catch (e) {
+      joinError = e instanceof Error ? e.message : 'Could not save teams';
+      setTimeout(() => { joinError = ''; }, 4000);
+    } finally {
+      savingTeams = false;
+    }
+  }
 
   const myPlayerId = $derived(
     typeof localStorage !== 'undefined' ? localStorage.getItem(`player_id_${session.id}`) : null
@@ -59,7 +164,7 @@
 
   async function copyLink() {
     if (navigator.share) {
-      await navigator.share({ title: session.name || 'NotTennis', url: joinUrl }).catch(() => {});
+      await navigator.share({ title: sessionName(session), url: joinUrl }).catch(() => {});
     } else {
       await navigator.clipboard.writeText(joinUrl);
       copied = true;
@@ -81,8 +186,9 @@
       joinName = '';
       onRefresh();
     } catch (e) {
-      joinError = e instanceof Error ? e.message : 'Could not join';
-      setTimeout(() => { joinError = ''; }, 4000);
+      const msg = e instanceof Error ? e.message : 'Could not join';
+      joinError = msg.includes('full') ? $_('tennis_session_full') : msg;
+      setTimeout(() => { joinError = ''; }, 5000);
     } finally {
       joining = false;
     }
@@ -142,6 +248,14 @@
   </main>
 
 <!-- ── Join / invite screen (visitor hasn't joined yet) ── -->
+{:else if !isAdmin && !alreadyJoined && isTennis && activePlayers.length >= 4}
+  <main class="flex min-h-svh flex-col items-center justify-center px-6 gap-4">
+    <div class="w-full max-w-sm rounded-2xl bg-[var(--surface-raised)] px-5 py-6 text-center space-y-2">
+      <p class="text-lg font-[800]">{sessionName(session)}</p>
+      <p class="text-sm text-[var(--text-secondary)]">{$_('tennis_session_full')}</p>
+    </div>
+    <a href="/" class="text-sm text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">← {$_('auth_back_home')}</a>
+  </main>
 {:else if !isAdmin && !alreadyJoined}
   <main class="flex min-h-svh flex-col items-center px-6 py-12">
     <div class="flex w-full max-w-sm justify-end">
@@ -163,7 +277,11 @@
           <p class="text-[var(--text-secondary)]">{session.name}</p>
         {/if}
         <p class="text-sm text-[var(--text-secondary)]">
-          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} {$_('invite_points')} · Americano{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
+          {#if isTennis}
+            {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
+          {:else}
+            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} {$_('invite_points')} · Americano{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
+          {/if}
         </p>
       </div>
 
@@ -242,11 +360,15 @@
             {$_('lobby_waiting')}
           {/if}
         </p>
-        <p class="text-sm font-semibold text-[var(--primary)]">{session.name || 'NotTennis'}</p>
+        <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       </div>
       <div class="flex items-center gap-3">
         <div class="text-right text-xs text-[var(--text-secondary)]">
-          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · Americano
+          {#if isTennis}
+            {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}
+          {:else}
+            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · Americano
+          {/if}
         </div>
         {#if isAdmin || alreadyJoined}
           <a
@@ -285,7 +407,7 @@
     </div>
 
     <!-- Admin: add player manually -->
-    {#if isAdmin}
+    {#if isAdmin && !(isTennis && activePlayers.length >= 4)}
       <div class="space-y-2">
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('lobby_add_player_label')}</p>
         <form onsubmit={(e) => { e.preventDefault(); join(); }} class="flex gap-2">
@@ -345,6 +467,116 @@
       {/if}
     </div>
 
+    <!-- Tennis team assignment (admin only, shown when all 4 players present) -->
+    {#if isTennis && isAdmin && activePlayers.length >= 4}
+      <!-- Touch ghost element -->
+      {#if touchGhost}
+        <div class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 rounded-full bg-[var(--primary)] px-3 py-1.5 text-sm font-semibold text-white shadow-lg opacity-90"
+          style="left:{touchGhost.x}px;top:{touchGhost.y}px">
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">{initials(touchGhost.name)}</div>
+          <span>{touchGhost.name}</span>
+        </div>
+      {/if}
+
+      <div class="space-y-3" use:nonPassiveTouchMove ontouchend={onTouchEnd} role="group" aria-label="Team assignment">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('tennis_assign_teams')}</p>
+
+        <!-- Unassigned pool -->
+        <div
+          bind:this={zonePoolEl}
+          class="min-h-[52px] rounded-2xl border-2 border-dashed border-[var(--border)] px-3 py-2 flex flex-wrap gap-2 transition-colors {dragOverZone === 'pool' ? 'border-[var(--primary)] bg-[var(--primary-muted)]' : ''}"
+          ondragover={(e) => { e.preventDefault(); dragOverZone = 'pool'; }}
+          ondragleave={() => { if (dragOverZone === 'pool') dragOverZone = null; }}
+          ondrop={(e) => { e.preventDefault(); dragOverZone = null; if (draggingId) { unassignPlayer(draggingId); draggingId = null; } }}
+          role="region"
+          aria-label="Unassigned players"
+        >
+          {#if unassigned.length === 0}
+            <p class="text-xs text-[var(--text-disabled)] py-1">All assigned</p>
+          {/if}
+          {#each unassigned as player (player.id)}
+            <div
+              draggable="true"
+              ondragstart={(e) => { draggingId = player.id; e.dataTransfer!.effectAllowed = 'move'; }}
+              ondragend={() => { draggingId = null; dragOverZone = null; }}
+              ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
+              class="flex touch-none cursor-grab items-center gap-2 rounded-full bg-[var(--surface-raised)] px-3 py-1.5 text-sm font-semibold select-none {draggingId === player.id ? 'opacity-40' : ''}"
+            >
+              <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--border)] text-[10px] font-bold">{initials(player.name)}</div>
+              <span>{player.name}</span>
+            </div>
+          {/each}
+        </div>
+
+        <!-- Team columns -->
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Team A drop zone -->
+          <div
+            bind:this={zoneAEl}
+            class="min-h-[96px] rounded-2xl border-2 transition-colors p-3 space-y-2 {dragOverZone === 'a' ? 'border-[var(--primary)] bg-[var(--primary-muted)]' : 'border-transparent bg-[var(--surface-raised)]'}"
+            ondragover={(e) => { e.preventDefault(); dragOverZone = 'a'; }}
+            ondragleave={() => { if (dragOverZone === 'a') dragOverZone = null; }}
+            ondrop={(e) => { e.preventDefault(); dragOverZone = null; if (draggingId) { assignPlayer(draggingId, 'a'); draggingId = null; } }}
+            role="region"
+            aria-label="Team A"
+          >
+            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--primary)]">{$_('tennis_team_a')}</p>
+            {#each teamA as player (player.id)}
+              <div
+                draggable="true"
+                ondragstart={(e) => { draggingId = player.id; e.dataTransfer!.effectAllowed = 'move'; }}
+                ondragend={() => { draggingId = null; dragOverZone = null; }}
+                ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
+                onclick={() => assignPlayer(player.id, 'a')}
+                class="flex touch-none cursor-grab items-center gap-2 rounded-xl bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-white select-none {draggingId === player.id ? 'opacity-40' : ''}"
+                role="button"
+                tabindex="0"
+                onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'a')}
+              >
+                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">{initials(player.name)}</div>
+                <span class="truncate">{player.name}</span>
+              </div>
+            {/each}
+            {#if teamA.length < 2}
+              <p class="text-xs text-[var(--text-disabled)]">Drop here</p>
+            {/if}
+          </div>
+
+          <!-- Team B drop zone -->
+          <div
+            bind:this={zoneBEl}
+            class="min-h-[96px] rounded-2xl border-2 transition-colors p-3 space-y-2 {dragOverZone === 'b' ? 'border-[var(--primary)] bg-[var(--primary-muted)]' : 'border-transparent bg-[var(--surface-raised)]'}"
+            ondragover={(e) => { e.preventDefault(); dragOverZone = 'b'; }}
+            ondragleave={() => { if (dragOverZone === 'b') dragOverZone = null; }}
+            ondrop={(e) => { e.preventDefault(); dragOverZone = null; if (draggingId) { assignPlayer(draggingId, 'b'); draggingId = null; } }}
+            role="region"
+            aria-label="Team B"
+          >
+            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('tennis_team_b')}</p>
+            {#each teamB as player (player.id)}
+              <div
+                draggable="true"
+                ondragstart={(e) => { draggingId = player.id; e.dataTransfer!.effectAllowed = 'move'; }}
+                ondragend={() => { draggingId = null; dragOverZone = null; }}
+                ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
+                onclick={() => assignPlayer(player.id, 'b')}
+                class="flex touch-none cursor-grab items-center gap-2 rounded-xl bg-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text-primary)] select-none {draggingId === player.id ? 'opacity-40' : ''}"
+                role="button"
+                tabindex="0"
+                onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'b')}
+              >
+                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--border-strong)] text-[10px] font-bold">{initials(player.name)}</div>
+                <span class="truncate">{player.name}</span>
+              </div>
+            {/each}
+            {#if teamB.length < 2}
+              <p class="text-xs text-[var(--text-disabled)]">Drop here</p>
+            {/if}
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <!-- Join form (non-admin who hasn't joined) -->
     {#if !isAdmin && !alreadyJoined}
       <div class="space-y-2">
@@ -378,7 +610,9 @@
         </Button>
         {#if !canStart}
           <p class="text-center text-xs text-[var(--text-disabled)]">
-            {$_('lobby_need_players', { values: { n: session.courts * 4 } })}
+            {isTennis
+              ? $_(activePlayers.length < 4 ? 'lobby_need_players' : 'tennis_start_locked', { values: { n: 4 } })
+              : $_('lobby_need_players', { values: { n: session.courts * 4 } })}
           </p>
         {/if}
         <button

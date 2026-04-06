@@ -8,13 +8,19 @@ declare global {
       created_at: string;
     }
 
-    interface CareerStats {
+    interface AmericanoCareerStats {
       games_played: number;
       wins: number;
       draws: number;
       losses: number;
       total_points: number;
       tournaments: number;
+    }
+
+    interface TennisCareerStats {
+      tournaments: number;
+      wins: number;
+      losses: number;
     }
 
     type SessionStatus = 'lobby' | 'active' | 'complete';
@@ -24,6 +30,9 @@ declare global {
       admin_token?: string;
       status: SessionStatus;
       name?: string;
+      game_mode: 'americano' | 'tennis';
+      sets_to_win: number;
+      games_per_set: number;
       courts: number;
       points: number;
       rounds_total?: number;
@@ -31,6 +40,34 @@ declare global {
       creator_player_id?: string;
       scheduled_at?: string;
       players: Player[];
+      created_at: string;
+      updated_at: string;
+    }
+
+    interface TennisTeam {
+      player_id: string;
+      name: string;
+      team: 'a' | 'b';
+    }
+
+    interface TennisState {
+      sets: [number, number][];
+      games_a: number;
+      games_b: number;
+      points_a: number;
+      points_b: number;
+      in_tiebreak: boolean;
+      tiebreak_a: number;
+      tiebreak_b: number;
+      server: 'a' | 'b' | '';
+      winner: 'a' | 'b' | '';
+    }
+
+    interface TennisMatch {
+      id: string;
+      session_id: string;
+      state: TennisState;
+      teams: { a: TennisTeam[]; b: TennisTeam[] };
       created_at: string;
       updated_at: string;
     }

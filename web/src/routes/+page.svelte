@@ -14,8 +14,11 @@
   import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
 
   let step = $state<'home' | 'setup'>('home');
+  let gameMode = $state<'americano' | 'tennis'>('americano');
   let courts = $state(2);
   let points = $state(24);
+  let setsToWin = $state(2);
+  let gamesPerSet = $state(6);
   let tournamentName = $state('');
   let scheduleEnabled = $state(false);
   let calendarDate = $state<DateValue | undefined>(undefined);
@@ -89,7 +92,7 @@
         d.setHours(h, m, 0, 0);
         iso = d.toISOString();
       }
-      const session = await api.sessions.create(courts, points, tournamentName.trim(), iso);
+      const session = await api.sessions.create(courts, points, tournamentName.trim(), gameMode, setsToWin, gamesPerSet, iso);
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
       const player = await api.players.join(session.id, effectiveName, auth.token ?? undefined, adminToken);
@@ -236,17 +239,27 @@
       <!-- Game mode -->
       <div class="space-y-2.5">
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_game_mode_label')}</p>
-        <div class="flex flex-wrap gap-2">
-          <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white">
+        <div class="flex gap-2">
+          <button
+            onclick={() => (gameMode = 'americano')}
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'americano'
+              ? 'bg-[var(--primary)] text-white'
+              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+          >
             Americano
-          </span>
-          <span class="inline-flex items-center rounded-full bg-[var(--surface-raised)] px-4 py-2 text-sm text-[var(--text-disabled)]">
-            {$_('create_mexicano_soon')}
-          </span>
+          </button>
+          <button
+            onclick={() => (gameMode = 'tennis')}
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'tennis'
+              ? 'bg-[var(--primary)] text-white'
+              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+          >
+            {$_('create_mode_tennis')}
+          </button>
         </div>
-        <p class="text-xs text-[var(--text-secondary)]">{$_('create_game_mode_hint')}</p>
       </div>
 
+      {#if gameMode === 'americano'}
       <!-- Courts -->
       <div class="space-y-2.5">
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_courts_label')}</p>
@@ -283,6 +296,53 @@
           {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
         </p>
       </div>
+      {:else}
+      <!-- Sets to win (tennis) -->
+      <div class="space-y-2.5">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_sets_label')}</p>
+        <div class="flex gap-2">
+          <button
+            onclick={() => (setsToWin = 2)}
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 2
+              ? 'bg-[var(--primary)] text-white'
+              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+          >
+            {$_('create_sets_bo3')}
+          </button>
+          <button
+            onclick={() => (setsToWin = 3)}
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 3
+              ? 'bg-[var(--primary)] text-white'
+              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+          >
+            {$_('create_sets_bo5')}
+          </button>
+        </div>
+      </div>
+
+      <!-- Games per set (tennis) -->
+      <div class="space-y-2.5">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_games_per_set_label')}</p>
+        <div class="flex gap-2">
+          <button
+            onclick={() => (gamesPerSet = 4)}
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 4
+              ? 'bg-[var(--primary)] text-white'
+              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+          >
+            {$_('create_games_per_set_4')}
+          </button>
+          <button
+            onclick={() => (gamesPerSet = 6)}
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 6
+              ? 'bg-[var(--primary)] text-white'
+              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+          >
+            {$_('create_games_per_set_6')}
+          </button>
+        </div>
+      </div>
+      {/if}
 
       <!-- Tournament name (optional) -->
       <div class="space-y-2.5">

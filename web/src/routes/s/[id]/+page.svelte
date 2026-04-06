@@ -5,7 +5,9 @@
   import { api, ApiError } from '$lib/api/client';
   import Lobby from '$lib/components/Lobby.svelte';
   import ActiveSession from '$lib/components/ActiveSession.svelte';
+  import TennisMatch from '$lib/components/TennisMatch.svelte';
   import Leaderboard from '$lib/components/Leaderboard.svelte';
+  import TennisResult from '$lib/components/TennisResult.svelte';
 
   let session = $state<App.Session | null>(null);
   let currentRound = $state<App.Round | null>(null);
@@ -34,7 +36,7 @@
     const token = getAdminToken() ?? undefined;
     try {
       session = await api.sessions.get(sessionId, token);
-      if (session.status !== 'lobby') {
+      if (session.status !== 'lobby' && session.game_mode !== 'tennis') {
         currentRound = await api.rounds.current(sessionId).catch(() => null);
       }
     } catch (e) {
@@ -66,8 +68,12 @@
   </main>
 {:else if session.status === 'lobby'}
   <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} />
+{:else if session.status === 'active' && session.game_mode === 'tennis'}
+  <TennisMatch {session} {isAdmin} onRefresh={load} />
 {:else if session.status === 'active' && currentRound}
   <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} />
+{:else if session.status === 'complete' && session.game_mode === 'tennis'}
+  <TennisResult {session} />
 {:else if session.status === 'complete'}
   <Leaderboard sessionId={session.id} sessionName={session.name} complete />
 {:else}
