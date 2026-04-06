@@ -72,11 +72,12 @@
     }
   });
 
-  // Redirect logged-in users to profile (unless they came here to create)
+  // Redirect logged-in users to profile
   $effect(() => {
-    if (auth.ready && auth.user && step === 'home' && page.url.searchParams.get('create') !== '1') {
+    if (auth.ready && auth.user && step === 'home') {
       const notfound = page.url.searchParams.get('notfound');
-      goto(notfound ? '/profile?notfound=1' : '/profile');
+      const create = page.url.searchParams.get('create');
+      goto((notfound ? '/profile?notfound=1' : '/profile') + (create ? (notfound ? '&create=1' : '?create=1') : ''));
     }
   });
 

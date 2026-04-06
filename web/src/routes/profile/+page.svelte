@@ -8,8 +8,11 @@
   import { initials } from '$lib/utils';
   import { CalendarDays, Radio, ChevronDown } from 'lucide-svelte';
   import Footer from '$lib/components/Footer.svelte';
+  import CreateDrawer from '$lib/components/CreateDrawer.svelte';
   import { fly, slide } from 'svelte/transition';
   import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
+
+  let showCreateDrawer = $state(false);
 
   let stats = $state<App.AmericanoCareerStats | null>(null);
   let tennisStats = $state<App.TennisCareerStats | null>(null);
@@ -72,6 +75,9 @@
     if (page.url.searchParams.get('notfound') === '1') {
       showNotFoundBanner = true;
       setTimeout(() => { showNotFoundBanner = false; }, 4000);
+    }
+    if (page.url.searchParams.get('create') === '1') {
+      showCreateDrawer = true;
     }
     try {
       const [profileRes, historyRes] = await Promise.all([
@@ -206,9 +212,9 @@
 
   <!-- New tournament + join code -->
   <div class="space-y-3">
-    <a href="/?create=1" class="block w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-[15px] font-semibold text-white">
+    <button onclick={() => showCreateDrawer = true} class="block w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-[15px] font-semibold text-white">
       {$_('profile_new_tournament')}
-    </a>
+    </button>
     <div class="flex items-center gap-3">
       <div class="h-px flex-1 bg-[var(--border)]"></div>
       <span class="text-xs text-[var(--text-disabled)]">{$_('home_join_code_divider')}</span>
@@ -465,6 +471,8 @@
   <Footer />
 
 </main>
+
+<CreateDrawer bind:open={showCreateDrawer} />
 
 {#if showDeleteConfirm}
   <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
