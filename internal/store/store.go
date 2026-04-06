@@ -80,6 +80,15 @@ var migrations = []string{
 		created_at      TEXT NOT NULL,
 		PRIMARY KEY (user_id, contact_user_id)
 	)`,
+	`CREATE TABLE IF NOT EXISTS invites (
+		id          TEXT PRIMARY KEY,
+		session_id  TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+		from_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		to_user_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		status      TEXT NOT NULL DEFAULT 'pending',
+		created_at  TEXT NOT NULL,
+		UNIQUE (session_id, to_user_id)
+	)`,
 }
 
 const schema = `

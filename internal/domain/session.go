@@ -21,6 +21,17 @@ type Contact struct {
 	AddedAt     time.Time `json:"added_at"`
 }
 
+type Invite struct {
+	ID              string    `json:"id"`
+	SessionID       string    `json:"session_id"`
+	SessionName     string    `json:"session_name"`
+	FromUserID      string    `json:"from_user_id"`
+	FromDisplayName string    `json:"from_display_name"`
+	ToUserID        string    `json:"to_user_id"`
+	Status          string    `json:"status"` // pending | accepted | declined
+	CreatedAt       time.Time `json:"created_at"`
+}
+
 type UserSearchResult struct {
 	ID          string `json:"id"`
 	DisplayName string `json:"display_name"`

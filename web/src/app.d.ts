@@ -130,6 +130,17 @@ declare global {
       scheduled_at?: string;
     }
 
+    interface Invite {
+      id: string;
+      session_id: string;
+      session_name: string;
+      from_user_id: string;
+      from_display_name: string;
+      to_user_id: string;
+      status: 'pending' | 'accepted' | 'declined';
+      created_at: string;
+    }
+
     interface Contact {
       user_id: string;
       display_name: string;

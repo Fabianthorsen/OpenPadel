@@ -62,8 +62,6 @@ export const api = {
   players: {
     join: (sessionId: string, name: string, token?: string, adminToken?: string) =>
       request<App.Player>('POST', `/sessions/${sessionId}/players`, { name }, token, adminToken ? { 'X-Admin-Token': adminToken } : undefined),
-    addContact: (sessionId: string, contactUserId: string, adminToken: string) =>
-      request<App.Player>('POST', `/sessions/${sessionId}/players/contacts`, { contact_user_id: contactUserId }, adminToken),
     remove: (sessionId: string, playerId: string, token: string) =>
       request<{ id: string; active: boolean }>(
         'DELETE',
@@ -111,6 +109,16 @@ export const api = {
   leaderboard: {
     get: (sessionId: string) =>
       request<App.Leaderboard>('GET', `/sessions/${sessionId}/leaderboard`),
+  },
+  invites: {
+    list: (token: string) =>
+      request<App.Invite[]>('GET', '/invites', undefined, token),
+    send: (sessionId: string, toUserId: string, adminToken: string) =>
+      request<App.Invite>('POST', `/sessions/${sessionId}/invites`, { to_user_id: toUserId }, adminToken),
+    accept: (inviteId: string, token: string) =>
+      request<App.Player>('POST', `/invites/${inviteId}/accept`, undefined, token),
+    decline: (inviteId: string, token: string) =>
+      request<void>('POST', `/invites/${inviteId}/decline`, undefined, token),
   },
   contacts: {
     list: (token: string) =>

@@ -6,7 +6,7 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { initials } from '$lib/utils';
-  import { CalendarDays, Radio, ChevronDown, UserPlus, X, Search } from 'lucide-svelte';
+  import { CalendarDays, Radio, ChevronDown, UserPlus, X, Search, Check } from 'lucide-svelte';
   import Footer from '$lib/components/Footer.svelte';
   import CreateDrawer from '$lib/components/CreateDrawer.svelte';
   import { fly, slide } from 'svelte/transition';
@@ -31,6 +31,7 @@
   let showHistory = $state(false);
   let showPreferences = $state(true);
 
+  let invites = $state<App.Invite[]>([]);
   let contacts = $state<App.Contact[]>([]);
   let contactSearch = $state('');
   let searchResults = $state<App.UserSearchResult[]>([]);
@@ -48,6 +49,19 @@
         searchLoading = false;
       }
     }, 300);
+  }
+
+  async function acceptInvite(inviteID: string, sessionID: string) {
+    if (!auth.token) return;
+    await api.invites.accept(inviteID, auth.token);
+    invites = invites.filter(i => i.id !== inviteID);
+    window.location.href = `/s/${sessionID}`;
+  }
+
+  async function declineInvite(inviteID: string) {
+    if (!auth.token) return;
+    await api.invites.decline(inviteID, auth.token);
+    invites = invites.filter(i => i.id !== inviteID);
   }
 
   async function addContact(userID: string) {
@@ -113,16 +127,18 @@
       showCreateDrawer = true;
     }
     try {
-      const [profileRes, historyRes, contactsRes] = await Promise.all([
+      const [profileRes, historyRes, contactsRes, invitesRes] = await Promise.all([
         api.auth.profile(auth.token),
         api.auth.history(auth.token),
         api.contacts.list(auth.token),
+        api.invites.list(auth.token),
       ]);
       stats = profileRes.stats;
       tennisStats = profileRes.tennis_stats;
       tournaments = historyRes.tournaments;
       upcoming = historyRes.upcoming;
       contacts = contactsRes;
+      invites = invitesRes;
       showUpcoming = upcoming.length > 0;
       showHistory = tournaments.length > 0;
     } finally {
@@ -244,6 +260,34 @@
       {/if}
     </div>
   </div>
+
+  <!-- Pending invites -->
+  {#if invites.length > 0}
+    <div class="space-y-2">
+      <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Invites</p>
+      {#each invites as invite}
+        <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5">
+          <div class="flex-1 min-w-0">
+            <p class="truncate text-sm font-semibold">{invite.session_name}</p>
+            <p class="text-xs text-[var(--text-secondary)]">From {invite.from_display_name}</p>
+          </div>
+          <button
+            onclick={() => acceptInvite(invite.id, invite.session_id)}
+            class="flex items-center gap-1 rounded-full bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-white"
+          >
+            <Check size={12} /> Accept
+          </button>
+          <button
+            onclick={() => declineInvite(invite.id)}
+            class="flex items-center justify-center rounded-full bg-[var(--surface)] p-1.5 text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors border border-[var(--border)]"
+            aria-label="Decline"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <!-- New tournament + join code -->
   <div class="space-y-3">

@@ -4,7 +4,8 @@
   import { auth } from '$lib/auth.svelte';
   import { _ } from 'svelte-i18n';
   import { initials } from '$lib/utils';
-  import { fly } from 'svelte/transition';
+  import { ChevronDown, Check } from 'lucide-svelte';
+  import { fly, slide } from 'svelte/transition';
   import { Calendar } from '$lib/components/ui/calendar';
   import { Input } from '$lib/components/ui/input';
   import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
@@ -26,6 +27,7 @@
 
   let contacts = $state<App.Contact[]>([]);
   let selectedContacts = $state<Set<string>>(new Set());
+  let showContacts = $state(false);
 
   onMount(async () => {
     if (auth.token) {
@@ -103,9 +105,9 @@
       const player = await api.players.join(session.id, auth.user!.display_name, auth.token ?? undefined, adminToken);
       localStorage.setItem(`player_id_${session.id}`, player.id);
       localStorage.setItem('last_session_id', session.id);
-      // Pre-add selected contacts as players
+      // Send invites to selected contacts
       await Promise.all(
-        [...selectedContacts].map(uid => api.players.addContact(session.id, uid, adminToken))
+        [...selectedContacts].map(uid => api.invites.send(session.id, uid, adminToken))
       );
       goto(`/s/${session.id}?token=${adminToken}`);
     } catch (e) {
@@ -287,23 +289,40 @@
       <!-- Contacts picker -->
       {#if contacts.length > 0}
         <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Invite contacts</p>
-          <div class="flex flex-wrap gap-2">
-            {#each contacts as contact}
-              {@const selected = selectedContacts.has(contact.user_id)}
-              <button
-                onclick={() => toggleContact(contact.user_id)}
-                class="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors
-                  {selected ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
-              >
-                <span class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-[800]
-                  {selected ? 'bg-white/20 text-white' : 'bg-[var(--primary-muted)] text-[var(--primary)]'}">
-                  {initials(contact.display_name)}
-                </span>
-                {contact.display_name}
-              </button>
-            {/each}
-          </div>
+          <button
+            onclick={() => showContacts = !showContacts}
+            class="flex w-full items-center justify-between"
+          >
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
+              Invite contacts
+              {#if selectedContacts.size > 0}
+                <span class="ml-1.5 rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-[10px] text-white">{selectedContacts.size}</span>
+              {/if}
+            </p>
+            <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showContacts ? 'rotate-180' : ''}" />
+          </button>
+
+          {#if showContacts}
+            <div transition:slide={{ duration: 200 }} class="space-y-1.5">
+              {#each contacts as contact}
+                {@const selected = selectedContacts.has(contact.user_id)}
+                <button
+                  onclick={() => toggleContact(contact.user_id)}
+                  class="flex w-full items-center gap-3 rounded-2xl px-4 py-3 transition-colors
+                    {selected ? 'bg-[var(--primary)]' : 'bg-[var(--surface-raised)]'}"
+                >
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-[800]
+                    {selected ? 'bg-white/20 text-white' : 'bg-[var(--primary-muted)] text-[var(--primary)]'}">
+                    {initials(contact.display_name)}
+                  </div>
+                  <span class="flex-1 text-left text-sm font-semibold {selected ? 'text-white' : ''}">{contact.display_name}</span>
+                  {#if selected}
+                    <Check size={16} class="shrink-0 text-white" />
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          {/if}
         </div>
       {/if}
 

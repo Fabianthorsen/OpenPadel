@@ -81,6 +81,11 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 		r.With(h.requireAuth).Delete("/contacts/{contactID}", h.removeContact)
 		r.With(h.requireAuth).Get("/users/search", h.searchUsers)
 
+		// Invites
+		r.With(h.requireAuth).Get("/invites", h.getMyInvites)
+		r.With(h.requireAuth).Post("/invites/{inviteID}/accept", h.acceptInvite)
+		r.With(h.requireAuth).Post("/invites/{inviteID}/decline", h.declineInvite)
+
 		r.Get("/push/vapid-public-key", h.vapidPublicKey)
 		r.With(h.requireAuth).Post("/push/subscribe", h.subscribePush)
 		r.With(h.requireAuth).Delete("/push/subscribe", h.unsubscribePush)
@@ -93,7 +98,7 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 			r.Post("/close", h.closeSession)
 r.Post("/start", h.startSession)
 			r.With(h.optionalAuth).Post("/players", h.joinSession)
-			r.Post("/players/contacts", h.addContactPlayer)
+			r.With(h.requireAuth).Post("/invites", h.sendInvite)
 			r.Delete("/players/{playerID}", h.deactivatePlayer)
 			r.Get("/rounds", h.getRounds)
 			r.Get("/rounds/current", h.getCurrentRound)
