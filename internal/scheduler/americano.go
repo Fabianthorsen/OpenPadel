@@ -3,7 +3,6 @@ package scheduler
 import (
 	"crypto/rand"
 	"math/big"
-	mrand "math/rand"
 	"sort"
 
 	"github.com/fabianthorsen/nottennis/internal/domain"
@@ -110,96 +109,108 @@ func matchupKey(a0, a1, b0, b1 string) [4]string {
 	return [4]string{pa[0], pa[1], pb[0], pb[1]}
 }
 
-// scorePermutation returns a penalty score for a given player ordering.
-// Partner repeats are weighted heavily; matchup repeats less so.
-func scorePermutation(perm []string, courts int, partnerCount map[[2]string]int, matchupCount map[[4]string]int) int {
-	score := 0
-	for c := 0; c < courts; c++ {
-		base := c * 4
-		a0, a1, b0, b1 := perm[base], perm[base+1], perm[base+2], perm[base+3]
-		score += partnerCount[pairKey(a0, a1)] * 1000
-		score += partnerCount[pairKey(b0, b1)] * 1000
-		score += matchupCount[matchupKey(a0, a1, b0, b1)] * 10
-	}
-	return score
-}
 
-// optimizeTeamSplits tries all 3 pairings within each group of 4 and keeps the best.
-// Given players W,X,Y,Z: W+X vs Y+Z | W+Y vs X+Z | W+Z vs X+Y
-func optimizeTeamSplits(perm []string, courts int, partnerCount map[[2]string]int, matchupCount map[[4]string]int) []string {
-	result := make([]string, len(perm))
-	copy(result, perm)
+// bestPartnerMatching finds the partner pairing of players that minimises total
+// partner-repeat count using backtracking with pruning. For up to 16 players the
+// search tree is small enough to be exhaustive (worst case: 10,395 nodes for 12p).
+func bestPartnerMatching(players []string, partnerCount map[[2]string]int) [][2]string {
+	n := len(players)
+	used := make([]bool, n)
+	scratch := make([][2]string, n/2)
+	best := make([][2]string, n/2)
+	bestScore := int(^uint(0) >> 1)
 
-	for c := 0; c < courts; c++ {
-		base := c * 4
-		w, x, y, z := perm[base], perm[base+1], perm[base+2], perm[base+3]
-
-		splits := [][4]string{
-			{w, x, y, z},
-			{w, y, x, z},
-			{w, z, x, y},
+	var bt func(pairIdx, score int)
+	bt = func(pairIdx, score int) {
+		if score >= bestScore {
+			return // prune: can't beat current best
 		}
-
-		bestSplit := splits[0]
-		bestScore := scorePermutation([]string{splits[0][0], splits[0][1], splits[0][2], splits[0][3]}, 1, partnerCount, matchupCount)
-
-		for _, split := range splits[1:] {
-			s := scorePermutation([]string{split[0], split[1], split[2], split[3]}, 1, partnerCount, matchupCount)
-			if s < bestScore {
-				bestSplit = split
-				bestScore = s
+		if pairIdx == n/2 {
+			bestScore = score
+			copy(best, scratch)
+			return
+		}
+		// Always pair the first unused player — reduces branching factor.
+		first := -1
+		for i := range players {
+			if !used[i] {
+				first = i
+				break
 			}
 		}
-
-		result[base] = bestSplit[0]
-		result[base+1] = bestSplit[1]
-		result[base+2] = bestSplit[2]
-		result[base+3] = bestSplit[3]
+		used[first] = true
+		for second := first + 1; second < n; second++ {
+			if !used[second] {
+				used[second] = true
+				scratch[pairIdx] = [2]string{players[first], players[second]}
+				bt(pairIdx+1, score+partnerCount[pairKey(players[first], players[second])]*1000)
+				used[second] = false
+			}
+		}
+		used[first] = false
 	}
 
-	return result
+	bt(0, 0)
+	return best
 }
 
-// assignCourts finds the best assignment of active players to courts by random
-// search over the full partner+matchup history. For tournament sizes up to 16
-// players, 2000 random shuffles reliably finds an optimal (zero-penalty) assignment
-// in early rounds and a near-optimal one in later rounds.
+// bestCourtAssignment groups the given partner pairs into courts, minimising
+// matchup repeats. Number of groupings: for 4 pairs→3, 6 pairs→15, 8 pairs→105.
+func bestCourtAssignment(pairs [][2]string, matchupCount map[[4]string]int) []domain.Match {
+	numPairs := len(pairs)
+	courts := numPairs / 2
+	usedPair := make([]bool, numPairs)
+	scratch := make([]domain.Match, courts)
+	best := make([]domain.Match, courts)
+	bestScore := int(^uint(0) >> 1)
+
+	var bt func(courtIdx, score int)
+	bt = func(courtIdx, score int) {
+		if score >= bestScore {
+			return
+		}
+		if courtIdx == courts {
+			bestScore = score
+			copy(best, scratch)
+			return
+		}
+		// Fix the first unused pair as TeamA of this court.
+		first := -1
+		for i := range pairs {
+			if !usedPair[i] {
+				first = i
+				break
+			}
+		}
+		usedPair[first] = true
+		for second := first + 1; second < numPairs; second++ {
+			if !usedPair[second] {
+				usedPair[second] = true
+				a0, a1 := pairs[first][0], pairs[first][1]
+				b0, b1 := pairs[second][0], pairs[second][1]
+				scratch[courtIdx] = domain.Match{
+					ID:    shortID(),
+					Court: courtIdx + 1,
+					TeamA: [2]string{a0, a1},
+					TeamB: [2]string{b0, b1},
+				}
+				bt(courtIdx+1, score+matchupCount[matchupKey(a0, a1, b0, b1)]*10)
+				usedPair[second] = false
+			}
+		}
+		usedPair[first] = false
+	}
+
+	bt(0, 0)
+	return best
+}
+
+// assignCourts finds the optimal assignment of active players to courts using
+// exact backtracking search: first minimise partner repeats (primary constraint),
+// then minimise matchup repeats (secondary). Guaranteed optimal for up to 16 players.
 func assignCourts(active []string, courts int, partnerCount map[[2]string]int, matchupCount map[[4]string]int) []domain.Match {
-	candidate := make([]string, len(active))
-	copy(candidate, active)
-
-	best := make([]string, len(active))
-	copy(best, candidate)
-	bestScore := scorePermutation(candidate, courts, partnerCount, matchupCount)
-
-	for i := 0; i < 2000 && bestScore > 0; i++ {
-		mrand.Shuffle(len(candidate), func(a, b int) {
-			candidate[a], candidate[b] = candidate[b], candidate[a]
-		})
-		copy(candidate, active)
-		mrand.Shuffle(len(candidate), func(a, b int) {
-			candidate[a], candidate[b] = candidate[b], candidate[a]
-		})
-		if s := scorePermutation(candidate, courts, partnerCount, matchupCount); s < bestScore {
-			copy(best, candidate)
-			bestScore = s
-		}
-	}
-
-	// Final pass: try all 3 team-split options per court to minimise matchup repeats.
-	best = optimizeTeamSplits(best, courts, partnerCount, matchupCount)
-
-	matches := make([]domain.Match, courts)
-	for c := 0; c < courts; c++ {
-		base := c * 4
-		matches[c] = domain.Match{
-			ID:    shortID(),
-			Court: c + 1,
-			TeamA: [2]string{best[base], best[base+1]},
-			TeamB: [2]string{best[base+2], best[base+3]},
-		}
-	}
-	return matches
+	pairs := bestPartnerMatching(active, partnerCount)
+	return bestCourtAssignment(pairs, matchupCount)
 }
 
 const idAlphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"

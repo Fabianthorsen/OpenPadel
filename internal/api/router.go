@@ -75,6 +75,12 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 		r.Post("/auth/forgot", h.forgotPassword)
 		r.Post("/auth/reset", h.resetPassword)
 
+		// Contacts
+		r.With(h.requireAuth).Get("/contacts", h.getContacts)
+		r.With(h.requireAuth).Post("/contacts", h.addContact)
+		r.With(h.requireAuth).Delete("/contacts/{contactID}", h.removeContact)
+		r.With(h.requireAuth).Get("/users/search", h.searchUsers)
+
 		r.Get("/push/vapid-public-key", h.vapidPublicKey)
 		r.With(h.requireAuth).Post("/push/subscribe", h.subscribePush)
 		r.With(h.requireAuth).Delete("/push/subscribe", h.unsubscribePush)

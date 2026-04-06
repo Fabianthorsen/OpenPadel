@@ -110,6 +110,16 @@ export const api = {
     get: (sessionId: string) =>
       request<App.Leaderboard>('GET', `/sessions/${sessionId}/leaderboard`),
   },
+  contacts: {
+    list: (token: string) =>
+      request<App.Contact[]>('GET', '/contacts', undefined, token),
+    add: (token: string, contactUserId: string) =>
+      request<void>('POST', '/contacts', { contact_user_id: contactUserId }, token),
+    remove: (token: string, contactUserId: string) =>
+      request<void>('DELETE', `/contacts/${contactUserId}`, undefined, token),
+    search: (token: string, q: string) =>
+      request<App.UserSearchResult[]>('GET', `/users/search?q=${encodeURIComponent(q)}`, undefined, token),
+  },
   push: {
     getVapidKey: () =>
       request<{ public_key: string }>('GET', '/push/vapid-public-key'),

@@ -129,6 +129,18 @@ declare global {
       scheduled_at?: string;
     }
 
+    interface Contact {
+      user_id: string;
+      display_name: string;
+      added_at: string;
+    }
+
+    interface UserSearchResult {
+      id: string;
+      display_name: string;
+      is_contact: boolean;
+    }
+
     interface Leaderboard {
       session_id: string;
       status: SessionStatus;

@@ -15,6 +15,18 @@ type AuthToken struct {
 	UserID string `json:"user_id"`
 }
 
+type Contact struct {
+	UserID      string    `json:"user_id"`
+	DisplayName string    `json:"display_name"`
+	AddedAt     time.Time `json:"added_at"`
+}
+
+type UserSearchResult struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"display_name"`
+	IsContact   bool   `json:"is_contact"`
+}
+
 type AmericanoCareerStats struct {
 	GamesPlayed  int `json:"games_played"`
 	Wins         int `json:"wins"`

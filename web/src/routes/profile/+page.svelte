@@ -6,7 +6,7 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { initials } from '$lib/utils';
-  import { CalendarDays, Radio, ChevronDown } from 'lucide-svelte';
+  import { CalendarDays, Radio, ChevronDown, UserPlus, X, Search } from 'lucide-svelte';
   import Footer from '$lib/components/Footer.svelte';
   import CreateDrawer from '$lib/components/CreateDrawer.svelte';
   import { fly, slide } from 'svelte/transition';
@@ -26,9 +26,41 @@
   let joinInputs = $state<HTMLInputElement[]>([]);
 
   let showStats = $state(true);
+  let showContacts = $state(false);
   let showUpcoming = $state(false);
   let showHistory = $state(false);
   let showPreferences = $state(true);
+
+  let contacts = $state<App.Contact[]>([]);
+  let contactSearch = $state('');
+  let searchResults = $state<App.UserSearchResult[]>([]);
+  let searchLoading = $state(false);
+  let searchDebounce: ReturnType<typeof setTimeout>;
+
+  function onContactSearchInput() {
+    clearTimeout(searchDebounce);
+    if (contactSearch.length < 2) { searchResults = []; return; }
+    searchDebounce = setTimeout(async () => {
+      searchLoading = true;
+      try {
+        searchResults = await api.contacts.search(auth.token!, contactSearch);
+      } finally {
+        searchLoading = false;
+      }
+    }, 300);
+  }
+
+  async function addContact(userID: string) {
+    await api.contacts.add(auth.token!, userID);
+    searchResults = searchResults.map(r => r.id === userID ? { ...r, is_contact: true } : r);
+    contacts = await api.contacts.list(auth.token!);
+  }
+
+  async function removeContact(userID: string) {
+    await api.contacts.remove(auth.token!, userID);
+    contacts = contacts.filter(c => c.user_id !== userID);
+    searchResults = searchResults.map(r => r.id === userID ? { ...r, is_contact: false } : r);
+  }
 
   let pushSupported = $state(false);
   let pushEnabled = $state(false);
@@ -80,14 +112,16 @@
       showCreateDrawer = true;
     }
     try {
-      const [profileRes, historyRes] = await Promise.all([
+      const [profileRes, historyRes, contactsRes] = await Promise.all([
         api.auth.profile(auth.token),
         api.auth.history(auth.token),
+        api.contacts.list(auth.token),
       ]);
       stats = profileRes.stats;
       tennisStats = profileRes.tennis_stats;
       tournaments = historyRes.tournaments;
       upcoming = historyRes.upcoming;
+      contacts = contactsRes;
       showUpcoming = upcoming.length > 0;
       showHistory = tournaments.length > 0;
     } finally {
@@ -375,6 +409,79 @@
           </div>
         </div>
       {/if}
+
+      <!-- Contacts -->
+      <div class="space-y-3">
+        <button
+          onclick={() => showContacts = !showContacts}
+          class="flex w-full items-center justify-between"
+        >
+          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Contacts</p>
+          <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showContacts ? 'rotate-180' : ''}" />
+        </button>
+
+        {#if showContacts}
+          <div transition:slide={{ duration: 200 }} class="space-y-3">
+            <!-- Search -->
+            <div class="relative">
+              <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
+                <Search size={15} class="text-[var(--text-disabled)]" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search players…"
+                bind:value={contactSearch}
+                oninput={onContactSearchInput}
+                class="w-full rounded-xl bg-[var(--surface-raised)] py-2.5 pl-9 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)] transition-shadow"
+              />
+            </div>
+
+            <!-- Search results -->
+            {#if searchResults.length > 0}
+              <div class="space-y-1.5">
+                {#each searchResults as result}
+                  <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+                      {result.display_name[0].toUpperCase()}
+                    </div>
+                    <p class="flex-1 text-sm font-semibold truncate">{result.display_name}</p>
+                    {#if result.is_contact}
+                      <button onclick={() => removeContact(result.id)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
+                        <X size={16} />
+                      </button>
+                    {:else}
+                      <button onclick={() => addContact(result.id)} class="text-[var(--primary)]" aria-label="Add contact">
+                        <UserPlus size={16} />
+                      </button>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {:else if contactSearch.length >= 2 && !searchLoading}
+              <p class="text-sm text-[var(--text-disabled)] py-1">No players found.</p>
+            {/if}
+
+            <!-- Contact list -->
+            {#if contacts.length === 0 && contactSearch.length < 2}
+              <p class="text-sm text-[var(--text-disabled)] py-1">No contacts yet. Search for players above.</p>
+            {:else if contactSearch.length < 2}
+              <div class="space-y-1.5">
+                {#each contacts as contact}
+                  <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+                      {contact.display_name[0].toUpperCase()}
+                    </div>
+                    <p class="flex-1 text-sm font-semibold truncate">{contact.display_name}</p>
+                    <button onclick={() => removeContact(contact.user_id)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
+                      <X size={16} />
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
 
       <!-- Upcoming -->
       <div class="space-y-3">

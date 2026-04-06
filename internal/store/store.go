@@ -74,6 +74,12 @@ var migrations = []string{
 		created_at TEXT NOT NULL,
 		updated_at TEXT NOT NULL
 	)`,
+	`CREATE TABLE IF NOT EXISTS contacts (
+		user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		contact_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+		created_at      TEXT NOT NULL,
+		PRIMARY KEY (user_id, contact_user_id)
+	)`,
 }
 
 const schema = `
