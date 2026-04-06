@@ -62,6 +62,8 @@ export const api = {
   players: {
     join: (sessionId: string, name: string, token?: string, adminToken?: string) =>
       request<App.Player>('POST', `/sessions/${sessionId}/players`, { name }, token, adminToken ? { 'X-Admin-Token': adminToken } : undefined),
+    addContact: (sessionId: string, contactUserId: string, adminToken: string) =>
+      request<App.Player>('POST', `/sessions/${sessionId}/players/contacts`, { contact_user_id: contactUserId }, adminToken),
     remove: (sessionId: string, playerId: string, token: string) =>
       request<{ id: string; active: boolean }>(
         'DELETE',

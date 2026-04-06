@@ -135,6 +135,17 @@ func (s *Store) IsContact(userID, contactUserID string) (bool, error) {
 	return count > 0, err
 }
 
+// AddContactPlayer looks up the contact user's display name and creates a player
+// record in the session linked to their user account. Returns ErrNotFound if the
+// user doesn't exist.
+func (s *Store) AddContactPlayer(sessionID, contactUserID string) (*domain.Player, error) {
+	user, err := s.GetUserByID(contactUserID)
+	if err != nil {
+		return nil, err
+	}
+	return s.CreatePlayer(sessionID, user.DisplayName, user.ID)
+}
+
 // escapeLike escapes special LIKE characters in a query string.
 func escapeLike(s string) string {
 	out := make([]byte, 0, len(s)*2)

@@ -93,6 +93,7 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 			r.Post("/close", h.closeSession)
 r.Post("/start", h.startSession)
 			r.With(h.optionalAuth).Post("/players", h.joinSession)
+			r.Post("/players/contacts", h.addContactPlayer)
 			r.Delete("/players/{playerID}", h.deactivatePlayer)
 			r.Get("/rounds", h.getRounds)
 			r.Get("/rounds/current", h.getCurrentRound)
