@@ -454,3 +454,57 @@ func TestGenerate_NoRepeatedMatchups(t *testing.T) {
 		})
 	}
 }
+
+// TestGenerate_BenchRotation verifies two bench invariants:
+// 1. A player benched in round N must play in round N+1 (no consecutive bench).
+// 2. Across the full tournament, bench counts are as equal as possible —
+//    the max bench count for any player must not exceed the min by more than 1.
+func TestGenerate_BenchRotation(t *testing.T) {
+	cases := []struct {
+		name                    string
+		players, courts, rounds int
+	}{
+		{"5p 1c 5rounds", 5, 1, 5},
+		{"9p 2c 9rounds", 9, 2, 9},
+		{"10p 2c 9rounds", 10, 2, 9},
+		{"13p 3c 12rounds", 13, 3, 12},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			players := makePlayers(tc.players)
+			rounds := Generate(players, tc.courts, tc.rounds)
+
+			benchedLastRound := map[string]bool{}
+			benchCount := map[string]int{}
+
+			for _, p := range players {
+				benchCount[p.ID] = 0
+			}
+
+			for _, r := range rounds {
+				benchedThisRound := map[string]bool{}
+				for _, id := range r.Bench {
+					benchedThisRound[id] = true
+					benchCount[id]++
+
+					// Invariant 1: must not bench consecutively
+					if benchedLastRound[id] {
+						t.Errorf("round %d: player %s is benched two rounds in a row", r.Number, id)
+					}
+				}
+				benchedLastRound = benchedThisRound
+			}
+
+			// Invariant 2: bench counts must be spread evenly (max - min <= 1)
+			minB, maxB := 1<<30, 0
+			for _, c := range benchCount {
+				if c < minB { minB = c }
+				if c > maxB { maxB = c }
+			}
+			if maxB-minB > 1 {
+				t.Errorf("bench counts are uneven: min=%d max=%d (spread > 1) — counts: %v", minB, maxB, benchCount)
+			}
+		})
+	}
+}
