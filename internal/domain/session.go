@@ -44,6 +44,7 @@ type UpcomingEntry struct {
 	SessionID   string     `json:"session_id"`
 	Name        string     `json:"name"`
 	Status      string     `json:"status"`
+	GameMode    string     `json:"game_mode"`
 	Courts      int        `json:"courts"`
 	PlayerCount int        `json:"player_count"`
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`

@@ -123,6 +123,7 @@ declare global {
       session_id: string;
       name: string;
       status: 'lobby' | 'active';
+      game_mode: 'americano' | 'tennis';
       courts: number;
       player_count: number;
       scheduled_at?: string;

@@ -313,6 +313,7 @@ func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, e
 			s.id,
 			COALESCE(NULLIF(s.name, ''), 'NotTennis'),
 			s.status,
+			s.game_mode,
 			s.courts,
 			COUNT(p2.id) AS player_count,
 			s.scheduled_at
@@ -333,7 +334,7 @@ func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, e
 	for rows.Next() {
 		var e domain.UpcomingEntry
 		var scheduledAt *string
-		if err := rows.Scan(&e.SessionID, &e.Name, &e.Status, &e.Courts, &e.PlayerCount, &scheduledAt); err != nil {
+		if err := rows.Scan(&e.SessionID, &e.Name, &e.Status, &e.GameMode, &e.Courts, &e.PlayerCount, &scheduledAt); err != nil {
 			return nil, err
 		}
 		if scheduledAt != nil {

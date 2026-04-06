@@ -189,7 +189,7 @@
   </div>
 {/if}
 
-<main class="mx-auto max-w-[480px] px-6 pb-24 pt-8 space-y-8">
+<main class="mx-auto max-w-[480px] px-6 pb-10 pt-8 space-y-8">
 
   <!-- Header -->
   <div class="flex items-center gap-4">
@@ -397,7 +397,7 @@
                         <span class="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-500">Live</span>
                       {/if}
                     </div>
-                    <p class="text-xs text-[var(--text-secondary)]">{t.player_count} {$_('profile_upcoming_players')}</p>
+                    <p class="text-xs text-[var(--text-secondary)]">{t.player_count} {$_('profile_upcoming_players')} · {t.game_mode === 'tennis' ? $_('create_mode_tennis') : 'Americano'}</p>
                   </div>
                   <span class="text-sm text-[var(--text-secondary)]">→</span>
                 </a>
