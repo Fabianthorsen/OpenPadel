@@ -274,6 +274,116 @@ func TestGenerate_NoMissedRounds_NoBench(t *testing.T) {
 	}
 }
 
+// TestGenerate_NoRepeatedPartners is a regression test for the core Americano invariant:
+// within a full tournament (players-1 rounds for N players on N/4 courts), every player
+// should partner each other player AT MOST ONCE.
+//
+// With 8 players and 2 courts there are C(8,2)=28 possible pairs; each round produces
+// 4 partnerships, so 7 rounds × 4 = 28 total partnerships — exactly enough to cover every
+// pair once. A correct algorithm achieves this; the current rotate-based algorithm
+// assigns the same initial pairs every few rounds, causing pairs like (P01,P02) to appear
+// 4 times while other pairs never appear at all.
+func TestGenerate_NoRepeatedPartners(t *testing.T) {
+	type pair struct{ a, b string }
+	makePair := func(a, b string) pair {
+		if a > b {
+			a, b = b, a
+		}
+		return pair{a, b}
+	}
+
+	cases := []struct {
+		name          string
+		players, courts, rounds int
+	}{
+		// No-bench cases: N players, N/4 courts, N-1 rounds covers all unique pairs exactly once.
+		{"8p 2c 7rounds", 8, 2, 7},
+		{"12p 3c 11rounds", 12, 3, 11},
+		// With bench: more rounds than unique partnerships are possible, so cap at 2 appearances.
+		{"9p 2c 8rounds", 9, 2, 8},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rounds := Generate(makePlayers(tc.players), tc.courts, tc.rounds)
+
+			partnerCount := map[pair]int{}
+			for _, r := range rounds {
+				for _, m := range r.Matches {
+					partnerCount[makePair(m.TeamA[0], m.TeamA[1])]++
+					partnerCount[makePair(m.TeamB[0], m.TeamB[1])]++
+				}
+			}
+
+			// Core invariant: in a no-bench tournament every pair should partner exactly once.
+			// In tournaments with a bench a pair may appear at most twice (unavoidable when
+			// active slots × rounds exceed unique pairs), but never more.
+			maxAllowed := 1
+			if tc.players%4 != 0 {
+				maxAllowed = 2
+			}
+
+			for p, count := range partnerCount {
+				if count > maxAllowed {
+					t.Errorf("pair (%s, %s) partnered %d times across %d rounds — expected at most %d (Americano invariant broken)",
+						p.a, p.b, count, len(rounds), maxAllowed)
+				}
+			}
+		})
+	}
+}
+
+// TestGenerate_ConsecutiveRoundsNoRepeat asserts the weaker but observable constraint:
+// a player must NEVER receive the same partner in back-to-back rounds.
+// This is the immediate symptom of the scheduling bug.
+func TestGenerate_ConsecutiveRoundsNoRepeat(t *testing.T) {
+	type pair struct{ a, b string }
+	makePair := func(a, b string) pair {
+		if a > b {
+			a, b = b, a
+		}
+		return pair{a, b}
+	}
+
+	cases := []struct {
+		name          string
+		players, courts, rounds int
+	}{
+		{"8p 2c 7rounds", 8, 2, 7},
+		{"9p 2c 8rounds", 9, 2, 8},
+		{"12p 3c 11rounds", 12, 3, 11},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rounds := Generate(makePlayers(tc.players), tc.courts, tc.rounds)
+
+			for i := 1; i < len(rounds); i++ {
+				prev := rounds[i-1]
+				curr := rounds[i]
+
+				prevPairs := map[pair]bool{}
+				for _, m := range prev.Matches {
+					prevPairs[makePair(m.TeamA[0], m.TeamA[1])] = true
+					prevPairs[makePair(m.TeamB[0], m.TeamB[1])] = true
+				}
+
+				for _, m := range curr.Matches {
+					for _, p := range []pair{
+						makePair(m.TeamA[0], m.TeamA[1]),
+						makePair(m.TeamB[0], m.TeamB[1]),
+					} {
+						if prevPairs[p] {
+							t.Errorf("rounds %d→%d: pair (%s, %s) partnered in consecutive rounds",
+								prev.Number, curr.Number, p.a, p.b)
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
 // No player should ever appear on both teams in the same match.
 func TestGenerate_NoSelfOpposition(t *testing.T) {
 	cases := []struct{ players, courts, rounds int }{
@@ -293,5 +403,54 @@ func TestGenerate_NoSelfOpposition(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestGenerate_NoRepeatedMatchups verifies the opposition invariant:
+// the same two partnerships should never face each other more than once.
+// A match is an unordered pair of partnerships, so {A+B vs C+D} == {C+D vs A+B}.
+// With 4 players there are exactly 3 unique matchups; a correct scheduler uses each once.
+func TestGenerate_NoRepeatedMatchups(t *testing.T) {
+	type pair struct{ a, b string }
+	makePair := func(a, b string) pair {
+		if a > b { a, b = b, a }
+		return pair{a, b}
+	}
+	type matchup struct{ p1, p2 pair }
+	makeMatchup := func(a0, a1, b0, b1 string) matchup {
+		pa := makePair(a0, a1)
+		pb := makePair(b0, b1)
+		// normalize: smaller pair first
+		if pa.a > pb.a || (pa.a == pb.a && pa.b > pb.b) {
+			pa, pb = pb, pa
+		}
+		return matchup{pa, pb}
+	}
+
+	cases := []struct {
+		name                    string
+		players, courts, rounds int
+	}{
+		{"4p 1c 3rounds", 4, 1, 3},
+		{"8p 2c 7rounds", 8, 2, 7},
+		{"12p 3c 11rounds", 12, 3, 11},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rounds := Generate(makePlayers(tc.players), tc.courts, tc.rounds)
+
+			seen := map[matchup]int{}
+			for _, r := range rounds {
+				for _, m := range r.Matches {
+					mu := makeMatchup(m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1])
+					seen[mu]++
+					if seen[mu] > 1 {
+						t.Errorf("matchup {(%s+%s) vs (%s+%s)} appeared %d times — each matchup should occur at most once",
+							mu.p1.a, mu.p1.b, mu.p2.a, mu.p2.b, seen[mu])
+					}
+				}
+			}
+		})
 	}
 }
