@@ -107,7 +107,7 @@
       localStorage.setItem('last_session_id', session.id);
       // Send invites to selected contacts
       await Promise.all(
-        [...selectedContacts].map(uid => api.invites.send(session.id, uid, adminToken))
+        [...selectedContacts].map(uid => api.invites.send(session.id, uid, auth.token!))
       );
       goto(`/s/${session.id}?token=${adminToken}`);
     } catch (e) {
@@ -326,18 +326,7 @@
         </div>
       {/if}
 
-      <!-- Organiser -->
-      <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_organiser_label')}</p>
-        <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5">
-          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
-            {auth.user ? initials(auth.user.display_name) : '?'}
-          </div>
-          <span class="text-sm font-semibold">{auth.user?.display_name}</span>
-        </div>
-      </div>
-
-      {#if error}
+{#if error}
         <p class="text-sm text-[var(--destructive)]">{error}</p>
       {/if}
 

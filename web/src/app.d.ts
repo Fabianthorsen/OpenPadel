@@ -137,6 +137,7 @@ declare global {
       from_user_id: string;
       from_display_name: string;
       to_user_id: string;
+      to_display_name?: string;
       status: 'pending' | 'accepted' | 'declined';
       created_at: string;
     }

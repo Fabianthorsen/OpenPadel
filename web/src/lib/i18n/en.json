@@ -45,7 +45,7 @@
   "lobby_copy": "Copy",
   "lobby_copied": "Copied!",
   "lobby_add_player_label": "Add player",
-  "lobby_add_player_placeholder": "Player name",
+  "lobby_add_player_placeholder": "Search by name…",
   "lobby_add_button": "Add",
   "lobby_add_loading": "…",
   "lobby_players_label": "Players",

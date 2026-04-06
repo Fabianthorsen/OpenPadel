@@ -63,6 +63,49 @@ func (s *Store) GetPendingInvites(toUserID string) ([]domain.Invite, error) {
 	return invites, rows.Err()
 }
 
+// GetSessionInvites returns all pending invites for a session, including the invited user's name.
+func (s *Store) GetSessionInvites(sessionID string) ([]domain.Invite, error) {
+	rows, err := s.db.Query(`
+		SELECT
+			i.id, i.session_id,
+			COALESCE(NULLIF(sess.name, ''), 'OpenPadel') AS session_name,
+			i.from_user_id, uf.display_name,
+			i.to_user_id, ut.display_name,
+			i.status, i.created_at
+		FROM invites i
+		JOIN sessions sess ON sess.id = i.session_id
+		JOIN users uf ON uf.id = i.from_user_id
+		JOIN users ut ON ut.id = i.to_user_id
+		WHERE i.session_id = ? AND i.status = 'pending'
+		ORDER BY i.created_at DESC`,
+		sessionID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var invites []domain.Invite
+	for rows.Next() {
+		var inv domain.Invite
+		var createdAt string
+		if err := rows.Scan(
+			&inv.ID, &inv.SessionID, &inv.SessionName,
+			&inv.FromUserID, &inv.FromDisplayName,
+			&inv.ToUserID, &inv.ToDisplayName,
+			&inv.Status, &createdAt,
+		); err != nil {
+			return nil, err
+		}
+		inv.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
+		invites = append(invites, inv)
+	}
+	if invites == nil {
+		invites = []domain.Invite{}
+	}
+	return invites, rows.Err()
+}
+
 // AcceptInvite marks the invite as accepted and adds the user as a player.
 // Returns the created player record.
 func (s *Store) AcceptInvite(inviteID, toUserID string) (*domain.Player, error) {

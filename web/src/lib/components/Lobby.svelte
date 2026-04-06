@@ -1,6 +1,7 @@
 <script lang="ts">
   import { api } from '$lib/api/client';
-  import { Crown, Share, Check } from 'lucide-svelte';
+  import { Crown, Share, Check, Search, UserPlus, Clock } from 'lucide-svelte';
+  import { onMount } from 'svelte';
   import { initials, sessionName } from '$lib/utils';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
@@ -33,6 +34,54 @@
   let joinName = $state('');
   let joining = $state(false);
   let joinError = $state('');
+
+  let playerSearch = $state('');
+  let playerResults = $state<App.UserSearchResult[]>([]);
+  let playerSearchLoading = $state(false);
+  let playerSearchDebounce: ReturnType<typeof setTimeout>;
+  let sessionInvites = $state<App.Invite[]>([]);
+
+  onMount(async () => {
+    if (isAdmin) {
+      sessionInvites = await api.invites.listForSession(session.id).catch(() => []);
+    }
+  });
+
+  function onPlayerSearchInput() {
+    clearTimeout(playerSearchDebounce);
+    if (playerSearch.length < 2) { playerResults = []; playerSearchLoading = false; return; }
+    playerSearchLoading = true;
+    playerSearchDebounce = setTimeout(async () => {
+      try {
+        playerResults = await api.contacts.search(auth.token!, playerSearch);
+      } finally {
+        playerSearchLoading = false;
+      }
+    }, 300);
+  }
+
+  async function inviteUser(userID: string) {
+    if (!auth.token) return;
+    await api.invites.send(session.id, userID, auth.token).catch(() => {});
+    playerSearch = '';
+    playerResults = [];
+    sessionInvites = await api.invites.listForSession(session.id).catch(() => []);
+  }
+
+  async function addGuest(name: string) {
+    if (!name) return;
+    joining = true;
+    try {
+      await api.players.join(session.id, name);
+      playerSearch = '';
+      onRefresh();
+    } catch (e) {
+      joinError = e instanceof Error ? e.message : 'Could not add guest';
+      setTimeout(() => { joinError = ''; }, 5000);
+    } finally {
+      joining = false;
+    }
+  }
 
   // Pre-fill name from account when on the invite screen
   $effect(() => {
@@ -406,25 +455,50 @@
       </div>
     </div>
 
-    <!-- Admin: add player manually -->
+    <!-- Admin: invite or add guest -->
     {#if isAdmin && !(isTennis && activePlayers.length >= 4)}
       <div class="space-y-2">
         <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('lobby_add_player_label')}</p>
-        <form onsubmit={(e) => { e.preventDefault(); join(); }} class="flex gap-2">
+        <div class="relative">
+          <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
+            <Search size={15} class="text-[var(--text-disabled)]" />
+          </div>
           <Input
-            bind:value={joinName}
+            bind:value={playerSearch}
+            oninput={onPlayerSearchInput}
             placeholder={$_('lobby_add_player_placeholder')}
             maxlength={32}
-            class="flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3 text-sm"
+            class="w-full rounded-2xl border-0 bg-[var(--surface-raised)] py-3 pl-9 pr-4 text-sm"
           />
-          <Button
-            type="submit"
-            disabled={joining || !joinName.trim()}
-            class="h-auto rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white"
+        </div>
+        {#if playerResults.length > 0}
+          <div class="space-y-1.5">
+            {#each playerResults as result}
+              <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+                  {initials(result.display_name)}
+                </div>
+                <p class="flex-1 text-sm font-semibold truncate">{result.display_name}</p>
+                <button
+                  onclick={() => inviteUser(result.id)}
+                  class="flex items-center gap-1 rounded-full bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-white"
+                >
+                  <UserPlus size={12} /> Invite
+                </button>
+              </div>
+            {/each}
+          </div>
+        {/if}
+        {#if playerSearch.trim().length > 0 && !playerSearchLoading}
+          <button
+            onclick={() => addGuest(playerSearch.trim())}
+            disabled={joining}
+            class="flex w-full items-center gap-3 rounded-2xl border border-dashed border-[var(--border)] px-4 py-3 text-sm text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-50"
           >
-            {joining ? $_('lobby_add_loading') : $_('lobby_add_button')}
-          </Button>
-        </form>
+            <UserPlus size={15} class="shrink-0" />
+            Add "{playerSearch.trim()}" as guest
+          </button>
+        {/if}
       </div>
     {/if}
 
@@ -433,7 +507,7 @@
       <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
         {$_('lobby_players_label')} ({activePlayers.length})
       </p>
-      {#if activePlayers.length === 0}
+      {#if activePlayers.length === 0 && sessionInvites.length === 0}
         <p class="text-sm text-[var(--text-disabled)]">{$_('lobby_waiting_players')}</p>
       {:else}
         <div class="rounded-2xl bg-[var(--surface-raised)] divide-y divide-[var(--border)]">
@@ -460,6 +534,18 @@
                     ×
                   </button>
                 {/if}
+              </div>
+            </div>
+          {/each}
+          {#each sessionInvites as invite (invite.id)}
+            <div class="flex items-center gap-3 px-4 py-3 opacity-60">
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--border)] text-sm font-semibold text-[var(--text-disabled)]">
+                {initials(invite.to_display_name ?? '?')}
+              </div>
+              <span class="flex-1 text-sm font-medium text-[var(--text-secondary)] truncate">{invite.to_display_name}</span>
+              <div class="ml-auto flex items-center gap-1 text-[var(--text-disabled)]">
+                <Clock size={11} />
+                <span class="text-xs">Invited</span>
               </div>
             </div>
           {/each}

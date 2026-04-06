@@ -28,6 +28,7 @@ type Invite struct {
 	FromUserID      string    `json:"from_user_id"`
 	FromDisplayName string    `json:"from_display_name"`
 	ToUserID        string    `json:"to_user_id"`
+	ToDisplayName   string    `json:"to_display_name,omitempty"`
 	Status          string    `json:"status"` // pending | accepted | declined
 	CreatedAt       time.Time `json:"created_at"`
 }

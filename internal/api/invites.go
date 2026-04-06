@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/fabianthorsen/openpadel/internal/domain"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -23,7 +22,7 @@ func (h *Handler) sendInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess, err := h.store.GetSession(sessionID)
+	_, err := h.store.GetSession(sessionID)
 	if errors.Is(err, store.ErrNotFound) {
 		respondError(w, http.StatusNotFound, "session not found")
 		return
@@ -32,20 +31,8 @@ func (h *Handler) sendInvite(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "could not load session")
 		return
 	}
-	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin access required")
-		return
-	}
-	if sess.Status != domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session has already started")
-		return
-	}
 
 	fromUser := userFromContext(r)
-	if fromUser == nil {
-		respondError(w, http.StatusUnauthorized, "authentication required")
-		return
-	}
 
 	inv, err := h.store.CreateInvite(sessionID, fromUser.ID, body.ToUserID)
 	if errors.Is(err, store.ErrNotFound) {
@@ -62,6 +49,17 @@ func (h *Handler) sendInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond(w, http.StatusCreated, inv)
+}
+
+// getSessionInvites returns all pending invites for a session.
+func (h *Handler) getSessionInvites(w http.ResponseWriter, r *http.Request) {
+	sessionID := chi.URLParam(r, "id")
+	invites, err := h.store.GetSessionInvites(sessionID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "could not fetch invites")
+		return
+	}
+	respond(w, http.StatusOK, invites)
 }
 
 // getMyInvites returns all pending invites for the authenticated user.

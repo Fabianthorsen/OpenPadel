@@ -40,9 +40,9 @@
 
   function onContactSearchInput() {
     clearTimeout(searchDebounce);
-    if (contactSearch.length < 2) { searchResults = []; return; }
+    if (contactSearch.length < 2) { searchResults = []; searchLoading = false; return; }
+    searchLoading = true;
     searchDebounce = setTimeout(async () => {
-      searchLoading = true;
       try {
         searchResults = await api.contacts.search(auth.token!, contactSearch);
       } finally {

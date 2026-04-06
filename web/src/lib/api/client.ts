@@ -113,8 +113,10 @@ export const api = {
   invites: {
     list: (token: string) =>
       request<App.Invite[]>('GET', '/invites', undefined, token),
-    send: (sessionId: string, toUserId: string, adminToken: string) =>
-      request<App.Invite>('POST', `/sessions/${sessionId}/invites`, { to_user_id: toUserId }, adminToken),
+    listForSession: (sessionId: string) =>
+      request<App.Invite[]>('GET', `/sessions/${sessionId}/invites`),
+    send: (sessionId: string, toUserId: string, token: string) =>
+      request<App.Invite>('POST', `/sessions/${sessionId}/invites`, { to_user_id: toUserId }, token),
     accept: (inviteId: string, token: string) =>
       request<App.Player>('POST', `/invites/${inviteId}/accept`, undefined, token),
     decline: (inviteId: string, token: string) =>
