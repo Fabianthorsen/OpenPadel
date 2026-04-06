@@ -2,8 +2,9 @@
   import { onMount, onDestroy } from 'svelte';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
-  import { Trophy } from 'lucide-svelte';
+  import { Trophy, UserPlus, Check } from 'lucide-svelte';
   import { initials, shortName } from '$lib/utils';
+  import { auth } from '$lib/auth.svelte';
 
   let {
     sessionId,
@@ -17,6 +18,10 @@
 
   let leaderboard = $state<App.Leaderboard | null>(null);
   let interval: ReturnType<typeof setInterval>;
+  // user_id → true once added this session
+  let addedContacts = $state<Record<string, boolean>>({});
+  // user_id → true if already a contact before arriving
+  let existingContacts = $state<Record<string, boolean>>({});
 
   async function load() {
     try {
@@ -26,9 +31,22 @@
     }
   }
 
+  async function loadContacts() {
+    if (!auth.token) return;
+    const contacts = await api.contacts.list(auth.token);
+    existingContacts = Object.fromEntries(contacts.map(c => [c.user_id, true]));
+  }
+
+  async function addContact(userID: string) {
+    if (!auth.token) return;
+    await api.contacts.add(auth.token, userID);
+    addedContacts = { ...addedContacts, [userID]: true };
+  }
+
   onMount(() => {
     load();
     if (!complete) interval = setInterval(load, 15_000);
+    if (complete) loadContacts();
   });
 
   onDestroy(() => clearInterval(interval));
@@ -94,6 +112,18 @@
             <span class="text-[var(--text-disabled)]">·</span>
             <span class="text-[#c0392b]">{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}L</span>
           </div>
+          {#if auth.token && s.user_id && s.user_id !== auth.user?.id}
+            {@const isContact = existingContacts[s.user_id] || addedContacts[s.user_id]}
+            <button
+              onclick={() => !isContact && addContact(s.user_id!)}
+              disabled={isContact}
+              class="mt-2 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors
+                {isContact ? 'bg-[var(--border)] text-[var(--text-disabled)] cursor-default' : 'bg-[var(--primary-muted)] text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white'}"
+            >
+              {#if isContact}<Check size={10} />{:else}<UserPlus size={10} />{/if}
+              {isContact ? 'Added' : 'Add'}
+            </button>
+          {/if}
 
           <!-- Podium bar -->
           <div class="mt-3 w-full rounded-t-xl
@@ -108,6 +138,7 @@
       <div class="space-y-1">
         <p class="px-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('leaderboard_ranking')}</p>
         {#each leaderboard.standings.slice(3) as s (s.player_id)}
+          {@const isContact = existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? '']}
           <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
             <span class="w-6 text-sm font-[800] tabular-nums text-[var(--text-disabled)]">{s.rank}</span>
             <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
@@ -123,6 +154,16 @@
             </div>
             <span class="text-base font-[800] tabular-nums">{s.points}</span>
             <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">{$_('leaderboard_pts')}</span>
+            {#if auth.token && s.user_id && s.user_id !== auth.user?.id}
+              <button
+                onclick={() => !isContact && addContact(s.user_id!)}
+                disabled={isContact}
+                class="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors
+                  {isContact ? 'bg-[var(--border)] text-[var(--text-disabled)] cursor-default' : 'bg-[var(--primary-muted)] text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white'}"
+              >
+                {#if isContact}<Check size={10} />{:else}<UserPlus size={10} />{/if}
+              </button>
+            {/if}
           </div>
         {/each}
       </div>

@@ -144,6 +144,7 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 	rows, err := s.db.Query(`
 		SELECT
 			p.id,
+			p.user_id,
 			p.name,
 			COALESCE(SUM(
 				CASE
@@ -182,7 +183,7 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 	rank := 1
 	for rows.Next() {
 		var s domain.Standing
-		if err := rows.Scan(&s.PlayerID, &s.Name, &s.Points, &s.GamesPlayed, &s.Wins, &s.Draws); err != nil {
+		if err := rows.Scan(&s.PlayerID, &s.UserID, &s.Name, &s.Points, &s.GamesPlayed, &s.Wins, &s.Draws); err != nil {
 			return nil, err
 		}
 		s.Rank = rank

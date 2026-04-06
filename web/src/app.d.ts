@@ -102,6 +102,7 @@ declare global {
     interface Standing {
       rank: number;
       player_id: string;
+      user_id?: string;
       name: string;
       points: number;
       games_played: number;

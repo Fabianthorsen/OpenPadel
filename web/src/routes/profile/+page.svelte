@@ -52,7 +52,8 @@
 
   async function addContact(userID: string) {
     await api.contacts.add(auth.token!, userID);
-    searchResults = searchResults.map(r => r.id === userID ? { ...r, is_contact: true } : r);
+    contactSearch = '';
+    searchResults = [];
     contacts = await api.contacts.list(auth.token!);
   }
 
