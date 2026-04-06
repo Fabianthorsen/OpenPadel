@@ -57,7 +57,7 @@
                     class="mx-auto flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-sm transition-colors
                       hover:bg-[var(--surface-raised)]
                       data-[selected]:bg-[var(--primary)] data-[selected]:font-semibold data-[selected]:text-white data-[selected]:hover:bg-[var(--primary-hover)]
-                      data-[today]:font-semibold data-[today]:text-[var(--primary)]
+                      data-[today]:font-semibold data-[today]:text-[var(--primary)] data-[today]:data-[selected]:text-white
                       data-[disabled]:pointer-events-none data-[disabled]:text-[var(--text-disabled)]
                       data-[outside-month]:opacity-30"
                   >
