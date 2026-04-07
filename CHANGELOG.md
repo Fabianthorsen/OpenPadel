@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.4.0...v1.4.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* **scheduler:** correct round count for bench configurations ([93c6ba6](https://github.com/Fabianthorsen/OpenPadel/commit/93c6ba67b863b0028cdbfd2cc64ad3a06f3b4ecd))
+
 ## [1.4.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.3.2...v1.4.0) (2026-04-06)
 
 
