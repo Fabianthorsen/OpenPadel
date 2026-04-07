@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"errors"
+	"sort"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
 )
@@ -153,6 +154,13 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 					ELSE 0
 				END
 			), 0) AS points,
+			COALESCE(SUM(
+				CASE
+					WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_b
+					WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_a
+					ELSE 0
+				END
+			), 0) AS points_conceded,
 			COUNT(m.id) AS games_played,
 			COALESCE(SUM(
 				CASE
@@ -170,8 +178,7 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 			AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
 			AND m.score_a IS NOT NULL
 		WHERE p.session_id = ? AND p.active = 1
-		GROUP BY p.id, p.name
-		ORDER BY points DESC`,
+		GROUP BY p.id, p.name`,
 		sessionID,
 	)
 	if err != nil {
@@ -180,20 +187,110 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 	defer rows.Close()
 
 	var standings []domain.Standing
-	rank := 1
 	for rows.Next() {
-		var s domain.Standing
-		if err := rows.Scan(&s.PlayerID, &s.UserID, &s.Name, &s.Points, &s.GamesPlayed, &s.Wins, &s.Draws); err != nil {
+		var st domain.Standing
+		if err := rows.Scan(&st.PlayerID, &st.UserID, &st.Name, &st.Points, &st.PointsConceded, &st.GamesPlayed, &st.Wins, &st.Draws); err != nil {
 			return nil, err
 		}
-		s.Rank = rank
-		rank++
-		standings = append(standings, s)
+		standings = append(standings, st)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Build head-to-head lookup: h2h[playerA][playerB] = points playerA scored against playerB's team.
+	h2h, err := s.getH2H(sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sort with tiebreaker chain:
+	// 1. Total points (desc)
+	// 2. Points per game (desc) — handles bench inequality
+	// 3. Head-to-head points (desc)
+	// 4. Point spread / net points (desc)
+	sort.SliceStable(standings, func(i, j int) bool {
+		a, b := standings[i], standings[j]
+		if a.Points != b.Points {
+			return a.Points > b.Points
+		}
+		// Points per game
+		avgA := perGame(a.Points, a.GamesPlayed)
+		avgB := perGame(b.Points, b.GamesPlayed)
+		if avgA != avgB {
+			return avgA > avgB
+		}
+		// Head-to-head
+		h2hA := h2h[a.PlayerID][b.PlayerID]
+		h2hB := h2h[b.PlayerID][a.PlayerID]
+		if h2hA != h2hB {
+			return h2hA > h2hB
+		}
+		// Point spread
+		spreadA := a.Points - a.PointsConceded
+		spreadB := b.Points - b.PointsConceded
+		return spreadA > spreadB
+	})
+
+	for i := range standings {
+		standings[i].Rank = i + 1
 	}
 	if standings == nil {
 		standings = []domain.Standing{}
 	}
-	return standings, rows.Err()
+	return standings, nil
+}
+
+func perGame(points, games int) float64 {
+	if games == 0 {
+		return 0
+	}
+	return float64(points) / float64(games)
+}
+
+// getH2H returns a map[playerID][opponentID] = points scored by playerID against opponentID's team.
+func (s *Store) getH2H(sessionID string) (map[string]map[string]int, error) {
+	rows, err := s.db.Query(`
+		SELECT m.p1, m.p2, m.p3, m.p4, m.score_a, m.score_b
+		FROM matches m
+		JOIN rounds r ON r.id = m.round_id
+		WHERE r.session_id = ? AND m.score_a IS NOT NULL`,
+		sessionID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	h2h := map[string]map[string]int{}
+	ensure := func(id string) {
+		if h2h[id] == nil {
+			h2h[id] = map[string]int{}
+		}
+	}
+
+	for rows.Next() {
+		var p1, p2, p3, p4 string
+		var scoreA, scoreB int
+		if err := rows.Scan(&p1, &p2, &p3, &p4, &scoreA, &scoreB); err != nil {
+			return nil, err
+		}
+		// Team A (p1,p2) scored scoreA against team B (p3,p4)
+		for _, a := range []string{p1, p2} {
+			ensure(a)
+			for _, opp := range []string{p3, p4} {
+				h2h[a][opp] += scoreA
+			}
+		}
+		// Team B (p3,p4) scored scoreB against team A (p1,p2)
+		for _, b := range []string{p3, p4} {
+			ensure(b)
+			for _, opp := range []string{p1, p2} {
+				h2h[b][opp] += scoreB
+			}
+		}
+	}
+	return h2h, rows.Err()
 }
 
 // AllRoundsComplete returns true when every match in the session has a score.
