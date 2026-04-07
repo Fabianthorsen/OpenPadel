@@ -127,7 +127,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusUnprocessableEntity, "not enough players to start")
 			return
 		}
-		totalRounds := len(active) - 1
+		totalRounds := scheduler.TotalRounds(len(active), sess.Courts)
 		rounds := scheduler.Generate(active, sess.Courts, totalRounds)
 		if err := h.store.SaveRounds(id, rounds); err != nil {
 			respondError(w, http.StatusInternalServerError, "could not generate rounds")
