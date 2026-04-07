@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/Fabianthorsen/OpenPadel/compare/v1.4.1...v1.4.2) (2026-04-07)
+
+
+### Bug Fixes
+
+* **leaderboard:** add tiebreaker chain for fair ranking ([3317bb8](https://github.com/Fabianthorsen/OpenPadel/commit/3317bb846e97803930ce6f3d2f9c14ed3cdc5767))
+
 ## [1.4.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.4.0...v1.4.1) (2026-04-07)
 
 
