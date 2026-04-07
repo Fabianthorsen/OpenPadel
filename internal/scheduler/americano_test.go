@@ -457,6 +457,63 @@ func TestGenerate_NoRepeatedMatchups(t *testing.T) {
 
 // TestGenerate_BenchRotation verifies two bench invariants:
 // 1. A player benched in round N must play in round N+1 (no consecutive bench).
+// TestTotalRounds verifies the correct round count for common player/court combos.
+func TestTotalRounds(t *testing.T) {
+	cases := []struct {
+		players, courts, want int
+		note                  string
+	}{
+		// No bench: N-1
+		{8, 2, 7, "8p 2c: no bench"},
+		{12, 3, 11, "12p 3c: no bench"},
+		{4, 1, 3, "4p 1c: no bench"},
+		// Bench of 1: N/gcd(N,1) = N
+		{9, 2, 9, "9p 2c: bench=1"},
+		{5, 1, 5, "5p 1c: bench=1"},
+		{13, 3, 13, "13p 3c: bench=1"},
+		// Bench of 2: N/gcd(N,2)
+		{10, 2, 5, "10p 2c: bench=2, gcd=2 → 5 rounds"},
+		{6, 1, 3, "6p 1c: bench=2, gcd=2 → 3 rounds"},
+		// Bench of 3: N/gcd(N,3)
+		{11, 2, 11, "11p 2c: bench=3, gcd=1 → 11 rounds"},
+		{15, 3, 5, "15p 3c: bench=3, gcd=3 → 5 rounds"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.note, func(t *testing.T) {
+			got := TotalRounds(tc.players, tc.courts)
+			if got != tc.want {
+				t.Errorf("TotalRounds(%d, %d) = %d, want %d", tc.players, tc.courts, got, tc.want)
+			}
+
+			// Verify bench fairness with the computed round count
+			benchSize := tc.players - tc.courts*4
+			if benchSize > 0 {
+				players := makePlayers(tc.players)
+				rounds := Generate(players, tc.courts, got)
+				benchCount := map[string]int{}
+				for _, r := range rounds {
+					for _, id := range r.Bench {
+						benchCount[id]++
+					}
+				}
+				min, max := got, 0
+				for _, p := range players {
+					c := benchCount[p.ID]
+					if c < min { min = c }
+					if c > max { max = c }
+				}
+				if min == 0 {
+					t.Errorf("player(s) never benched across %d rounds", got)
+				}
+				if max-min > 1 {
+					t.Errorf("bench counts uneven: min=%d max=%d", min, max)
+				}
+			}
+		})
+	}
+}
+
 // 2. Across the full tournament, bench counts are as equal as possible —
 //    the max bench count for any player must not exceed the min by more than 1.
 func TestGenerate_BenchRotation(t *testing.T) {

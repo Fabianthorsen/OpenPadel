@@ -213,6 +213,24 @@ func assignCourts(active []string, courts int, partnerCount map[[2]string]int, m
 	return bestCourtAssignment(pairs, matchupCount)
 }
 
+// TotalRounds returns the correct number of rounds for a fair Americano tournament.
+// For no-bench configs (players == courts*4): N-1 rounds covers all unique pairs.
+// For bench configs: N/gcd(N, benchSize) — minimum rounds where everyone sits equally.
+func TotalRounds(players, courts int) int {
+	benchSize := players - courts*4
+	if benchSize <= 0 {
+		return players - 1
+	}
+	return players / gcd(players, benchSize)
+}
+
+func gcd(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
+}
+
 const idAlphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 func shortID() string {
