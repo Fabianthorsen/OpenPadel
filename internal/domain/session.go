@@ -175,14 +175,15 @@ type LiveScore struct {
 }
 
 type Standing struct {
-	Rank        int     `json:"rank"`
-	PlayerID    string  `json:"player_id"`
-	UserID      *string `json:"user_id,omitempty"`
-	Name        string  `json:"name"`
-	Points      int     `json:"points"`
-	GamesPlayed int     `json:"games_played"`
-	Wins        int     `json:"wins"`
-	Draws       int     `json:"draws"`
+	Rank            int     `json:"rank"`
+	PlayerID        string  `json:"player_id"`
+	UserID          *string `json:"user_id,omitempty"`
+	Name            string  `json:"name"`
+	Points          int     `json:"points"`
+	PointsConceded  int     `json:"points_conceded"`
+	GamesPlayed     int     `json:"games_played"`
+	Wins            int     `json:"wins"`
+	Draws           int     `json:"draws"`
 }
 
 type Leaderboard struct {
