@@ -96,6 +96,9 @@
 
   const isTennis = $derived(session.game_mode === 'tennis');
   const isMexicano = $derived(session.game_mode === 'mexicano');
+  const gameModeName = $derived(
+    session.game_mode === 'mexicano' ? 'Mexicano' : session.game_mode === 'tennis' ? 'Tennis' : 'Americano'
+  );
   const activePlayers = $derived(session.players.filter((p) => p.active));
 
   // Tennis team state — maps player_id → 'a' | 'b' | null
@@ -321,9 +324,9 @@
         <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--primary)]">OpenPadel</p>
         <h1 class="text-[28px] font-[800] leading-tight">
           {#if creatorName}
-            {$_('invite_title_with_creator', { values: { creator: creatorName } })}
+            {$_('invite_title_with_creator', { values: { creator: creatorName, mode: gameModeName } })}
           {:else}
-            {$_('invite_title_generic')}
+            {$_('invite_title_generic', { values: { mode: gameModeName } })}
           {/if}
         </h1>
         {#if session.name}
