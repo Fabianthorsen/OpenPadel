@@ -30,7 +30,7 @@ declare global {
       admin_token?: string;
       status: SessionStatus;
       name?: string;
-      game_mode: 'americano' | 'tennis';
+      game_mode: 'americano' | 'mexicano' | 'tennis';
       sets_to_win: number;
       games_per_set: number;
       courts: number;
@@ -125,7 +125,7 @@ declare global {
       session_id: string;
       name: string;
       status: 'lobby' | 'active';
-      game_mode: 'americano' | 'tennis';
+      game_mode: 'americano' | 'mexicano' | 'tennis';
       courts: number;
       player_count: number;
       scheduled_at?: string;

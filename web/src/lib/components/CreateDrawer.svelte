@@ -13,7 +13,7 @@
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
-  let gameMode = $state<'americano' | 'tennis'>('americano');
+  let gameMode = $state<'americano' | 'mexicano' | 'tennis'>('americano');
   let courts = $state(2);
   let points = $state(24);
   let setsToWin = $state(2);
@@ -164,15 +164,24 @@
               : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
           >Americano</button>
           <button
+            onclick={() => (gameMode = 'mexicano')}
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'mexicano'
+              ? 'bg-[var(--primary)] text-white'
+              : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+          >Mexicano</button>
+          <button
             onclick={() => (gameMode = 'tennis')}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'tennis'
               ? 'bg-[var(--primary)] text-white'
               : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
           >{$_('create_mode_tennis')}</button>
         </div>
+        {#if gameMode === 'mexicano'}
+          <p class="text-xs text-[var(--text-secondary)]">{$_('create_mexicano_hint')}</p>
+        {/if}
       </div>
 
-      {#if gameMode === 'americano'}
+      {#if gameMode === 'americano' || gameMode === 'mexicano'}
         <!-- Courts -->
         <div class="space-y-2.5">
           <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_courts_label')}</p>
