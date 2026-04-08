@@ -14,6 +14,7 @@
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
   let gameMode = $state<'americano' | 'mexicano' | 'tennis'>('americano');
+  let mexicanoRounds = $state<number | null>(null); // null = open-ended
   let courts = $state(2);
   let points = $state(24);
   let setsToWin = $state(2);
@@ -99,7 +100,7 @@
         d.setHours(h, m, 0, 0);
         iso = d.toISOString();
       }
-      const session = await api.sessions.create(courts, points, tournamentName.trim(), gameMode, setsToWin, gamesPerSet, iso);
+      const session = await api.sessions.create(courts, points, tournamentName.trim(), gameMode, setsToWin, gamesPerSet, iso, gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined);
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
       const player = await api.players.join(session.id, auth.user!.display_name, auth.token ?? undefined, adminToken);
@@ -180,6 +181,32 @@
           <p class="text-xs text-[var(--text-secondary)]">{$_('create_mexicano_hint')}</p>
         {/if}
       </div>
+
+      {#if gameMode === 'mexicano'}
+        <!-- Mexicano: preset rounds -->
+        <div class="space-y-2.5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_mexicano_rounds_label')}</p>
+          <div class="flex gap-2">
+            {#each [4, 6, 8, 10] as n}
+              <button
+                onclick={() => (mexicanoRounds = mexicanoRounds === n ? null : n)}
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {mexicanoRounds === n
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+              >{n}</button>
+            {/each}
+            <button
+              onclick={() => (mexicanoRounds = null)}
+              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {mexicanoRounds === null
+                ? 'bg-[var(--primary)] text-white'
+                : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+            >{$_('create_mexicano_rounds_open')}</button>
+          </div>
+          <p class="text-xs text-[var(--text-secondary)]">
+            {mexicanoRounds ? $_('create_mexicano_rounds_hint_fixed', { values: { n: mexicanoRounds } }) : $_('create_mexicano_rounds_hint_open')}
+          </p>
+        </div>
+      {/if}
 
       {#if gameMode === 'americano' || gameMode === 'mexicano'}
         <!-- Courts -->

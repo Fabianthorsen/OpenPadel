@@ -48,8 +48,8 @@ export const api = {
       request<void>('POST', '/auth/reset', { token, password }),
   },
   sessions: {
-    create: (courts: number, points: number, name: string, gameMode: string, setsToWin: number, gamesPerSet: number, scheduledAt?: string) =>
-      request<App.Session>('POST', '/sessions', { courts, points, name, game_mode: gameMode, sets_to_win: setsToWin, games_per_set: gamesPerSet, scheduled_at: scheduledAt }),
+    create: (courts: number, points: number, name: string, gameMode: string, setsToWin: number, gamesPerSet: number, scheduledAt?: string, roundsTotal?: number) =>
+      request<App.Session>('POST', '/sessions', { courts, points, name, game_mode: gameMode, sets_to_win: setsToWin, games_per_set: gamesPerSet, scheduled_at: scheduledAt, rounds_total: roundsTotal }),
     get: (id: string, token?: string) =>
       request<App.Session>('GET', `/sessions/${id}`, undefined, token),
     start: (id: string, token: string) =>
