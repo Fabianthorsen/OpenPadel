@@ -69,6 +69,7 @@ func Generate(players []domain.Player, courts, totalRounds int) []domain.Round {
 		}
 
 		matches := assignCourts(active, courts, partnerCount, matchupCount)
+		shuffleTeamSides(matches)
 
 		for _, m := range matches {
 			partnerCount[pairKey(m.TeamA[0], m.TeamA[1])]++
@@ -234,6 +235,17 @@ func gcd(a, b int) int {
 		a, b = b, a%b
 	}
 	return a
+}
+
+// shuffleTeamSides randomly swaps Team A and Team B on each match so that the
+// "Team A" label doesn't persistently attach to any particular player across rounds.
+func shuffleTeamSides(matches []domain.Match) {
+	for i := range matches {
+		n, _ := rand.Int(rand.Reader, big.NewInt(2))
+		if n.Int64() == 1 {
+			matches[i].TeamA, matches[i].TeamB = matches[i].TeamB, matches[i].TeamA
+		}
+	}
 }
 
 const idAlphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"

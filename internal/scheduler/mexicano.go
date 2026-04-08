@@ -76,6 +76,8 @@ func GenerateMexicanoRound(
 		}
 	}
 
+	shuffleTeamSides(matches)
+
 	return domain.Round{
 		ID:      shortID(),
 		Number:  roundNum,
