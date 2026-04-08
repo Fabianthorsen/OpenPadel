@@ -3,6 +3,7 @@ package api
 import (
 	"math/rand/v2"
 	"net/http"
+	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
 	"github.com/fabianthorsen/openpadel/internal/scheduler"
@@ -10,7 +11,7 @@ import (
 
 // startMexicanoSession generates round 1 (random order), saves it, and activates the session.
 // Returns a non-nil error only if it has already written an error response.
-func (h *Handler) startMexicanoSession(w http.ResponseWriter, sessionID string, sess *domain.Session, active []domain.Player) error {
+func (h *Handler) startMexicanoSession(w http.ResponseWriter, sessionID string, sess *domain.Session, active []domain.Player, endsAt *time.Time) error {
 	// Round 1 uses random standings (points all zero).
 	standings := make([]domain.Standing, len(active))
 	for i, p := range active {
@@ -33,7 +34,7 @@ func (h *Handler) startMexicanoSession(w http.ResponseWriter, sessionID string, 
 		respondError(w, http.StatusInternalServerError, "could not save round")
 		return err
 	}
-	if err := h.store.StartMexicanoSession(sessionID); err != nil {
+	if err := h.store.StartMexicanoSession(sessionID, endsAt); err != nil {
 		respondError(w, http.StatusInternalServerError, "could not start session")
 		return err
 	}

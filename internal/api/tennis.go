@@ -38,7 +38,7 @@ func (h *Handler) startTennisSession(w http.ResponseWriter, sessionID string, ac
 		respondError(w, http.StatusInternalServerError, "could not create match")
 		return err
 	}
-	if err := h.store.StartSession(sessionID, 1); err != nil {
+	if err := h.store.StartSession(sessionID, 1, nil); err != nil {
 		respondError(w, http.StatusInternalServerError, "could not start session")
 		return err
 	}

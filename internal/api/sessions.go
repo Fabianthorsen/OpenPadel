@@ -17,14 +17,15 @@ import (
 
 func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Courts      int     `json:"courts"`
-		Points      int     `json:"points"`
-		Name        string  `json:"name"`
-		GameMode    string  `json:"game_mode"`
-		SetsToWin   int     `json:"sets_to_win"`
-		GamesPerSet int     `json:"games_per_set"`
-		ScheduledAt *string `json:"scheduled_at"`
-		RoundsTotal *int    `json:"rounds_total"`
+		Courts               int     `json:"courts"`
+		Points               int     `json:"points"`
+		Name                 string  `json:"name"`
+		GameMode             string  `json:"game_mode"`
+		SetsToWin            int     `json:"sets_to_win"`
+		GamesPerSet          int     `json:"games_per_set"`
+		ScheduledAt          *string `json:"scheduled_at"`
+		RoundsTotal          *int    `json:"rounds_total"`
+		CourtDurationMinutes *int    `json:"court_duration_minutes"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
@@ -81,7 +82,13 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, body.RoundsTotal, scheduledAt)
+	// Validate court duration.
+	if body.CourtDurationMinutes != nil && (*body.CourtDurationMinutes < 15 || *body.CourtDurationMinutes > 300) {
+		respondError(w, http.StatusBadRequest, "court_duration_minutes must be between 15 and 300")
+		return
+	}
+
+	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not create session")
 		return
@@ -131,6 +138,13 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 
 	active := activePlayers(sess.Players)
 
+	// Compute ends_at from court_duration_minutes if set.
+	var endsAt *time.Time
+	if sess.CourtDurationMinutes != nil && *sess.CourtDurationMinutes > 0 {
+		t := time.Now().UTC().Add(time.Duration(*sess.CourtDurationMinutes) * time.Minute)
+		endsAt = &t
+	}
+
 	switch sess.GameMode {
 	case "tennis":
 		if err := h.startTennisSession(w, id, active); err != nil {
@@ -142,7 +156,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusUnprocessableEntity, "mexicano requires exactly courts×4 players")
 			return
 		}
-		if err := h.startMexicanoSession(w, id, sess, active); err != nil {
+		if err := h.startMexicanoSession(w, id, sess, active, endsAt); err != nil {
 			return
 		}
 	default: // americano
@@ -158,7 +172,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusInternalServerError, "could not generate rounds")
 			return
 		}
-		if err := h.store.StartSession(id, totalRounds); err != nil {
+		if err := h.store.StartSession(id, totalRounds, endsAt); err != nil {
 			respondError(w, http.StatusInternalServerError, "could not start session")
 			return
 		}

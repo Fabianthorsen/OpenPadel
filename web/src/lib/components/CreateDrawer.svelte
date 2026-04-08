@@ -14,7 +14,38 @@
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
   let gameMode = $state<'americano' | 'mexicano' | 'tennis'>('americano');
-  let mexicanoRounds = $state<number | null>(null); // null = open-ended
+  let mexicanoRounds = $state<number | null>(null); // null = no round limit
+  let courtDuration = $state<number | null>(null);  // null = no timer
+  let customTimeMode = $state(false);
+  let customTimeRaw = $state('');
+  let customInputEl = $state<HTMLInputElement | null>(null);
+  $effect(() => {
+    if (customTimeMode && customInputEl) customInputEl.focus();
+  });
+  $effect(() => {
+    if (customTimeMode) {
+      const v = parseInt(customTimeRaw);
+      courtDuration = (v >= 15 && v <= 300) ? v : null;
+    }
+  });
+  function pickRounds(n: number) {
+    mexicanoRounds = mexicanoRounds === n ? null : n;
+    courtDuration = null;
+    customTimeMode = false;
+    customTimeRaw = '';
+  }
+  function pickTime(min: number) {
+    courtDuration = courtDuration === min && !customTimeMode ? null : min;
+    mexicanoRounds = null;
+    customTimeMode = false;
+    customTimeRaw = '';
+  }
+  function pickCustomTime() {
+    customTimeMode = true;
+    mexicanoRounds = null;
+    courtDuration = null;
+    customTimeRaw = '';
+  }
   let courts = $state(2);
   let points = $state(24);
   let setsToWin = $state(2);
@@ -100,7 +131,7 @@
         d.setHours(h, m, 0, 0);
         iso = d.toISOString();
       }
-      const session = await api.sessions.create(courts, points, tournamentName.trim(), gameMode, setsToWin, gamesPerSet, iso, gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined);
+      const session = await api.sessions.create(courts, points, tournamentName.trim(), gameMode, setsToWin, gamesPerSet, iso, gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined, courtDuration ?? undefined);
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
       const player = await api.players.join(session.id, auth.user!.display_name, auth.token ?? undefined, adminToken);
@@ -183,27 +214,64 @@
       </div>
 
       {#if gameMode === 'mexicano'}
-        <!-- Mexicano: preset rounds -->
+        <!-- Mexicano: rounds or time (mutually exclusive) -->
         <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_mexicano_rounds_label')}</p>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_duration_label')}</p>
+          <!-- Rounds row -->
           <div class="flex gap-2">
             {#each [4, 6, 8, 10] as n}
               <button
-                onclick={() => (mexicanoRounds = mexicanoRounds === n ? null : n)}
+                onclick={() => pickRounds(n)}
                 class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {mexicanoRounds === n
                   ? 'bg-[var(--primary)] text-white'
                   : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
-              >{n}</button>
+              >{n} {$_('create_duration_rounds')}</button>
             {/each}
-            <button
-              onclick={() => (mexicanoRounds = null)}
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {mexicanoRounds === null
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
-            >{$_('create_mexicano_rounds_open')}</button>
+          </div>
+          <!-- Divider -->
+          <div class="flex items-center gap-3">
+            <div class="h-px flex-1 bg-[var(--border)]"></div>
+            <span class="text-[11px] font-semibold text-[var(--text-disabled)]">{$_('create_duration_or')}</span>
+            <div class="h-px flex-1 bg-[var(--border)]"></div>
+          </div>
+          <!-- Time row -->
+          <div class="flex gap-2">
+            {#each [60, 90, 120] as min}
+              <button
+                onclick={() => pickTime(min)}
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courtDuration === min && !customTimeMode
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+              >{min}m</button>
+            {/each}
+            {#if customTimeMode}
+              <div class="flex flex-1 items-center justify-center gap-0.5 rounded-full bg-[var(--primary)] px-2 py-2.5 text-sm font-semibold text-white">
+                <input
+                  bind:this={customInputEl}
+                  type="number"
+                  min="15"
+                  max="300"
+                  bind:value={customTimeRaw}
+                  placeholder="90"
+                  class="w-10 bg-transparent text-center font-semibold text-white placeholder-white/60 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <span>m</span>
+              </div>
+            {:else}
+              <button
+                onclick={pickCustomTime}
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-[var(--surface-raised)] text-[var(--text-primary)]"
+              >{$_('create_duration_custom')}</button>
+            {/if}
           </div>
           <p class="text-xs text-[var(--text-secondary)]">
-            {mexicanoRounds ? $_('create_mexicano_rounds_hint_fixed', { values: { n: mexicanoRounds } }) : $_('create_mexicano_rounds_hint_open')}
+            {#if mexicanoRounds}
+              {$_('create_mexicano_rounds_hint_fixed', { values: { n: mexicanoRounds } })}
+            {:else if courtDuration}
+              {$_('create_duration_hint', { values: { n: courtDuration } })}
+            {:else}
+              {$_('create_mexicano_rounds_hint_open')}
+            {/if}
           </p>
         </div>
       {/if}
@@ -294,6 +362,49 @@
           class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
         />
       </div>
+
+      <!-- Americano: time limit (optional) -->
+      {#if gameMode === 'americano'}
+        <div class="space-y-2.5">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_duration_label')}</p>
+          <div class="flex gap-2">
+            {#each [60, 90, 120] as min}
+              <button
+                onclick={() => pickTime(min)}
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courtDuration === min && !customTimeMode
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+              >{min}m</button>
+            {/each}
+            {#if customTimeMode}
+              <div class="flex flex-1 items-center justify-center gap-0.5 rounded-full bg-[var(--primary)] px-2 py-2.5 text-sm font-semibold text-white">
+                <input
+                  bind:this={customInputEl}
+                  type="number"
+                  min="15"
+                  max="300"
+                  bind:value={customTimeRaw}
+                  placeholder="90"
+                  class="w-10 bg-transparent text-center font-semibold text-white placeholder-white/60 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
+                <span>m</span>
+              </div>
+            {:else}
+              <button
+                onclick={pickCustomTime}
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-[var(--surface-raised)] text-[var(--text-primary)]"
+              >{$_('create_duration_custom')}</button>
+            {/if}
+          </div>
+          <p class="text-xs text-[var(--text-secondary)]">
+            {#if courtDuration}
+              {$_('create_duration_hint', { values: { n: courtDuration } })}
+            {:else}
+              {$_('create_duration_none_hint')}
+            {/if}
+          </p>
+        </div>
+      {/if}
 
       <!-- Schedule -->
       <div class="space-y-2.5">

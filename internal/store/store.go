@@ -90,6 +90,8 @@ var migrations = []string{
 		UNIQUE (session_id, to_user_id)
 	)`,
 	`ALTER TABLE sessions ADD COLUMN ended_early INTEGER NOT NULL DEFAULT 0`,
+	`ALTER TABLE sessions ADD COLUMN court_duration_minutes INTEGER`,
+	`ALTER TABLE sessions ADD COLUMN ends_at TEXT`,
 }
 
 const schema = `

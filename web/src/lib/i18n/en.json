@@ -22,7 +22,7 @@
   "create_mexicano_rounds_label": "Number of rounds",
   "create_mexicano_rounds_open": "Open",
   "create_mexicano_rounds_hint_fixed": "Tournament ends after {n} rounds.",
-  "create_mexicano_rounds_hint_open": "Play as many rounds as you like — admin closes when done.",
+  "create_mexicano_rounds_hint_open": "Choose a number of rounds or a duration.",
   "create_mode_tennis": "Regular 2v2",
   "create_sets_label": "Best of",
   "create_sets_bo3": "Best of 3",
@@ -113,6 +113,7 @@
   "active_next_round": "Next round →",
   "active_final_results": "See final results →",
   "active_round_complete": "Round complete — waiting for admin to advance",
+  "active_time_expired": "Time's up! Enter your final scores.",
 
   "leaderboard_leader": "Leader",
   "leaderboard_rank1": "Rank #1",
@@ -224,6 +225,14 @@
   "tennis_tiebreak": "Tiebreak",
   "tennis_start_locked": "Assign 2 players to each team to start",
   "tennis_session_full": "This match is full — only 4 players can join.",
+
+  "create_duration_label": "Duration",
+  "create_duration_rounds": "rds",
+  "create_duration_or": "or",
+  "create_duration_custom": "Custom",
+  "create_duration_minutes": "minutes",
+  "create_duration_hint": "Tournament ends automatically after {n} minutes.",
+  "create_duration_none_hint": "No limit — end the tournament manually.",
 
   "lobby_rules_button": "How to play",
   "rules_americano": "Players rotate partners every round — you never play with the same partner twice if possible.\nEach round every court plays to a fixed points target (e.g. 24).\nAll points you score count toward your personal total across every round.\nThe player with the most total points at the end wins.",

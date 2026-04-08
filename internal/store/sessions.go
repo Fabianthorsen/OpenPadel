@@ -10,7 +10,7 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, roundsTotal *int, scheduledAt *time.Time) (*domain.Session, error) {
+func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, roundsTotal *int, scheduledAt *time.Time, courtDurationMinutes *int) (*domain.Session, error) {
 	now := time.Now().UTC()
 	if gameMode == "" {
 		gameMode = "americano"
@@ -22,20 +22,21 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		gamesPerSet = 6
 	}
 	sess := &domain.Session{
-		ID:          newID(),
-		AdminToken:  newAdminToken(),
-		Status:      domain.StatusLobby,
-		Name:        name,
-		GameMode:    gameMode,
-		SetsToWin:   setsToWin,
-		GamesPerSet: gamesPerSet,
-		Courts:      courts,
-		Points:      points,
-		RoundsTotal: roundsTotal,
-		ScheduledAt: scheduledAt,
-		Players:     []domain.Player{},
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		ID:                   newID(),
+		AdminToken:           newAdminToken(),
+		Status:               domain.StatusLobby,
+		Name:                 name,
+		GameMode:             gameMode,
+		SetsToWin:            setsToWin,
+		GamesPerSet:          gamesPerSet,
+		Courts:               courts,
+		Points:               points,
+		RoundsTotal:          roundsTotal,
+		ScheduledAt:          scheduledAt,
+		CourtDurationMinutes: courtDurationMinutes,
+		Players:              []domain.Player{},
+		CreatedAt:            now,
+		UpdatedAt:            now,
 	}
 	var scheduledAtStr *string
 	if scheduledAt != nil {
@@ -43,10 +44,10 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		scheduledAtStr = &s
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.AdminToken, sess.Status, sess.Name, sess.GameMode, sess.SetsToWin, sess.GamesPerSet,
-		sess.Courts, sess.Points, roundsTotal, scheduledAtStr,
+		sess.Courts, sess.Points, roundsTotal, scheduledAtStr, courtDurationMinutes,
 		sess.CreatedAt.Format(time.RFC3339), sess.UpdatedAt.Format(time.RFC3339),
 	)
 	return sess, err
@@ -54,7 +55,7 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 
 func (s *Store) GetSession(id string) (*domain.Session, error) {
 	row := s.db.QueryRow(
-		`SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, current_round, scheduled_at, created_at, updated_at
+		`SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, current_round, scheduled_at, court_duration_minutes, ends_at, created_at, updated_at
 		 FROM sessions WHERE id = ?`, id,
 	)
 	sess, err := scanSession(row)
@@ -77,20 +78,30 @@ func (s *Store) SetCreatorPlayer(sessionID, playerID string) error {
 	return err
 }
 
-func (s *Store) StartSession(id string, roundsTotal int) error {
+func (s *Store) StartSession(id string, roundsTotal int, endsAt *time.Time) error {
+	var endsAtStr *string
+	if endsAt != nil {
+		t := endsAt.UTC().Format(time.RFC3339)
+		endsAtStr = &t
+	}
 	_, err := s.db.Exec(
-		`UPDATE sessions SET status = ?, rounds_total = ?, current_round = 1, updated_at = ? WHERE id = ?`,
-		domain.StatusActive, roundsTotal, time.Now().UTC().Format(time.RFC3339), id,
+		`UPDATE sessions SET status = ?, rounds_total = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?`,
+		domain.StatusActive, roundsTotal, endsAtStr, time.Now().UTC().Format(time.RFC3339), id,
 	)
 	return err
 }
 
 // StartMexicanoSession activates the session with current_round=1.
 // rounds_total is preserved from creation time (null = open-ended, N = preset).
-func (s *Store) StartMexicanoSession(id string) error {
+func (s *Store) StartMexicanoSession(id string, endsAt *time.Time) error {
+	var endsAtStr *string
+	if endsAt != nil {
+		t := endsAt.UTC().Format(time.RFC3339)
+		endsAtStr = &t
+	}
 	_, err := s.db.Exec(
-		`UPDATE sessions SET status = ?, current_round = 1, updated_at = ? WHERE id = ?`,
-		domain.StatusActive, time.Now().UTC().Format(time.RFC3339), id,
+		`UPDATE sessions SET status = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?`,
+		domain.StatusActive, endsAtStr, time.Now().UTC().Format(time.RFC3339), id,
 	)
 	return err
 }
@@ -135,12 +146,15 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	var name, gameMode sql.NullString
 	var setsToWin, gamesPerSet sql.NullInt64
 	var scheduledAt sql.NullString
+	var courtDurationMinutes sql.NullInt64
+	var endsAt sql.NullString
 	var createdAt, updatedAt string
 	err := row.Scan(
 		&sess.ID, &sess.AdminToken, &sess.Status, &name,
 		&gameMode, &setsToWin, &gamesPerSet,
 		&sess.Courts, &sess.Points, &roundsTotal,
-		&creatorPlayerID, &currentRound, &scheduledAt, &createdAt, &updatedAt,
+		&creatorPlayerID, &currentRound, &scheduledAt,
+		&courtDurationMinutes, &endsAt, &createdAt, &updatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -177,6 +191,14 @@ func scanSession(row *sql.Row) (*domain.Session, error) {
 	if scheduledAt.Valid {
 		t, _ := time.Parse(time.RFC3339, scheduledAt.String)
 		sess.ScheduledAt = &t
+	}
+	if courtDurationMinutes.Valid {
+		v := int(courtDurationMinutes.Int64)
+		sess.CourtDurationMinutes = &v
+	}
+	if endsAt.Valid {
+		t, _ := time.Parse(time.RFC3339, endsAt.String)
+		sess.EndsAt = &t
 	}
 	sess.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
 	sess.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
