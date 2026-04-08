@@ -85,12 +85,3 @@ func scanPlayers(rows *sql.Rows) ([]domain.Player, error) {
 	return players, rows.Err()
 }
 
-func activePlayers(players []domain.Player) []domain.Player {
-	var out []domain.Player
-	for _, p := range players {
-		if p.Active {
-			out = append(out, p)
-		}
-	}
-	return out
-}

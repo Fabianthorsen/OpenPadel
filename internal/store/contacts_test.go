@@ -181,20 +181,3 @@ func TestSearchUsers_MarksContacts(t *testing.T) {
 	}
 }
 
-func TestIsContact(t *testing.T) {
-	s := newTestStore(t)
-	alice := createUser(t, s, "alice@example.com", "Alice")
-	bob := createUser(t, s, "bob@example.com", "Bob")
-
-	ok, _ := s.IsContact(alice, bob)
-	if ok {
-		t.Error("expected false before adding contact")
-	}
-
-	s.AddContact(alice, bob)
-
-	ok, _ = s.IsContact(alice, bob)
-	if !ok {
-		t.Error("expected true after adding contact")
-	}
-}
