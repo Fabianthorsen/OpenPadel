@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.4.2...v1.5.0) (2026-04-08)
+
+
+### Features
+
+* **sessions:** add ended_early flag to track prematurely ended tournaments ([271c400](https://github.com/Fabianthorsen/OpenPadel/commit/271c400387609b46cc5edb718d96d3a404a9fe6f))
+* **ui:** improve tournament end/cancel button styling and UX ([1be7ec7](https://github.com/Fabianthorsen/OpenPadel/commit/1be7ec7b00ca980f5cf9e0770051112f181bde2d))
+
 ## [1.4.2](https://github.com/Fabianthorsen/OpenPadel/compare/v1.4.1...v1.4.2) (2026-04-07)
 
 
