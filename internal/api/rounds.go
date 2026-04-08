@@ -105,9 +105,18 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 	// Final score is now in the DB — clear any in-memory live score for this match.
 	h.live.Clear(matchID)
 
-	// For Americano, auto-complete when all pre-generated rounds are scored.
-	// Mexicano has no fixed total — admin closes manually.
-	if sess.GameMode != "mexicano" {
+	// Auto-complete when all rounds are fully scored.
+	// Americano: all rounds pre-generated, check globally.
+	// Mexicano with preset rounds_total: check current round is the last and fully scored.
+	// Mexicano open-ended: admin closes manually — never auto-complete.
+	if sess.GameMode == "mexicano" {
+		if sess.RoundsTotal != nil && sess.CurrentRound != nil && *sess.CurrentRound == *sess.RoundsTotal {
+			allScored, err := h.store.CurrentRoundAllScored(sessionID)
+			if err == nil && allScored {
+				h.store.CompleteSession(sessionID, false)
+			}
+		}
+	} else {
 		done, err := h.store.AllRoundsComplete(sessionID)
 		if err == nil && done {
 			h.store.CompleteSession(sessionID, false)
@@ -169,6 +178,10 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 		nextRound := 1
 		if sess.CurrentRound != nil {
 			nextRound = *sess.CurrentRound + 1
+		}
+		if sess.RoundsTotal != nil && nextRound > *sess.RoundsTotal {
+			respondError(w, http.StatusConflict, "tournament has reached its round limit")
+			return
 		}
 		if err := h.advanceMexicanoRound(w, sessionID, nextRound); err != nil {
 			return

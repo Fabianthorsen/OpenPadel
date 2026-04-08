@@ -10,7 +10,7 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, scheduledAt *time.Time) (*domain.Session, error) {
+func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, roundsTotal *int, scheduledAt *time.Time) (*domain.Session, error) {
 	now := time.Now().UTC()
 	if gameMode == "" {
 		gameMode = "americano"
@@ -31,6 +31,7 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		GamesPerSet: gamesPerSet,
 		Courts:      courts,
 		Points:      points,
+		RoundsTotal: roundsTotal,
 		ScheduledAt: scheduledAt,
 		Players:     []domain.Player{},
 		CreatedAt:   now,
@@ -42,10 +43,10 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		scheduledAtStr = &s
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, scheduled_at, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.AdminToken, sess.Status, sess.Name, sess.GameMode, sess.SetsToWin, sess.GamesPerSet,
-		sess.Courts, sess.Points, scheduledAtStr,
+		sess.Courts, sess.Points, roundsTotal, scheduledAtStr,
 		sess.CreatedAt.Format(time.RFC3339), sess.UpdatedAt.Format(time.RFC3339),
 	)
 	return sess, err
@@ -84,10 +85,11 @@ func (s *Store) StartSession(id string, roundsTotal int) error {
 	return err
 }
 
-// StartMexicanoSession activates the session with current_round=1 and no fixed rounds_total.
+// StartMexicanoSession activates the session with current_round=1.
+// rounds_total is preserved from creation time (null = open-ended, N = preset).
 func (s *Store) StartMexicanoSession(id string) error {
 	_, err := s.db.Exec(
-		`UPDATE sessions SET status = ?, rounds_total = NULL, current_round = 1, updated_at = ? WHERE id = ?`,
+		`UPDATE sessions SET status = ?, current_round = 1, updated_at = ? WHERE id = ?`,
 		domain.StatusActive, time.Now().UTC().Format(time.RFC3339), id,
 	)
 	return err

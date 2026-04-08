@@ -24,6 +24,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		SetsToWin   int     `json:"sets_to_win"`
 		GamesPerSet int     `json:"games_per_set"`
 		ScheduledAt *string `json:"scheduled_at"`
+		RoundsTotal *int    `json:"rounds_total"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid request body")
@@ -68,7 +69,15 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		scheduledAt = &t
 	}
 
-	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, scheduledAt)
+	// Validate Mexicano preset rounds.
+	if body.GameMode == "mexicano" && body.RoundsTotal != nil {
+		if *body.RoundsTotal < 1 || *body.RoundsTotal > 20 {
+			respondError(w, http.StatusBadRequest, "rounds_total must be between 1 and 20")
+			return
+		}
+	}
+
+	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, body.RoundsTotal, scheduledAt)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not create session")
 		return
