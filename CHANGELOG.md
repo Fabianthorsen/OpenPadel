@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.6.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.5.1...v1.6.0) (2026-04-08)
+
+
+### Features
+
+* **api:** add Mexicano game mode backend ([7d80b49](https://github.com/Fabianthorsen/OpenPadel/commit/7d80b4919e752a1f7c013f5a60bdda9e53cf9282))
+* **mexicano:** add preset rounds option (4 / 6 / 8 / 10 / open) ([b70a326](https://github.com/Fabianthorsen/OpenPadel/commit/b70a326ff74daeaf529c15ba2cf45b5f5989f8c5))
+* **mexicano:** enforce no-bench rule — exactly courts×4 players required ([9c8f605](https://github.com/Fabianthorsen/OpenPadel/commit/9c8f605edf7eb1b8e90a1c8ea9ce3b951a87bba8))
+* **scheduler:** add Mexicano round generator with tests ([ef85980](https://github.com/Fabianthorsen/OpenPadel/commit/ef859806b286337ba9060577e275a9d07d43a27b))
+* **scheduler:** randomize player order on tournament start ([de30b41](https://github.com/Fabianthorsen/OpenPadel/commit/de30b4112b45d465361da1dd30501e4304f8e0ca))
+* **timer:** add court booking timer with rounds-or-time duration picker ([3bf8052](https://github.com/Fabianthorsen/OpenPadel/commit/3bf8052ac0bd1340621fc6af7add7e6f2a2bd84d))
+* **ui:** add Mexicano mode to create flow and active session ([fcb6333](https://github.com/Fabianthorsen/OpenPadel/commit/fcb6333d288b19a1e83812a7a3b737b33c0aaeb7))
+* **ui:** add rules info sheet to lobby for all game modes ([d70dfd2](https://github.com/Fabianthorsen/OpenPadel/commit/d70dfd2843e34176de6fd07c63f6bdf8cb338801))
+
+
+### Bug Fixes
+
+* **scheduler:** randomise Team A/B sides so admin isn't always Team A ([3a7a5e7](https://github.com/Fabianthorsen/OpenPadel/commit/3a7a5e7e2d535e27710964a36ec4b48ebe9a5034))
+* **ui:** move rules info button to main lobby nav (visible to all joined players) ([12078fe](https://github.com/Fabianthorsen/OpenPadel/commit/12078fe62df52c4191cabac38797bda6ad2eb111))
+* **ui:** show correct game mode name in invite/lobby title ([9e4f622](https://github.com/Fabianthorsen/OpenPadel/commit/9e4f622a83ffd4ecbb165350eab96b2bb2657e6d))
+* **ui:** show round number in leaderboard for Mexicano (no fixed total) ([4c3533d](https://github.com/Fabianthorsen/OpenPadel/commit/4c3533d9b5cc1a1077358c677878fcffa81d908f))
+
+
+### Chores
+
+* remove dead code ([76bc178](https://github.com/Fabianthorsen/OpenPadel/commit/76bc1787ed6bc619f9e19fe10c8ba86cd4d31f2b))
+
 ## [1.5.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.5.0...v1.5.1) (2026-04-08)
 
 
