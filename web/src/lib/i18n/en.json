@@ -225,6 +225,11 @@
   "tennis_start_locked": "Assign 2 players to each team to start",
   "tennis_session_full": "This match is full — only 4 players can join.",
 
+  "lobby_rules_button": "How to play",
+  "rules_americano": "Players rotate partners every round — you never play with the same partner twice if possible.\nEach round every court plays to a fixed points target (e.g. 24).\nAll points you score count toward your personal total across every round.\nThe player with the most total points at the end wins.",
+  "rules_mexicano": "Round 1 pairs are random.\nFrom round 2 onward, the top-ranked players face each other and the bottom-ranked face each other — winners play winners.\nEvery player plays every round (no bench).\nThe player with the most total points at the end wins.",
+  "rules_tennis": "Standard padel doubles — best of 3 or 5 sets.\nAssign 2 players to each team before starting.\nFirst team to win the required number of sets wins the match.",
+
   "cancel_dialog_title": "Cancel tournament?",
   "cancel_dialog_desc": "This will delete the tournament and all results. This cannot be undone.",
   "cancel_dialog_confirm": "Yes, cancel tournament",

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api } from '$lib/api/client';
-  import { Crown, Share, Check, Search, UserPlus, Clock } from 'lucide-svelte';
+  import { Crown, Share, Check, Search, UserPlus, Clock, Info } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import { initials, sessionName } from '$lib/utils';
   import { Button } from '$lib/components/ui/button';
@@ -99,6 +99,7 @@
   const gameModeName = $derived(
     session.game_mode === 'mexicano' ? 'Mexicano' : session.game_mode === 'tennis' ? 'Tennis' : 'Americano'
   );
+  let showRules = $state(false);
   const activePlayers = $derived(session.players.filter((p) => p.active));
 
   // Tennis team state — maps player_id → 'a' | 'b' | null
@@ -322,13 +323,22 @@
       <!-- Brand + session info -->
       <div class="space-y-1">
         <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--primary)]">OpenPadel</p>
-        <h1 class="text-[28px] font-[800] leading-tight">
-          {#if creatorName}
-            {$_('invite_title_with_creator', { values: { creator: creatorName, mode: gameModeName } })}
-          {:else}
-            {$_('invite_title_generic', { values: { mode: gameModeName } })}
-          {/if}
-        </h1>
+        <div class="flex items-start gap-2">
+          <h1 class="text-[28px] font-[800] leading-tight">
+            {#if creatorName}
+              {$_('invite_title_with_creator', { values: { creator: creatorName, mode: gameModeName } })}
+            {:else}
+              {$_('invite_title_generic', { values: { mode: gameModeName } })}
+            {/if}
+          </h1>
+          <button
+            onclick={() => (showRules = true)}
+            aria-label={$_('lobby_rules_button')}
+            class="mt-1.5 shrink-0 text-[var(--text-disabled)] hover:text-[var(--text-secondary)] transition-colors"
+          >
+            <Info size={18} />
+          </button>
+        </div>
         {#if session.name}
           <p class="text-[var(--text-secondary)]">{session.name}</p>
         {/if}
@@ -737,6 +747,43 @@
       </div>
     {/if}
   </main>
+{/if}
+
+{#if showRules}
+  <div
+    class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm pb-safe sm:items-center"
+    onclick={() => (showRules = false)}
+    onkeydown={(e) => e.key === 'Escape' && (showRules = false)}
+    role="presentation"
+    tabindex="-1"
+  >
+    <div
+      class="w-full max-w-sm rounded-t-3xl bg-[var(--surface)] px-6 pb-8 pt-6 space-y-4 sm:rounded-3xl sm:mx-4"
+      onclick={(e) => e.stopPropagation()}
+      role="presentation"
+    >
+      <div class="mx-auto h-1 w-10 rounded-full bg-[var(--border)] sm:hidden"></div>
+      <h2 class="text-[18px] font-[800]">{gameModeName}</h2>
+
+      <ul class="space-y-2">
+        {#each $_(`rules_${session.game_mode}`).split('\n') as line}
+          {#if line.trim()}
+            <li class="flex gap-2 text-sm text-[var(--text-secondary)]">
+              <span class="mt-0.5 shrink-0 text-[var(--primary)]">·</span>
+              <span>{line.trim()}</span>
+            </li>
+          {/if}
+        {/each}
+      </ul>
+
+      <button
+        onclick={() => (showRules = false)}
+        class="w-full rounded-2xl border border-[var(--border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-raised)]"
+      >
+        {$_('leaderboard_close')}
+      </button>
+    </div>
+  </div>
 {/if}
 
 <ConfirmDialog
