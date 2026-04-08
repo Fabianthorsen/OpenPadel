@@ -84,6 +84,15 @@ func (s *Store) StartSession(id string, roundsTotal int) error {
 	return err
 }
 
+// StartMexicanoSession activates the session with current_round=1 and no fixed rounds_total.
+func (s *Store) StartMexicanoSession(id string) error {
+	_, err := s.db.Exec(
+		`UPDATE sessions SET status = ?, rounds_total = NULL, current_round = 1, updated_at = ? WHERE id = ?`,
+		domain.StatusActive, time.Now().UTC().Format(time.RFC3339), id,
+	)
+	return err
+}
+
 func (s *Store) AdvanceRound(id string) error {
 	_, err := s.db.Exec(
 		`UPDATE sessions SET current_round = current_round + 1, updated_at = ? WHERE id = ?`,

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"sort"
+	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
 )
@@ -291,6 +292,79 @@ func (s *Store) getH2H(sessionID string) (map[string]map[string]int, error) {
 		}
 	}
 	return h2h, rows.Err()
+}
+
+// GetBenchHistory returns (benchTotal, lastBenchedRound) maps for all players in a session.
+// benchTotal[playerID] = number of rounds the player has benched.
+// lastBenchedRound[playerID] = the round number of the most recent bench stint.
+func (s *Store) GetBenchHistory(sessionID string) (map[string]int, map[string]int, error) {
+	rows, err := s.db.Query(`
+		SELECT b.player_id, r.number
+		FROM bench b
+		JOIN rounds r ON r.id = b.round_id
+		WHERE r.session_id = ?
+		ORDER BY r.number`,
+		sessionID,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	total := map[string]int{}
+	last := map[string]int{}
+	for rows.Next() {
+		var pid string
+		var num int
+		if err := rows.Scan(&pid, &num); err != nil {
+			return nil, nil, err
+		}
+		total[pid]++
+		if num > last[pid] {
+			last[pid] = num
+		}
+	}
+	return total, last, rows.Err()
+}
+
+// AdvanceMexicanoRound saves a newly generated round and updates current_round atomically.
+func (s *Store) AdvanceMexicanoRound(sessionID string, round domain.Round) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(
+		`INSERT INTO rounds (id, session_id, number) VALUES (?, ?, ?)`,
+		round.ID, sessionID, round.Number,
+	); err != nil {
+		return err
+	}
+	for _, pid := range round.Bench {
+		if _, err := tx.Exec(
+			`INSERT INTO bench (round_id, player_id) VALUES (?, ?)`,
+			round.ID, pid,
+		); err != nil {
+			return err
+		}
+	}
+	for _, m := range round.Matches {
+		if _, err := tx.Exec(
+			`INSERT INTO matches (id, round_id, court, p1, p2, p3, p4) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			m.ID, round.ID, m.Court, m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1],
+		); err != nil {
+			return err
+		}
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	if _, err := tx.Exec(
+		`UPDATE sessions SET current_round = ?, updated_at = ? WHERE id = ?`,
+		round.Number, now, sessionID,
+	); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // AllRoundsComplete returns true when every match in the session has a score.
