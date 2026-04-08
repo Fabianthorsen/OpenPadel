@@ -428,14 +428,21 @@
         </p>
         <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <div class="text-right text-xs text-[var(--text-secondary)]">
           {#if isTennis}
             {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}
           {:else}
-            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · Americano
+            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · {gameModeName}
           {/if}
         </div>
+        <button
+          onclick={() => (showRules = true)}
+          aria-label={$_('lobby_rules_button')}
+          class="text-[var(--text-disabled)] hover:text-[var(--text-secondary)] transition-colors"
+        >
+          <Info size={16} />
+        </button>
         {#if isAdmin || alreadyJoined}
           <a
             href="/"
