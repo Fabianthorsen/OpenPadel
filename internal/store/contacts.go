@@ -1,7 +1,6 @@
 package store
 
 import (
-	"database/sql"
 	"errors"
 	"time"
 
@@ -122,18 +121,6 @@ func (s *Store) SearchUsers(userID, query string) ([]domain.UserSearchResult, er
 	return results, rows.Err()
 }
 
-// IsContact returns true if contact_user_id is in user_id's contacts.
-func (s *Store) IsContact(userID, contactUserID string) (bool, error) {
-	var count int
-	err := s.db.QueryRow(
-		`SELECT COUNT(*) FROM contacts WHERE user_id = ? AND contact_user_id = ?`,
-		userID, contactUserID,
-	).Scan(&count)
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
-	}
-	return count > 0, err
-}
 
 // AddContactPlayer looks up the contact user's display name and creates a player
 // record in the session linked to their user account. Returns ErrNotFound if the

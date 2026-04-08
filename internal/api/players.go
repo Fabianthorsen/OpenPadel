@@ -84,54 +84,6 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusCreated, player)
 }
 
-// addContactPlayer lets an admin pre-add a contact by user_id as a player.
-// The player name and user_id are taken from the contact's account.
-func (h *Handler) addContactPlayer(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-
-	var body struct {
-		ContactUserID string `json:"contact_user_id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ContactUserID == "" {
-		respondError(w, http.StatusBadRequest, "contact_user_id is required")
-		return
-	}
-
-	sess, err := h.store.GetSession(id)
-	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
-		return
-	}
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
-		return
-	}
-	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin access required")
-		return
-	}
-	if sess.Status != domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session has already started")
-		return
-	}
-
-	player, err := h.store.AddContactPlayer(id, body.ContactUserID)
-	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "user not found")
-		return
-	}
-	if err != nil {
-		if isUniqueConstraintError(err) {
-			respondError(w, http.StatusConflict, "player already in session")
-			return
-		}
-		respondError(w, http.StatusInternalServerError, "could not add player")
-		return
-	}
-
-	respond(w, http.StatusCreated, player)
-}
-
 func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 	sessionID := chi.URLParam(r, "id")
 	playerID := chi.URLParam(r, "playerID")
