@@ -17,7 +17,8 @@
   "create_game_mode_label": "Spillmodus",
   "create_game_mode_hint": "Americano er for øyeblikket den eneste støttede modusen.",
   "create_mexicano_soon": "Mexicano (kommer snart)",
-  "create_mexicano_hint": "Krever minst 8 spillere. Par settes opp basert på stillingen etter hver runde.",
+  "create_mexicano_hint": "Par settes opp basert på stillingen etter hver runde — ingen benk, alle spiller.",
+  "create_mexicano_courts_hint": "Krever nøyaktig {n} spillere for å starte.",
   "create_mexicano_rounds_label": "Antall runder",
   "create_mexicano_rounds_open": "Åpent",
   "create_mexicano_rounds_hint_fixed": "Turneringen avsluttes etter {n} runder.",
@@ -67,6 +68,7 @@
   "lobby_cancelling": "Avbryter…",
   "lobby_waiting_admin": "Venter på at admin skal starte…",
   "lobby_need_players": "Trenger minst {n} spillere for å starte",
+  "lobby_mexicano_exact_players": "Trenger nøyaktig {n} spillere — {current} er med",
   "lobby_dev_seed": "[dev] Fyll med testspillere",
   "lobby_dev_seeding": "Legger til…",
 

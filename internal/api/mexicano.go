@@ -26,7 +26,7 @@ func (h *Handler) startMexicanoSession(w http.ResponseWriter, sessionID string, 
 		standings[i].Rank = i + 1
 	}
 
-	round := scheduler.GenerateMexicanoRound(standings, sess.Courts, nil, nil, 1)
+	round := scheduler.GenerateMexicanoRound(standings, sess.Courts, 1)
 	round.SessionID = sessionID
 
 	if err := h.store.SaveRounds(sessionID, []domain.Round{round}); err != nil {
@@ -49,19 +49,13 @@ func (h *Handler) advanceMexicanoRound(w http.ResponseWriter, sessionID string, 
 		return err
 	}
 
-	benchTotal, lastBenched, err := h.store.GetBenchHistory(sessionID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load bench history")
-		return err
-	}
-
 	sess, err := h.store.GetSession(sessionID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not load session")
 		return err
 	}
 
-	round := scheduler.GenerateMexicanoRound(standings, sess.Courts, benchTotal, lastBenched, nextRoundNum)
+	round := scheduler.GenerateMexicanoRound(standings, sess.Courts, nextRoundNum)
 	round.SessionID = sessionID
 
 	if err := h.store.AdvanceMexicanoRound(sessionID, round); err != nil {

@@ -165,7 +165,7 @@
               : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
           >Americano</button>
           <button
-            onclick={() => (gameMode = 'mexicano')}
+            onclick={() => { gameMode = 'mexicano'; if (courts < 2) courts = 2; }}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'mexicano'
               ? 'bg-[var(--primary)] text-white'
               : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
@@ -213,7 +213,7 @@
         <div class="space-y-2.5">
           <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_courts_label')}</p>
           <div class="flex gap-2">
-            {#each [1, 2, 3, 4] as n}
+            {#each (gameMode === 'mexicano' ? [2, 3, 4] : [1, 2, 3, 4]) as n}
               <button
                 onclick={() => (courts = n)}
                 class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courts === n
@@ -222,6 +222,9 @@
               >{n}</button>
             {/each}
           </div>
+          {#if gameMode === 'mexicano'}
+            <p class="text-xs text-[var(--text-secondary)]">{$_('create_mexicano_courts_hint', { values: { n: courts * 4 } })}</p>
+          {/if}
         </div>
 
         <!-- Points -->

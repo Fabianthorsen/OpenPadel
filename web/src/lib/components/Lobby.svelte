@@ -161,13 +161,13 @@
   const teamB = $derived(activePlayers.filter((p) => teamAssignments[p.id] === 'b'));
   const unassigned = $derived(activePlayers.filter((p) => !teamAssignments[p.id]));
 
-  const minPlayers = $derived(
-    isTennis ? 4 : isMexicano ? Math.max(session.courts * 4, 8) : session.courts * 4
-  );
+  const requiredPlayers = $derived(session.courts * 4);
   const canStart = $derived(
     isTennis
       ? teamA.length === 2 && teamB.length === 2
-      : activePlayers.length >= minPlayers
+      : isMexicano
+        ? activePlayers.length === requiredPlayers
+        : activePlayers.length >= requiredPlayers
   );
 
   const creatorName = $derived(activePlayers.find((p) => p.id === session.creator_player_id)?.name ?? '');
@@ -703,9 +703,13 @@
         </Button>
         {#if !canStart}
           <p class="text-center text-xs text-[var(--text-disabled)]">
-            {isTennis
-              ? $_(activePlayers.length < 4 ? 'lobby_need_players' : 'tennis_start_locked', { values: { n: 4 } })
-              : $_('lobby_need_players', { values: { n: minPlayers } })}
+            {#if isTennis}
+              {$_(activePlayers.length < 4 ? 'lobby_need_players' : 'tennis_start_locked', { values: { n: 4 } })}
+            {:else if isMexicano}
+              {$_('lobby_mexicano_exact_players', { values: { n: requiredPlayers, current: activePlayers.length } })}
+            {:else}
+              {$_('lobby_need_players', { values: { n: requiredPlayers } })}
+            {/if}
           </p>
         {/if}
         <button

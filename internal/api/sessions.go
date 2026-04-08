@@ -39,8 +39,12 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if body.GameMode == "americano" || body.GameMode == "mexicano" {
-		if body.Courts < 1 || body.Courts > 4 {
-			respondError(w, http.StatusBadRequest, "courts must be between 1 and 4")
+		minCourts := 1
+		if body.GameMode == "mexicano" {
+			minCourts = 2
+		}
+		if body.Courts < minCourts || body.Courts > 4 {
+			respondError(w, http.StatusBadRequest, "courts must be between 2 and 4 for Mexicano")
 			return
 		}
 		if body.Points != 16 && body.Points != 24 && body.Points != 32 {
@@ -133,9 +137,9 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "mexicano":
-		minPlayers := sess.Courts * 4
-		if len(active) < minPlayers || len(active) < 8 {
-			respondError(w, http.StatusUnprocessableEntity, "not enough players to start")
+		required := sess.Courts * 4
+		if len(active) != required {
+			respondError(w, http.StatusUnprocessableEntity, "mexicano requires exactly courts×4 players")
 			return
 		}
 		if err := h.startMexicanoSession(w, id, sess, active); err != nil {
