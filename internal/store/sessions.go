@@ -104,10 +104,14 @@ func (s *Store) CurrentRoundAllScored(sessionID string) (bool, error) {
 	return unscored == 0, err
 }
 
-func (s *Store) CompleteSession(id string) error {
+func (s *Store) CompleteSession(id string, endedEarly bool) error {
+	endedEarlyInt := 0
+	if endedEarly {
+		endedEarlyInt = 1
+	}
 	_, err := s.db.Exec(
-		`UPDATE sessions SET status = ?, updated_at = ? WHERE id = ?`,
-		domain.StatusComplete, time.Now().UTC().Format(time.RFC3339), id,
+		`UPDATE sessions SET status = ?, ended_early = ?, updated_at = ? WHERE id = ?`,
+		domain.StatusComplete, endedEarlyInt, time.Now().UTC().Format(time.RFC3339), id,
 	)
 	return err
 }

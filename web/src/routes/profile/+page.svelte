@@ -588,7 +588,12 @@
                   </div>
                   <div class="flex-1 min-w-0">
                     <p class="truncate font-semibold text-sm">{t.name}</p>
-                    <p class="text-xs text-[var(--text-secondary)]">{formatDate(t.played_at)} · {t.points} pts</p>
+                    <p class="text-xs text-[var(--text-secondary)]">
+                      {formatDate(t.played_at)} · {t.points} pts
+                      {#if t.ended_early}
+                        · <span class="text-[var(--text-disabled)]">{$_('profile_ended_early')}</span>
+                      {/if}
+                    </p>
                   </div>
                   <span class="text-sm text-[var(--text-secondary)]">→</span>
                 </a>

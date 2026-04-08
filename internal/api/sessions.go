@@ -205,7 +205,7 @@ func (h *Handler) closeSession(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusConflict, "session already ended")
 		return
 	}
-	if err := h.store.DeleteSession(id); err != nil {
+	if err := h.store.CompleteSession(id, true); err != nil {
 		respondError(w, http.StatusInternalServerError, "could not close session")
 		return
 	}

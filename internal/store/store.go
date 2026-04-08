@@ -89,6 +89,7 @@ var migrations = []string{
 		created_at  TEXT NOT NULL,
 		UNIQUE (session_id, to_user_id)
 	)`,
+	`ALTER TABLE sessions ADD COLUMN ended_early INTEGER NOT NULL DEFAULT 0`,
 }
 
 const schema = `

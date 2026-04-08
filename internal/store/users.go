@@ -281,7 +281,8 @@ func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryE
 			s.created_at,
 			rk.rank,
 			rk.points,
-			rk.games_played
+			rk.games_played,
+			COALESCE(s.ended_early, 0)
 		FROM ranked rk
 		JOIN sessions s ON s.id = rk.session_id
 		WHERE rk.user_id = ? AND s.status = 'complete'
@@ -296,9 +297,11 @@ func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryE
 	var entries []domain.TournamentHistoryEntry
 	for rows.Next() {
 		var e domain.TournamentHistoryEntry
-		if err := rows.Scan(&e.SessionID, &e.Name, &e.Status, &e.PlayedAt, &e.Rank, &e.Points, &e.GamesPlayed); err != nil {
+		var endedEarlyInt int
+		if err := rows.Scan(&e.SessionID, &e.Name, &e.Status, &e.PlayedAt, &e.Rank, &e.Points, &e.GamesPlayed, &endedEarlyInt); err != nil {
 			return nil, err
 		}
+		e.EndedEarly = endedEarlyInt == 1
 		entries = append(entries, e)
 	}
 	if entries == nil {

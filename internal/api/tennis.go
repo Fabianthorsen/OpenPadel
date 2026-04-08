@@ -168,7 +168,7 @@ func (h *Handler) addTennisPoint(w http.ResponseWriter, r *http.Request) {
 
 	// If match just finished, mark session complete.
 	if newState.Winner != "" && sess.Status == domain.StatusActive {
-		h.store.CompleteSession(id) //nolint:errcheck
+		h.store.CompleteSession(id, false) //nolint:errcheck
 	}
 
 	match.State = newState

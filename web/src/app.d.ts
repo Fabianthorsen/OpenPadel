@@ -118,6 +118,7 @@ declare global {
       rank: number;
       points: number;
       games_played: number;
+      ended_early: boolean;
     }
 
     interface UpcomingEntry {

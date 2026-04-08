@@ -62,6 +62,7 @@ type TournamentHistoryEntry struct {
 	Rank        int    `json:"rank"`
 	Points      int    `json:"points"`
 	GamesPlayed int    `json:"games_played"`
+	EndedEarly  bool   `json:"ended_early"`
 }
 
 type UpcomingEntry struct {

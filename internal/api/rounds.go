@@ -108,7 +108,7 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 	// Check if all rounds are now complete.
 	done, err := h.store.AllRoundsComplete(sessionID)
 	if err == nil && done {
-		h.store.CompleteSession(sessionID)
+		h.store.CompleteSession(sessionID, false)
 	}
 
 	respond(w, http.StatusOK, match)
