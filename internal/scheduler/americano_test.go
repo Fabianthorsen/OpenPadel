@@ -406,6 +406,35 @@ func TestGenerate_NoSelfOpposition(t *testing.T) {
 	}
 }
 
+// TestTotalRounds_MinimumRounds is a regression test for configurations where
+// the gcd formula produces too few rounds for a real tournament.
+// For 6 players on 1 court (benchSize=2), gcd(6,2)=2 gives only 3 rounds —
+// barely enough for everyone to sit once, but not enough for a proper tournament.
+// The correct minimum should be comparable to N-1 rounds, keeping bench fair.
+func TestTotalRounds_MinimumRounds(t *testing.T) {
+	cases := []struct {
+		players, courts, wantAtLeast int
+		note                         string
+	}{
+		// Regression: 6p 1c was giving 3 rounds (too few)
+		{6, 1, 5, "6p 1c: should play at least 5 rounds, not 3"},
+		// 10p 2c: gcd gives 5, but N-1=9 is more appropriate
+		{10, 2, 9, "10p 2c: should play at least 9 rounds, not 5"},
+		// These should be unchanged
+		{9, 2, 9, "9p 2c: 9 rounds unchanged"},
+		{8, 2, 7, "8p 2c: 7 rounds unchanged"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.note, func(t *testing.T) {
+			got := TotalRounds(tc.players, tc.courts)
+			if got < tc.wantAtLeast {
+				t.Errorf("TotalRounds(%d, %d) = %d, want at least %d", tc.players, tc.courts, got, tc.wantAtLeast)
+			}
+		})
+	}
+}
+
 // TestGenerate_NoRepeatedMatchups verifies the opposition invariant:
 // the same two partnerships should never face each other more than once.
 // A match is an unordered pair of partnerships, so {A+B vs C+D} == {C+D vs A+B}.
@@ -471,12 +500,12 @@ func TestTotalRounds(t *testing.T) {
 		{9, 2, 9, "9p 2c: bench=1"},
 		{5, 1, 5, "5p 1c: bench=1"},
 		{13, 3, 13, "13p 3c: bench=1"},
-		// Bench of 2: N/gcd(N,2)
-		{10, 2, 5, "10p 2c: bench=2, gcd=2 → 5 rounds"},
-		{6, 1, 3, "6p 1c: bench=2, gcd=2 → 3 rounds"},
-		// Bench of 3: N/gcd(N,3)
+		// Bench of 2: cycle=N/gcd(N,2), rounded up to >= N-1
+		{10, 2, 10, "10p 2c: bench=2, cycle=5, target=9 → 10 rounds"},
+		{6, 1, 6, "6p 1c: bench=2, cycle=3, target=5 → 6 rounds"},
+		// Bench of 3: cycle=N/gcd(N,3), rounded up to >= N-1
 		{11, 2, 11, "11p 2c: bench=3, gcd=1 → 11 rounds"},
-		{15, 3, 5, "15p 3c: bench=3, gcd=3 → 5 rounds"},
+		{15, 3, 15, "15p 3c: bench=3, cycle=5, target=14 → 15 rounds"},
 	}
 
 	for _, tc := range cases {
