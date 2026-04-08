@@ -223,6 +223,11 @@
   "tennis_start_locked": "Tildel 2 spillere til hvert lag for å starte",
   "tennis_session_full": "Denne kampen er full — kun 4 spillere kan delta.",
 
+  "lobby_rules_button": "Slik spiller du",
+  "rules_americano": "Spillere roterer partnere hver runde — du spiller aldri med samme partner to ganger hvis mulig.\nHver runde spiller alle baner til et fast poengmål (f.eks. 24).\nAlle poeng du scorer teller mot din personlige total gjennom hele turneringen.\nSpilleren med flest totale poeng til slutt vinner.",
+  "rules_mexicano": "Runde 1 er tilfeldige par.\nFra runde 2 spiller de høyest rangerte mot hverandre og de lavest rangerte mot hverandre — vinnere møter vinnere.\nAlle spillere spiller hver runde (ingen benk).\nSpilleren med flest totale poeng til slutt vinner.",
+  "rules_tennis": "Standard padel dobbel — best av 3 eller 5 sett.\nTildel 2 spillere til hvert lag før start.\nFørste lag som vinner det nødvendige antallet sett vinner kampen.",
+
   "cancel_dialog_title": "Avslutt turneringen?",
   "cancel_dialog_desc": "Dette sletter turneringen og alle resultater. Dette kan ikke angres.",
   "cancel_dialog_confirm": "Ja, kanseller turnering",
