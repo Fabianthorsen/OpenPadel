@@ -168,3 +168,226 @@ func TestMexicanoRound_RoundNumberSet(t *testing.T) {
 		t.Errorf("expected round number 5, got %d", r.Number)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Winners-play-winners / losers-play-losers tests
+// ---------------------------------------------------------------------------
+
+// courtPlayers returns the set of all player IDs on a given court (0-indexed).
+func courtPlayers(r domain.Round, courtIdx int) map[string]bool {
+	m := r.Matches[courtIdx]
+	return map[string]bool{
+		m.TeamA[0]: true, m.TeamA[1]: true,
+		m.TeamB[0]: true, m.TeamB[1]: true,
+	}
+}
+
+// TestMexicanoWinnersPlayWinners verifies that after round 1 the top-ranked
+// players (winners) face each other on court 1, and the bottom-ranked players
+// (losers) face each other on court 2.
+func TestMexicanoWinnersPlayWinners(t *testing.T) {
+	// Simulate round-2 standings: top-4 won round 1 (24 pts each),
+	// bottom-4 lost (0 pts each).
+	standings := []domain.Standing{
+		{Rank: 1, PlayerID: "p1", Points: 24},
+		{Rank: 2, PlayerID: "p3", Points: 24},
+		{Rank: 3, PlayerID: "p5", Points: 24},
+		{Rank: 4, PlayerID: "p7", Points: 24},
+		{Rank: 5, PlayerID: "p2", Points: 0},
+		{Rank: 6, PlayerID: "p4", Points: 0},
+		{Rank: 7, PlayerID: "p6", Points: 0},
+		{Rank: 8, PlayerID: "p8", Points: 0},
+	}
+
+	r := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+
+	winners := map[string]bool{"p1": true, "p3": true, "p5": true, "p7": true}
+	losers := map[string]bool{"p2": true, "p4": true, "p6": true, "p8": true}
+
+	// Court 1 must only contain winners.
+	for pid := range courtPlayers(r, 0) {
+		if !winners[pid] {
+			t.Errorf("court 1 (winners' court) contains non-winner %s", pid)
+		}
+	}
+
+	// Court 2 must only contain losers.
+	for pid := range courtPlayers(r, 1) {
+		if !losers[pid] {
+			t.Errorf("court 2 (losers' court) contains non-loser %s", pid)
+		}
+	}
+}
+
+// TestMexicanoWinnersPlayWinners_3Courts verifies the three-court case:
+// court 1 = ranks 1-4, court 2 = ranks 5-8, court 3 = ranks 9-12.
+func TestMexicanoWinnersPlayWinners_3Courts(t *testing.T) {
+	standings := []domain.Standing{
+		{Rank: 1, PlayerID: "p1", Points: 48},
+		{Rank: 2, PlayerID: "p2", Points: 42},
+		{Rank: 3, PlayerID: "p3", Points: 36},
+		{Rank: 4, PlayerID: "p4", Points: 30},
+		{Rank: 5, PlayerID: "p5", Points: 24},
+		{Rank: 6, PlayerID: "p6", Points: 20},
+		{Rank: 7, PlayerID: "p7", Points: 16},
+		{Rank: 8, PlayerID: "p8", Points: 12},
+		{Rank: 9, PlayerID: "p9", Points: 8},
+		{Rank: 10, PlayerID: "p10", Points: 4},
+		{Rank: 11, PlayerID: "p11", Points: 2},
+		{Rank: 12, PlayerID: "p12", Points: 0},
+	}
+	tiers := []map[string]bool{
+		{"p1": true, "p2": true, "p3": true, "p4": true},
+		{"p5": true, "p6": true, "p7": true, "p8": true},
+		{"p9": true, "p10": true, "p11": true, "p12": true},
+	}
+
+	r := GenerateMexicanoRound(standings, 3, nil, nil, 2)
+
+	for i, tier := range tiers {
+		for pid := range courtPlayers(r, i) {
+			if !tier[pid] {
+				t.Errorf("court %d contains out-of-tier player %s", i+1, pid)
+			}
+		}
+	}
+}
+
+// TestMexicanoWinnersPlayWinners_ExactPairing checks that within a court the
+// exact partner pairing follows the positional rule: rank N+rank N+2 vs rank N+1+rank N+3.
+func TestMexicanoWinnersPlayWinners_ExactPairing(t *testing.T) {
+	standings := []domain.Standing{
+		{Rank: 1, PlayerID: "a", Points: 32},
+		{Rank: 2, PlayerID: "b", Points: 24},
+		{Rank: 3, PlayerID: "c", Points: 16},
+		{Rank: 4, PlayerID: "d", Points: 8},
+		{Rank: 5, PlayerID: "e", Points: 4},
+		{Rank: 6, PlayerID: "f", Points: 2},
+		{Rank: 7, PlayerID: "g", Points: 1},
+		{Rank: 8, PlayerID: "h", Points: 0},
+	}
+
+	r := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+
+	// Court 1: rank1+rank3 vs rank2+rank4 → a+c vs b+d
+	c1 := r.Matches[0]
+	if c1.TeamA[0] != "a" || c1.TeamA[1] != "c" {
+		t.Errorf("court 1 team A: want [a c], got %v", c1.TeamA)
+	}
+	if c1.TeamB[0] != "b" || c1.TeamB[1] != "d" {
+		t.Errorf("court 1 team B: want [b d], got %v", c1.TeamB)
+	}
+
+	// Court 2: rank5+rank7 vs rank6+rank8 → e+g vs f+h
+	c2 := r.Matches[1]
+	if c2.TeamA[0] != "e" || c2.TeamA[1] != "g" {
+		t.Errorf("court 2 team A: want [e g], got %v", c2.TeamA)
+	}
+	if c2.TeamB[0] != "f" || c2.TeamB[1] != "h" {
+		t.Errorf("court 2 team B: want [f h], got %v", c2.TeamB)
+	}
+}
+
+// TestMexicanoProgression simulates multiple rounds and verifies pairings
+// shift as the standings change between rounds.
+//
+// GenerateMexicanoRound does not sort — it uses the standings slice as-is,
+// exactly as GetLeaderboard provides it (already sorted by points desc).
+func TestMexicanoProgression(t *testing.T) {
+	// After round 1: p1/p2/p5/p6 won (24 pts each), p3/p4/p7/p8 lost (0 pts).
+	// GetLeaderboard returns them sorted: all 24-pt players first.
+	round2Standings := []domain.Standing{
+		{Rank: 1, PlayerID: "p1", Points: 24},
+		{Rank: 2, PlayerID: "p2", Points: 24},
+		{Rank: 3, PlayerID: "p5", Points: 24},
+		{Rank: 4, PlayerID: "p6", Points: 24},
+		{Rank: 5, PlayerID: "p3", Points: 0},
+		{Rank: 6, PlayerID: "p4", Points: 0},
+		{Rank: 7, PlayerID: "p7", Points: 0},
+		{Rank: 8, PlayerID: "p8", Points: 0},
+	}
+
+	r2 := GenerateMexicanoRound(round2Standings, 2, nil, nil, 2)
+
+	// Court 1 must contain only the top-4 (24 pts each).
+	topFour := map[string]bool{"p1": true, "p2": true, "p5": true, "p6": true}
+	for pid := range courtPlayers(r2, 0) {
+		if !topFour[pid] {
+			t.Errorf("round 2 court 1 should have top-4 (24 pts), got %s", pid)
+		}
+	}
+	// Court 2 must contain only the bottom-4 (0 pts).
+	bottomFour := map[string]bool{"p3": true, "p4": true, "p7": true, "p8": true}
+	for pid := range courtPlayers(r2, 1) {
+		if !bottomFour[pid] {
+			t.Errorf("round 2 court 2 should have bottom-4 (0 pts), got %s", pid)
+		}
+	}
+
+	// After round 2: p1/p5 win court 1 (now 48 pts each), p2/p6 lose (stay 24 pts).
+	// p3/p7 win court 2 (now 24 pts each), p4/p8 lose (stay 0 pts).
+	// Sorted standings: p1=48, p5=48, p2=24, p6=24, p3=24, p7=24, p4=0, p8=0.
+	round3Standings := []domain.Standing{
+		{Rank: 1, PlayerID: "p1", Points: 48},
+		{Rank: 2, PlayerID: "p5", Points: 48},
+		{Rank: 3, PlayerID: "p2", Points: 24},
+		{Rank: 4, PlayerID: "p6", Points: 24},
+		{Rank: 5, PlayerID: "p3", Points: 24},
+		{Rank: 6, PlayerID: "p7", Points: 24},
+		{Rank: 7, PlayerID: "p4", Points: 0},
+		{Rank: 8, PlayerID: "p8", Points: 0},
+	}
+
+	r3 := GenerateMexicanoRound(round3Standings, 2, nil, nil, 3)
+
+	// Court 1 must contain the new top-4: p1, p5 (48 pts) + p2, p6 (24 pts).
+	newTopFour := map[string]bool{"p1": true, "p5": true, "p2": true, "p6": true}
+	for pid := range courtPlayers(r3, 0) {
+		if !newTopFour[pid] {
+			t.Errorf("round 3 court 1 should have new top-4 (p1/p5/p2/p6), got %s", pid)
+		}
+	}
+	// Court 2 must contain the new bottom-4: p3, p7 (24 pts) + p4, p8 (0 pts).
+	newBottomFour := map[string]bool{"p3": true, "p7": true, "p4": true, "p8": true}
+	for pid := range courtPlayers(r3, 1) {
+		if !newBottomFour[pid] {
+			t.Errorf("round 3 court 2 should have new bottom-4 (p3/p7/p4/p8), got %s", pid)
+		}
+	}
+}
+
+// TestMexicanoUnlikeAmericano_NoPrecomputedRounds confirms that Mexicano does
+// NOT use TotalRounds — it has no fixed number of rounds.
+// Specifically: calling GenerateMexicanoRound with any round number should work,
+// meaning there is no built-in limit on how many rounds can be played.
+func TestMexicanoUnlikeAmericano_NoPrecomputedRounds(t *testing.T) {
+	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
+
+	for roundNum := 1; roundNum <= 20; roundNum++ {
+		r := GenerateMexicanoRound(standings, 2, nil, nil, roundNum)
+		if r.Number != roundNum {
+			t.Errorf("round %d: got number %d", roundNum, r.Number)
+		}
+		if len(r.Matches) != 2 {
+			t.Errorf("round %d: expected 2 matches, got %d", roundNum, len(r.Matches))
+		}
+	}
+}
+
+// TestMexicanoUnlikeAmericano_PairingsDeterministic verifies that unlike
+// Americano (which uses backtracking to minimise repeats), Mexicano pairings
+// are purely positional and therefore deterministic: same standings → same round.
+func TestMexicanoUnlikeAmericano_PairingsDeterministic(t *testing.T) {
+	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
+
+	r1 := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+	r2 := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+
+	for i := range r1.Matches {
+		if r1.Matches[i].TeamA != r2.Matches[i].TeamA ||
+			r1.Matches[i].TeamB != r2.Matches[i].TeamB {
+			t.Errorf("match %d differs between identical calls: %v vs %v",
+				i, r1.Matches[i], r2.Matches[i])
+		}
+	}
+}
