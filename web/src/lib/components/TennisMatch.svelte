@@ -18,6 +18,7 @@
   let match = $state<App.TennisMatch | null>(null);
   let addingPoint = $state<'a' | 'b' | null>(null);
   let showCloseDialog = $state(false);
+  let showCancelDialog = $state(false);
   let interval: ReturnType<typeof setInterval>;
 
   async function loadMatch() {
@@ -56,8 +57,23 @@
 
   async function closeMatch() {
     const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
-    await api.sessions.close(session.id, adminToken).catch(() => {});
-    location.href = '/';
+    try {
+      await api.sessions.close(session.id, adminToken);
+      showCloseDialog = false;
+      onRefresh();
+    } catch {
+      // Error closing, stay on current view
+    }
+  }
+
+  async function cancelMatch() {
+    const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+    try {
+      await api.sessions.cancel(session.id, adminToken);
+      location.href = '/';
+    } catch {
+      // Error canceling, stay on current view
+    }
   }
 
   function pointLabel(p: number): string {
@@ -109,10 +125,16 @@
     <div class="flex items-center gap-3">
       <p class="text-xs text-[var(--text-secondary)]">{$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}</p>
       {#if isAdmin}
-        <button
-          onclick={() => (showCloseDialog = true)}
-          class="text-xs text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors"
-        >{$_('active_close')}</button>
+        <div class="flex items-center gap-2">
+          <button
+            onclick={() => (showCloseDialog = true)}
+            class="rounded-full bg-[var(--destructive)] px-3 py-1 text-xs font-semibold text-white transition-all active:scale-95"
+          >{$_('active_close')}</button>
+          <button
+            onclick={() => (showCancelDialog = true)}
+            class="text-xs text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors"
+          >{$_('active_cancel')}</button>
+        </div>
       {/if}
     </div>
   </nav>
@@ -294,5 +316,16 @@
   description={$_('close_dialog_desc')}
   confirmLabel={$_('close_dialog_confirm')}
   cancelLabel={$_('close_dialog_cancel')}
+  destructive
   onconfirm={closeMatch}
+/>
+
+<ConfirmDialog
+  bind:open={showCancelDialog}
+  title={$_('cancel_dialog_title')}
+  description={$_('cancel_dialog_desc')}
+  confirmLabel={$_('cancel_dialog_confirm')}
+  cancelLabel={$_('cancel_dialog_cancel')}
+  destructive
+  onconfirm={cancelMatch}
 />

@@ -153,6 +153,7 @@
   "profile_upcoming_players": "players",
   "profile_history_label": "Tournament history",
   "profile_history_empty": "It doesn't look like you have played any tournaments yet.",
+  "profile_ended_early": "Ended early",
   "profile_history_games": "games",
   "profile_stats_section": "Stats",
   "pref_section": "Settings",
@@ -217,11 +218,12 @@
   "tennis_session_full": "This match is full — only 4 players can join.",
 
   "cancel_dialog_title": "Cancel tournament?",
-  "cancel_dialog_desc": "This will end the tournament for everyone. This cannot be undone.",
+  "cancel_dialog_desc": "This will delete the tournament and all results. This cannot be undone.",
   "cancel_dialog_confirm": "Yes, cancel tournament",
   "cancel_dialog_cancel": "Keep playing",
 
   "active_close": "End tournament",
+  "active_cancel": "Cancel tournament",
   "close_dialog_title": "Close tournament?",
   "close_dialog_desc": "This will mark the tournament as complete. Results will be preserved.",
   "close_dialog_confirm": "Close tournament",
