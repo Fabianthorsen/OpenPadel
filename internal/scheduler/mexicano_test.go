@@ -54,29 +54,31 @@ func TestMexicanoRound1_NoBench(t *testing.T) {
 	}
 }
 
+// matchHasTeams returns true if a match contains exactly the two specified player
+// pairs (regardless of which is Team A or Team B, since sides are randomised).
+func matchHasTeams(m domain.Match, pair1, pair2 [2]string) bool {
+	sameTeam := func(got [2]string, want [2]string) bool {
+		return (got[0] == want[0] && got[1] == want[1]) ||
+			(got[0] == want[1] && got[1] == want[0])
+	}
+	return (sameTeam(m.TeamA, pair1) && sameTeam(m.TeamB, pair2)) ||
+		(sameTeam(m.TeamA, pair2) && sameTeam(m.TeamB, pair1))
+}
+
 // TestMexicanoRound1_Pairing verifies the specific pairing rule.
 // Slots: [0+2 vs 1+3] on court 1, [4+6 vs 5+7] on court 2.
+// Team A/B sides are randomised, so we only check who plays whom.
 func TestMexicanoRound1_Pairing(t *testing.T) {
 	ids := []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"}
 	standings := makeStandings(ids...)
-	courts := 2
 
-	r := GenerateMexicanoRound(standings, courts, nil, nil, 1)
+	r := GenerateMexicanoRound(standings, 2, nil, nil, 1)
 
-	c1 := r.Matches[0]
-	if c1.TeamA[0] != "p1" || c1.TeamA[1] != "p3" {
-		t.Errorf("court 1 team A: want [p1 p3], got %v", c1.TeamA)
+	if !matchHasTeams(r.Matches[0], [2]string{"p1", "p3"}, [2]string{"p2", "p4"}) {
+		t.Errorf("court 1: want {p1,p3} vs {p2,p4}, got %v vs %v", r.Matches[0].TeamA, r.Matches[0].TeamB)
 	}
-	if c1.TeamB[0] != "p2" || c1.TeamB[1] != "p4" {
-		t.Errorf("court 1 team B: want [p2 p4], got %v", c1.TeamB)
-	}
-
-	c2 := r.Matches[1]
-	if c2.TeamA[0] != "p5" || c2.TeamA[1] != "p7" {
-		t.Errorf("court 2 team A: want [p5 p7], got %v", c2.TeamA)
-	}
-	if c2.TeamB[0] != "p6" || c2.TeamB[1] != "p8" {
-		t.Errorf("court 2 team B: want [p6 p8], got %v", c2.TeamB)
+	if !matchHasTeams(r.Matches[1], [2]string{"p5", "p7"}, [2]string{"p6", "p8"}) {
+		t.Errorf("court 2: want {p5,p7} vs {p6,p8}, got %v vs %v", r.Matches[1].TeamA, r.Matches[1].TeamB)
 	}
 }
 
@@ -254,7 +256,8 @@ func TestMexicanoWinnersPlayWinners_3Courts(t *testing.T) {
 }
 
 // TestMexicanoWinnersPlayWinners_ExactPairing checks that within a court the
-// exact partner pairing follows the positional rule: rank N+rank N+2 vs rank N+1+rank N+3.
+// partner pairing follows the positional rule: rank N+rank N+2 vs rank N+1+rank N+3.
+// Team A/B sides are randomised, so we only check who plays whom.
 func TestMexicanoWinnersPlayWinners_ExactPairing(t *testing.T) {
 	standings := []domain.Standing{
 		{Rank: 1, PlayerID: "a", Points: 32},
@@ -269,22 +272,14 @@ func TestMexicanoWinnersPlayWinners_ExactPairing(t *testing.T) {
 
 	r := GenerateMexicanoRound(standings, 2, nil, nil, 2)
 
-	// Court 1: rank1+rank3 vs rank2+rank4 → a+c vs b+d
-	c1 := r.Matches[0]
-	if c1.TeamA[0] != "a" || c1.TeamA[1] != "c" {
-		t.Errorf("court 1 team A: want [a c], got %v", c1.TeamA)
-	}
-	if c1.TeamB[0] != "b" || c1.TeamB[1] != "d" {
-		t.Errorf("court 1 team B: want [b d], got %v", c1.TeamB)
+	// Court 1: rank1+rank3 vs rank2+rank4 → {a,c} vs {b,d}
+	if !matchHasTeams(r.Matches[0], [2]string{"a", "c"}, [2]string{"b", "d"}) {
+		t.Errorf("court 1: want {a,c} vs {b,d}, got %v vs %v", r.Matches[0].TeamA, r.Matches[0].TeamB)
 	}
 
-	// Court 2: rank5+rank7 vs rank6+rank8 → e+g vs f+h
-	c2 := r.Matches[1]
-	if c2.TeamA[0] != "e" || c2.TeamA[1] != "g" {
-		t.Errorf("court 2 team A: want [e g], got %v", c2.TeamA)
-	}
-	if c2.TeamB[0] != "f" || c2.TeamB[1] != "h" {
-		t.Errorf("court 2 team B: want [f h], got %v", c2.TeamB)
+	// Court 2: rank5+rank7 vs rank6+rank8 → {e,g} vs {f,h}
+	if !matchHasTeams(r.Matches[1], [2]string{"e", "g"}, [2]string{"f", "h"}) {
+		t.Errorf("court 2: want {e,g} vs {f,h}, got %v vs %v", r.Matches[1].TeamA, r.Matches[1].TeamB)
 	}
 }
 
@@ -376,18 +371,55 @@ func TestMexicanoUnlikeAmericano_NoPrecomputedRounds(t *testing.T) {
 
 // TestMexicanoUnlikeAmericano_PairingsDeterministic verifies that unlike
 // Americano (which uses backtracking to minimise repeats), Mexicano pairings
-// are purely positional and therefore deterministic: same standings → same round.
+// are purely positional and therefore deterministic: same standings → same
+// player pairs face each other (Team A/B sides are still randomised).
 func TestMexicanoUnlikeAmericano_PairingsDeterministic(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
 
-	r1 := GenerateMexicanoRound(standings, 2, nil, nil, 2)
-	r2 := GenerateMexicanoRound(standings, 2, nil, nil, 2)
-
-	for i := range r1.Matches {
-		if r1.Matches[i].TeamA != r2.Matches[i].TeamA ||
-			r1.Matches[i].TeamB != r2.Matches[i].TeamB {
-			t.Errorf("match %d differs between identical calls: %v vs %v",
-				i, r1.Matches[i], r2.Matches[i])
+	// Run 20 times and verify the same two teams always face each other on each court.
+	// The first call establishes the expected pairings.
+	ref := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+	for run := 0; run < 20; run++ {
+		r := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+		for i := range ref.Matches {
+			ra, rb := ref.Matches[i].TeamA, ref.Matches[i].TeamB
+			if !matchHasTeams(r.Matches[i], ra, rb) {
+				t.Errorf("run %d match %d: pairings changed — want {%v,%v}, got {%v,%v}",
+					run, i, ra, rb, r.Matches[i].TeamA, r.Matches[i].TeamB)
+			}
 		}
+	}
+}
+
+// TestMexicanoTeamSidesRandomised verifies that over many rounds the same player
+// appears on both Team A and Team B — i.e. the side shuffle is working.
+func TestMexicanoTeamSidesRandomised(t *testing.T) {
+	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
+
+	seenA := false
+	seenB := false
+	for round := 1; round <= 50; round++ {
+		r := GenerateMexicanoRound(standings, 2, nil, nil, round)
+		for _, m := range r.Matches {
+			for _, pid := range m.TeamA {
+				if pid == "p1" {
+					seenA = true
+				}
+			}
+			for _, pid := range m.TeamB {
+				if pid == "p1" {
+					seenB = true
+				}
+			}
+		}
+		if seenA && seenB {
+			return // pass
+		}
+	}
+	if !seenA {
+		t.Error("p1 was never on Team A across 50 rounds")
+	}
+	if !seenB {
+		t.Error("p1 was never on Team B across 50 rounds")
 	}
 }
