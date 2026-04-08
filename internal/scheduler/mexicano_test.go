@@ -36,7 +36,7 @@ func TestMexicanoRound1_NoBench(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
 	courts := 2
 
-	r := GenerateMexicanoRound(standings, courts, nil, nil, 1)
+	r := GenerateMexicanoRound(standings, courts, 1)
 
 	if len(r.Matches) != courts {
 		t.Fatalf("expected %d matches, got %d", courts, len(r.Matches))
@@ -72,7 +72,7 @@ func TestMexicanoRound1_Pairing(t *testing.T) {
 	ids := []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"}
 	standings := makeStandings(ids...)
 
-	r := GenerateMexicanoRound(standings, 2, nil, nil, 1)
+	r := GenerateMexicanoRound(standings, 2, 1)
 
 	if !matchHasTeams(r.Matches[0], [2]string{"p1", "p3"}, [2]string{"p2", "p4"}) {
 		t.Errorf("court 1: want {p1,p3} vs {p2,p4}, got %v vs %v", r.Matches[0].TeamA, r.Matches[0].TeamB)
@@ -82,70 +82,13 @@ func TestMexicanoRound1_Pairing(t *testing.T) {
 	}
 }
 
-// TestMexicanoRound_Bench verifies that bottom-ranked players bench.
-func TestMexicanoRound_Bench(t *testing.T) {
-	// 9 players, 2 courts → 1 on bench (bottom rank = p9)
-	ids := []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9"}
-	standings := makeStandings(ids...)
-
-	r := GenerateMexicanoRound(standings, 2, nil, nil, 2)
-
-	if len(r.Bench) != 1 {
-		t.Fatalf("expected 1 bench player, got %v", r.Bench)
-	}
-	if r.Bench[0] != "p9" {
-		t.Errorf("expected p9 (lowest rank) to bench, got %s", r.Bench[0])
-	}
-
-	playing := playerSet(r)
-	if playing["p9"] {
-		t.Error("p9 should not be playing")
-	}
-}
-
-// TestMexicanoRound_NoBenchTwiceInARow verifies that a player who benched last
-// round is forced to play, and the next eligible low-ranked player benches instead.
-func TestMexicanoRound_NoBenchTwiceInARow(t *testing.T) {
-	// 9 players, 2 courts → 1 bench slot
-	ids := []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9"}
-	standings := makeStandings(ids...)
-
-	// p9 benched last round (round 2), so in round 3 they must play.
-	lastBenched := map[string]int{"p9": 2}
-
-	r := GenerateMexicanoRound(standings, 2, nil, lastBenched, 3)
-
-	if len(r.Bench) != 1 {
-		t.Fatalf("expected 1 bench player, got %v", r.Bench)
-	}
-	if r.Bench[0] == "p9" {
-		t.Error("p9 benched last round and must play this round")
-	}
-	// Next eligible low-ranked player is p8
-	if r.Bench[0] != "p8" {
-		t.Errorf("expected p8 to bench (next lowest eligible), got %s", r.Bench[0])
-	}
-}
-
-// TestMexicanoRound_MultipleBench verifies bench with 2 bench slots.
-func TestMexicanoRound_MultipleBench(t *testing.T) {
-	// 10 players, 2 courts → 2 bench slots
-	ids := []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10"}
-	standings := makeStandings(ids...)
-
-	r := GenerateMexicanoRound(standings, 2, nil, nil, 2)
-
-	if len(r.Bench) != 2 {
-		t.Fatalf("expected 2 bench players, got %v", r.Bench)
-	}
-
-	benchSet := map[string]bool{}
-	for _, pid := range r.Bench {
-		benchSet[pid] = true
-	}
-	// Bottom 2 (p9, p10) should bench
-	if !benchSet["p9"] || !benchSet["p10"] {
-		t.Errorf("expected p9 and p10 to bench, got %v", r.Bench)
+// TestMexicanoRound_NoBench verifies that Mexicano never produces a bench —
+// it requires exactly courts*4 players so everyone plays every round.
+func TestMexicanoRound_NoBench(t *testing.T) {
+	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
+	r := GenerateMexicanoRound(standings, 2, 2)
+	if len(r.Bench) != 0 {
+		t.Errorf("Mexicano should never have a bench, got %v", r.Bench)
 	}
 }
 
@@ -153,7 +96,7 @@ func TestMexicanoRound_MultipleBench(t *testing.T) {
 func TestMexicanoRound_CourtNumbers(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8",
 		"p9", "p10", "p11", "p12")
-	r := GenerateMexicanoRound(standings, 3, nil, nil, 1)
+	r := GenerateMexicanoRound(standings, 3, 1)
 
 	for i, m := range r.Matches {
 		if m.Court != i+1 {
@@ -165,7 +108,7 @@ func TestMexicanoRound_CourtNumbers(t *testing.T) {
 // TestMexicanoRound_RoundNumberSet checks that the returned round has the correct number.
 func TestMexicanoRound_RoundNumberSet(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
-	r := GenerateMexicanoRound(standings, 2, nil, nil, 5)
+	r := GenerateMexicanoRound(standings, 2, 5)
 	if r.Number != 5 {
 		t.Errorf("expected round number 5, got %d", r.Number)
 	}
@@ -201,7 +144,7 @@ func TestMexicanoWinnersPlayWinners(t *testing.T) {
 		{Rank: 8, PlayerID: "p8", Points: 0},
 	}
 
-	r := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+	r := GenerateMexicanoRound(standings, 2, 2)
 
 	winners := map[string]bool{"p1": true, "p3": true, "p5": true, "p7": true}
 	losers := map[string]bool{"p2": true, "p4": true, "p6": true, "p8": true}
@@ -244,7 +187,7 @@ func TestMexicanoWinnersPlayWinners_3Courts(t *testing.T) {
 		{"p9": true, "p10": true, "p11": true, "p12": true},
 	}
 
-	r := GenerateMexicanoRound(standings, 3, nil, nil, 2)
+	r := GenerateMexicanoRound(standings, 3, 2)
 
 	for i, tier := range tiers {
 		for pid := range courtPlayers(r, i) {
@@ -270,7 +213,7 @@ func TestMexicanoWinnersPlayWinners_ExactPairing(t *testing.T) {
 		{Rank: 8, PlayerID: "h", Points: 0},
 	}
 
-	r := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+	r := GenerateMexicanoRound(standings, 2, 2)
 
 	// Court 1: rank1+rank3 vs rank2+rank4 → {a,c} vs {b,d}
 	if !matchHasTeams(r.Matches[0], [2]string{"a", "c"}, [2]string{"b", "d"}) {
@@ -302,7 +245,7 @@ func TestMexicanoProgression(t *testing.T) {
 		{Rank: 8, PlayerID: "p8", Points: 0},
 	}
 
-	r2 := GenerateMexicanoRound(round2Standings, 2, nil, nil, 2)
+	r2 := GenerateMexicanoRound(round2Standings, 2, 2)
 
 	// Court 1 must contain only the top-4 (24 pts each).
 	topFour := map[string]bool{"p1": true, "p2": true, "p5": true, "p6": true}
@@ -333,7 +276,7 @@ func TestMexicanoProgression(t *testing.T) {
 		{Rank: 8, PlayerID: "p8", Points: 0},
 	}
 
-	r3 := GenerateMexicanoRound(round3Standings, 2, nil, nil, 3)
+	r3 := GenerateMexicanoRound(round3Standings, 2, 3)
 
 	// Court 1 must contain the new top-4: p1, p5 (48 pts) + p2, p6 (24 pts).
 	newTopFour := map[string]bool{"p1": true, "p5": true, "p2": true, "p6": true}
@@ -359,7 +302,7 @@ func TestMexicanoUnlikeAmericano_NoPrecomputedRounds(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
 
 	for roundNum := 1; roundNum <= 20; roundNum++ {
-		r := GenerateMexicanoRound(standings, 2, nil, nil, roundNum)
+		r := GenerateMexicanoRound(standings, 2, roundNum)
 		if r.Number != roundNum {
 			t.Errorf("round %d: got number %d", roundNum, r.Number)
 		}
@@ -378,9 +321,9 @@ func TestMexicanoUnlikeAmericano_PairingsDeterministic(t *testing.T) {
 
 	// Run 20 times and verify the same two teams always face each other on each court.
 	// The first call establishes the expected pairings.
-	ref := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+	ref := GenerateMexicanoRound(standings, 2, 2)
 	for run := 0; run < 20; run++ {
-		r := GenerateMexicanoRound(standings, 2, nil, nil, 2)
+		r := GenerateMexicanoRound(standings, 2, 2)
 		for i := range ref.Matches {
 			ra, rb := ref.Matches[i].TeamA, ref.Matches[i].TeamB
 			if !matchHasTeams(r.Matches[i], ra, rb) {
@@ -399,7 +342,7 @@ func TestMexicanoTeamSidesRandomised(t *testing.T) {
 	seenA := false
 	seenB := false
 	for round := 1; round <= 50; round++ {
-		r := GenerateMexicanoRound(standings, 2, nil, nil, round)
+		r := GenerateMexicanoRound(standings, 2, round)
 		for _, m := range r.Matches {
 			for _, pid := range m.TeamA {
 				if pid == "p1" {

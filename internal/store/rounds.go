@@ -294,38 +294,6 @@ func (s *Store) getH2H(sessionID string) (map[string]map[string]int, error) {
 	return h2h, rows.Err()
 }
 
-// GetBenchHistory returns (benchTotal, lastBenchedRound) maps for all players in a session.
-// benchTotal[playerID] = number of rounds the player has benched.
-// lastBenchedRound[playerID] = the round number of the most recent bench stint.
-func (s *Store) GetBenchHistory(sessionID string) (map[string]int, map[string]int, error) {
-	rows, err := s.db.Query(`
-		SELECT b.player_id, r.number
-		FROM bench b
-		JOIN rounds r ON r.id = b.round_id
-		WHERE r.session_id = ?
-		ORDER BY r.number`,
-		sessionID,
-	)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer rows.Close()
-
-	total := map[string]int{}
-	last := map[string]int{}
-	for rows.Next() {
-		var pid string
-		var num int
-		if err := rows.Scan(&pid, &num); err != nil {
-			return nil, nil, err
-		}
-		total[pid]++
-		if num > last[pid] {
-			last[pid] = num
-		}
-	}
-	return total, last, rows.Err()
-}
 
 // AdvanceMexicanoRound saves a newly generated round and updates current_round atomically.
 func (s *Store) AdvanceMexicanoRound(sessionID string, round domain.Round) error {
