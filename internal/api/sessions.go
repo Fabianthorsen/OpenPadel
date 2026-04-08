@@ -32,12 +32,12 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	if body.GameMode == "" {
 		body.GameMode = "americano"
 	}
-	if body.GameMode != "americano" && body.GameMode != "tennis" {
-		respondError(w, http.StatusBadRequest, "game_mode must be 'americano' or 'tennis'")
+	if body.GameMode != "americano" && body.GameMode != "mexicano" && body.GameMode != "tennis" {
+		respondError(w, http.StatusBadRequest, "game_mode must be 'americano', 'mexicano', or 'tennis'")
 		return
 	}
 
-	if body.GameMode == "americano" {
+	if body.GameMode == "americano" || body.GameMode == "mexicano" {
 		if body.Courts < 1 || body.Courts > 4 {
 			respondError(w, http.StatusBadRequest, "courts must be between 1 and 4")
 			return
@@ -118,11 +118,21 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 
 	active := activePlayers(sess.Players)
 
-	if sess.GameMode == "tennis" {
+	switch sess.GameMode {
+	case "tennis":
 		if err := h.startTennisSession(w, id, active); err != nil {
 			return
 		}
-	} else {
+	case "mexicano":
+		minPlayers := sess.Courts * 4
+		if len(active) < minPlayers || len(active) < 8 {
+			respondError(w, http.StatusUnprocessableEntity, "not enough players to start")
+			return
+		}
+		if err := h.startMexicanoSession(w, id, sess, active); err != nil {
+			return
+		}
+	default: // americano
 		minPlayers := sess.Courts * 4
 		if len(active) < minPlayers {
 			respondError(w, http.StatusUnprocessableEntity, "not enough players to start")

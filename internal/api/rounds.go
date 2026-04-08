@@ -105,10 +105,13 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 	// Final score is now in the DB — clear any in-memory live score for this match.
 	h.live.Clear(matchID)
 
-	// Check if all rounds are now complete.
-	done, err := h.store.AllRoundsComplete(sessionID)
-	if err == nil && done {
-		h.store.CompleteSession(sessionID, false)
+	// For Americano, auto-complete when all pre-generated rounds are scored.
+	// Mexicano has no fixed total — admin closes manually.
+	if sess.GameMode != "mexicano" {
+		done, err := h.store.AllRoundsComplete(sessionID)
+		if err == nil && done {
+			h.store.CompleteSession(sessionID, false)
+		}
 	}
 
 	respond(w, http.StatusOK, match)
@@ -161,9 +164,20 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusConflict, "not all matches in this round are scored")
 		return
 	}
-	if err := h.store.AdvanceRound(sessionID); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not advance round")
-		return
+
+	if sess.GameMode == "mexicano" {
+		nextRound := 1
+		if sess.CurrentRound != nil {
+			nextRound = *sess.CurrentRound + 1
+		}
+		if err := h.advanceMexicanoRound(w, sessionID, nextRound); err != nil {
+			return
+		}
+	} else {
+		if err := h.store.AdvanceRound(sessionID); err != nil {
+			respondError(w, http.StatusInternalServerError, "could not advance round")
+			return
+		}
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
