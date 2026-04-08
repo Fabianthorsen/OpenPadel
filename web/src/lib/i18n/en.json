@@ -17,6 +17,7 @@
   "create_game_mode_label": "Game Mode",
   "create_game_mode_hint": "Americano is currently the only supported mode.",
   "create_mexicano_soon": "Mexicano (Coming soon)",
+  "create_mexicano_hint": "Requires at least 8 players. Pairs are made from standings each round.",
   "create_mode_tennis": "Regular 2v2",
   "create_sets_label": "Best of",
   "create_sets_bo3": "Best of 3",
@@ -84,6 +85,7 @@
   "invite_joining": "Joining…",
 
   "active_round_of": "Round {current} of {total}",
+  "active_round_open": "Round {current}",
   "active_courts_one": "{n} court",
   "active_courts_other": "{n} courts",
   "active_tab_live": "Live Score",

@@ -17,6 +17,7 @@
   "create_game_mode_label": "Spillmodus",
   "create_game_mode_hint": "Americano er for øyeblikket den eneste støttede modusen.",
   "create_mexicano_soon": "Mexicano (kommer snart)",
+  "create_mexicano_hint": "Krever minst 8 spillere. Par settes opp basert på stillingen etter hver runde.",
   "create_mode_tennis": "Vanlig 2v2",
   "create_sets_label": "Best av",
   "create_sets_bo3": "Best av 3",
@@ -84,6 +85,7 @@
   "invite_joining": "Blir med…",
 
   "active_round_of": "Runde {current} av {total}",
+  "active_round_open": "Runde {current}",
   "active_courts_one": "{n} bane",
   "active_courts_other": "{n} baner",
   "active_tab_live": "Direkte",

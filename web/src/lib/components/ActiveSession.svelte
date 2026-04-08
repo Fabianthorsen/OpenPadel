@@ -212,7 +212,9 @@
     <div class="flex items-start justify-between">
       <div>
         <h2 class="text-[32px] font-[800] leading-none tracking-tight">
-          {$_('active_round_of', { values: { current: currentRound.number, total: session.rounds_total } })}
+          {session.rounds_total != null
+            ? $_('active_round_of', { values: { current: currentRound.number, total: session.rounds_total } })
+            : $_('active_round_open', { values: { current: currentRound.number } })}
         </h2>
         <p class="mt-1 text-sm text-[var(--text-secondary)]">
           {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })}
@@ -224,7 +226,9 @@
       </div>
     </div>
 
-    <RoundIndicator current={currentRound.number} total={session.rounds_total ?? 0} />
+    {#if session.rounds_total != null}
+      <RoundIndicator current={currentRound.number} total={session.rounds_total} />
+    {/if}
 
     <!-- Court cards -->
     {#each currentRound.matches as match (match.id)}
@@ -447,12 +451,13 @@
 
     <!-- Next round / waiting -->
     {#if allScored && isAdmin}
+      {@const isFinalRound = session.rounds_total != null && currentRound.number === session.rounds_total}
       <button
-        onclick={currentRound.number === session.rounds_total ? onRefresh : advanceRound}
+        onclick={isFinalRound ? onRefresh : advanceRound}
         disabled={advancing}
         class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
       >
-        {advancing ? '…' : currentRound.number === session.rounds_total ? $_('active_final_results') : $_('active_next_round')}
+        {advancing ? '…' : isFinalRound ? $_('active_final_results') : $_('active_next_round')}
       </button>
     {:else if allScored}
       <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-center text-sm text-[var(--text-secondary)]">
