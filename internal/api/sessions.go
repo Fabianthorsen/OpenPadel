@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"math/rand/v2"
 	"net/http"
 	"strings"
 	"time"
@@ -127,6 +128,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusUnprocessableEntity, "not enough players to start")
 			return
 		}
+		rand.Shuffle(len(active), func(i, j int) { active[i], active[j] = active[j], active[i] })
 		totalRounds := scheduler.TotalRounds(len(active), sess.Courts)
 		rounds := scheduler.Generate(active, sess.Courts, totalRounds)
 		if err := h.store.SaveRounds(id, rounds); err != nil {
