@@ -70,8 +70,8 @@
   "lobby_dev_seed": "[dev] Fill with test players",
   "lobby_dev_seeding": "Adding…",
 
-  "invite_title_with_creator": "{creator} invited you to this Americano Tournament",
-  "invite_title_generic": "Join this Americano Tournament",
+  "invite_title_with_creator": "{creator} invited you to this {mode} Tournament",
+  "invite_title_generic": "Join this {mode} Tournament",
   "invite_subtitle": "Join the tournament to track your scores and see your ranking.",
   "invite_name_label": "Your name",
   "invite_name_placeholder": "Enter your name",

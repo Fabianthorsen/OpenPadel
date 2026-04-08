@@ -70,8 +70,8 @@
   "lobby_dev_seed": "[dev] Fyll med testspillere",
   "lobby_dev_seeding": "Legger til…",
 
-  "invite_title_with_creator": "{creator} har invitert deg til denne Americano-turneringen",
-  "invite_title_generic": "Bli med i denne Americano-turneringen",
+  "invite_title_with_creator": "{creator} har invitert deg til denne {mode}-turneringen",
+  "invite_title_generic": "Bli med i denne {mode}-turneringen",
   "invite_subtitle": "Bli med i turneringen for å spore poengene dine og se rangeringen.",
   "invite_name_label": "Ditt navn",
   "invite_name_placeholder": "Skriv inn fullt navn",
