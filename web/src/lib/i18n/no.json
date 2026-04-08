@@ -22,7 +22,7 @@
   "create_mexicano_rounds_label": "Antall runder",
   "create_mexicano_rounds_open": "Åpent",
   "create_mexicano_rounds_hint_fixed": "Turneringen avsluttes etter {n} runder.",
-  "create_mexicano_rounds_hint_open": "Spill så mange runder du vil — admin avslutter når dere er ferdige.",
+  "create_mexicano_rounds_hint_open": "Velg antall runder eller varighet.",
   "create_mode_tennis": "Vanlig 2v2",
   "create_sets_label": "Best av",
   "create_sets_bo3": "Best av 3",
@@ -113,6 +113,7 @@
   "active_next_round": "Neste runde →",
   "active_final_results": "Se sluttresultater →",
   "active_round_complete": "Runden er ferdig — venter på at admin skal gå videre",
+  "active_time_expired": "Tiden er ute! Legg inn sluttresultatene.",
 
   "leaderboard_leader": "Leder",
   "leaderboard_rank1": "Plass #1",
@@ -222,6 +223,14 @@
   "tennis_tiebreak": "Tiebreak",
   "tennis_start_locked": "Tildel 2 spillere til hvert lag for å starte",
   "tennis_session_full": "Denne kampen er full — kun 4 spillere kan delta.",
+
+  "create_duration_label": "Varighet",
+  "create_duration_rounds": "rnd",
+  "create_duration_or": "eller",
+  "create_duration_custom": "Tilpass",
+  "create_duration_minutes": "minutter",
+  "create_duration_hint": "Turneringen avsluttes automatisk etter {n} minutter.",
+  "create_duration_none_hint": "Ingen grense — avslutt turneringen manuelt.",
 
   "lobby_rules_button": "Slik spiller du",
   "rules_americano": "Spillere roterer partnere hver runde — du spiller aldri med samme partner to ganger hvis mulig.\nHver runde spiller alle baner til et fast poengmål (f.eks. 24).\nAlle poeng du scorer teller mot din personlige total gjennom hele turneringen.\nSpilleren med flest totale poeng til slutt vinner.",

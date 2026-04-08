@@ -54,7 +54,7 @@ func TestGetTournamentHistory_EndedEarly(t *testing.T) {
 	}
 
 	// Start and complete with ended_early = true
-	if err := s.StartSession(sess, 1); err != nil {
+	if err := s.StartSession(sess, 1, nil); err != nil {
 		t.Fatalf("StartSession: %v", err)
 	}
 	if err := s.CompleteSession(sess, true); err != nil {
@@ -88,7 +88,7 @@ func TestGetTournamentHistory_NaturalCompletion(t *testing.T) {
 	}
 
 	// Start and complete with ended_early = false
-	if err := s.StartSession(sess, 1); err != nil {
+	if err := s.StartSession(sess, 1, nil); err != nil {
 		t.Fatalf("StartSession: %v", err)
 	}
 	if err := s.CompleteSession(sess, false); err != nil {

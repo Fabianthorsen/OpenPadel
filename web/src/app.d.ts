@@ -39,6 +39,8 @@ declare global {
       current_round?: number;
       creator_player_id?: string;
       scheduled_at?: string;
+      court_duration_minutes?: number;
+      ends_at?: string;
       players: Player[];
       created_at: string;
       updated_at: string;

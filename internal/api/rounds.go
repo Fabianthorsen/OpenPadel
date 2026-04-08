@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -105,11 +106,17 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 	// Final score is now in the DB — clear any in-memory live score for this match.
 	h.live.Clear(matchID)
 
-	// Auto-complete when all rounds are fully scored.
-	// Americano: all rounds pre-generated, check globally.
-	// Mexicano with preset rounds_total: check current round is the last and fully scored.
-	// Mexicano open-ended: admin closes manually — never auto-complete.
-	if sess.GameMode == "mexicano" {
+	// Auto-complete logic.
+	// Timer takes priority: if ends_at has passed, complete once current round is fully scored.
+	// Otherwise use normal per-mode logic.
+	timerExpired := sess.EndsAt != nil && time.Now().UTC().After(*sess.EndsAt)
+	if timerExpired {
+		allScored, err := h.store.CurrentRoundAllScored(sessionID)
+		if err == nil && allScored {
+			h.store.CompleteSession(sessionID, false)
+		}
+	} else if sess.GameMode == "mexicano" {
+		// Mexicano with preset rounds_total: complete when last round is fully scored.
 		if sess.RoundsTotal != nil && sess.CurrentRound != nil && *sess.CurrentRound == *sess.RoundsTotal {
 			allScored, err := h.store.CurrentRoundAllScored(sessionID)
 			if err == nil && allScored {
@@ -117,6 +124,7 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
+		// Americano: all pre-generated rounds complete.
 		done, err := h.store.AllRoundsComplete(sessionID)
 		if err == nil && done {
 			h.store.CompleteSession(sessionID, false)
@@ -162,6 +170,10 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 	}
 	if sess.Status != domain.StatusActive {
 		respondError(w, http.StatusConflict, "session is not active")
+		return
+	}
+	if sess.EndsAt != nil && time.Now().UTC().After(*sess.EndsAt) {
+		respondError(w, http.StatusConflict, "tournament time has expired")
 		return
 	}
 	allScored, err := h.store.CurrentRoundAllScored(sessionID)

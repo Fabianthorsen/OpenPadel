@@ -93,10 +93,12 @@ type Session struct {
 	GamesPerSet     int           `json:"games_per_set"`
 	Courts          int           `json:"courts"`
 	Points          int           `json:"points"`
-	RoundsTotal     *int          `json:"rounds_total,omitempty"`
-	CurrentRound    *int          `json:"current_round,omitempty"`
-	CreatorPlayerID string        `json:"creator_player_id,omitempty"`
-	ScheduledAt     *time.Time    `json:"scheduled_at,omitempty"`
+	RoundsTotal          *int          `json:"rounds_total,omitempty"`
+	CurrentRound         *int          `json:"current_round,omitempty"`
+	CreatorPlayerID      string        `json:"creator_player_id,omitempty"`
+	ScheduledAt          *time.Time    `json:"scheduled_at,omitempty"`
+	CourtDurationMinutes *int          `json:"court_duration_minutes,omitempty"`
+	EndsAt               *time.Time    `json:"ends_at,omitempty"`
 	Players         []Player      `json:"players"`
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`

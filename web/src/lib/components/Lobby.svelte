@@ -346,7 +346,7 @@
           {#if isTennis}
             {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
           {:else}
-            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} {$_('invite_points')} · Americano{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
+            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} {$_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
           {/if}
         </p>
       </div>
@@ -433,7 +433,7 @@
           {#if isTennis}
             {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}
           {:else}
-            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · {gameModeName}
+            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
           {/if}
         </div>
         <button

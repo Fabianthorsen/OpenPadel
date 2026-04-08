@@ -162,6 +162,26 @@
   }
 
   const benchNames = $derived(currentRound.bench.map((id) => playerName[id] ?? id));
+
+  // Court timer countdown.
+  let now = $state(Date.now());
+  $effect(() => {
+    const interval = setInterval(() => { now = Date.now(); }, 1000);
+    return () => clearInterval(interval);
+  });
+  const endsAtMs = $derived(session.ends_at ? new Date(session.ends_at).getTime() : null);
+  const timeExpired = $derived(endsAtMs !== null && now >= endsAtMs);
+  const timeLeft = $derived.by(() => {
+    if (endsAtMs === null) return null;
+    const ms = endsAtMs - now;
+    if (ms <= 0) return null;
+    const totalSecs = Math.ceil(ms / 1000);
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  });
 </script>
 
 {#if actionError}
@@ -217,14 +237,25 @@
             : $_('active_round_open', { values: { current: currentRound.number } })}
         </h2>
         <p class="mt-1 text-sm text-[var(--text-secondary)]">
-          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })}
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
         </p>
       </div>
-      <div class="rounded-xl bg-[var(--surface-raised)] px-4 py-2 text-center">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">{$_('active_target_label')}</p>
-        <p class="text-xl font-[800] text-[var(--text-primary)]">{session.points}</p>
+      <div class="flex flex-col items-end gap-1.5">
+        <div class="rounded-xl bg-[var(--surface-raised)] px-4 py-2 text-center">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">{$_('active_target_label')}</p>
+          <p class="text-xl font-[800] text-[var(--text-primary)]">{session.points}</p>
+        </div>
+        {#if timeLeft !== null}
+          <p class="text-xs font-mono font-semibold text-[var(--text-secondary)]">⏱ {timeLeft}</p>
+        {/if}
       </div>
     </div>
+
+    {#if timeExpired}
+      <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-center">
+        <p class="text-sm font-bold text-amber-600 dark:text-amber-400">{$_('active_time_expired')}</p>
+      </div>
+    {/if}
 
     {#if session.rounds_total != null}
       <RoundIndicator current={currentRound.number} total={session.rounds_total} />
