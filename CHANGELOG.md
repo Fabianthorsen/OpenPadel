@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.5.0...v1.5.1) (2026-04-08)
+
+
+### Bug Fixes
+
+* **scheduler:** ensure minimum meaningful rounds for bench configs ([716cfdf](https://github.com/Fabianthorsen/OpenPadel/commit/716cfdf8f07b377ef5a7b8429113848245cc6110))
+
 ## [1.5.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.4.2...v1.5.0) (2026-04-08)
 
 
