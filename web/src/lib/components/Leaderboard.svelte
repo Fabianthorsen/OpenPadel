@@ -227,9 +227,11 @@
         <h3 class="text-[13px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
           {$_('leaderboard_current')}
         </h3>
-        {#if leaderboard.current_round && leaderboard.total_rounds}
+        {#if leaderboard.current_round}
           <span class="text-xs text-[var(--text-disabled)]">
-            {$_('leaderboard_round_of', { values: { current: leaderboard.current_round, total: leaderboard.total_rounds } })}
+            {leaderboard.total_rounds
+              ? $_('leaderboard_round_of', { values: { current: leaderboard.current_round, total: leaderboard.total_rounds } })
+              : $_('active_round_open', { values: { current: leaderboard.current_round } })}
           </span>
         {/if}
       </div>
