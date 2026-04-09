@@ -2,6 +2,8 @@
 
 ## Planned
 
+- [ ] Score screen UX redesign — court tabs, unified card, numpad entry, courts overview bottom sheet
+- [ ] Invite screen UX redesign — host avatar hero, stacked player avatars, join section
 - [ ] Round count control — allow admin to choose rounds as multiples of the rotation unit (e.g. 5, 10, 15 for a 5-player bench config)
 - [ ] Admin can add extra rounds mid-session if players want to keep playing
 - [ ] Round Robin game mode — every pair plays every other pair
@@ -13,6 +15,7 @@ _Nothing in progress — main is clean._
 
 ## Done
 
+- [x] **v1.8.0** — Player avatar system: lucide icon picker on profile, avatar shown in lobby, game, and leaderboard; guests get slate Bot icon
 - [x] **v1.7.0** — Litestream continuous replication to Tigris (S3)
 - [x] **v1.6.0** — Mexicano game mode (backend, scheduler, UI)
 - [x] **v1.6.0** — Court booking timer with rounds-or-time duration picker
