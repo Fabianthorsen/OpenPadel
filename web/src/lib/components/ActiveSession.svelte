@@ -425,7 +425,7 @@
               <button
                 onclick={() => adjust(match.id, 'a', -1)}
                 disabled={s.a === 0}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-white/60 bg-transparent text-2xl font-bold text-white transition-all active:scale-95 active:bg-white/10 disabled:opacity-30"
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-30"
               >−</button>
               <button
                 onclick={() => openNumpad(match.id, 'a')}
@@ -448,7 +448,7 @@
               <button
                 onclick={() => adjust(match.id, 'b', -1)}
                 disabled={s.b === 0}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-white/60 bg-transparent text-2xl font-bold text-white transition-all active:scale-95 active:bg-white/10 disabled:opacity-30"
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-30"
               >−</button>
               <button
                 onclick={() => openNumpad(match.id, 'b')}
