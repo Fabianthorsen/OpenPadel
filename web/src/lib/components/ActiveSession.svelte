@@ -400,77 +400,77 @@
           </button>
 
         {:else}
-          <!-- Active dark score card -->
-          <div class="relative overflow-hidden rounded-3xl bg-[#3d7a24] px-5 pt-7 pb-6 space-y-2">
-            <!-- Court line pattern -->
-            <svg class="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-              <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5" opacity="0.1"/>
-              <line x1="0" y1="50" x2="100" y2="50" stroke="white" stroke-width="1" opacity="1"/>
-              <rect x="10" y="10" width="80" height="80" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/>
+          <!-- Team A card -->
+          <div class="relative overflow-hidden rounded-3xl bg-[#3d7a24] px-5 pt-6 pb-5">
+            <svg class="pointer-events-none absolute inset-0 h-full w-full opacity-10" preserveAspectRatio="none" viewBox="0 0 100 100">
+              <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5"/>
+              <rect x="10" y="10" width="80" height="80" fill="none" stroke="white" stroke-width="0.5"/>
             </svg>
-            <div class="relative z-10 space-y-2">
-
-            <!-- Team A: avatars + names -->
-            <div class="flex flex-col items-center gap-2">
-              <div class="flex justify-center">
-                <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="md" />
-                <div class="-ml-3 rounded-full ring-2 ring-[#3d7a24]">
-                  <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="md" />
+            <div class="relative z-10 space-y-3">
+              <div class="flex flex-col items-center gap-2">
+                <div class="flex justify-center">
+                  <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="md" />
+                  <div class="-ml-3 rounded-full ring-2 ring-[#3d7a24]">
+                    <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="md" />
+                  </div>
                 </div>
+                <p class="text-base font-bold text-white">{teamLabel(match.team_a)}</p>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">Team A</p>
               </div>
-              <p class="text-base font-bold text-white">{teamLabel(match.team_a)}</p>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">Team A</p>
-            </div>
-
-            <!-- Team A score row -->
-            <div class="flex items-center justify-between gap-2">
-              <button
-                onclick={() => adjust(match.id, 'a', -1)}
-                disabled={s.a === 0}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
-              >−</button>
-              <button
-                onclick={() => openNumpad(match.id, 'a')}
-                class="flex-1 text-center text-[80px] font-[800] leading-none tabular-nums text-white"
-              >{s.a}</button>
-              <button
-                onclick={() => adjust(match.id, 'a', 1)}
-                disabled={s.a + s.b >= session.points}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
-              >+</button>
-            </div>
-
-            <!-- Team B score row -->
-            <div class="mt-10 flex items-center justify-between gap-2">
-              <button
-                onclick={() => adjust(match.id, 'b', -1)}
-                disabled={s.b === 0}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
-              >−</button>
-              <button
-                onclick={() => openNumpad(match.id, 'b')}
-                class="flex-1 text-center text-[80px] font-[800] leading-none tabular-nums text-white"
-              >{s.b}</button>
-              <button
-                onclick={() => adjust(match.id, 'b', 1)}
-                disabled={s.a + s.b >= session.points}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
-              >+</button>
-            </div>
-
-            <!-- Team B: names + avatars -->
-            <div class="flex flex-col items-center gap-2">
-              <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">Team B</p>
-              <p class="text-base font-bold text-white">{teamLabel(match.team_b)}</p>
-              <div class="flex justify-center">
-                <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="md" />
-                <div class="-ml-3 rounded-full ring-2 ring-[#3d7a24]">
-                  <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="md" />
-                </div>
+              <div class="flex items-center justify-between gap-2">
+                <button
+                  onclick={() => adjust(match.id, 'a', -1)}
+                  disabled={s.a === 0}
+                  class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
+                >−</button>
+                <button
+                  onclick={() => openNumpad(match.id, 'a')}
+                  class="flex-1 text-center text-[80px] font-[800] leading-none tabular-nums text-white"
+                >{s.a}</button>
+                <button
+                  onclick={() => adjust(match.id, 'a', 1)}
+                  disabled={s.a + s.b >= session.points}
+                  class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
+                >+</button>
               </div>
             </div>
-          </div><!-- close z-10 wrapper -->
-          </div><!-- close card -->
+          </div>
+
+          <!-- Team B card -->
+          <div class="relative overflow-hidden rounded-3xl bg-[#3d7a24] px-5 pt-5 pb-6">
+            <svg class="pointer-events-none absolute inset-0 h-full w-full opacity-10" preserveAspectRatio="none" viewBox="0 0 100 100">
+              <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5"/>
+              <rect x="10" y="10" width="80" height="80" fill="none" stroke="white" stroke-width="0.5"/>
+            </svg>
+            <div class="relative z-10 space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <button
+                  onclick={() => adjust(match.id, 'b', -1)}
+                  disabled={s.b === 0}
+                  class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
+                >−</button>
+                <button
+                  onclick={() => openNumpad(match.id, 'b')}
+                  class="flex-1 text-center text-[80px] font-[800] leading-none tabular-nums text-white"
+                >{s.b}</button>
+                <button
+                  onclick={() => adjust(match.id, 'b', 1)}
+                  disabled={s.a + s.b >= session.points}
+                  class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
+                >+</button>
+              </div>
+              <div class="flex flex-col items-center gap-2">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">Team B</p>
+                <p class="text-base font-bold text-white">{teamLabel(match.team_b)}</p>
+                <div class="flex justify-center">
+                  <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="md" />
+                  <div class="-ml-3 rounded-full ring-2 ring-[#3d7a24]">
+                    <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="md" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- Finalize button + helper text -->
           {#if isAdmin}
