@@ -111,6 +111,7 @@
   "active_serving": "Mark as serving",
   "active_bench": "On bench",
   "active_next_round": "Next round →",
+  "active_courts_pending": "All courts must finish before progressing",
   "active_final_results": "See final results →",
   "active_round_complete": "Round complete — waiting for admin to advance",
   "active_time_expired": "Time's up! Enter your final scores.",

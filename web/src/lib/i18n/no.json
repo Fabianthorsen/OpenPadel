@@ -111,6 +111,7 @@
   "active_serving": "Marker som server",
   "active_bench": "På benken",
   "active_next_round": "Neste runde →",
+  "active_courts_pending": "Alle baner må fullføre før vi går videre",
   "active_final_results": "Se sluttresultater →",
   "active_round_complete": "Runden er ferdig — venter på at admin skal gå videre",
   "active_time_expired": "Tiden er ute! Legg inn sluttresultatene.",

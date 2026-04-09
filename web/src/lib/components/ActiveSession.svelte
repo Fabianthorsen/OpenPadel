@@ -121,6 +121,10 @@
     currentRound.matches.every((m) => !editing[m.id])
   );
 
+  const someScored = $derived(
+    currentRound.matches.some((m) => m.score !== null && !editing[m.id])
+  );
+
   function scheduleLiveSave(matchId: string) {
     clearTimeout(saveTimeout[matchId]);
     saveTimeout[matchId] = setTimeout(async () => {
@@ -314,14 +318,16 @@
       </button>
     </div>
 
-    {#if timeLeft !== null}
-      <p class="text-xs font-mono font-semibold text-[var(--text-secondary)]">⏱ {timeLeft}</p>
-    {/if}
+    {#if session.game_mode !== 'americano'}
+      {#if timeLeft !== null}
+        <p class="text-xs font-mono font-semibold text-[var(--text-secondary)]">⏱ {timeLeft}</p>
+      {/if}
 
-    {#if timeExpired}
-      <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-center">
-        <p class="text-sm font-bold text-amber-600 dark:text-amber-400">{$_('active_time_expired')}</p>
-      </div>
+      {#if timeExpired}
+        <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-center">
+          <p class="text-sm font-bold text-amber-600 dark:text-amber-400">{$_('active_time_expired')}</p>
+        </div>
+      {/if}
     {/if}
 
     {#if session.rounds_total != null}
@@ -364,14 +370,14 @@
           {@const isDraw = sa === sb}
           <button
             onclick={() => { localScores[match.id] = { a: sa, b: sb }; editing[match.id] = true; }}
-            class="w-full rounded-3xl overflow-hidden text-left"
+            class="w-full rounded-3xl overflow-hidden border border-[var(--primary)]/40 text-left"
           >
             <div class="flex items-center gap-3 px-5 py-4
               {isDraw ? 'bg-[var(--surface-raised)]' : sa > sb ? 'bg-[var(--primary)]' : 'bg-[var(--surface-raised)]'}">
               <div class="flex">
-                <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="sm" />
-                <div class="-ml-2 rounded-full ring-2 ring-[var(--background)]">
-                  <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="sm" />
+                <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="sm" ring={!isDraw && sa > sb ? 'ring-2 ring-white/30' : 'ring-2 ring-[var(--primary)]/30'} />
+                <div class="-ml-2">
+                  <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="sm" ring={!isDraw && sa > sb ? 'ring-2 ring-white/30' : 'ring-2 ring-[var(--primary)]/30'} />
                 </div>
               </div>
               <p class="flex-1 font-semibold truncate
@@ -385,9 +391,9 @@
             <div class="flex items-center gap-3 px-5 py-4
               {isDraw ? 'bg-[var(--surface-raised)]' : sb > sa ? 'bg-[var(--primary)]' : 'bg-[var(--surface-raised)]'}">
               <div class="flex">
-                <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="sm" />
-                <div class="-ml-2 rounded-full ring-2 ring-[var(--background)]">
-                  <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="sm" />
+                <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="sm" ring={!isDraw && sb > sa ? 'ring-2 ring-white/30' : 'ring-2 ring-[var(--primary)]/30'} />
+                <div class="-ml-2">
+                  <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="sm" ring={!isDraw && sb > sa ? 'ring-2 ring-white/30' : 'ring-2 ring-[var(--primary)]/30'} />
                 </div>
               </div>
               <p class="flex-1 font-semibold truncate
@@ -401,7 +407,7 @@
 
         {:else}
           <!-- Team A card -->
-          <div class="relative overflow-hidden rounded-3xl bg-[#3d7a24] px-5 pt-6 pb-5">
+          <div class="relative overflow-hidden rounded-3xl border border-white/25 bg-[#3d7a24] px-5 pt-6 pb-5">
             <svg class="pointer-events-none absolute inset-0 h-full w-full opacity-10" preserveAspectRatio="none" viewBox="0 0 100 100">
               <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5"/>
               <rect x="10" y="10" width="80" height="80" fill="none" stroke="white" stroke-width="0.5"/>
@@ -409,9 +415,9 @@
             <div class="relative z-10 space-y-3">
               <div class="flex flex-col items-center gap-2">
                 <div class="flex justify-center">
-                  <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="md" />
-                  <div class="-ml-3 rounded-full ring-2 ring-[#3d7a24]">
-                    <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="md" />
+                  <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="md" ring="ring-2 ring-white/30" />
+                  <div class="-ml-3">
+                    <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="md" ring="ring-2 ring-white/30" />
                   </div>
                 </div>
                 <p class="text-base font-bold text-white">{teamLabel(match.team_a)}</p>
@@ -463,9 +469,9 @@
                 <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">Team B</p>
                 <p class="text-base font-bold text-white">{teamLabel(match.team_b)}</p>
                 <div class="flex justify-center">
-                  <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="md" />
-                  <div class="-ml-3 rounded-full ring-2 ring-[#3d7a24]">
-                    <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="md" />
+                  <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="md" ring="ring-2 ring-white/30" />
+                  <div class="-ml-3">
+                    <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="md" ring="ring-2 ring-white/30" />
                   </div>
                 </div>
               </div>
@@ -494,7 +500,7 @@
     <!-- Official card -->
     {#if adminPlayer}
       <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-        <Avatar icon={adminPlayer.avatar_icon} color={adminPlayer.avatar_color} name={adminPlayer.name} size="sm" />
+        <Avatar icon={adminPlayer.avatar_icon} color={adminPlayer.avatar_color} name={adminPlayer.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
         <p class="flex-1 text-sm text-[var(--text-secondary)]">
           Official: <span class="font-semibold text-[var(--text-primary)]">{adminPlayer.name}</span>
         </p>
@@ -506,7 +512,7 @@
     {#if benchNames.length > 0}
       {@const benchPlayer = playerById[currentRound.bench[0]]}
       <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-        <Avatar icon={benchPlayer?.avatar_icon} color={benchPlayer?.avatar_color} name={benchNames[0]} size="sm" />
+        <Avatar icon={benchPlayer?.avatar_icon} color={benchPlayer?.avatar_color} name={benchNames[0]} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
         <p class="text-sm text-[var(--text-secondary)]">
           {$_('active_bench')}: <span class="font-semibold text-[var(--text-primary)]">{benchNames.join(', ')}</span>
         </p>
@@ -523,6 +529,14 @@
       >
         {advancing ? '…' : isFinalRound ? $_('active_final_results') : $_('active_next_round')}
       </button>
+    {:else if someScored && !allScored && isAdmin}
+      <button
+        disabled
+        class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white disabled:opacity-40"
+      >
+        {$_('active_next_round')}
+      </button>
+      <p class="text-center text-xs text-[var(--text-disabled)]">{$_('active_courts_pending')}</p>
     {:else if allScored}
       <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-center text-sm text-[var(--text-secondary)]">
         {$_('active_round_complete')}
@@ -565,46 +579,43 @@
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
     </div>
 
-    <!-- Bench (prominently at top) -->
-    {#if currentRound.bench.length > 0}
-      <div>
-        <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-          Sitting out ({currentRound.bench.length})
-        </p>
-        <div class="divide-y divide-[var(--border)] rounded-2xl bg-[var(--surface-raised)]">
-          {#each currentRound.bench as id}
-            {@const p = playerById[id]}
-            <div class="flex items-center gap-3 px-4 py-3">
-              <Avatar icon={p?.avatar_icon} color={p?.avatar_color} name={p?.name ?? ''} size="sm" />
-              <span class="flex-1 text-sm font-medium">{p?.name ?? id}</span>
-              <span class="rounded-full bg-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--text-disabled)]">Bench</span>
-            </div>
-          {/each}
-        </div>
-      </div>
-    {/if}
-
-    <!-- All active players -->
-    {#each [session.players.filter(p => p.active)] as activePlayers}
+    <!-- On court -->
+    {#each [session.players.filter(p => p.active && !benchIds.has(p.id))] as onCourt}
     <div>
       <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-        Players ({activePlayers.length})
+        On court ({onCourt.length})
       </p>
       <div class="divide-y divide-[var(--border)] rounded-2xl bg-[var(--surface-raised)]">
-        {#each activePlayers as player (player.id)}
+        {#each onCourt as player (player.id)}
           <div class="flex items-center gap-3 px-4 py-3">
-            <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" />
+            <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
             <span class="flex-1 text-sm font-medium">{player.name}</span>
             {#if player.id === session.creator_player_id}
               <span class="text-[10px] font-bold text-[var(--primary)]">Admin</span>
-            {:else if benchIds.has(player.id)}
-              <span class="text-[10px] text-[var(--text-disabled)]">Bench</span>
             {/if}
           </div>
         {/each}
       </div>
     </div>
     {/each}
+
+    <!-- Bench -->
+    {#if currentRound.bench.length > 0}
+      <div>
+        <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
+          Bench ({currentRound.bench.length})
+        </p>
+        <div class="divide-y divide-[var(--border)] rounded-2xl bg-[var(--surface-raised)]">
+          {#each currentRound.bench as id}
+            {@const p = playerById[id]}
+            <div class="flex items-center gap-3 px-4 py-3">
+              <Avatar icon={p?.avatar_icon} color={p?.avatar_color} name={p?.name ?? ''} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
+              <span class="flex-1 text-sm font-medium">{p?.name ?? id}</span>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </main>
 {/if}
 
