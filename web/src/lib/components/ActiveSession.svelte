@@ -440,11 +440,6 @@
               >+</button>
             </div>
 
-            <!-- NET divider -->
-            <div class="flex items-center justify-center py-1">
-              <span class="rounded-full border border-white/30 bg-white/10 px-5 py-1.5 text-sm font-[800] italic tracking-wider text-white">NET</span>
-            </div>
-
             <!-- Team B score row -->
             <div class="flex items-center justify-between gap-2">
               <button
