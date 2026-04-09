@@ -1,0 +1,37 @@
+# Roadmap
+
+## Planned
+
+- [ ] Round count control — allow admin to choose rounds as multiples of the rotation unit (e.g. 5, 10, 15 for a 5-player bench config)
+- [ ] Admin can add extra rounds mid-session if players want to keep playing
+- [ ] Round Robin game mode — every pair plays every other pair
+- [ ] Assign score entry to other players (not admin-only)
+
+## In Progress
+
+_Nothing in progress — main is clean._
+
+## Done
+
+- [x] **v1.7.0** — Litestream continuous replication to Tigris (S3)
+- [x] **v1.6.0** — Mexicano game mode (backend, scheduler, UI)
+- [x] **v1.6.0** — Court booking timer with rounds-or-time duration picker
+- [x] **v1.6.0** — Randomise player order and Team A/B sides on tournament start
+- [x] **v1.5.0** — Early end flag (`ended_early`) on tournaments
+- [x] **v1.4.2** — Leaderboard tiebreaker chain
+- [x] **v1.4.0** — Tennis game mode (2v2, sets, serve tracking)
+- [x] **v1.4.0** — User accounts, email/password auth, password reset
+- [x] **v1.4.0** — Career stats and profile page (split by game mode)
+- [x] **v1.4.0** — Contacts system with search and profile UI
+- [x] **v1.4.0** — Invite system — contacts must accept before joining
+- [x] **v1.4.0** — Web push notifications for tournament start
+- [x] **v1.4.0** — Live score sync (in-memory store)
+- [x] **v1.4.0** — 4-char uppercase join codes with home page entry
+- [x] **v1.4.0** — Adaptive polling (3s lobby / 15s active)
+- [x] **v1.4.0** — Tournament naming and fun awards on final results
+- [x] **v1.4.0** — Admin joins as player with creator crown
+- [x] **v1.4.0** — Explicit round advance, score editing, draws support
+- [x] **v1.3.x** — Americano game mode (V1 core — sessions, lobby, rounds, leaderboard)
+- [x] **v1.2.x** — i18n — English and Norwegian translations
+- [x] **v1.1.x** — PWA — installable, offline-capable, OG share tags
+- [x] **v1.0.0** — Initial release — Go backend + SvelteKit frontend on Fly.io

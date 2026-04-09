@@ -1,0 +1,15 @@
+# Dependencies
+web/node_modules/
+
+# Build outputs
+internal/ui/build/
+web/.svelte-kit/
+bin/
+
+# Generated assets
+web/static/icons/
+
+# Database
+*.db
+*.db-wal
+*.db-shm
