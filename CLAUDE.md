@@ -19,6 +19,7 @@
 - Write tests for every store function, API handler, or business logic change where it makes sense
 - Use the existing test patterns in `internal/store/*_test.go` and `internal/api/*_test.go`
 - Tests must pass before opening a PR (`go test ./...`)
+- **When fixing a bug: always write a regression test that fails first, then fix the code to make it pass**
 
 ## Tooling
 
