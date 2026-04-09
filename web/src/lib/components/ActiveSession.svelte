@@ -399,7 +399,7 @@
 
         {:else}
           <!-- Active dark score card -->
-          <div class="relative overflow-hidden rounded-3xl bg-[var(--primary)] px-5 pt-7 pb-6 space-y-2">
+          <div class="relative overflow-hidden rounded-3xl bg-[#3d7a24] px-5 pt-7 pb-6 space-y-2">
             <!-- Court line pattern -->
             <svg class="pointer-events-none absolute inset-0 h-full w-full opacity-10" preserveAspectRatio="none" viewBox="0 0 100 100">
               <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5"/>
@@ -412,7 +412,7 @@
             <div class="flex flex-col items-center gap-2">
               <div class="flex justify-center">
                 <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="md" />
-                <div class="-ml-3 rounded-full ring-2 ring-[var(--primary)]">
+                <div class="-ml-3 rounded-full ring-2 ring-[#3d7a24]">
                   <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="md" />
                 </div>
               </div>
@@ -467,7 +467,7 @@
               <p class="text-base font-bold text-white">{teamLabel(match.team_b)}</p>
               <div class="flex justify-center">
                 <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="md" />
-                <div class="-ml-3 rounded-full ring-2 ring-[var(--primary)]">
+                <div class="-ml-3 rounded-full ring-2 ring-[#3d7a24]">
                   <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="md" />
                 </div>
               </div>
