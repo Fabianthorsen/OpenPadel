@@ -425,7 +425,7 @@
               <button
                 onclick={() => adjust(match.id, 'a', -1)}
                 disabled={s.a === 0}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-black/20 text-2xl font-bold text-white transition-all active:scale-95 disabled:opacity-30"
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-black/30 text-2xl font-bold text-white shadow-inner ring-1 ring-white/10 transition-all active:scale-95 disabled:opacity-30"
               >−</button>
               <button
                 onclick={() => openNumpad(match.id, 'a')}
@@ -434,7 +434,7 @@
               <button
                 onclick={() => adjust(match.id, 'a', 1)}
                 disabled={s.a + s.b >= session.points}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl font-bold text-white transition-all active:scale-95 disabled:opacity-30"
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-30"
               >+</button>
             </div>
 
@@ -448,7 +448,7 @@
               <button
                 onclick={() => adjust(match.id, 'b', -1)}
                 disabled={s.b === 0}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-black/20 text-2xl font-bold text-white transition-all active:scale-95 disabled:opacity-30"
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-black/30 text-2xl font-bold text-white shadow-inner ring-1 ring-white/10 transition-all active:scale-95 disabled:opacity-30"
               >−</button>
               <button
                 onclick={() => openNumpad(match.id, 'b')}
@@ -457,7 +457,7 @@
               <button
                 onclick={() => adjust(match.id, 'b', 1)}
                 disabled={s.a + s.b >= session.points}
-                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl font-bold text-white transition-all active:scale-95 disabled:opacity-30"
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-30"
               >+</button>
             </div>
 
