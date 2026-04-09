@@ -152,7 +152,12 @@
       stats = profileRes.stats;
       tennisStats = profileRes.tennis_stats;
       tournaments = historyRes.tournaments;
-      upcoming = historyRes.upcoming;
+      upcoming = (historyRes.upcoming ?? []).sort((a, b) => {
+        if (!a.scheduled_at && !b.scheduled_at) return 0;
+        if (!a.scheduled_at) return 1;
+        if (!b.scheduled_at) return -1;
+        return new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime();
+      });
       contacts = contactsRes;
       invites = invitesRes;
       showUpcoming = upcoming.length > 0;
