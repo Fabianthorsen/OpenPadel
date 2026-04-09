@@ -403,10 +403,10 @@
           <!-- Active dark score card -->
           <div class="relative overflow-hidden rounded-3xl bg-[#3d7a24] px-5 pt-7 pb-6 space-y-2">
             <!-- Court line pattern -->
-            <svg class="pointer-events-none absolute inset-0 h-full w-full opacity-10" preserveAspectRatio="none" viewBox="0 0 100 100">
-              <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5"/>
-              <line x1="0" y1="50" x2="100" y2="50" stroke="white" stroke-width="0.5"/>
-              <rect x="10" y="10" width="80" height="80" fill="none" stroke="white" stroke-width="0.5"/>
+            <svg class="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+              <line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5" opacity="0.1"/>
+              <line x1="0" y1="50" x2="100" y2="50" stroke="white" stroke-width="1" opacity="1"/>
+              <rect x="10" y="10" width="80" height="80" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/>
             </svg>
             <div class="relative z-10 space-y-2">
 
@@ -440,11 +440,8 @@
               >+</button>
             </div>
 
-            <!-- Divider -->
-            <div class="mx-6 mt-8 border-t border-white/20"></div>
-
             <!-- Team B score row -->
-            <div class="mt-8 flex items-center justify-between gap-2">
+            <div class="mt-10 flex items-center justify-between gap-2">
               <button
                 onclick={() => adjust(match.id, 'b', -1)}
                 disabled={s.b === 0}
