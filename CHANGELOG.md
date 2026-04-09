@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.7.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.6.0...v1.7.0) (2026-04-09)
+
+
+### Features
+
+* **avatar:** add player avatar system with icon picker ([a08b5ff](https://github.com/Fabianthorsen/OpenPadel/commit/a08b5ff627dee5ae8b9ff12678b698106ec503a8))
+* **ui:** avatar rings, players tab on-court/bench split, multi-court pending state ([707a7b0](https://github.com/Fabianthorsen/OpenPadel/commit/707a7b0aefcf4a8c04fcd54220698616b6f29814))
+* **ui:** hide americano duration picker, sort upcoming tournaments by date ([d8de76c](https://github.com/Fabianthorsen/OpenPadel/commit/d8de76c54d15a99f096d3d4da790054cc44f6d9e))
+* **ui:** redesign score screen with dark card, court tabs, numpad, and players tab ([3d55b55](https://github.com/Fabianthorsen/OpenPadel/commit/3d55b55579d8f74e0f902ae4d2dc666fef0edd1b))
+
+
+### Bug Fixes
+
+* **ui:** add court line pattern to score card background ([fbedab7](https://github.com/Fabianthorsen/OpenPadel/commit/fbedab75f22359280349999efc3a25e418e013f2))
+* **ui:** add spacing between team score rows ([ea73b3c](https://github.com/Fabianthorsen/OpenPadel/commit/ea73b3c5790d9afafbe3adbf8ff896218177eac2))
+* **ui:** constrain numpad bottom sheet to app max-width ([ee6419e](https://github.com/Fabianthorsen/OpenPadel/commit/ee6419e1371e5ef6f42f4f0aae97803c0a72ad12))
+* **ui:** improve +/- button contrast on score card ([eb72a58](https://github.com/Fabianthorsen/OpenPadel/commit/eb72a58945bbe0ad69e3eb6abf96b1b0cbd522dc))
+* **ui:** increase disabled button opacity from 30 to 40 ([5117154](https://github.com/Fabianthorsen/OpenPadel/commit/511715485806470231d89b61bbaca8fef6b7df45))
+* **ui:** increase gap between team score rows ([7471c9a](https://github.com/Fabianthorsen/OpenPadel/commit/7471c9ac02c4264b5fef41bf24df3e1a5ea289ff))
+* **ui:** large gap + white divider line between team score rows ([7b086b5](https://github.com/Fabianthorsen/OpenPadel/commit/7b086b5036f94d97a878c6f29ba015ab3b3e040f))
+* **ui:** make court net line full opacity as team separator ([e2a9945](https://github.com/Fabianthorsen/OpenPadel/commit/e2a994512b1c70c6bf443deffdb68eefa19111b9))
+* **ui:** make minus button visible with white border outline ([4e245ad](https://github.com/Fabianthorsen/OpenPadel/commit/4e245ad7bc49c3a9f87d7016984e9936d6eb595f))
+* **ui:** match minus button style to plus button ([a5c5a3d](https://github.com/Fabianthorsen/OpenPadel/commit/a5c5a3d0ede9262987c50c324f4eb09a4a7c1da6))
+* **ui:** remove NET pill divider from score card ([57e96b4](https://github.com/Fabianthorsen/OpenPadel/commit/57e96b45fe9f8543bf57abd840950df99fc3f1ce))
+* **ui:** split score card into two separate team cards with gap ([301c785](https://github.com/Fabianthorsen/OpenPadel/commit/301c785dba981e872f0a41ef7977b3c2b298d00f))
+* **ui:** use "Firstname L." format for player names on score card ([7f97fb5](https://github.com/Fabianthorsen/OpenPadel/commit/7f97fb5ea74638ba9aa6d9cd81d0593251208d62))
+* **ui:** use lighter green for score card so avatars don't blend in ([be8c4f2](https://github.com/Fabianthorsen/OpenPadel/commit/be8c4f278a8a14eae1550ec7b74fffcc9006d2f4))
+
+
+### Chores
+
+* add CLAUDE.md, ROADMAP.md, and .claudeignore ([9d64a32](https://github.com/Fabianthorsen/OpenPadel/commit/9d64a320db1642c7dc3f32fe94194ed2af0f7656))
+* add server binary to .gitignore ([8b45ff8](https://github.com/Fabianthorsen/OpenPadel/commit/8b45ff883130849e764aa048727f7c180a01c7f2))
+* **ops:** add Litestream S3 replication, update Dockerfile, rewrite ARCHITECTURE.md, add UX specs ([7438132](https://github.com/Fabianthorsen/OpenPadel/commit/743813206da2f50707d6488da42fc811fc342c48))
+* remove tracked server binary from repo ([d579ccd](https://github.com/Fabianthorsen/OpenPadel/commit/d579ccd55da814a70b2d922fd78f8ca918b5378c))
+* require regression test before bug fixes in CLAUDE.md ([c261977](https://github.com/Fabianthorsen/OpenPadel/commit/c2619771d5553d601ac648d30893818679b1dcdb))
+* update CLAUDE.md with no-direct-push rule and testing requirement ([4fcf70b](https://github.com/Fabianthorsen/OpenPadel/commit/4fcf70b3f637d8a3548fb463a038a4c829e66cf8))
+* update ROADMAP.md after avatar system ([407a3cd](https://github.com/Fabianthorsen/OpenPadel/commit/407a3cd67a514583d05024c730a6b4f5cf65091e))
+
 ## [1.6.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.5.1...v1.6.0) (2026-04-08)
 
 
