@@ -666,7 +666,7 @@
     onclick={() => numpad = null}
     onkeydown={(e) => e.key === 'Escape' && (numpad = null)}
   ></div>
-  <div class="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[var(--surface)] px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+  <div class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[480px] rounded-t-3xl bg-[var(--surface)] px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
     <p class="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">
       Target: {session.points}
     </p>
