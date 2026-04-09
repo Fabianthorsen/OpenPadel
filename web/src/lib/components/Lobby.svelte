@@ -356,7 +356,7 @@
         {#if auth.user}
           <!-- Logged in: show account card + join -->
           <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 flex items-center gap-3">
-            <Avatar icon={auth.user.avatar_icon} color={auth.user.avatar_color} name={auth.user.display_name} />
+            <Avatar icon={auth.user.avatar_icon} color={auth.user.avatar_color} name={auth.user.display_name} ring="ring-2 ring-[var(--primary)]/30" />
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold truncate">{auth.user.display_name}</p>
               <p class="text-xs text-[var(--text-secondary)] truncate">{auth.user.email}</p>
@@ -498,7 +498,7 @@
           <div class="space-y-1.5">
             {#each playerResults as result}
               <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-                <Avatar icon={result.avatar_icon} color={result.avatar_color} name={result.display_name} size="sm" />
+                <Avatar icon={result.avatar_icon} color={result.avatar_color} name={result.display_name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
                 <p class="flex-1 text-sm font-semibold truncate">{result.display_name}</p>
                 <button
                   onclick={() => inviteUser(result.id)}
@@ -534,7 +534,7 @@
         <div class="rounded-2xl bg-[var(--surface-raised)] divide-y divide-[var(--border)]">
           {#each activePlayers as player (player.id)}
             <div class="flex items-center gap-3 px-4 py-3">
-              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" />
+              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
               <span class="text-sm font-medium">{player.name}</span>
               <div class="ml-auto flex items-center gap-1.5">
                 {#if player.id === session.creator_player_id}
@@ -557,7 +557,7 @@
           {/each}
           {#each sessionInvites as invite (invite.id)}
             <div class="flex items-center gap-3 px-4 py-3 opacity-60">
-              <Avatar name={invite.to_display_name ?? '?'} size="sm" />
+              <Avatar name={invite.to_display_name ?? '?'} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
               <span class="flex-1 text-sm font-medium text-[var(--text-secondary)] truncate">{invite.to_display_name}</span>
               <div class="ml-auto flex items-center gap-1 text-[var(--text-disabled)]">
                 <Clock size={11} />
@@ -604,7 +604,7 @@
               ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
               class="flex touch-none cursor-grab items-center gap-2 rounded-full bg-[var(--surface-raised)] px-3 py-1.5 text-sm font-semibold select-none {draggingId === player.id ? 'opacity-40' : ''}"
             >
-              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" />
+              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
               <span>{player.name}</span>
             </div>
           {/each}
@@ -635,7 +635,7 @@
                 tabindex="0"
                 onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'a')}
               >
-                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" />
+                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
                 <span class="truncate">{player.name}</span>
               </div>
             {/each}
@@ -667,7 +667,7 @@
                 tabindex="0"
                 onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'b')}
               >
-                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" />
+                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
                 <span class="truncate">{player.name}</span>
               </div>
             {/each}

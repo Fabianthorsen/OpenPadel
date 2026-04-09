@@ -141,7 +141,7 @@
           {@const isContact = existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? '']}
           <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
             <span class="w-6 text-sm font-[800] tabular-nums text-[var(--text-disabled)]">{s.rank}</span>
-            <Avatar icon={s.avatar_icon} color={s.avatar_color} name={s.name} size="sm" />
+            <Avatar icon={s.avatar_icon} color={s.avatar_color} name={s.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
             <span class="flex-1 truncate text-sm font-semibold">{shortName(s.name)}</span>
             <div class="flex items-center gap-1 text-[11px] font-bold tabular-nums">
               <span class="text-[var(--primary)]">{s.wins ?? 0}W</span>
@@ -191,7 +191,7 @@
           <rect x="20" y="20" width="60" height="60" fill="none" stroke="white" stroke-width="0.5"/>
         </svg>
         <div class="relative z-10 flex items-center gap-5">
-          <Avatar icon={leader.avatar_icon} color={leader.avatar_color} name={leader.name} size="lg" />
+          <Avatar icon={leader.avatar_icon} color={leader.avatar_color} name={leader.name} size="lg" ring="ring-2 ring-white/30" />
           <div class="flex-1 min-w-0">
             <div class="mb-0.5">
               <span class="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
@@ -246,7 +246,7 @@
         <div class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] items-center gap-2 rounded-2xl px-4 py-3.5 {podiumBg}">
           <span class="text-sm font-[800] tabular-nums {isPodium ? 'text-white' : 'text-[var(--text-disabled)]'}">{s.rank}</span>
           <div class="flex items-center gap-2.5 min-w-0">
-            <Avatar icon={s.avatar_icon} color={isPodium ? 'white' : s.avatar_color} name={s.name} size="sm" />
+            <Avatar icon={s.avatar_icon} color={isPodium ? 'white' : s.avatar_color} name={s.name} size="sm" ring={isPodium ? 'ring-2 ring-white/30' : 'ring-2 ring-[var(--primary)]/30'} />
             <span class="truncate text-sm font-semibold {isPodium ? 'text-white' : ''}">{shortName(s.name)}</span>
           </div>
           <span class="text-center text-sm {isPodium ? 'text-white/70' : 'text-[var(--text-secondary)]'}">{s.games_played ?? 0}</span>

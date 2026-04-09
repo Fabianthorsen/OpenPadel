@@ -7,12 +7,14 @@
 		icon = '',
 		color = '',
 		name = '',
-		size = 'md' as Size
+		size = 'md' as Size,
+		ring = ''
 	}: {
 		icon?: string;
 		color?: string;
 		name?: string;
 		size?: 'sm' | 'md' | 'lg' | 'xl';
+		ring?: string;
 	} = $props();
 
 	const colorMap: Record<string, string> = {
@@ -51,7 +53,7 @@
 	);
 </script>
 
-<div class="shrink-0 rounded-full {s.circle} {colorClass} flex items-center justify-center font-semibold">
+<div class="shrink-0 rounded-full {s.circle} {colorClass} {ring} flex items-center justify-center font-semibold">
 	{#if IconComponent}
 		<IconComponent class={s.icon} strokeWidth={2} />
 	{:else}
