@@ -441,7 +441,7 @@
             </div>
 
             <!-- Team B score row -->
-            <div class="flex items-center justify-between gap-2">
+            <div class="mt-4 flex items-center justify-between gap-2">
               <button
                 onclick={() => adjust(match.id, 'b', -1)}
                 disabled={s.b === 0}
