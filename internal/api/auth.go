@@ -100,6 +100,34 @@ func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, user)
 }
 
+func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
+	user := userFromContext(r)
+	if user == nil {
+		respondError(w, http.StatusUnauthorized, "not authenticated")
+		return
+	}
+	var body struct {
+		DisplayName string `json:"display_name"`
+		AvatarIcon  string `json:"avatar_icon"`
+		AvatarColor string `json:"avatar_color"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if body.DisplayName == "" {
+		respondError(w, http.StatusBadRequest, "display_name is required")
+		return
+	}
+	updated, err := h.store.UpdateProfile(user.ID, body.DisplayName, body.AvatarIcon, body.AvatarColor)
+	if err != nil {
+		log.Printf("updateProfile: %v", err)
+		respondError(w, http.StatusInternalServerError, "could not update profile")
+		return
+	}
+	respond(w, http.StatusOK, updated)
+}
+
 func (h *Handler) profile(w http.ResponseWriter, r *http.Request) {
 	user := userFromContext(r)
 	if user == nil {

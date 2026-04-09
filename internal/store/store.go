@@ -92,6 +92,10 @@ var migrations = []string{
 	`ALTER TABLE sessions ADD COLUMN ended_early INTEGER NOT NULL DEFAULT 0`,
 	`ALTER TABLE sessions ADD COLUMN court_duration_minutes INTEGER`,
 	`ALTER TABLE sessions ADD COLUMN ends_at TEXT`,
+	`ALTER TABLE users ADD COLUMN avatar_icon TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE users ADD COLUMN avatar_color TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE players ADD COLUMN avatar_icon TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE players ADD COLUMN avatar_color TEXT NOT NULL DEFAULT ''`,
 }
 
 const schema = `

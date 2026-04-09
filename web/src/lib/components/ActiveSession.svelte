@@ -4,7 +4,8 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { Activity, ChartBar } from 'lucide-svelte';
-  import { initials, sessionName } from '$lib/utils';
+  import { sessionName } from '$lib/utils';
+  import Avatar from '$lib/components/ui/Avatar.svelte';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
@@ -161,6 +162,9 @@
     }
   }
 
+  const playerById = $derived(
+    Object.fromEntries(session.players.map((p) => [p.id, p]))
+  );
   const benchNames = $derived(currentRound.bench.map((id) => playerName[id] ?? id));
 
   // Court timer countdown.
@@ -470,10 +474,9 @@
 
     <!-- Bench -->
     {#if benchNames.length > 0}
+      {@const benchPlayer = playerById[currentRound.bench[0]]}
       <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--border)] text-[11px] font-bold text-[var(--text-secondary)]">
-          {initials(benchNames[0])}
-        </div>
+        <Avatar icon={benchPlayer?.avatar_icon} color={benchPlayer?.avatar_color} name={benchNames[0]} size="sm" />
         <p class="text-sm text-[var(--text-secondary)]">
           {$_('active_bench')}: <span class="font-semibold text-[var(--text-primary)]">{benchNames.join(', ')}</span>
         </p>

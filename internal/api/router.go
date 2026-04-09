@@ -70,6 +70,7 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 		r.Post("/auth/logout", h.logout)
 		r.With(h.requireAuth).Get("/auth/me", h.me)
 		r.With(h.requireAuth).Get("/auth/profile", h.profile)
+		r.With(h.requireAuth).Put("/auth/profile", h.updateProfile)
 		r.With(h.requireAuth).Get("/auth/history", h.history)
 		r.With(h.requireAuth).Delete("/auth/account", h.deleteAccount)
 		r.Post("/auth/forgot", h.forgotPassword)

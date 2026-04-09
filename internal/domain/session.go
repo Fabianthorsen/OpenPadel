@@ -6,6 +6,8 @@ type User struct {
 	ID           string    `json:"id"`
 	Email        string    `json:"email"`
 	DisplayName  string    `json:"display_name"`
+	AvatarIcon   string    `json:"avatar_icon"`
+	AvatarColor  string    `json:"avatar_color"`
 	PasswordHash string    `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 }
@@ -37,6 +39,8 @@ type UserSearchResult struct {
 	ID          string `json:"id"`
 	DisplayName string `json:"display_name"`
 	IsContact   bool   `json:"is_contact"`
+	AvatarIcon  string `json:"avatar_icon"`
+	AvatarColor string `json:"avatar_color"`
 }
 
 type AmericanoCareerStats struct {
@@ -140,12 +144,14 @@ type TennisTeams struct {
 }
 
 type Player struct {
-	ID        string    `json:"id"`
-	SessionID string    `json:"session_id"`
-	UserID    string    `json:"user_id,omitempty"`
-	Name      string    `json:"name"`
-	Active    bool      `json:"active"`
-	JoinedAt  time.Time `json:"joined_at"`
+	ID          string    `json:"id"`
+	SessionID   string    `json:"session_id"`
+	UserID      string    `json:"user_id,omitempty"`
+	Name        string    `json:"name"`
+	AvatarIcon  string    `json:"avatar_icon"`
+	AvatarColor string    `json:"avatar_color"`
+	Active      bool      `json:"active"`
+	JoinedAt    time.Time `json:"joined_at"`
 }
 
 type Round struct {
@@ -187,6 +193,8 @@ type Standing struct {
 	GamesPlayed     int     `json:"games_played"`
 	Wins            int     `json:"wins"`
 	Draws           int     `json:"draws"`
+	AvatarIcon      string  `json:"avatar_icon"`
+	AvatarColor     string  `json:"avatar_color"`
 }
 
 type Leaderboard struct {

@@ -5,6 +5,7 @@
   import { initials, sessionName } from '$lib/utils';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import Avatar from '$lib/components/ui/Avatar.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { _ } from 'svelte-i18n';
   import { auth } from '$lib/auth.svelte';
@@ -355,9 +356,7 @@
         {#if auth.user}
           <!-- Logged in: show account card + join -->
           <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 flex items-center gap-3">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-sm font-[800] text-white">
-              {initials(auth.user.display_name)}
-            </div>
+            <Avatar icon={auth.user.avatar_icon} color={auth.user.avatar_color} name={auth.user.display_name} />
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold truncate">{auth.user.display_name}</p>
               <p class="text-xs text-[var(--text-secondary)] truncate">{auth.user.email}</p>
@@ -499,9 +498,7 @@
           <div class="space-y-1.5">
             {#each playerResults as result}
               <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
-                  {initials(result.display_name)}
-                </div>
+                <Avatar icon={result.avatar_icon} color={result.avatar_color} name={result.display_name} size="sm" />
                 <p class="flex-1 text-sm font-semibold truncate">{result.display_name}</p>
                 <button
                   onclick={() => inviteUser(result.id)}
@@ -537,10 +534,7 @@
         <div class="rounded-2xl bg-[var(--surface-raised)] divide-y divide-[var(--border)]">
           {#each activePlayers as player (player.id)}
             <div class="flex items-center gap-3 px-4 py-3">
-              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold
-                {player.user_id ? 'bg-[var(--primary-muted)] text-[var(--primary)]' : 'bg-[var(--border)] text-[var(--text-disabled)]'}">
-                {initials(player.name)}
-              </div>
+              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" />
               <span class="text-sm font-medium">{player.name}</span>
               <div class="ml-auto flex items-center gap-1.5">
                 {#if player.id === session.creator_player_id}
@@ -563,9 +557,7 @@
           {/each}
           {#each sessionInvites as invite (invite.id)}
             <div class="flex items-center gap-3 px-4 py-3 opacity-60">
-              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--border)] text-sm font-semibold text-[var(--text-disabled)]">
-                {initials(invite.to_display_name ?? '?')}
-              </div>
+              <Avatar name={invite.to_display_name ?? '?'} size="sm" />
               <span class="flex-1 text-sm font-medium text-[var(--text-secondary)] truncate">{invite.to_display_name}</span>
               <div class="ml-auto flex items-center gap-1 text-[var(--text-disabled)]">
                 <Clock size={11} />
@@ -612,7 +604,7 @@
               ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
               class="flex touch-none cursor-grab items-center gap-2 rounded-full bg-[var(--surface-raised)] px-3 py-1.5 text-sm font-semibold select-none {draggingId === player.id ? 'opacity-40' : ''}"
             >
-              <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--border)] text-[10px] font-bold">{initials(player.name)}</div>
+              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" />
               <span>{player.name}</span>
             </div>
           {/each}
@@ -643,7 +635,7 @@
                 tabindex="0"
                 onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'a')}
               >
-                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">{initials(player.name)}</div>
+                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" />
                 <span class="truncate">{player.name}</span>
               </div>
             {/each}
@@ -675,7 +667,7 @@
                 tabindex="0"
                 onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'b')}
               >
-                <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--border-strong)] text-[10px] font-bold">{initials(player.name)}</div>
+                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" />
                 <span class="truncate">{player.name}</span>
               </div>
             {/each}

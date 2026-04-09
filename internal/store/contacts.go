@@ -91,7 +91,9 @@ func (s *Store) SearchUsers(userID, query string) ([]domain.UserSearchResult, er
 		SELECT
 			u.id,
 			u.display_name,
-			CASE WHEN c.contact_user_id IS NOT NULL THEN 1 ELSE 0 END AS is_contact
+			CASE WHEN c.contact_user_id IS NOT NULL THEN 1 ELSE 0 END AS is_contact,
+			u.avatar_icon,
+			u.avatar_color
 		FROM users u
 		LEFT JOIN contacts c ON c.user_id = ? AND c.contact_user_id = u.id
 		WHERE u.id != ?
@@ -109,7 +111,7 @@ func (s *Store) SearchUsers(userID, query string) ([]domain.UserSearchResult, er
 	for rows.Next() {
 		var r domain.UserSearchResult
 		var isContact int
-		if err := rows.Scan(&r.ID, &r.DisplayName, &isContact); err != nil {
+		if err := rows.Scan(&r.ID, &r.DisplayName, &isContact, &r.AvatarIcon, &r.AvatarColor); err != nil {
 			return nil, err
 		}
 		r.IsContact = isContact == 1

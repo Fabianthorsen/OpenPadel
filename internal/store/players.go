@@ -9,21 +9,33 @@ import (
 
 func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, error) {
 	now := time.Now().UTC()
+	icon := "Bot"
+	color := "slate" // guests get grey Bot icon; overridden below for registered users
+	if userID != "" {
+		// Use the user's own avatar so their profile icon carries into sessions.
+		var u domain.User
+		if err := s.db.QueryRow(`SELECT avatar_icon, avatar_color FROM users WHERE id = ?`, userID).Scan(&u.AvatarIcon, &u.AvatarColor); err == nil {
+			icon = u.AvatarIcon
+			color = u.AvatarColor
+		}
+	}
 	p := &domain.Player{
-		ID:        newID(),
-		SessionID: sessionID,
-		UserID:    userID,
-		Name:      name,
-		Active:    true,
-		JoinedAt:  now,
+		ID:          newID(),
+		SessionID:   sessionID,
+		UserID:      userID,
+		Name:        name,
+		AvatarIcon:  icon,
+		AvatarColor: color,
+		Active:      true,
+		JoinedAt:    now,
 	}
 	var uid *string
 	if userID != "" {
 		uid = &userID
 	}
 	_, err := s.db.Exec(
-		`INSERT INTO players (id, session_id, user_id, name, active, joined_at) VALUES (?, ?, ?, ?, 1, ?)`,
-		p.ID, p.SessionID, uid, p.Name, p.JoinedAt.Format(time.RFC3339),
+		`INSERT INTO players (id, session_id, user_id, name, avatar_icon, avatar_color, active, joined_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+		p.ID, p.SessionID, uid, p.Name, p.AvatarIcon, p.AvatarColor, p.JoinedAt.Format(time.RFC3339),
 	)
 	if err != nil {
 		return nil, err
@@ -33,7 +45,7 @@ func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, er
 
 func (s *Store) GetPlayers(sessionID string) ([]domain.Player, error) {
 	rows, err := s.db.Query(
-		`SELECT id, session_id, COALESCE(user_id, ''), name, active, joined_at FROM players WHERE session_id = ? ORDER BY joined_at`,
+		`SELECT id, session_id, COALESCE(user_id, ''), name, avatar_icon, avatar_color, active, joined_at FROM players WHERE session_id = ? ORDER BY joined_at`,
 		sessionID,
 	)
 	if err != nil {
@@ -72,7 +84,7 @@ func scanPlayers(rows *sql.Rows) ([]domain.Player, error) {
 		var p domain.Player
 		var active int
 		var joinedAt string
-		if err := rows.Scan(&p.ID, &p.SessionID, &p.UserID, &p.Name, &active, &joinedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.SessionID, &p.UserID, &p.Name, &p.AvatarIcon, &p.AvatarColor, &active, &joinedAt); err != nil {
 			return nil, err
 		}
 		p.Active = active == 1

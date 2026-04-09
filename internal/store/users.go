@@ -28,15 +28,17 @@ func (s *Store) CreateUser(email, displayName, password string) (*domain.User, e
 		ID:           newUserID(),
 		Email:        email,
 		DisplayName:  displayName,
+		AvatarIcon:   randomAvatarIcon(),
+		AvatarColor:  randomAvatarColor(),
 		PasswordHash: string(hash),
 		CreatedAt:    time.Now().UTC(),
 	}
 
 	_, err = s.db.Exec(
-		`INSERT INTO users (id, email, display_name, password_hash, created_at)
-		 VALUES (?, ?, ?, ?, ?)`,
-		user.ID, user.Email, user.DisplayName, user.PasswordHash,
-		user.CreatedAt.Format(time.RFC3339),
+		`INSERT INTO users (id, email, display_name, avatar_icon, avatar_color, password_hash, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		user.ID, user.Email, user.DisplayName, user.AvatarIcon, user.AvatarColor,
+		user.PasswordHash, user.CreatedAt.Format(time.RFC3339),
 	)
 	if err != nil {
 		if isUniqueConstraint(err, "email") {
@@ -47,15 +49,31 @@ func (s *Store) CreateUser(email, displayName, password string) (*domain.User, e
 	return user, nil
 }
 
+func (s *Store) UpdateProfile(userID, displayName, avatarIcon, avatarColor string) (*domain.User, error) {
+	_, err := s.db.Exec(
+		`UPDATE users SET display_name = ?, avatar_icon = ?, avatar_color = ? WHERE id = ?`,
+		displayName, avatarIcon, avatarColor, userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	// Sync avatar to all player records for this user so in-progress sessions pick it up.
+	s.db.Exec(
+		`UPDATE players SET avatar_icon = ?, avatar_color = ? WHERE user_id = ?`,
+		avatarIcon, avatarColor, userID,
+	)
+	return s.GetUserByID(userID)
+}
+
 func (s *Store) GetUserByEmail(email string) (*domain.User, error) {
 	return scanUser(s.db.QueryRow(
-		`SELECT id, email, display_name, password_hash, created_at FROM users WHERE email = ?`, email,
+		`SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at FROM users WHERE email = ?`, email,
 	))
 }
 
 func (s *Store) GetUserByID(id string) (*domain.User, error) {
 	return scanUser(s.db.QueryRow(
-		`SELECT id, email, display_name, password_hash, created_at FROM users WHERE id = ?`, id,
+		`SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at FROM users WHERE id = ?`, id,
 	))
 }
 
@@ -376,7 +394,7 @@ func (s *Store) DeleteUser(userID string) error {
 func scanUser(row *sql.Row) (*domain.User, error) {
 	var u domain.User
 	var createdAt string
-	err := row.Scan(&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash, &createdAt)
+	err := row.Scan(&u.ID, &u.Email, &u.DisplayName, &u.AvatarIcon, &u.AvatarColor, &u.PasswordHash, &createdAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}

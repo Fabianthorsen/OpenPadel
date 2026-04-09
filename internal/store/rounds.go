@@ -172,7 +172,9 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 			), 0) AS wins,
 			COALESCE(SUM(
 				CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END
-			), 0) AS draws
+			), 0) AS draws,
+			p.avatar_icon,
+			p.avatar_color
 		FROM players p
 		LEFT JOIN rounds r ON r.session_id = p.session_id
 		LEFT JOIN matches m ON m.round_id = r.id
@@ -190,7 +192,7 @@ func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
 	var standings []domain.Standing
 	for rows.Next() {
 		var st domain.Standing
-		if err := rows.Scan(&st.PlayerID, &st.UserID, &st.Name, &st.Points, &st.PointsConceded, &st.GamesPlayed, &st.Wins, &st.Draws); err != nil {
+		if err := rows.Scan(&st.PlayerID, &st.UserID, &st.Name, &st.Points, &st.PointsConceded, &st.GamesPlayed, &st.Wins, &st.Draws, &st.AvatarIcon, &st.AvatarColor); err != nil {
 			return nil, err
 		}
 		standings = append(standings, st)

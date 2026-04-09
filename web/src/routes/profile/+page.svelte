@@ -5,12 +5,28 @@
   import { auth } from '$lib/auth.svelte';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
-  import { initials } from '$lib/utils';
   import { CalendarDays, Radio, ChevronDown, UserPlus, X, Search, Check } from 'lucide-svelte';
   import Footer from '$lib/components/Footer.svelte';
   import CreateDrawer from '$lib/components/CreateDrawer.svelte';
+  import Avatar from '$lib/components/ui/Avatar.svelte';
   import { fly, slide } from 'svelte/transition';
   import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
+
+  const AVATAR_ICONS = [
+    'Zap', 'Star', 'Flame', 'Shield', 'Crown', 'Trophy', 'Target', 'Rocket',
+    'Ghost', 'Cat', 'Dog', 'Bird', 'Leaf', 'Sun', 'Moon', 'Snowflake',
+    'Mountain', 'Waves', 'Music', 'Heart', 'Smile', 'Fish', 'Swords', 'Dumbbell',
+    'Bike', 'Footprints',
+  ];
+
+  let pickerIcon = $state(auth.user?.avatar_icon ?? '');
+  let savingAvatar = $state(false);
+  let showAvatarPicker = $state(false);
+
+  $effect(() => {
+    document.body.style.overflow = showAvatarPicker ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  });
 
   let showCreateDrawer = $state(false);
 
@@ -217,6 +233,17 @@
     }
   }
 
+  async function saveAvatar() {
+    if (!auth.token || !auth.user) return;
+    savingAvatar = true;
+    try {
+      const updated = await api.auth.updateProfile(auth.token, auth.user.display_name, pickerIcon, 'forest');
+      auth.updateUser(updated);
+    } finally {
+      savingAvatar = false;
+    }
+  }
+
   async function deleteAccount() {
     if (!auth.token) return;
     deleting = true;
@@ -250,9 +277,10 @@
 
   <!-- Header -->
   <div class="flex items-center gap-4">
-    <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-2xl font-[800] text-white">
-      {auth.user ? initials(auth.user.display_name) : '?'}
-    </div>
+    <button onclick={() => showAvatarPicker = true} class="relative shrink-0 group" aria-label="Edit avatar">
+      <Avatar icon={auth.user?.avatar_icon ?? ''} color={auth.user?.avatar_color ?? 'forest'} name={auth.user?.display_name ?? ''} size="lg" />
+      <span class="absolute inset-0 flex items-center justify-center rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-semibold">Edit</span>
+    </button>
     <div class="min-w-0">
       <h1 class="text-2xl font-[800] truncate">{auth.user?.display_name}</h1>
       {#if memberSince}
@@ -630,6 +658,50 @@
 </main>
 
 <CreateDrawer bind:open={showCreateDrawer} />
+
+{#if showAvatarPicker}
+  <div role="presentation" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onclick={() => showAvatarPicker = false} onkeydown={(e) => e.key === 'Escape' && (showAvatarPicker = false)}>
+    <div role="dialog" aria-modal="true" aria-label="Choose avatar" tabindex="-1" class="w-full max-w-sm rounded-3xl bg-[var(--surface)] p-6 space-y-4 shadow-xl" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <Avatar icon={pickerIcon} color="forest" name={auth.user?.display_name ?? ''} size="md" />
+          <p class="font-semibold">Choose avatar</p>
+        </div>
+        <button onclick={() => showAvatarPicker = false} class="text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">
+          <X size={20} />
+        </button>
+      </div>
+      <div class="grid grid-cols-8 gap-1.5">
+        <!-- "Use initials" option -->
+        <button
+          onclick={() => pickerIcon = ''}
+          class="flex items-center justify-center rounded-xl p-1 transition-colors
+            {pickerIcon === '' ? 'bg-[var(--primary-muted)] ring-2 ring-[var(--primary)]' : 'bg-[var(--surface-raised)] hover:bg-[var(--border)]'}"
+          aria-label="Use initials"
+        >
+          <Avatar icon="" color="forest" name={auth.user?.display_name ?? ''} size="sm" />
+        </button>
+        {#each AVATAR_ICONS as icon}
+          <button
+            onclick={() => pickerIcon = icon}
+            class="flex items-center justify-center rounded-xl p-1 transition-colors
+              {pickerIcon === icon ? 'bg-[var(--primary-muted)] ring-2 ring-[var(--primary)]' : 'bg-[var(--surface-raised)] hover:bg-[var(--border)]'}"
+            aria-label={icon}
+          >
+            <Avatar {icon} color="forest" name="" size="sm" />
+          </button>
+        {/each}
+      </div>
+      <button
+        onclick={async () => { await saveAvatar(); showAvatarPicker = false; }}
+        disabled={savingAvatar}
+        class="w-full rounded-2xl bg-[var(--primary)] py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {savingAvatar ? 'Saving…' : 'Save'}
+      </button>
+    </div>
+  </div>
+{/if}
 
 {#if showDeleteConfirm}
   <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">

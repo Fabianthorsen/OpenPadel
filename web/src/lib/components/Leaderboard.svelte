@@ -3,7 +3,8 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { Trophy, UserPlus, Check } from 'lucide-svelte';
-  import { initials, shortName } from '$lib/utils';
+  import { shortName } from '$lib/utils';
+  import Avatar from '$lib/components/ui/Avatar.svelte';
   import { auth } from '$lib/auth.svelte';
 
   let {
@@ -92,9 +93,8 @@
           {/if}
 
           <!-- Avatar -->
-          <div class="flex shrink-0 items-center justify-center rounded-full font-[800] text-white
-            {isFirst ? 'h-20 w-20 text-2xl bg-[var(--primary)] ring-4 ring-[var(--primary-muted)] shadow-lg' : 'h-14 w-14 text-base bg-[#4a7856] ring-2 ring-[var(--border)]'}">
-            {initials(s.name)}
+          <div class="{isFirst ? 'ring-4 ring-[var(--primary-muted)] shadow-lg rounded-full' : 'ring-2 ring-[var(--border)] rounded-full'}">
+            <Avatar icon={s.avatar_icon} color={s.avatar_color} name={s.name} size={isFirst ? 'xl' : 'lg'} />
           </div>
 
           <!-- Rank badge -->
@@ -141,9 +141,7 @@
           {@const isContact = existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? '']}
           <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
             <span class="w-6 text-sm font-[800] tabular-nums text-[var(--text-disabled)]">{s.rank}</span>
-            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
-              {initials(s.name)}
-            </div>
+            <Avatar icon={s.avatar_icon} color={s.avatar_color} name={s.name} size="sm" />
             <span class="flex-1 truncate text-sm font-semibold">{shortName(s.name)}</span>
             <div class="flex items-center gap-1 text-[11px] font-bold tabular-nums">
               <span class="text-[var(--primary)]">{s.wins ?? 0}W</span>
@@ -193,9 +191,7 @@
           <rect x="20" y="20" width="60" height="60" fill="none" stroke="white" stroke-width="0.5"/>
         </svg>
         <div class="relative z-10 flex items-center gap-5">
-          <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl font-[800] text-white">
-            {initials(leader.name)}
-          </div>
+          <Avatar icon={leader.avatar_icon} color={leader.avatar_color} name={leader.name} size="lg" />
           <div class="flex-1 min-w-0">
             <div class="mb-0.5">
               <span class="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
@@ -250,9 +246,7 @@
         <div class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] items-center gap-2 rounded-2xl px-4 py-3.5 {podiumBg}">
           <span class="text-sm font-[800] tabular-nums {isPodium ? 'text-white' : 'text-[var(--text-disabled)]'}">{s.rank}</span>
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {isPodium ? 'bg-white/20 text-white' : 'bg-[var(--primary-muted)] text-[var(--primary)]'} text-xs font-[800]">
-              {initials(s.name)}
-            </div>
+            <Avatar icon={s.avatar_icon} color={isPodium ? 'white' : s.avatar_color} name={s.name} size="sm" />
             <span class="truncate text-sm font-semibold {isPodium ? 'text-white' : ''}">{shortName(s.name)}</span>
           </div>
           <span class="text-center text-sm {isPodium ? 'text-white/70' : 'text-[var(--text-secondary)]'}">{s.games_played ?? 0}</span>

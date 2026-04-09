@@ -5,6 +5,8 @@ declare global {
       id: string;
       email: string;
       display_name: string;
+      avatar_icon: string;
+      avatar_color: string;
       created_at: string;
     }
 
@@ -79,6 +81,8 @@ declare global {
       session_id: string;
       user_id?: string;
       name: string;
+      avatar_icon: string;
+      avatar_color: string;
       active: boolean;
       joined_at: string;
     }
@@ -110,6 +114,8 @@ declare global {
       games_played: number;
       wins: number;
       draws: number;
+      avatar_icon: string;
+      avatar_color: string;
     }
 
     interface TournamentEntry {
@@ -155,6 +161,8 @@ declare global {
       id: string;
       display_name: string;
       is_contact: boolean;
+      avatar_icon: string;
+      avatar_color: string;
     }
 
     interface Leaderboard {

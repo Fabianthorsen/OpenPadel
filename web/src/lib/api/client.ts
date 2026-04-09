@@ -38,6 +38,8 @@ export const api = {
       request<App.User>('GET', '/auth/me', undefined, token),
     profile: (token: string) =>
       request<{ user: App.User; stats: App.AmericanoCareerStats; tennis_stats: App.TennisCareerStats }>('GET', '/auth/profile', undefined, token),
+    updateProfile: (token: string, displayName: string, avatarIcon: string, avatarColor: string) =>
+      request<App.User>('PUT', '/auth/profile', { display_name: displayName, avatar_icon: avatarIcon, avatar_color: avatarColor }, token),
     history: (token: string) =>
       request<{ tournaments: App.TournamentEntry[]; upcoming: App.UpcomingEntry[] }>('GET', '/auth/history', undefined, token),
     deleteAccount: (token: string) =>

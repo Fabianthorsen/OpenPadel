@@ -50,6 +50,10 @@ function createAuthStore() {
     return token;
   }
 
+  function updateUser(updated: App.User) {
+    user = updated;
+  }
+
   return {
     get user() { return user; },
     get token() { return token; },
@@ -59,6 +63,7 @@ function createAuthStore() {
     register,
     logout,
     getToken,
+    updateUser,
   };
 }
 
