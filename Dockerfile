@@ -18,9 +18,12 @@ RUN go build -o bin/openpadel ./cmd/server
 
 # Final image
 FROM alpine:latest
-RUN apk add --no-cache ca-certificates tzdata
+COPY --from=litestream/litestream:latest /usr/local/bin/litestream /usr/local/bin/litestream
+RUN apk add --no-cache ca-certificates tzdata sqlite
 WORKDIR /app
 COPY --from=backend /app/bin/openpadel ./openpadel
-RUN mkdir -p /data
+COPY litestream.yml ./litestream.yml
+COPY scripts/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh && mkdir -p /data
 EXPOSE 8080
-CMD ["./openpadel"]
+CMD ["./entrypoint.sh"]

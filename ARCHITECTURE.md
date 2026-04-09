@@ -1,12 +1,9 @@
 # Architecture — OpenPadel
 
----
-
 ## Overview
 
 Single Go binary serves both the REST API and the compiled SvelteKit static build.
-No separate web server needed. SQLite on disk, backed up via litestream to S3.
-Deployed as a single Fly.io machine.
+No separate web server needed. SQLite on disk. Deployed as a single Fly.io machine.
 
 ```
 ┌─────────────────────────────────────┐
@@ -16,8 +13,7 @@ Deployed as a single Fly.io machine.
 │  ├── /api/*        → REST handlers  │
 │  └── /*            → SvelteKit PWA  │
 │                                     │
-│  openpadel.db      SQLite file      │
-│  litestream        → S3 backup      │
+│  /data/openpadel.db   SQLite file   │
 └─────────────────────────────────────┘
 ```
 
@@ -27,383 +23,227 @@ Deployed as a single Fly.io machine.
 
 ```
 openpadel/
-├── cmd/
-│   └── server/
-│       └── main.go           entry point, wires everything together
+├── cmd/server/main.go          entrypoint — wires store, email, router; reads env
 ├── internal/
 │   ├── api/
-│   │   ├── sessions.go       session CRUD handlers
-│   │   ├── players.go        join / deactivate handlers
-│   │   ├── rounds.go         round + score handlers
-│   │   ├── leaderboard.go    standings computation handler
-│   │   └── middleware.go     admin auth, CORS, logging
-│   ├── domain/
-│   │   ├── session.go        Session, Player, Round, Match types
-│   │   └── leaderboard.go    standings calculation logic
+│   │   ├── router.go           chi router, CORS, middleware, all route registrations
+│   │   ├── middleware.go       requireAuth / optionalAuth, context helpers
+│   │   ├── respond.go          respond() and respondError() helpers
+│   │   ├── auth.go             register, login, logout, me, profile, history, deleteAccount, forgot/reset
+│   │   ├── sessions.go         create, get, start, cancel, close session
+│   │   ├── players.go          join, deactivate player
+│   │   ├── rounds.go           get rounds, current round, advance, submit score, live score, leaderboard
+│   │   ├── tennis.go           set teams, get match, add point, set server
+│   │   ├── mexicano.go         Mexicano-specific handlers
+│   │   ├── contacts.go         get, add, remove contacts; search users
+│   │   ├── invites.go          get, send, accept, decline invites
+│   │   └── push.go             VAPID key, subscribe, unsubscribe
+│   ├── domain/session.go       all shared types (User, Session, Player, Round, Match, etc.)
+│   ├── store/                  SQLite data access — one file per domain area
+│   │   ├── store.go            DB init, WAL mode, inline schema + additive migrations
+│   │   ├── id.go               newID() (4-char base32), newAdminToken() (tok_ + base58)
+│   │   ├── sessions.go
+│   │   ├── players.go
+│   │   ├── rounds.go
+│   │   ├── users.go
+│   │   ├── tennis.go
+│   │   ├── contacts.go
+│   │   ├── invites.go
+│   │   └── push.go
 │   ├── scheduler/
-│   │   └── americano.go      pairing + bench rotation algorithm
-│   └── store/
-│       ├── store.go          DB init, migrations
-│       ├── sessions.go       session queries
-│       ├── players.go        player queries
-│       └── rounds.go         round + score queries
-├── web/                      compiled SvelteKit output (gitignored, built at deploy)
-├── fly.toml
-├── Dockerfile
-└── litestream.yml
+│   │   ├── americano.go        greedy round-generation, full bench rotation pre-computed
+│   │   └── mexicano.go         Mexicano variant — pairings adapt based on standings
+│   ├── tennis/scoring.go       pure tennis scoring engine (sets, games, tiebreak, golden point)
+│   ├── livescores/store.go     in-memory concurrent map for live/in-progress scores
+│   ├── email/resend.go         Resend API client — password reset only
+│   └── ui/ui.go                embed.FS wrapper — serves SPA, injects OG meta tags
+├── web/                        SvelteKit frontend source
+├── Dockerfile                  two-stage build: bun → go binary with embedded frontend
+└── fly.toml                    Fly.io config, SQLite volume at /data
 ```
 
 ---
 
-## Admin Auth
+## Auth
 
-The admin receives a token at session creation. It is stored by the SvelteKit client
-in `localStorage` and sent as a header on write requests.
+Email/password authentication. Opaque bearer tokens stored in DB.
 
 ```
-Header: Authorization: Bearer <admin_token>
+POST /api/auth/register   → creates user + issues token
+POST /api/auth/login      → verifies bcrypt hash, issues token
+Header: Authorization: Bearer <token>
 ```
 
-The admin share URL (`/s/:id?token=xxx`) is used once — SvelteKit reads the query param,
-stores it in localStorage, strips it from the URL. All subsequent API calls use the header.
+Session admin tokens are separate (`tok_` + 32 base58 chars), issued at session creation
+and stored in the browser's `localStorage`.
 
-Non-admin requests (leaderboard, join) require no auth.
+---
+
+## Game Modes
+
+| Mode       | Status | Description                                              |
+|------------|--------|----------------------------------------------------------|
+| Americano  | Live   | Rotating partners, individual scoring, pre-computed rounds |
+| Mexicano   | Live   | Like Americano, but pairings adapt each round by standings |
+| Tennis     | Live   | Regular 2v2 with sets, games, serve tracking             |
+| Round Robin| Planned| Every pair plays every other pair                        |
 
 ---
 
 ## API
 
-Base path: `/api`
-Content-Type: `application/json` throughout.
-Errors follow: `{ "error": "human readable message" }`
+Base path: `/api`. Content-Type: `application/json` throughout.
+Errors: `{ "error": "human readable message" }`
 
----
+### Auth
+```
+POST   /api/auth/register
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/auth/me
+PUT    /api/auth/profile
+GET    /api/auth/history
+DELETE /api/auth/account
+POST   /api/auth/forgot-password
+POST   /api/auth/reset-password
+```
 
 ### Sessions
-
-#### Create session
 ```
-POST /api/sessions
-
-Body:
-{
-  "courts": 2,
-  "points": 24
-}
-
-Response 201:
-{
-  "id": "abc123",
-  "admin_token": "tok_xxxxxxxxxxxxxxxx",
-  "status": "lobby",
-  "config": {
-    "courts": 2,
-    "points": 24
-  },
-  "players": [],
-  "created_at": "2026-04-03T10:00:00Z"
-}
+POST   /api/sessions
+GET    /api/sessions/:id
+POST   /api/sessions/:id/start
+POST   /api/sessions/:id/cancel
+POST   /api/sessions/:id/close
 ```
-
-#### Get session
-```
-GET /api/sessions/:id
-
-Response 200:
-{
-  "id": "abc123",
-  "status": "lobby" | "active" | "complete",
-  "config": {
-    "courts": 2,
-    "points": 24,
-    "rounds": 9        ← populated once session starts (= player count)
-  },
-  "players": [
-    { "id": "p1", "name": "Ana",   "active": true },
-    { "id": "p2", "name": "Bruno", "active": true }
-  ],
-  "current_round": 3,  ← null if lobby
-  "updated_at": "2026-04-03T10:05:00Z"
-}
-```
-
-This is the polling endpoint. SvelteKit calls it every 15s on the session page.
-
-#### Start session
-```
-POST /api/sessions/:id/start
-Authorization: Bearer <admin_token>
-
-Response 200:
-{
-  "id": "abc123",
-  "status": "active",
-  "config": { "courts": 2, "points": 24, "rounds": 9 },
-  "players": [ ... ]
-}
-```
-
-Triggers round generation. All rounds pre-calculated and stored at this point.
-Requires ≥ 5 active players.
-
----
 
 ### Players
-
-#### Join session
 ```
-POST /api/sessions/:id/players
-
-Body:
-{ "name": "Ana" }
-
-Response 201:
-{
-  "id": "p1",
-  "name": "Ana",
-  "session_id": "abc123"
-}
-
-Errors:
-  409 if session is not in lobby status
-  409 if name already taken in this session — return "Ops, somebody already took that name"
-```
-
-#### Deactivate player (pre-start only)
-```
+POST   /api/sessions/:id/players
 DELETE /api/sessions/:id/players/:player_id
-Authorization: Bearer <admin_token>
-
-Response 200:
-{ "id": "p1", "active": false }
 ```
 
-Only valid while session is in lobby. No dropout handling mid-session in V1.
-
----
-
-### Rounds
-
-#### Get all rounds
+### Rounds & Scores
 ```
-GET /api/sessions/:id/rounds
-
-Response 200:
-{
-  "rounds": [
-    {
-      "number": 1,
-      "bench": ["p9"],
-      "matches": [
-        {
-          "id": "m1",
-          "court": 1,
-          "team_a": ["p1", "p2"],
-          "team_b": ["p3", "p4"],
-          "score": null
-        },
-        {
-          "id": "m2",
-          "court": 2,
-          "team_a": ["p5", "p6"],
-          "team_b": ["p7", "p8"],
-          "score": null
-        }
-      ]
-    },
-    ...
-  ]
-}
+GET    /api/sessions/:id/rounds
+GET    /api/sessions/:id/rounds/current
+POST   /api/sessions/:id/rounds/advance
+PUT    /api/sessions/:id/matches/:match_id/score
+PUT    /api/sessions/:id/matches/:match_id/live-score
+GET    /api/sessions/:id/leaderboard
 ```
 
-#### Get current round
+### Tennis
 ```
-GET /api/sessions/:id/rounds/current
+POST   /api/sessions/:id/tennis/teams
+GET    /api/sessions/:id/tennis
+POST   /api/sessions/:id/tennis/point
+PUT    /api/sessions/:id/tennis/server
+```
 
-Response 200: single round object (same shape as above)
-Response 404: if session not yet active
+### Contacts & Invites
+```
+GET    /api/contacts
+POST   /api/contacts
+DELETE /api/contacts/:contact_id
+GET    /api/users/search
+
+GET    /api/invites
+POST   /api/sessions/:id/invites
+PUT    /api/invites/:invite_id/accept
+PUT    /api/invites/:invite_id/decline
+GET    /api/sessions/:id/invites
+```
+
+### Push Notifications
+```
+GET    /api/push/vapid-public-key
+POST   /api/push/subscribe
+DELETE /api/push/unsubscribe
 ```
 
 ---
 
-### Scores
+## Database
 
-#### Submit score
-```
-PUT /api/sessions/:id/matches/:match_id/score
-Authorization: Bearer <admin_token>
+Schema is defined inline in `internal/store/store.go`. Migrations are additive
+`ALTER TABLE` statements in a `var migrations []string` slice — "duplicate column"
+errors are silently swallowed. No migration framework.
 
-Body:
-{
-  "score_a": 15,
-  "score_b": 9
-}
-
-Response 200:
-{
-  "id": "m1",
-  "court": 1,
-  "team_a": ["p1", "p2"],
-  "team_b": ["p3", "p4"],
-  "score": { "a": 15, "b": 9 }
-}
-
-Errors:
-  400 if score_a + score_b != session points target
-  403 if not admin
-```
-
-Validation: scores must sum to the session points target. Enforced both client and server.
-Score can be re-submitted at any time to correct a mistake — overwrites the previous entry.
-Leaderboard recomputes on the next read automatically (computed from raw scores, never cached).
-
----
-
-### Leaderboard
-
-#### Get standings
-```
-GET /api/sessions/:id/leaderboard
-
-Response 200:
-{
-  "session_id": "abc123",
-  "status": "active",
-  "current_round": 3,
-  "total_rounds": 9,
-  "standings": [
-    { "rank": 1, "player_id": "p1", "name": "Ana",   "points": 38 },
-    { "rank": 2, "player_id": "p2", "name": "Bruno", "points": 35 },
-    ...
-  ],
-  "updated_at": "2026-04-03T10:12:00Z"
-}
-```
-
-Standings are computed on read (simple SQL sum), not stored.
-Cheap enough for this scale — no cache needed in V1.
-
----
-
-## Scheduler — Americano Algorithm
-
-Lives in `internal/scheduler/americano.go`. Called once at session start.
-Returns all rounds fully pre-computed.
-
-### Constraints (in priority order)
-
-1. **No consecutive bench** — if a player sat out round N, they must play round N+1. Hard constraint.
-2. **Balanced bench** — bench slots distributed as evenly as possible across all players.
-3. **Partner variety** — avoid same-partner pairing in back-to-back rounds where possible.
-4. **Opponent variety** — avoid same opponents in back-to-back rounds where possible.
-
-### Approach
-
-Greedy round-by-round with a scoring function:
-
-```
-For each round:
-  1. Forced players = those who were benched last round → must play
-  2. Fill remaining active slots from remaining players
-  3. Score candidate pairings penalising recent partner/opponent repeats
-  4. Pick lowest-penalty assignment
-  5. Remaining players sit bench
-```
-
-No backtracking needed for V1 — greedy is good enough for groups of 5–20.
-
----
-
-## Database Schema
+### Core tables
 
 ```sql
-CREATE TABLE sessions (
-  id           TEXT PRIMARY KEY,
-  admin_token  TEXT NOT NULL,
-  status       TEXT NOT NULL DEFAULT 'lobby',  -- lobby | active | complete
-  courts       INTEGER NOT NULL,
-  points       INTEGER NOT NULL,
-  rounds_total INTEGER,                         -- set on start
-  created_at   TEXT NOT NULL
-);
+sessions  (id, admin_token, status, game_mode, name, courts, points,
+           rounds_total, created_at, ended_at, ended_early)
 
-CREATE TABLE players (
-  id         TEXT PRIMARY KEY,
-  session_id TEXT NOT NULL REFERENCES sessions(id),
-  name       TEXT NOT NULL,
-  active     INTEGER NOT NULL DEFAULT 1,        -- bool
-  joined_at  TEXT NOT NULL
-);
+players   (id, session_id, user_id, name, active, joined_at)
 
-CREATE TABLE rounds (
-  id         TEXT PRIMARY KEY,
-  session_id TEXT NOT NULL REFERENCES sessions(id),
-  number     INTEGER NOT NULL
-);
+users     (id, email, display_name, password_hash, created_at)
 
-CREATE TABLE bench (
-  round_id  TEXT NOT NULL REFERENCES rounds(id),
-  player_id TEXT NOT NULL REFERENCES players(id),
-  PRIMARY KEY (round_id, player_id)
-);
+auth_tokens          (token, user_id, created_at)
+password_reset_tokens(token, user_id, expires_at, used)
 
-CREATE TABLE matches (
-  id        TEXT PRIMARY KEY,
-  round_id  TEXT NOT NULL REFERENCES rounds(id),
-  court     INTEGER NOT NULL,
-  p1        TEXT NOT NULL REFERENCES players(id),  -- team_a[0]
-  p2        TEXT NOT NULL REFERENCES players(id),  -- team_a[1]
-  p3        TEXT NOT NULL REFERENCES players(id),  -- team_b[0]
-  p4        TEXT NOT NULL REFERENCES players(id),  -- team_b[1]
-  score_a   INTEGER,                               -- null = not yet played
-  score_b   INTEGER
-);
+rounds  (id, session_id, number)
+bench   (round_id, player_id)
+matches (id, round_id, court, p1, p2, p3, p4, score_a, score_b)
 
-CREATE UNIQUE INDEX idx_players_session_name ON players(session_id, name);
-CREATE INDEX idx_matches_round ON matches(round_id);
-CREATE INDEX idx_rounds_session ON rounds(session_id);
+tennis_matches (id, session_id, ...)
+
+contacts (user_id, contact_id, created_at)
+invites  (id, session_id, inviter_id, invitee_id, status, created_at)
+
+push_subscriptions (user_id, endpoint, p256dh, auth, created_at)
 ```
+
+All times stored as `TEXT` in RFC3339. IDs are 4-char base32 (sessions) or
+UUID-style (users/players). `crypto/rand` throughout.
 
 ---
 
-## Session ID Generation
+## Scheduler
 
-Short, URL-safe, unguessable. 6 character base58 string (~38 billion combinations).
-Not sequential — no enumeration risk.
+### Americano (`internal/scheduler/americano.go`)
+Greedy round-by-round with a scoring function. All rounds pre-computed at session start.
 
-```go
-// Example output: "abc123", "xK9mPq"
-func generateSessionID() string // crypto/rand + base58 alphabet
-func generateAdminToken() string // "tok_" + 32 random base58 chars
-```
+Constraints (priority order):
+1. **No consecutive bench** — benched in round N → must play round N+1
+2. **Balanced bench** — bench slots distributed evenly
+3. **Partner variety** — penalise recent partner repeats
+4. **Opponent variety** — penalise recent opponent repeats
+
+### Mexicano (`internal/scheduler/mexicano.go`)
+Same constraints, but pairings are recalculated each round based on current standings.
+No bench — requires exactly `courts × 4` players.
+
+---
+
+## Frontend
+
+SvelteKit 5 SPA, compiled to `web/build/` and embedded into the Go binary via
+`//go:embed all:build` in `internal/ui/`. Served at `/*` — the Go binary is the
+only process needed.
+
+Key patterns:
+- **Svelte 5 runes** enforced globally (`$state`, `$props`, `$derived`, `$effect`)
+- **API client** — single typed `api` object in `$lib/api/client.ts`
+- **Auth store** — runes-based, token in `localStorage` under `auth_token`
+- **Types** — all shared interfaces in `src/app.d.ts` under the `App` namespace
+- **i18n** — English + Norwegian via `svelte-i18n`
+- **Polling** — 3s in lobby, 15s during active play
 
 ---
 
 ## Deployment
 
-```dockerfile
-# Two-stage build
-# Stage 1: build SvelteKit → web/
-# Stage 2: build Go binary, embed web/ via embed.FS
-# Final image: single binary, ~20MB
+Two-stage Docker build: Bun builds the frontend, Go embeds it and compiles the binary.
+Final image is a single static binary on Alpine (~20 MB).
+
+```
+fly deploy         # builds and deploys to Fly.io (Stockholm / arn region)
 ```
 
-```yaml
-# fly.toml
-[mounts]
-  source = "openpadel_data"
-  destination = "/data"   # SQLite file lives here
-```
-
-litestream runs as a sidecar process, replicating `/data/openpadel.db` to S3 every 1s.
-
----
-
-## V2 Notes (out of scope now, captured for later)
-
-- User accounts: `users` table, bcrypt passwords or magic link auth
-- Historical scores: `user_id` FK on players, aggregate views per user
-- Win rate, stats: computed from matches table — no schema change needed
-- Round count control: enforce `rounds % rotation_unit == 0` in session creation
-- Assign score entry: role column on players table
-- Mexicano: new scheduler variant, same round/match schema
+SQLite lives on a persistent Fly volume mounted at `/data/openpadel.db`.
+WAL mode enabled, single connection (`SetMaxOpenConns(1)`).
+Litestream replicates the database continuously to Tigris (S3-compatible) via the
+`litestream replicate` sidecar. On container start, the DB is restored from the
+replica if no local file exists.
