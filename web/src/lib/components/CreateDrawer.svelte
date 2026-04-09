@@ -363,49 +363,6 @@
         />
       </div>
 
-      <!-- Americano: time limit (optional) -->
-      {#if gameMode === 'americano'}
-        <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_duration_label')}</p>
-          <div class="flex gap-2">
-            {#each [60, 90, 120] as min}
-              <button
-                onclick={() => pickTime(min)}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courtDuration === min && !customTimeMode
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
-              >{min}m</button>
-            {/each}
-            {#if customTimeMode}
-              <div class="flex flex-1 items-center justify-center gap-0.5 rounded-full bg-[var(--primary)] px-2 py-2.5 text-sm font-semibold text-white">
-                <input
-                  bind:this={customInputEl}
-                  type="number"
-                  min="15"
-                  max="300"
-                  bind:value={customTimeRaw}
-                  placeholder="90"
-                  class="w-10 bg-transparent text-center font-semibold text-white placeholder-white/60 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <span>m</span>
-              </div>
-            {:else}
-              <button
-                onclick={pickCustomTime}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-[var(--surface-raised)] text-[var(--text-primary)]"
-              >{$_('create_duration_custom')}</button>
-            {/if}
-          </div>
-          <p class="text-xs text-[var(--text-secondary)]">
-            {#if courtDuration}
-              {$_('create_duration_hint', { values: { n: courtDuration } })}
-            {:else}
-              {$_('create_duration_none_hint')}
-            {/if}
-          </p>
-        </div>
-      {/if}
-
       <!-- Schedule -->
       <div class="space-y-2.5">
         <div class="flex items-center justify-between">
