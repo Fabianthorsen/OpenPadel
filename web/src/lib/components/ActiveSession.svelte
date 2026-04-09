@@ -220,12 +220,14 @@
     return `${m}:${String(s).padStart(2, '0')}`;
   });
 
-  function firstName(name: string) {
-    return name.split(' ')[0];
+  function shortPlayerName(name: string) {
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0];
+    return `${parts[0]} ${parts[1][0]}.`;
   }
 
   function teamLabel(ids: readonly [string, string]) {
-    return `${firstName(playerName[ids[0]] ?? '?')} & ${firstName(playerName[ids[1]] ?? '?')}`;
+    return `${shortPlayerName(playerName[ids[0]] ?? '?')} & ${shortPlayerName(playerName[ids[1]] ?? '?')}`;
   }
 </script>
 
