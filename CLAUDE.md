@@ -11,7 +11,14 @@
 3. One feature or fix per branch — keep scope small and focused
 4. Conventional Commits required: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`
 5. Scope tags encouraged: `feat(ui):`, `fix(scheduler):`, etc.
-6. Merge to `main` only when the feature is complete and tested locally
+6. Never push directly to `main` — always via a PR from a feature branch
+7. Merge to `main` only when the feature is complete and tested locally
+
+## Testing
+
+- Write tests for every store function, API handler, or business logic change where it makes sense
+- Use the existing test patterns in `internal/store/*_test.go` and `internal/api/*_test.go`
+- Tests must pass before opening a PR (`go test ./...`)
 
 ## Development Philosophy
 
