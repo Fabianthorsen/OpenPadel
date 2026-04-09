@@ -20,6 +20,12 @@
 - Use the existing test patterns in `internal/store/*_test.go` and `internal/api/*_test.go`
 - Tests must pass before opening a PR (`go test ./...`)
 
+## Tooling
+
+- Package manager: **bun** (not npm or npx) — always use `bun run`, `bunx`, etc.
+- Go tests: `go test ./...`
+- Frontend type-check: `bunx svelte-check`
+
 ## Development Philosophy
 
 - Build the smallest working slice first — no speculative abstractions
