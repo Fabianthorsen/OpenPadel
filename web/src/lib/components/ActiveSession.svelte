@@ -440,8 +440,11 @@
               >+</button>
             </div>
 
+            <!-- Divider -->
+            <div class="mx-6 mt-8 border-t border-white/20"></div>
+
             <!-- Team B score row -->
-            <div class="mt-10 flex items-center justify-between gap-2">
+            <div class="mt-8 flex items-center justify-between gap-2">
               <button
                 onclick={() => adjust(match.id, 'b', -1)}
                 disabled={s.b === 0}
