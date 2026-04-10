@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.7.0...v1.7.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* **deploy:** skip litestream restore if database already exists ([7609ec2](https://github.com/Fabianthorsen/OpenPadel/commit/7609ec262054586eb8bc7a923d8b105100a34a6d))
+
 ## [1.7.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.6.0...v1.7.0) (2026-04-09)
 
 
