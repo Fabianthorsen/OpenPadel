@@ -8,6 +8,7 @@
   import TennisMatch from '$lib/components/TennisMatch.svelte';
   import Leaderboard from '$lib/components/Leaderboard.svelte';
   import TennisResult from '$lib/components/TennisResult.svelte';
+  import PullToRefresh from '$lib/components/PullToRefresh.svelte';
 
   let session = $state<App.Session | null>(null);
   let currentRound = $state<App.Round | null>(null);
@@ -67,11 +68,17 @@
     <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
   </main>
 {:else if session.status === 'lobby'}
-  <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} />
+  <PullToRefresh onRefresh={load}>
+    <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} />
+  </PullToRefresh>
 {:else if session.status === 'active' && session.game_mode === 'tennis'}
-  <TennisMatch {session} {isAdmin} onRefresh={load} />
+  <PullToRefresh onRefresh={load}>
+    <TennisMatch {session} {isAdmin} onRefresh={load} />
+  </PullToRefresh>
 {:else if session.status === 'active' && currentRound}
-  <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} />
+  <PullToRefresh onRefresh={load}>
+    <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} />
+  </PullToRefresh>
 {:else if session.status === 'complete' && session.game_mode === 'tennis'}
   <TennisResult {session} />
 {:else if session.status === 'complete'}

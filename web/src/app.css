@@ -93,3 +93,8 @@ h3 {
 .shake {
   animation: shake 0.4s ease;
 }
+
+@keyframes ptr-fade {
+  0%   { opacity: 1; }
+  100% { opacity: 0.1; }
+}
