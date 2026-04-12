@@ -8,12 +8,9 @@
 - [ ] Admin can add extra rounds mid-session if players want to keep playing
 - [ ] Round Robin game mode — every pair plays every other pair
 - [ ] Assign score entry to other players (not admin-only)
-- [ ] Pull-to-refresh on home screen and active session
-
 ### Tooling & Infrastructure
 
 - [ ] **Error toasts** — wire up svelte-sonner (already installed) to API client for global error feedback
-- [ ] **Structured logging** — replace `log.Printf` with `log/slog` for queryable JSON logs on Fly.io
 - [ ] **Sentry** — add `@sentry/sveltekit` + Go SDK for production error tracking with stack traces
 - [ ] **API handler tests** — scheduler is well-tested; add coverage for critical API handlers (start session, submit score, advance round)
 - [ ] **Database migrations** — adopt `golang-migrate` or Atlas for versioned schema files instead of raw SQL in Go code
@@ -26,7 +23,9 @@ _Nothing in progress — main is clean._
 
 ## Done
 
-- [x] **v1.8.0** — Player avatar system: lucide icon picker on profile, avatar shown in lobby, game, and leaderboard; guests get slate Bot icon
+- [x] **v1.8.0** — Pull-to-refresh on home, session, and profile screens
+- [x] **v1.8.0** — Structured logging: `log/slog` JSON handler, request logger middleware (mutations + errors only)
+- [x] **v1.7.1** — Player avatar system: lucide icon picker on profile, avatar shown in lobby, game, and leaderboard; guests get slate Bot icon
 - [x] **v1.7.0** — Litestream continuous replication to Tigris (S3)
 - [x] **v1.6.0** — Mexicano game mode (backend, scheduler, UI)
 - [x] **v1.6.0** — Court booking timer with rounds-or-time duration picker
