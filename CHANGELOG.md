@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.8.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.7.1...v1.8.0) (2026-04-12)
+
+
+### Features
+
+* **logging:** replace log.Printf with structured slog JSON logging ([665f14c](https://github.com/Fabianthorsen/OpenPadel/commit/665f14ce5d2d1b85e3aae240bb90d3e0e7b95143))
+* **ui:** add toast notifications and internationalize API errors ([f980eca](https://github.com/Fabianthorsen/OpenPadel/commit/f980ecae15409bd5b4ed6dde380060d0032e9ee7))
+* **ui:** pull-to-refresh on home, session, and profile screens ([5213f98](https://github.com/Fabianthorsen/OpenPadel/commit/5213f98d6ef9c262c908e47739f47cf270c0678e))
+
+
+### Bug Fixes
+
+* **lobby:** hide invite row when invited player has joined ([be56f59](https://github.com/Fabianthorsen/OpenPadel/commit/be56f59a4d21d5b02daec1739b50c72444d4cfe6))
+* **logging:** skip logging successful GET requests ([9d0449b](https://github.com/Fabianthorsen/OpenPadel/commit/9d0449bfc75b422cec1f6e58853083d4cf02f0f1))
+
+
+### Chores
+
+* **roadmap:** mark v1.8.0 items done (pull-to-refresh, structured logging) ([d57f1ad](https://github.com/Fabianthorsen/OpenPadel/commit/d57f1ad538b3ae9495e7e4d2aee0b34ae4051cc3))
+
 ## [1.7.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.7.0...v1.7.1) (2026-04-10)
 
 
