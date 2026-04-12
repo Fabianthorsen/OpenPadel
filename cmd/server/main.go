@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -13,6 +13,8 @@ import (
 )
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+
 	// Load .env if present (local dev). Silently ignored in production.
 	godotenv.Load()
 	dbPath := env("DB_PATH", "openpadel.db")
@@ -25,16 +27,18 @@ func main() {
 
 	s, err := store.Open(dbPath)
 	if err != nil {
-		log.Fatalf("open db: %v", err)
+		slog.Error("open db", "err", err)
+		os.Exit(1)
 	}
 	defer s.Close()
 
 	emailClient := email.NewClient(resendKey, resendFrom)
 	r := api.NewRouter(s, emailClient, appURL, vapidPrivate, vapidPublic)
 
-	log.Printf("listening on :%s", port)
+	slog.Info("listening", "port", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatalf("server: %v", err)
+		slog.Error("server", "err", err)
+		os.Exit(1)
 	}
 }
 

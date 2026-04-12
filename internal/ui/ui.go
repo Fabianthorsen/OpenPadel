@@ -6,7 +6,7 @@ import (
 	"html"
 	"io"
 	"io/fs"
-	"log"
+	"log/slog"
 	"mime"
 	"net/http"
 	"path/filepath"
@@ -48,14 +48,14 @@ func Handler() http.Handler {
 	index, err := fs.ReadFile(sub, "index.html")
 	if err != nil {
 		// No frontend build present — serve a placeholder during dev
-		log.Println("ui: no index.html found in embedded build, serving placeholder")
+		slog.Info("ui: no index.html found in embedded build, serving placeholder")
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/plain")
 			w.Write([]byte("frontend not built — run `make build`"))
 		})
 	}
 
-	log.Printf("ui: serving embedded frontend (%d byte index.html)", len(index))
+	slog.Info("ui: serving embedded frontend", "index_bytes", len(index))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/")
@@ -67,7 +67,6 @@ func Handler() http.Handler {
 			if err == nil {
 				stat, serr := f.Stat()
 				if serr == nil && !stat.IsDir() {
-					log.Printf("ui: static %s", r.URL.Path)
 					ctype := mime.TypeByExtension(filepath.Ext(path))
 					if ctype != "" {
 						w.Header().Set("Content-Type", ctype)
@@ -81,7 +80,6 @@ func Handler() http.Handler {
 		}
 
 		// SPA fallback — serve index.html for all unmatched routes
-		log.Printf("ui: spa fallback for %s", r.URL.Path)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write(index)
 	})
