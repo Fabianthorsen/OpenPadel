@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
@@ -64,7 +64,7 @@ func (h *Handler) sendPushToSession(sessionID, title, body string) {
 	}
 	subs, err := h.store.GetPushSubscriptionsForSession(sessionID)
 	if err != nil {
-		log.Printf("push: get subscriptions: %v", err)
+		slog.Error("push: get subscriptions", "err", err)
 		return
 	}
 
@@ -85,7 +85,7 @@ func (h *Handler) sendPushToSession(sessionID, title, body string) {
 			TTL:             60,
 		})
 		if err != nil {
-			log.Printf("push: send to %s: %v", sub.Endpoint, err)
+			slog.Error("push: send notification", "endpoint", sub.Endpoint, "err", err)
 			continue
 		}
 		resp.Body.Close()

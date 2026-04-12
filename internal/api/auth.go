@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/fabianthorsen/openpadel/internal/store"
@@ -34,7 +34,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Printf("register: CreateUser failed: %v", err)
+		slog.Error("register: CreateUser failed", "err", err)
 		respondError(w, http.StatusInternalServerError, "could not create user")
 		return
 	}
@@ -121,7 +121,7 @@ func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	updated, err := h.store.UpdateProfile(user.ID, body.DisplayName, body.AvatarIcon, body.AvatarColor)
 	if err != nil {
-		log.Printf("updateProfile: %v", err)
+		slog.Error("updateProfile failed", "err", err)
 		respondError(w, http.StatusInternalServerError, "could not update profile")
 		return
 	}
@@ -136,13 +136,13 @@ func (h *Handler) profile(w http.ResponseWriter, r *http.Request) {
 	}
 	stats, err := h.store.GetCareerStats(user.ID)
 	if err != nil {
-		log.Printf("profile: GetCareerStats failed: %v", err)
+		slog.Error("profile: GetCareerStats failed", "err", err)
 		respondError(w, http.StatusInternalServerError, "could not load stats")
 		return
 	}
 	tennisStats, err := h.store.GetTennisCareerStats(user.ID)
 	if err != nil {
-		log.Printf("profile: GetTennisCareerStats failed: %v", err)
+		slog.Error("profile: GetTennisCareerStats failed", "err", err)
 		respondError(w, http.StatusInternalServerError, "could not load stats")
 		return
 	}
@@ -161,13 +161,13 @@ func (h *Handler) history(w http.ResponseWriter, r *http.Request) {
 	}
 	entries, err := h.store.GetTournamentHistory(user.ID)
 	if err != nil {
-		log.Printf("history: GetTournamentHistory failed: %v", err)
+		slog.Error("history: GetTournamentHistory failed", "err", err)
 		respondError(w, http.StatusInternalServerError, "could not load history")
 		return
 	}
 	upcoming, err := h.store.GetUpcomingTournaments(user.ID)
 	if err != nil {
-		log.Printf("history: GetUpcomingTournaments failed: %v", err)
+		slog.Error("history: GetUpcomingTournaments failed", "err", err)
 		respondError(w, http.StatusInternalServerError, "could not load upcoming")
 		return
 	}
@@ -187,7 +187,7 @@ func (h *Handler) forgotPassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Swallow ErrNotFound silently — don't reveal whether email exists
 		if !errors.Is(err, store.ErrNotFound) {
-			log.Printf("forgotPassword: CreatePasswordResetToken: %v", err)
+			slog.Error("forgotPassword: CreatePasswordResetToken failed", "err", err)
 		}
 		respond(w, http.StatusOK, map[string]any{})
 		return
@@ -196,7 +196,7 @@ func (h *Handler) forgotPassword(w http.ResponseWriter, r *http.Request) {
 	resetURL := h.appURL + "/reset?token=" + rawToken
 	user, _ := h.store.GetUserByEmail(body.Email)
 	if err := h.email.SendPasswordReset(body.Email, user.DisplayName, resetURL); err != nil {
-		log.Printf("forgotPassword: SendPasswordReset: %v", err)
+		slog.Error("forgotPassword: SendPasswordReset failed", "err", err)
 	}
 	respond(w, http.StatusOK, map[string]any{})
 }
@@ -220,7 +220,7 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusBadRequest, "invalid or expired reset link")
 			return
 		}
-		log.Printf("resetPassword: RedeemPasswordResetToken: %v", err)
+		slog.Error("resetPassword: RedeemPasswordResetToken failed", "err", err)
 		respondError(w, http.StatusInternalServerError, "could not reset password")
 		return
 	}
@@ -234,7 +234,7 @@ func (h *Handler) deleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.store.DeleteUser(user.ID); err != nil {
-		log.Printf("deleteAccount: DeleteUser failed: %v", err)
+		slog.Error("deleteAccount: DeleteUser failed", "err", err)
 		respondError(w, http.StatusInternalServerError, "could not delete account")
 		return
 	}
