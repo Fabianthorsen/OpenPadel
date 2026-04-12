@@ -68,16 +68,16 @@ func (h *Handler) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := extractAdminToken(r)
 		if token == "" {
-			respondError(w, http.StatusUnauthorized, "authentication required")
+			respondError(w, http.StatusUnauthorized, "not_authenticated")
 			return
 		}
 		user, err := h.store.GetUserByToken(token)
 		if err != nil {
 			if err == store.ErrNotFound {
-				respondError(w, http.StatusUnauthorized, "invalid or expired token")
+				respondError(w, http.StatusUnauthorized, "invalid_token")
 				return
 			}
-			respondError(w, http.StatusInternalServerError, "could not verify token")
+			respondError(w, http.StatusInternalServerError, "server_error")
 			return
 		}
 		r = r.WithContext(context.WithValue(r.Context(), contextKeyUser, user))

@@ -10,7 +10,9 @@
   import { _ } from 'svelte-i18n';
   import { auth } from '$lib/auth.svelte';
   import Footer from '$lib/components/Footer.svelte';
-  import { fly } from 'svelte/transition';
+  import { toast } from 'svelte-sonner';
+  import { ApiError } from '$lib/api/client';
+  import { translateApiError } from '$lib/i18n/errors';
 
   let {
     session,
@@ -34,7 +36,6 @@
   let seeding = $state(false);
   let joinName = $state('');
   let joining = $state(false);
-  let joinError = $state('');
 
   let playerSearch = $state('');
   let playerResults = $state<App.UserSearchResult[]>([]);
@@ -78,10 +79,10 @@
     try {
       await api.players.join(session.id, name);
       playerSearch = '';
+      toast.success($_('lobby_player_joined'));
       onRefresh();
     } catch (e) {
-      joinError = e instanceof Error ? e.message : 'Could not add guest';
-      setTimeout(() => { joinError = ''; }, 5000);
+      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
     } finally {
       joining = false;
     }
@@ -208,8 +209,7 @@
     try {
       await api.tennis.setTeams(session.id, teams, adminToken);
     } catch (e) {
-      joinError = e instanceof Error ? e.message : 'Could not save teams';
-      setTimeout(() => { joinError = ''; }, 4000);
+      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
     } finally {
       savingTeams = false;
     }
@@ -234,7 +234,6 @@
   }
 
   async function join() {
-    joinError = '';
     const name = joinName.trim();
     if (!name) return;
     joining = true;
@@ -244,12 +243,11 @@
         localStorage.setItem(`player_id_${session.id}`, player.id);
         localStorage.setItem('last_session_id', session.id);
       }
+      toast.success($_('lobby_player_joined'));
       joinName = '';
       onRefresh();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not join';
-      joinError = msg.includes('full') ? $_('tennis_session_full') : msg;
-      setTimeout(() => { joinError = ''; }, 5000);
+      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
     } finally {
       joining = false;
     }
@@ -296,11 +294,6 @@
   }
 </script>
 
-{#if joinError}
-  <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--destructive)] px-4 py-3 text-sm font-semibold text-white">
-    {joinError}
-  </div>
-{/if}
 
 {#if cancelling}
   <main class="flex min-h-svh flex-col items-center justify-center gap-3 px-6">
