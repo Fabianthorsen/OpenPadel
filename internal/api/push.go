@@ -17,7 +17,7 @@ func (h *Handler) vapidPublicKey(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) subscribePush(w http.ResponseWriter, r *http.Request) {
 	u := userFromContext(r)
 	if u == nil {
-		respondError(w, http.StatusUnauthorized, "unauthorized")
+		respondError(w, http.StatusUnauthorized, "not_authenticated")
 		return
 	}
 
@@ -27,12 +27,12 @@ func (h *Handler) subscribePush(w http.ResponseWriter, r *http.Request) {
 		Auth     string `json:"auth"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Endpoint == "" {
-		respondError(w, http.StatusBadRequest, "invalid subscription")
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 
 	if err := h.store.SavePushSubscription(u.ID, body.Endpoint, body.P256DH, body.Auth); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not save subscription")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -41,7 +41,7 @@ func (h *Handler) subscribePush(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) unsubscribePush(w http.ResponseWriter, r *http.Request) {
 	u := userFromContext(r)
 	if u == nil {
-		respondError(w, http.StatusUnauthorized, "unauthorized")
+		respondError(w, http.StatusUnauthorized, "not_authenticated")
 		return
 	}
 
@@ -49,7 +49,7 @@ func (h *Handler) unsubscribePush(w http.ResponseWriter, r *http.Request) {
 		Endpoint string `json:"endpoint"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Endpoint == "" {
-		respondError(w, http.StatusBadRequest, "invalid request")
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 

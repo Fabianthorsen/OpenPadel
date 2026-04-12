@@ -17,7 +17,7 @@ import (
 func (h *Handler) startTennisSession(w http.ResponseWriter, sessionID string, active []domain.Player) error {
 	teams, err := h.store.GetTennisTeams(sessionID)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load teams")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return err
 	}
 
@@ -30,16 +30,16 @@ func (h *Handler) startTennisSession(w http.ResponseWriter, sessionID string, ac
 		}
 	}
 	if teamA != 2 || teamB != 2 {
-		respondError(w, http.StatusUnprocessableEntity, "each team must have exactly 2 players")
+		respondError(w, http.StatusUnprocessableEntity, "team_size_invalid")
 		return errors.New("invalid teams")
 	}
 
 	if _, err := h.store.CreateTennisMatch(sessionID); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not create match")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return err
 	}
 	if err := h.store.StartSession(sessionID, 1, nil); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not start session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return err
 	}
 	return nil
@@ -50,19 +50,19 @@ func (h *Handler) setTennisTeams(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin access required")
+		respondError(w, http.StatusForbidden, "admin_required")
 		return
 	}
 	if sess.GameMode != "tennis" {
-		respondError(w, http.StatusBadRequest, "session is not a tennis match")
+		respondError(w, http.StatusBadRequest, "not_tennis_session")
 		return
 	}
 
@@ -70,18 +70,18 @@ func (h *Handler) setTennisTeams(w http.ResponseWriter, r *http.Request) {
 		Teams []domain.TennisTeam `json:"teams"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid request body")
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 	for _, t := range body.Teams {
 		if t.Team != "a" && t.Team != "b" {
-			respondError(w, http.StatusBadRequest, "team must be 'a' or 'b'")
+			respondError(w, http.StatusBadRequest, "invalid_request_body")
 			return
 		}
 	}
 
 	if err := h.store.SaveTennisTeams(id, body.Teams); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not save teams")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -92,11 +92,11 @@ func (h *Handler) getTennisMatch(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	match, err := h.store.GetTennisMatch(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "match not found")
+		respondError(w, http.StatusNotFound, "match_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load match")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	respond(w, http.StatusOK, match)
@@ -107,21 +107,21 @@ func (h *Handler) setTennisServer(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	team := chi.URLParam(r, "team")
 	if team != "a" && team != "b" {
-		respondError(w, http.StatusBadRequest, "team must be 'a' or 'b'")
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 	match, err := h.store.GetTennisMatch(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "match not found")
+		respondError(w, http.StatusNotFound, "match_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load match")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	match.State.Server = team
 	if err := h.store.SaveTennisState(match.ID, match.State); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not save state")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	respond(w, http.StatusOK, match)
@@ -132,37 +132,37 @@ func (h *Handler) addTennisPoint(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	team := chi.URLParam(r, "team")
 	if team != "a" && team != "b" {
-		respondError(w, http.StatusBadRequest, "team must be 'a' or 'b'")
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if sess.Status != domain.StatusActive {
-		respondError(w, http.StatusConflict, "session is not active")
+		respondError(w, http.StatusConflict, "session_not_active")
 		return
 	}
 
 	match, err := h.store.GetTennisMatch(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "match not found")
+		respondError(w, http.StatusNotFound, "match_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load match")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 
 	newState := tennis.AddPoint(match.State, team, sess.SetsToWin, sess.GamesPerSet)
 	if err := h.store.SaveTennisState(match.ID, newState); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not save state")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 

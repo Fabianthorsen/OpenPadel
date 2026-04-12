@@ -5,6 +5,7 @@
 	import { isLoading } from 'svelte-i18n';
 	import { auth } from '$lib/auth.svelte';
 	import { onMount } from 'svelte';
+	import { Toaster } from 'svelte-sonner';
 
 	setupI18n();
 	onMount(() => auth.init());
@@ -16,4 +17,5 @@
 
 {#if !$isLoading}
   {@render children()}
+  <Toaster position="bottom-center" />
 {/if}

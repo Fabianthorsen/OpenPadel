@@ -28,7 +28,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		CourtDurationMinutes *int    `json:"court_duration_minutes"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid request body")
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 	if body.GameMode == "" {
@@ -100,11 +100,11 @@ func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 
@@ -120,19 +120,19 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin access required")
+		respondError(w, http.StatusForbidden, "admin_required")
 		return
 	}
 	if sess.Status != domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session already started")
+		respondError(w, http.StatusConflict, "session_already_started")
 		return
 	}
 
@@ -153,7 +153,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 	case "mexicano":
 		required := sess.Courts * 4
 		if len(active) != required {
-			respondError(w, http.StatusUnprocessableEntity, "mexicano requires exactly courts×4 players")
+			respondError(w, http.StatusUnprocessableEntity, "mexicano_player_count")
 			return
 		}
 		if err := h.startMexicanoSession(w, id, sess, active, endsAt); err != nil {
@@ -162,18 +162,18 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 	default: // americano
 		minPlayers := sess.Courts * 4
 		if len(active) < minPlayers {
-			respondError(w, http.StatusUnprocessableEntity, "not enough players to start")
+			respondError(w, http.StatusUnprocessableEntity, "not_enough_players")
 			return
 		}
 		rand.Shuffle(len(active), func(i, j int) { active[i], active[j] = active[j], active[i] })
 		totalRounds := scheduler.TotalRounds(len(active), sess.Courts)
 		rounds := scheduler.Generate(active, sess.Courts, totalRounds)
 		if err := h.store.SaveRounds(id, rounds); err != nil {
-			respondError(w, http.StatusInternalServerError, "could not generate rounds")
+			respondError(w, http.StatusInternalServerError, "server_error")
 			return
 		}
 		if err := h.store.StartSession(id, totalRounds, endsAt); err != nil {
-			respondError(w, http.StatusInternalServerError, "could not start session")
+			respondError(w, http.StatusInternalServerError, "server_error")
 			return
 		}
 	}
@@ -229,23 +229,23 @@ func (h *Handler) closeSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin access required")
+		respondError(w, http.StatusForbidden, "admin_required")
 		return
 	}
 	if sess.Status == domain.StatusComplete {
-		respondError(w, http.StatusConflict, "session already ended")
+		respondError(w, http.StatusConflict, "session_already_ended")
 		return
 	}
 	if err := h.store.CompleteSession(id, true); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not close session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -255,19 +255,19 @@ func (h *Handler) cancelSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin access required")
+		respondError(w, http.StatusForbidden, "admin_required")
 		return
 	}
 	if err := h.store.DeleteSession(id); err != nil {
-		respondError(w, http.StatusInternalServerError, "could not cancel session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

@@ -19,26 +19,26 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		Name string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid request body")
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 	body.Name = strings.TrimSpace(body.Name)
 	if body.Name == "" {
-		respondError(w, http.StatusBadRequest, "name is required")
+		respondError(w, http.StatusBadRequest, "name_required")
 		return
 	}
 
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if sess.Status != domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session has already started")
+		respondError(w, http.StatusConflict, "session_already_started")
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if activePlayers >= 4 {
-			respondError(w, http.StatusConflict, "tennis match is full (max 4 players)")
+			respondError(w, http.StatusConflict, "session_full")
 			return
 		}
 	}
@@ -64,10 +64,10 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 	player, err := h.store.CreatePlayer(id, body.Name, userID)
 	if err != nil {
 		if isUniqueConstraintError(err) {
-			respondError(w, http.StatusConflict, "Oops, somebody already took that name")
+			respondError(w, http.StatusConflict, "name_taken")
 			return
 		}
-		respondError(w, http.StatusInternalServerError, "could not join session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 
@@ -90,30 +90,30 @@ func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 
 	sess, err := h.store.GetSession(sessionID)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	// Allow admin OR the player removing themselves (via their player token stored in localStorage key).
 	// We identify self-removal by a "Player-Id" header matching the target player ID.
 	selfRemoval := r.Header.Get("X-Player-Id") == playerID && playerID != ""
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) && !selfRemoval {
-		respondError(w, http.StatusForbidden, "admin access required")
+		respondError(w, http.StatusForbidden, "admin_required")
 		return
 	}
 	if sess.Status != domain.StatusLobby {
-		respondError(w, http.StatusConflict, "cannot remove players after session has started")
+		respondError(w, http.StatusConflict, "session_already_started")
 		return
 	}
 
 	if err := h.store.DeactivatePlayer(playerID); errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "player not found")
+		respondError(w, http.StatusNotFound, "player_not_found")
 		return
 	} else if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not remove player")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 

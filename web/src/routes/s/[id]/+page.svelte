@@ -9,10 +9,11 @@
   import Leaderboard from '$lib/components/Leaderboard.svelte';
   import TennisResult from '$lib/components/TennisResult.svelte';
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
+  import { toast } from 'svelte-sonner';
+  import { translateApiError } from '$lib/i18n/errors';
 
   let session = $state<App.Session | null>(null);
   let currentRound = $state<App.Round | null>(null);
-  let error = $state('');
   let interval: ReturnType<typeof setInterval>;
 
   // Poll faster in lobby so players see each other join without waiting.
@@ -45,7 +46,7 @@
         goto('/?notfound=1');
         return;
       }
-      error = e instanceof Error ? e.message : 'Failed to load session';
+      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
     }
   }
 
@@ -59,11 +60,7 @@
   onDestroy(() => clearInterval(interval));
 </script>
 
-{#if error}
-  <main class="flex min-h-svh items-center justify-center px-4">
-    <p class="text-[var(--destructive)]">{error}</p>
-  </main>
-{:else if !session}
+{#if !session}
   <main class="flex min-h-svh items-center justify-center px-4">
     <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
   </main>

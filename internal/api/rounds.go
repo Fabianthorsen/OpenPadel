@@ -16,21 +16,21 @@ func (h *Handler) getRounds(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if sess.Status == domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session has not started yet")
+		respondError(w, http.StatusConflict, "session_not_started")
 		return
 	}
 
 	rounds, err := h.store.GetRounds(id)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load rounds")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	respond(w, http.StatusOK, map[string]any{"rounds": rounds})
@@ -40,11 +40,11 @@ func (h *Handler) getCurrentRound(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	round, err := h.store.GetCurrentRound(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "no active round found")
+		respondError(w, http.StatusNotFound, "no_active_round")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load round")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	// Overlay in-memory live scores for matches that haven't been finalised yet.
@@ -65,15 +65,15 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 
 	sess, err := h.store.GetSession(sessionID)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if sess.Status != domain.StatusActive {
-		respondError(w, http.StatusConflict, "session is not active")
+		respondError(w, http.StatusConflict, "session_not_active")
 		return
 	}
 
@@ -82,25 +82,25 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 		ScoreB int `json:"score_b"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid request body")
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 	if body.ScoreA+body.ScoreB != sess.Points {
-		respondError(w, http.StatusBadRequest, "scores must sum to the session points target")
+		respondError(w, http.StatusBadRequest, "scores_invalid_sum")
 		return
 	}
 	if body.ScoreA < 0 || body.ScoreB < 0 {
-		respondError(w, http.StatusBadRequest, "scores cannot be negative")
+		respondError(w, http.StatusBadRequest, "scores_negative")
 		return
 	}
 
 	match, err := h.store.UpdateScore(matchID, body.ScoreA, body.ScoreB)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "match not found")
+		respondError(w, http.StatusNotFound, "match_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not save score")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	// Final score is now in the DB — clear any in-memory live score for this match.
@@ -141,11 +141,11 @@ func (h *Handler) updateLiveScore(w http.ResponseWriter, r *http.Request) {
 		Server string `json:"server"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid request body")
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
 	if body.A < 0 || body.B < 0 {
-		respondError(w, http.StatusBadRequest, "scores cannot be negative")
+		respondError(w, http.StatusBadRequest, "scores_negative")
 		return
 	}
 	matchID := chi.URLParam(r, "matchID")
@@ -157,32 +157,32 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 	sessionID := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(sessionID)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin access required")
+		respondError(w, http.StatusForbidden, "admin_required")
 		return
 	}
 	if sess.Status != domain.StatusActive {
-		respondError(w, http.StatusConflict, "session is not active")
+		respondError(w, http.StatusConflict, "session_not_active")
 		return
 	}
 	if sess.EndsAt != nil && time.Now().UTC().After(*sess.EndsAt) {
-		respondError(w, http.StatusConflict, "tournament time has expired")
+		respondError(w, http.StatusConflict, "tournament_expired")
 		return
 	}
 	allScored, err := h.store.CurrentRoundAllScored(sessionID)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not check round status")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 	if !allScored {
-		respondError(w, http.StatusConflict, "not all matches in this round are scored")
+		respondError(w, http.StatusConflict, "round_not_complete")
 		return
 	}
 
@@ -192,7 +192,7 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 			nextRound = *sess.CurrentRound + 1
 		}
 		if sess.RoundsTotal != nil && nextRound > *sess.RoundsTotal {
-			respondError(w, http.StatusConflict, "tournament has reached its round limit")
+			respondError(w, http.StatusConflict, "round_limit_reached")
 			return
 		}
 		if err := h.advanceMexicanoRound(w, sessionID, nextRound); err != nil {
@@ -200,7 +200,7 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		if err := h.store.AdvanceRound(sessionID); err != nil {
-			respondError(w, http.StatusInternalServerError, "could not advance round")
+			respondError(w, http.StatusInternalServerError, "server_error")
 			return
 		}
 	}
@@ -211,17 +211,17 @@ func (h *Handler) getLeaderboard(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session not found")
+		respondError(w, http.StatusNotFound, "session_not_found")
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not load session")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 
 	standings, err := h.store.GetLeaderboard(id)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not compute leaderboard")
+		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
 

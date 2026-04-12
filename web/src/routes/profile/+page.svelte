@@ -10,7 +10,9 @@
   import CreateDrawer from '$lib/components/CreateDrawer.svelte';
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import Avatar from '$lib/components/ui/Avatar.svelte';
-  import { fly, slide } from 'svelte/transition';
+  import { slide } from 'svelte/transition';
+  import { toast } from 'svelte-sonner';
+  import { translateApiError } from '$lib/i18n/errors';
   import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
 
   const AVATAR_ICONS = [
@@ -38,7 +40,6 @@
   let loading = $state(true);
   let showDeleteConfirm = $state(false);
   let deleting = $state(false);
-  let showNotFoundBanner = $state(false);
   let joinChars = $state(['', '', '', '']);
   let joinInputs = $state<HTMLInputElement[]>([]);
 
@@ -97,7 +98,6 @@
   let pushSupported = $state(false);
   let pushEnabled = $state(false);
   let pushToggling = $state(false);
-  let pushError = $state('');
 
   // Install prompt
   let isStandalone = $state(false);
@@ -164,8 +164,7 @@
   onMount(async () => {
     if (!auth.token) { goto('/auth'); return; }
     if (page.url.searchParams.get('notfound') === '1') {
-      showNotFoundBanner = true;
-      setTimeout(() => { showNotFoundBanner = false; }, 4000);
+      toast.error(translateApiError('session_not_found'));
     }
     if (page.url.searchParams.get('create') === '1') {
       showCreateDrawer = true;
@@ -228,7 +227,6 @@
   async function togglePush() {
     if (!auth.token) return;
     pushToggling = true;
-    pushError = '';
     try {
       if (pushEnabled) {
         await unsubscribeFromPush(auth.token);
@@ -238,7 +236,12 @@
       await checkPushState();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'unknown';
-      pushError = msg === 'notifications_blocked' || msg === 'sw_timeout' ? msg : msg;
+      const label = msg === 'notifications_blocked'
+        ? $_('pref_notifications_blocked', { values: { app: 'OpenPadel' } })
+        : msg === 'sw_timeout'
+        ? $_('pref_notifications_sw_timeout')
+        : msg;
+      toast.error(label);
     } finally {
       pushToggling = false;
     }
@@ -278,11 +281,7 @@
   }
 </script>
 
-{#if showNotFoundBanner}
-  <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--destructive)] px-4 py-3 text-sm font-semibold text-white">
-    {$_('home_session_not_found')}
-  </div>
-{/if}
+
 
 <PullToRefresh onRefresh={load}>
 <main class="mx-auto max-w-[480px] px-6 pb-10 pt-8 space-y-8">
@@ -392,15 +391,7 @@
                   {pushEnabled ? 'translate-x-5' : 'translate-x-0'}"></span>
               </button>
             </div>
-            {#if pushError}
-              <p class="px-1 text-xs text-[var(--destructive)]">
-                {pushError === 'notifications_blocked'
-                  ? $_('pref_notifications_blocked', { values: { app: 'OpenPadel' } })
-                  : pushError === 'sw_timeout'
-                  ? $_('pref_notifications_sw_timeout')
-                  : pushError}
-              </p>
-            {/if}
+
           {/if}
 
           <!-- Install prompt — shown regardless of pushSupported -->

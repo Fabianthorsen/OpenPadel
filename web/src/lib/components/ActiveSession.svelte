@@ -1,6 +1,8 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { fly } from 'svelte/transition';
+  import { toast } from 'svelte-sonner';
+  import { ApiError } from '$lib/api/client';
+  import { translateApiError } from '$lib/i18n/errors';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { Activity, ChartBar, Users, Pencil, Shield, LayoutGrid, Check, X } from 'lucide-svelte';
@@ -30,7 +32,6 @@
 
   let localScores = $state<Record<string, { a: number; b: number }>>({});
   let submitting = $state<Record<string, boolean>>({});
-  let submitError = $state<Record<string, string>>({});
   let editing = $state<Record<string, boolean>>({});
   let initialServer = $state<Record<string, 'a' | 'b'>>({});
   const saveTimeout: Record<string, ReturnType<typeof setTimeout>> = {};
@@ -39,7 +40,6 @@
   let cancelling = $state(false);
   let showCloseDialog = $state(false);
   let closing = $state(false);
-  let actionError = $state('');
 
   // Court tabs
   let activeCourt = $state(0);
@@ -143,15 +143,15 @@
 
   async function submitScore(matchId: string) {
     clearTimeout(saveTimeout[matchId]);
-    submitError[matchId] = '';
     submitting[matchId] = true;
     const s = scores[matchId];
     try {
       await api.scores.submit(session.id, matchId, s.a, s.b, '');
       editing[matchId] = false;
+      toast.success($_('toast_score_confirmed'));
       onRefresh();
     } catch (e) {
-      submitError[matchId] = e instanceof Error ? e.message : 'Failed to submit';
+      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
     } finally {
       submitting[matchId] = false;
     }
@@ -159,7 +159,6 @@
 
   async function closeSession() {
     closing = true;
-    actionError = '';
     try {
       const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
       await api.sessions.close(session.id, adminToken);
@@ -167,23 +166,20 @@
       closing = false;
       onRefresh();
     } catch (e) {
-      actionError = e instanceof Error ? e.message : 'Could not end tournament';
+      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
       closing = false;
-      setTimeout(() => { actionError = ''; }, 4000);
     }
   }
 
   async function cancelSession() {
     cancelling = true;
-    actionError = '';
     try {
       const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
       await api.sessions.cancel(session.id, adminToken);
       location.href = '/';
     } catch (e) {
-      actionError = e instanceof Error ? e.message : 'Could not cancel tournament';
+      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
       cancelling = false;
-      setTimeout(() => { actionError = ''; }, 4000);
     }
   }
 
@@ -235,11 +231,6 @@
   }
 </script>
 
-{#if actionError}
-  <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--destructive)] px-4 py-3 text-sm font-semibold text-white">
-    {actionError}
-  </div>
-{/if}
 
 {#if cancelling}
   <main class="flex min-h-svh flex-col items-center justify-center gap-3 px-6">
@@ -480,9 +471,6 @@
 
           <!-- Finalize button + helper text -->
           {#if isAdmin}
-            {#if submitError[match.id]}
-              <p class="text-center text-xs text-[var(--destructive)]">{submitError[match.id]}</p>
-            {/if}
             <button
               onclick={() => submitScore(match.id)}
               disabled={s.a + s.b !== session.points || submitting[match.id]}

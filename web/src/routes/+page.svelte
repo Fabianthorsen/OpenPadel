@@ -10,7 +10,9 @@
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import { _ } from 'svelte-i18n';
   import { initials } from '$lib/utils';
-  import { fly } from 'svelte/transition';
+  import { toast } from 'svelte-sonner';
+  import { ApiError } from '$lib/api/client';
+  import { translateApiError } from '$lib/i18n/errors';
   import { Calendar } from '$lib/components/ui/calendar';
   import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
 
@@ -35,12 +37,9 @@
 
   const scheduleTime = $derived(slotToLabel(timeSlot));
   let creating = $state(false);
-  let error = $state('');
   let joinCode = $state('');
   let rejoinSession = $state<App.Session | null>(null);
   let rejoinHref = $state('');
-  let showDeletedBanner = $state(false);
-  let showNotFoundBanner = $state(false);
 
   async function loadRejoin() {
     const lastId = localStorage.getItem('last_session_id');
@@ -67,12 +66,10 @@
     }
 
     if (page.url.searchParams.get('deleted') === '1') {
-      showDeletedBanner = true;
-      setTimeout(() => { showDeletedBanner = false; }, 5000);
+      toast($_('home_account_deleted'));
     }
     if (page.url.searchParams.get('notfound') === '1') {
-      showNotFoundBanner = true;
-      setTimeout(() => { showNotFoundBanner = false; }, 5000);
+      toast.error($_('home_session_not_found'));
     }
 
     await loadRejoin();
@@ -90,7 +87,6 @@
   async function create() {
     const effectiveName = auth.user!.display_name;
     creating = true;
-    error = '';
     try {
       let iso: string | undefined;
       if (scheduleEnabled && calendarDate) {
@@ -107,7 +103,7 @@
       localStorage.setItem('last_session_id', session.id);
       goto(`/s/${session.id}?token=${adminToken}`);
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Something went wrong';
+      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
       creating = false;
     }
   }
@@ -119,18 +115,8 @@
 </script>
 
 {#if step === 'home'}
-  {#if showDeletedBanner}
-    <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--primary)] px-4 py-3 text-sm font-semibold text-white">
-      {$_('home_account_deleted')}
-    </div>
-  {/if}
-  {#if showNotFoundBanner}
-    <div transition:fly={{ y: -48, duration: 400 }} class="fixed inset-x-0 top-0 z-50 flex items-center justify-center bg-[var(--destructive)] px-4 py-3 text-sm font-semibold text-white">
-      {$_('home_session_not_found')}
-    </div>
-  {/if}
   <PullToRefresh onRefresh={loadRejoin}>
-  <main class="flex min-h-svh flex-col items-center px-6 py-12" class:pt-16={showDeletedBanner || showNotFoundBanner}>
+  <main class="flex min-h-svh flex-col items-center px-6 py-12">
   <div class="flex w-full max-w-sm flex-1 flex-col">
     <div class="flex flex-1 flex-col justify-center space-y-12">
       <!-- Brand -->
@@ -418,10 +404,6 @@
         <span class="mt-px shrink-0 text-[var(--text-secondary)]">ℹ</span>
         <p class="text-sm text-[var(--text-secondary)]">{$_('create_info_note')}</p>
       </div>
-
-      {#if error}
-        <p class="text-sm text-[var(--destructive)]">{error}</p>
-      {/if}
 
       <Button
         onclick={create}
