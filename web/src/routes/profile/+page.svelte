@@ -8,6 +8,7 @@
   import { CalendarDays, Radio, ChevronDown, UserPlus, X, Search, Check } from 'lucide-svelte';
   import Footer from '$lib/components/Footer.svelte';
   import CreateDrawer from '$lib/components/CreateDrawer.svelte';
+  import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { fly, slide } from 'svelte/transition';
   import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
@@ -133,15 +134,8 @@
     }
   }
 
-  onMount(async () => {
-    if (!auth.token) { goto('/auth'); return; }
-    if (page.url.searchParams.get('notfound') === '1') {
-      showNotFoundBanner = true;
-      setTimeout(() => { showNotFoundBanner = false; }, 4000);
-    }
-    if (page.url.searchParams.get('create') === '1') {
-      showCreateDrawer = true;
-    }
+  async function load() {
+    if (!auth.token) return;
     try {
       const [profileRes, historyRes, contactsRes, invitesRes] = await Promise.all([
         api.auth.profile(auth.token),
@@ -165,6 +159,18 @@
     } finally {
       loading = false;
     }
+  }
+
+  onMount(async () => {
+    if (!auth.token) { goto('/auth'); return; }
+    if (page.url.searchParams.get('notfound') === '1') {
+      showNotFoundBanner = true;
+      setTimeout(() => { showNotFoundBanner = false; }, 4000);
+    }
+    if (page.url.searchParams.get('create') === '1') {
+      showCreateDrawer = true;
+    }
+    await load();
 
     // Install detection — runs immediately, no SW needed
     isStandalone = window.matchMedia('(display-mode: standalone)').matches
@@ -278,6 +284,7 @@
   </div>
 {/if}
 
+<PullToRefresh onRefresh={load}>
 <main class="mx-auto max-w-[480px] px-6 pb-10 pt-8 space-y-8">
 
   <!-- Header -->
@@ -661,6 +668,7 @@
   <Footer />
 
 </main>
+</PullToRefresh>
 
 <CreateDrawer bind:open={showCreateDrawer} />
 

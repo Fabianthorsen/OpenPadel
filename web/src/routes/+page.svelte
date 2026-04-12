@@ -7,6 +7,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import Footer from '$lib/components/Footer.svelte';
+  import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import { _ } from 'svelte-i18n';
   import { initials } from '$lib/utils';
   import { fly } from 'svelte/transition';
@@ -41,6 +42,24 @@
   let showDeletedBanner = $state(false);
   let showNotFoundBanner = $state(false);
 
+  async function loadRejoin() {
+    const lastId = localStorage.getItem('last_session_id');
+    if (!lastId) { rejoinSession = null; return; }
+    try {
+      const token = localStorage.getItem(`admin_token_${lastId}`) ?? undefined;
+      const s = await api.sessions.get(lastId, token);
+      if (s.status === 'lobby' || s.status === 'active') {
+        rejoinSession = s;
+        rejoinHref = token ? `/s/${lastId}?token=${token}` : `/s/${lastId}`;
+      } else {
+        rejoinSession = null;
+      }
+    } catch {
+      localStorage.removeItem('last_session_id');
+      rejoinSession = null;
+    }
+  }
+
   onMount(async () => {
     // If ?create=1, go straight to setup (used by profile "New tournament" link)
     if (page.url.searchParams.get('create') === '1') {
@@ -56,20 +75,7 @@
       setTimeout(() => { showNotFoundBanner = false; }, 5000);
     }
 
-    // Load rejoin session in parallel with auth check
-    const lastId = localStorage.getItem('last_session_id');
-    if (lastId) {
-      try {
-        const token = localStorage.getItem(`admin_token_${lastId}`) ?? undefined;
-        const s = await api.sessions.get(lastId, token);
-        if (s.status === 'lobby' || s.status === 'active') {
-          rejoinSession = s;
-          rejoinHref = token ? `/s/${lastId}?token=${token}` : `/s/${lastId}`;
-        }
-      } catch {
-        localStorage.removeItem('last_session_id');
-      }
-    }
+    await loadRejoin();
   });
 
   // Redirect logged-in users to profile
@@ -123,6 +129,7 @@
       {$_('home_session_not_found')}
     </div>
   {/if}
+  <PullToRefresh onRefresh={loadRejoin}>
   <main class="flex min-h-svh flex-col items-center px-6 py-12" class:pt-16={showDeletedBanner || showNotFoundBanner}>
   <div class="flex w-full max-w-sm flex-1 flex-col">
     <div class="flex flex-1 flex-col justify-center space-y-12">
@@ -211,6 +218,7 @@
   </div>
   <Footer />
   </main>
+  </PullToRefresh>
 
 {:else}
   <main class="flex min-h-svh flex-col items-center px-6 py-6">
