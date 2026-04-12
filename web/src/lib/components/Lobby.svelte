@@ -48,6 +48,9 @@
     }
   });
 
+  const joinedUserIds = $derived(new Set(session.players.map(p => p.user_id).filter(Boolean)));
+  const pendingInvites = $derived(sessionInvites.filter(inv => !joinedUserIds.has(inv.to_user_id)));
+
   function onPlayerSearchInput() {
     clearTimeout(playerSearchDebounce);
     if (playerSearch.length < 2) { playerResults = []; playerSearchLoading = false; return; }
@@ -555,7 +558,7 @@
               </div>
             </div>
           {/each}
-          {#each sessionInvites as invite (invite.id)}
+          {#each pendingInvites as invite (invite.id)}
             <div class="flex items-center gap-3 px-4 py-3 opacity-60">
               <Avatar name={invite.to_display_name ?? '?'} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
               <span class="flex-1 text-sm font-medium text-[var(--text-secondary)] truncate">{invite.to_display_name}</span>
