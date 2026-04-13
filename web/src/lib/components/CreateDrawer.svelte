@@ -54,6 +54,22 @@
   let scheduleEnabled = $state(false);
   let calendarDate = $state<DateValue | undefined>(undefined);
   let timeSlot = $state(20); // default 18:00
+
+  function calculateNextHourSlot(): number {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+
+    // Calculate next whole hour
+    const nextHour = currentMinutes > 0 ? currentHour + 1 : currentHour;
+
+    // Clamp to 8-21 range (08:00 to 21:30)
+    const clampedHour = Math.min(21, Math.max(8, nextHour));
+
+    // Convert hour to slot (slot 0 = 08:00, slot 27 = 21:30)
+    // slot = (hour * 60 - 8 * 60) / 30
+    return Math.round((clampedHour * 60 - 8 * 60) / 30);
+  }
   let creating = $state(false);
   let error = $state('');
 
@@ -89,40 +105,74 @@
   $effect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
+      // Reset drag state when drawer opens
+      dragOffset = 0;
+      dragging = false;
     } else {
       document.body.style.overflow = '';
+      // Reset drag state when drawer closes
+      dragOffset = 0;
+      dragging = false;
     }
     return () => { document.body.style.overflow = ''; };
   });
 
-  // Drag-down-to-close
+  // Drag-down-to-close (mobile optimized)
   let dragStartY = 0;
+  let dragVelocity = 0;
+  let dragLastY = 0;
+  let dragLastTime = 0;
   let dragOffset = $state(0);
   let dragging = $state(false);
+  let scrollableContent: HTMLElement | null = $state(null);
 
   function onDragStart(e: TouchEvent) {
     dragStartY = e.touches[0].clientY;
+    dragLastY = dragStartY;
+    dragLastTime = Date.now();
     dragOffset = 0;
+    dragVelocity = 0;
     dragging = true;
   }
 
   function onDragMove(e: TouchEvent) {
-    if (!dragging) return;
-    const delta = e.touches[0].clientY - dragStartY;
-    dragOffset = Math.max(0, delta); // only allow dragging down
+    if (!dragging || !scrollableContent) return;
+    const now = Date.now();
+    const currentY = e.touches[0].clientY;
+    const delta = currentY - dragStartY;
+
+    // Only allow drag-to-close if scrolled to top or dragging downward significantly
+    const scrollTop = scrollableContent.scrollTop;
+    if (delta > 0 && (scrollTop === 0 || delta > 30)) {
+      if (delta > 0) e.preventDefault();
+      // Cap drag at the drawer element's own height
+      const drawerRect = (scrollableContent.parentElement as HTMLElement)?.getBoundingClientRect();
+      const maxDrag = drawerRect?.height ?? 400;
+      dragOffset = Math.min(maxDrag, delta);
+      // Calculate velocity for momentum detection
+      dragVelocity = (currentY - dragLastY) / Math.max(16, now - dragLastTime);
+      dragLastY = currentY;
+      dragLastTime = now;
+    }
   }
 
   function onDragEnd() {
     dragging = false;
-    if (dragOffset > 120) {
+    // Threshold: 80px OR velocity > 150px/s (fast flick)
+    const shouldClose = dragOffset > 80 || (dragVelocity > 150 && dragOffset > 20);
+    if (shouldClose) {
       close();
+    } else {
+      dragOffset = 0;
     }
-    dragOffset = 0;
   }
 
   async function create() {
     creating = true;
     error = '';
+    // Reset drag state immediately so drawer animates properly
+    dragOffset = 0;
+    dragging = false;
     try {
       let iso: string | undefined;
       if (scheduleEnabled && calendarDate) {
@@ -183,7 +233,14 @@
     </div>
 
     <!-- Scrollable content -->
-    <div class="flex-1 overflow-y-auto px-6 pb-8 space-y-6">
+    <div
+      bind:this={scrollableContent}
+      role="presentation"
+      class="flex-1 overflow-y-auto px-6 pb-8 space-y-6"
+      ontouchstart={onDragStart}
+      ontouchmove={onDragMove}
+      ontouchend={onDragEnd}
+    >
 
       <!-- Game mode -->
       <div class="space-y-2.5">
@@ -369,7 +426,16 @@
           <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_schedule_label')}</p>
           <button
             type="button"
-            onclick={() => { scheduleEnabled = !scheduleEnabled; if (!scheduleEnabled) { calendarDate = undefined; timeSlot = 20; } }}
+            onclick={() => {
+              scheduleEnabled = !scheduleEnabled;
+              if (!scheduleEnabled) {
+                calendarDate = undefined;
+                timeSlot = 20;
+              } else {
+                calendarDate = today(getLocalTimeZone());
+                timeSlot = calculateNextHourSlot();
+              }
+            }}
             aria-label={$_('create_schedule_label')}
             class="relative h-6 w-11 rounded-full transition-colors {scheduleEnabled ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'}"
           >
@@ -401,7 +467,7 @@
             class="flex w-full items-center justify-between"
           >
             <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-              Invite contacts
+              {$_('create_contacts_invite_label')}
               {#if selectedContacts.size > 0}
                 <span class="ml-1.5 rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-[10px] text-white">{selectedContacts.size}</span>
               {/if}

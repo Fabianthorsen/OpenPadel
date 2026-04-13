@@ -5,12 +5,13 @@
   import { translateApiError } from '$lib/i18n/errors';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
+  import { sessionDialog } from '$lib/stores/sessionDialog';
   import { Activity, ChartBar, Users, Pencil, Shield, LayoutGrid, Check, X } from 'lucide-svelte';
   import { sessionName } from '$lib/utils';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import { numpad as numpadStore } from '$lib/stores/numpad';
 
   let {
     session,
@@ -36,9 +37,7 @@
   let initialServer = $state<Record<string, 'a' | 'b'>>({});
   const saveTimeout: Record<string, ReturnType<typeof setTimeout>> = {};
   let advancing = $state(false);
-  let showCancelDialog = $state(false);
   let cancelling = $state(false);
-  let showCloseDialog = $state(false);
   let closing = $state(false);
 
   // Court tabs
@@ -50,34 +49,58 @@
 
   let showCourtsOverview = $state(false);
 
-  // Numpad
-  type NumpadState = { matchId: string; team: 'a' | 'b'; value: string };
+  // Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite)
+  type NumpadState = { matchId: string; team: 'a' | 'b'; value: string; fresh: boolean };
   let numpad = $state<NumpadState | null>(null);
-  let numpadShaking = $state(false);
 
   function openNumpad(matchId: string, team: 'a' | 'b') {
     const current = scores[matchId]?.[team] ?? 0;
-    numpad = { matchId, team, value: current > 0 ? String(current) : '' };
+    const value = current > 0 ? String(current) : '';
+    numpad = { matchId, team, value, fresh: true };
+    numpadStore.open({
+      value,
+      fresh: true,
+      targetPoints: session.points,
+      shaking: false,
+      onDigit: numpadDigit,
+      onDelete: numpadDelete,
+      onConfirm: numpadConfirm,
+      onClose: () => {
+        numpad = null;
+        numpadStore.close();
+      }
+    });
   }
 
   function numpadDigit(d: string) {
     if (!numpad) return;
-    const next = (numpad.value + d).replace(/^0+(\d)/, '$1');
+    // Overwrite on first digit after opening/confirming, then append normally
+    let next: string;
+    if (numpad.fresh && numpad.value && numpad.value !== '0') {
+      next = d; // Replace value on first digit
+    } else {
+      next = (numpad.value + d).replace(/^0+(\d)/, '$1');
+    }
     if (parseInt(next || '0') > session.points) return;
-    numpad = { ...numpad, value: next };
+    numpad = { ...numpad, value: next, fresh: false }; // After first digit, normal append mode
+    numpadStore.update({ value: next, fresh: false });
   }
 
   function numpadDelete() {
     if (!numpad) return;
-    numpad = { ...numpad, value: numpad.value.slice(0, -1) };
+    const next = numpad.value.slice(0, -1);
+    numpad = { ...numpad, value: next };
+    numpadStore.update({ value: next, fresh: false });
   }
 
   function numpadConfirm() {
     if (!numpad) return;
     const entered = parseInt(numpad.value || '0');
     if (entered > session.points) {
-      numpadShaking = true;
-      setTimeout(() => { numpadShaking = false; }, 400);
+      numpadStore.update({ shaking: true });
+      setTimeout(() => {
+        numpadStore.update({ shaking: false });
+      }, 400);
       return;
     }
     const other = session.points - entered;
@@ -85,6 +108,7 @@
     localScores[matchId] = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
     scheduleLiveSave(matchId);
     numpad = null;
+    numpadStore.close();
   }
 
   const scores = $derived.by(() => {
@@ -162,7 +186,7 @@
     try {
       const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
       await api.sessions.close(session.id, adminToken);
-      showCloseDialog = false;
+      sessionDialog.close();
       closing = false;
       onRefresh();
     } catch (e) {
@@ -239,8 +263,8 @@
   </main>
 {:else}
 
-<!-- Bottom nav -->
-<div class="fixed bottom-0 left-0 right-0 z-10 flex border-t border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+<!-- Bottom nav (truly fixed to viewport bottom) -->
+<div class="fixed left-0 right-0 z-40 flex border-t border-[var(--border)] bg-[var(--background)] backdrop-blur-sm shadow-lg" style="bottom: 0; top: auto; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); height: auto;">
   <button
     onclick={() => tab = 'scoring'}
     class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'scoring' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
@@ -266,7 +290,7 @@
 
 <!-- ── SCORING TAB ── -->
 {#if tab === 'scoring'}
-  <main class="mx-auto max-w-[480px] px-4 pb-32 pt-6 space-y-4">
+  <main class="mx-auto w-full max-w-[480px] min-h-screen px-4 pb-36 pt-6 space-y-4">
 
     <!-- Nav -->
     <div class="flex items-center justify-between">
@@ -477,9 +501,9 @@
               class="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-40"
             >
               <Check size={18} />
-              {submitting[match.id] ? '…' : 'Finalize Result'}
+              {submitting[match.id] ? '…' : $_('active_finalize_result')}
             </button>
-            <p class="text-center text-xs text-[var(--text-disabled)]">Scores are synced live to all player devices</p>
+            <p class="text-center text-xs text-[var(--text-disabled)]">{$_('active_scores_synced')}</p>
           {/if}
         {/if}
       {/if}
@@ -535,12 +559,12 @@
     {#if isAdmin}
       <div class="flex flex-col items-center gap-1 pb-2">
         <button
-          onclick={() => showCloseDialog = true}
+          onclick={() => sessionDialog.open('close', closeSession)}
           disabled={closing || cancelling}
           class="rounded-full bg-[var(--destructive)] px-5 py-2 text-xs font-semibold text-white transition-all active:scale-95 disabled:opacity-40"
         >{$_('active_close')}</button>
         <button
-          onclick={() => showCancelDialog = true}
+          onclick={() => sessionDialog.open('cancel', cancelSession)}
           disabled={closing || cancelling}
           class="px-4 py-1.5 text-xs text-[var(--text-disabled)] transition-colors hover:text-[var(--destructive)] disabled:opacity-40"
         >{$_('active_cancel')}</button>
@@ -551,7 +575,7 @@
 
 <!-- ── STANDINGS TAB ── -->
 {:else if tab === 'standings'}
-  <main class="mx-auto max-w-[480px] px-4 pb-28 pt-6">
+  <main class="mx-auto w-full max-w-[480px] min-h-screen px-4 pb-32 pt-6">
     <div class="mb-4 flex items-center justify-between">
       <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
@@ -561,7 +585,7 @@
 
 <!-- ── PLAYERS TAB ── -->
 {:else if tab === 'players'}
-  <main class="mx-auto max-w-[480px] px-4 pb-28 pt-6 space-y-4">
+  <main class="mx-auto w-full max-w-[480px] min-h-screen px-4 pb-32 pt-6 space-y-4">
     <div class="flex items-center justify-between">
       <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
@@ -654,52 +678,3 @@
   </div>
 {/if}
 
-<!-- ── NUMPAD BOTTOM SHEET ── -->
-{#if numpad}
-  <div
-    role="presentation"
-    class="fixed inset-0 z-40 bg-black/40"
-    onclick={() => numpad = null}
-    onkeydown={(e) => e.key === 'Escape' && (numpad = null)}
-  ></div>
-  <div class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[480px] rounded-t-3xl bg-[var(--surface)] px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-    <p class="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">
-      Target: {session.points}
-    </p>
-    <p class="mb-6 text-center text-[64px] font-[800] leading-none tabular-nums transition-transform
-      {numpadShaking ? 'animate-[shake_0.4s_ease-in-out]' : ''}">
-      {numpad.value || '0'}
-    </p>
-    <div class="grid grid-cols-3 gap-3">
-      {#each ['1','2','3','4','5','6','7','8','9'] as d}
-        <button
-          onclick={() => numpadDigit(d)}
-          class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95"
-        >{d}</button>
-      {/each}
-      <button onclick={numpadDelete} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95">⌫</button>
-      <button onclick={() => numpadDigit('0')} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95">0</button>
-      <button onclick={numpadConfirm} class="rounded-2xl bg-[var(--primary)] py-4 text-xl font-[800] text-white transition-all active:scale-95">✓</button>
-    </div>
-  </div>
-{/if}
-
-<ConfirmDialog
-  bind:open={showCloseDialog}
-  title={$_('close_dialog_title')}
-  description={$_('close_dialog_desc')}
-  confirmLabel={$_('close_dialog_confirm')}
-  cancelLabel={$_('close_dialog_cancel')}
-  destructive
-  onconfirm={closeSession}
-/>
-
-<ConfirmDialog
-  bind:open={showCancelDialog}
-  title={$_('cancel_dialog_title')}
-  description={$_('cancel_dialog_desc')}
-  confirmLabel={$_('cancel_dialog_confirm')}
-  cancelLabel={$_('cancel_dialog_cancel')}
-  destructive
-  onconfirm={cancelSession}
-/>
