@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { fly, fade } from 'svelte/transition';
+
   let {
     open = $bindable(false),
     title,
@@ -26,7 +28,8 @@
 {#if open}
   <!-- Backdrop -->
   <div
-    class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm pb-safe sm:items-center"
+    transition:fade={{ duration: 150 }}
+    class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
     onclick={() => (open = false)}
     onkeydown={(e) => e.key === 'Escape' && (open = false)}
     role="presentation"
@@ -34,6 +37,7 @@
   >
     <!-- Sheet -->
     <div
+      transition:fly={{ y: 400, duration: 280, opacity: 1 }}
       class="w-full max-w-sm rounded-t-3xl bg-[var(--surface)] px-6 pb-8 pt-6 space-y-5 sm:rounded-3xl sm:mx-4"
       onclick={(e) => e.stopPropagation()}
       role="presentation"

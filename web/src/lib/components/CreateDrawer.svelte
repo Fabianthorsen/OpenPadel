@@ -54,6 +54,22 @@
   let scheduleEnabled = $state(false);
   let calendarDate = $state<DateValue | undefined>(undefined);
   let timeSlot = $state(20); // default 18:00
+
+  function calculateNextHourSlot(): number {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+
+    // Calculate next whole hour
+    const nextHour = currentMinutes > 0 ? currentHour + 1 : currentHour;
+
+    // Clamp to 8-21 range (08:00 to 21:30)
+    const clampedHour = Math.min(21, Math.max(8, nextHour));
+
+    // Convert hour to slot (slot 0 = 08:00, slot 27 = 21:30)
+    // slot = (hour * 60 - 8 * 60) / 30
+    return Math.round((clampedHour * 60 - 8 * 60) / 30);
+  }
   let creating = $state(false);
   let error = $state('');
 
@@ -369,7 +385,16 @@
           <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_schedule_label')}</p>
           <button
             type="button"
-            onclick={() => { scheduleEnabled = !scheduleEnabled; if (!scheduleEnabled) { calendarDate = undefined; timeSlot = 20; } }}
+            onclick={() => {
+              scheduleEnabled = !scheduleEnabled;
+              if (!scheduleEnabled) {
+                calendarDate = undefined;
+                timeSlot = 20;
+              } else {
+                calendarDate = today(getLocalTimeZone());
+                timeSlot = calculateNextHourSlot();
+              }
+            }}
             aria-label={$_('create_schedule_label')}
             class="relative h-6 w-11 rounded-full transition-colors {scheduleEnabled ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'}"
           >

@@ -8,6 +8,7 @@
   import { CalendarDays, Radio, ChevronDown, UserPlus, X, Search, Check } from 'lucide-svelte';
   import Footer from '$lib/components/Footer.svelte';
   import CreateDrawer from '$lib/components/CreateDrawer.svelte';
+  import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { slide } from 'svelte/transition';
@@ -55,6 +56,8 @@
   let searchResults = $state<App.UserSearchResult[]>([]);
   let searchLoading = $state(false);
   let searchDebounce: ReturnType<typeof setTimeout>;
+  let contactToDelete = $state<App.Contact | null>(null);
+  let showContactDeleteConfirm = $state(false);
 
   function onContactSearchInput() {
     clearTimeout(searchDebounce);
@@ -93,6 +96,17 @@
     await api.contacts.remove(auth.token!, userID);
     contacts = contacts.filter(c => c.user_id !== userID);
     searchResults = searchResults.map(r => r.id === userID ? { ...r, is_contact: false } : r);
+  }
+
+  function handleDeleteContact(contact: App.Contact) {
+    contactToDelete = contact;
+    showContactDeleteConfirm = true;
+  }
+
+  async function confirmDeleteContact() {
+    if (contactToDelete) {
+      await removeContact(contactToDelete.user_id);
+    }
   }
 
   let pushSupported = $state(false);
@@ -522,7 +536,7 @@
                     </div>
                     <p class="flex-1 text-sm font-semibold truncate">{result.display_name}</p>
                     {#if result.is_contact}
-                      <button onclick={() => removeContact(result.id)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
+                      <button onclick={() => handleDeleteContact({ user_id: result.id, display_name: result.display_name } as App.Contact)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
                         <X size={16} />
                       </button>
                     {:else}
@@ -548,7 +562,7 @@
                       {contact.display_name[0].toUpperCase()}
                     </div>
                     <p class="flex-1 text-sm font-semibold truncate">{contact.display_name}</p>
-                    <button onclick={() => removeContact(contact.user_id)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
+                    <button onclick={() => handleDeleteContact(contact)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
                       <X size={16} />
                     </button>
                   </div>
@@ -558,6 +572,17 @@
           </div>
         {/if}
       </div>
+
+      <!-- Delete contact confirmation -->
+      <ConfirmDialog
+        bind:open={showContactDeleteConfirm}
+        title="Delete Contact?"
+        description="Remove {contactToDelete?.display_name || 'this contact'} from your contacts. This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive={true}
+        onconfirm={confirmDeleteContact}
+      />
 
       <!-- Upcoming -->
       <div class="space-y-3">
