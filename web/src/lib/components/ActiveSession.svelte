@@ -304,8 +304,8 @@
   </main>
 {:else}
 
-<!-- Bottom nav (sticky to viewport) -->
-<div class="fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--border)] bg-[var(--background)] backdrop-blur-sm shadow-lg" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom))">
+<!-- Bottom nav (truly fixed to viewport bottom) -->
+<div class="fixed left-0 right-0 z-40 flex border-t border-[var(--border)] bg-[var(--background)] backdrop-blur-sm shadow-lg" style="bottom: 0; top: auto; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); height: auto;">
   <button
     onclick={() => tab = 'scoring'}
     class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'scoring' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
