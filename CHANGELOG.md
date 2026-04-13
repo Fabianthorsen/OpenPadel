@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.0...v1.9.1) (2026-04-13)
+
+
+### Bug Fixes
+
+* **ui:** move numpad to page level to fix viewport positioning ([7adb646](https://github.com/Fabianthorsen/OpenPadel/commit/7adb64654110639e753ecaf1e8bd28e2bf4f034e))
+
 ## [1.9.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.8.0...v1.9.0) (2026-04-13)
 
 
