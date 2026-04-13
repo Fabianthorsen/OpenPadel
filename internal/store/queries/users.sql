@@ -5,6 +5,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?);
 -- name: UpdateProfile :exec
 UPDATE users SET display_name = ?, avatar_icon = ?, avatar_color = ? WHERE id = ?;
 
+-- name: UpdateUserPassword :exec
+UPDATE users SET password_hash = ? WHERE id = ?;
+
 -- name: UpdateProfileAvatarOnPlayers :exec
 UPDATE players SET avatar_icon = ?, avatar_color = ? WHERE user_id = ?;
 
@@ -15,6 +18,9 @@ FROM users WHERE email = ?;
 -- name: GetUserByID :one
 SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at
 FROM users WHERE id = ?;
+
+-- name: GetUserAvatarByUserID :one
+SELECT avatar_icon, avatar_color FROM users WHERE id = ?;
 
 -- name: CreateAuthToken :exec
 INSERT INTO auth_tokens (token, user_id, created_at) VALUES (?, ?, ?);
@@ -32,23 +38,23 @@ DELETE FROM auth_tokens WHERE user_id = ?;
 SELECT
     COUNT(DISTINCT p.session_id) AS tournaments,
     COUNT(m.id) AS games_played,
-    COALESCE(SUM(
+    CAST(COALESCE(SUM(
         CASE
             WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
             WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
             ELSE 0
         END
-    ), 0) AS wins,
-    COALESCE(SUM(
+    ), 0) AS INTEGER) AS wins,
+    CAST(COALESCE(SUM(
         CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END
-    ), 0) AS draws,
-    COALESCE(SUM(
+    ), 0) AS INTEGER) AS draws,
+    CAST(COALESCE(SUM(
         CASE
             WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
             WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
             ELSE 0
         END
-    ), 0) AS total_points
+    ), 0) AS INTEGER) AS total_points
 FROM players p
 JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'americano'
 LEFT JOIN rounds r ON r.session_id = p.session_id
@@ -60,12 +66,12 @@ WHERE p.user_id = ? AND p.active = 1;
 -- name: GetTennisCareerStats :one
 SELECT
     COUNT(DISTINCT p.session_id) AS tournaments,
-    COALESCE(SUM(
+    CAST(COALESCE(SUM(
         CASE WHEN json_extract(tm.state, '$.winner') = tt.team THEN 1 ELSE 0 END
-    ), 0) AS wins,
-    COALESCE(SUM(
+    ), 0) AS INTEGER) AS wins,
+    CAST(COALESCE(SUM(
         CASE WHEN json_extract(tm.state, '$.winner') != '' AND json_extract(tm.state, '$.winner') != tt.team THEN 1 ELSE 0 END
-    ), 0) AS losses
+    ), 0) AS INTEGER) AS losses
 FROM players p
 JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'tennis'
 JOIN tennis_teams tt ON tt.session_id = p.session_id AND tt.player_id = p.id
@@ -87,7 +93,7 @@ DELETE FROM password_reset_tokens WHERE token_hash = ?;
 -- name: GetTournamentHistorySessions :many
 SELECT
     s.id,
-    COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS name,
+    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
     s.status,
     s.created_at,
     COALESCE(s.ended_early, 0) AS ended_early
@@ -100,7 +106,7 @@ ORDER BY s.created_at DESC;
 -- name: GetUpcomingTournaments :many
 SELECT
     s.id,
-    COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS name,
+    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
     s.status,
     s.game_mode,
     s.courts,

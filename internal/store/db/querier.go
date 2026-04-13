@@ -14,13 +14,13 @@ type Querier interface {
 	AddContact(ctx context.Context, arg AddContactParams) error
 	AdvanceMexicanoRound(ctx context.Context, arg AdvanceMexicanoRoundParams) error
 	AdvanceRound(ctx context.Context, arg AdvanceRoundParams) error
+	AllRoundsComplete(ctx context.Context, sessionID string) (int64, error)
 	CompleteSession(ctx context.Context, arg CompleteSessionParams) error
 	CountUnscored(ctx context.Context, sessionID string) (int64, error)
 	CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams) error
 	CreateInvite(ctx context.Context, arg CreateInviteParams) error
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreatePlayer(ctx context.Context, arg CreatePlayerParams) error
-	CreatePushSubscription(ctx context.Context, arg CreatePushSubscriptionParams) error
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateTennisMatch(ctx context.Context, arg CreateTennisMatchParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) error
@@ -37,13 +37,14 @@ type Querier interface {
 	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
 	DeleteRounds(ctx context.Context, sessionID string) error
 	DeleteSession(ctx context.Context, id string) error
+	DeleteStalePushSubscription(ctx context.Context, endpoint string) error
 	DeleteTennisMatches(ctx context.Context, sessionID string) error
 	DeleteTennisTeams(ctx context.Context, sessionID string) error
 	DeleteTennisTeamsBySessionID(ctx context.Context, sessionID string) error
 	DeleteUser(ctx context.Context, id string) error
 	GetAmericanoCareerStats(ctx context.Context, userID sql.NullString) (GetAmericanoCareerStatsRow, error)
 	GetBenchByRoundID(ctx context.Context, roundID string) ([]string, error)
-	GetContactsByUserID(ctx context.Context, userID string) ([]string, error)
+	GetContacts(ctx context.Context, userID string) ([]GetContactsRow, error)
 	GetCreatorName(ctx context.Context, id string) (string, error)
 	GetCurrentRoundBySessionID(ctx context.Context, sessionID string) (GetCurrentRoundBySessionIDRow, error)
 	GetHeadToHead(ctx context.Context, sessionID string) ([]GetHeadToHeadRow, error)
@@ -56,7 +57,8 @@ type Querier interface {
 	GetPasswordResetToken(ctx context.Context, tokenHash string) (GetPasswordResetTokenRow, error)
 	GetPendingInvitesBySessionID(ctx context.Context, sessionID string) ([]GetPendingInvitesBySessionIDRow, error)
 	GetPlayersBySessionID(ctx context.Context, sessionID string) ([]GetPlayersBySessionIDRow, error)
-	GetPushSubscriptionsByUserID(ctx context.Context, userID string) ([]GetPushSubscriptionsByUserIDRow, error)
+	GetPushSubscriptionsByUserID(ctx context.Context, userID string) ([]PushSubscription, error)
+	GetPushSubscriptionsForSession(ctx context.Context, sessionID string) ([]GetPushSubscriptionsForSessionRow, error)
 	GetRoundsBySessionID(ctx context.Context, sessionID string) ([]GetRoundsBySessionIDRow, error)
 	GetSession(ctx context.Context, id string) (GetSessionRow, error)
 	GetTennisCareerStats(ctx context.Context, userID sql.NullString) (GetTennisCareerStatsRow, error)
@@ -73,6 +75,7 @@ type Querier interface {
 	InsertRound(ctx context.Context, arg InsertRoundParams) error
 	InsertTennisTeam(ctx context.Context, arg InsertTennisTeamParams) error
 	RemoveContact(ctx context.Context, arg RemoveContactParams) error
+	SavePushSubscription(ctx context.Context, arg SavePushSubscriptionParams) error
 	SearchUsers(ctx context.Context, arg SearchUsersParams) ([]SearchUsersRow, error)
 	SetCreatorPlayer(ctx context.Context, arg SetCreatorPlayerParams) error
 	StartMexicanoSession(ctx context.Context, arg StartMexicanoSessionParams) error
@@ -85,6 +88,8 @@ type Querier interface {
 	UpdateProfileAvatarOnPlayers(ctx context.Context, arg UpdateProfileAvatarOnPlayersParams) error
 	UpdateSessionCurrentRound(ctx context.Context, arg UpdateSessionCurrentRoundParams) error
 	UpdateTennisState(ctx context.Context, arg UpdateTennisStateParams) error
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	UserExists(ctx context.Context, id string) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -117,23 +117,23 @@ const getAmericanoCareerStats = `-- name: GetAmericanoCareerStats :one
 SELECT
     COUNT(DISTINCT p.session_id) AS tournaments,
     COUNT(m.id) AS games_played,
-    COALESCE(SUM(
+    CAST(COALESCE(SUM(
         CASE
             WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
             WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
             ELSE 0
         END
-    ), 0) AS wins,
-    COALESCE(SUM(
+    ), 0) AS INTEGER) AS wins,
+    CAST(COALESCE(SUM(
         CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END
-    ), 0) AS draws,
-    COALESCE(SUM(
+    ), 0) AS INTEGER) AS draws,
+    CAST(COALESCE(SUM(
         CASE
             WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
             WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
             ELSE 0
         END
-    ), 0) AS total_points
+    ), 0) AS INTEGER) AS total_points
 FROM players p
 JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'americano'
 LEFT JOIN rounds r ON r.session_id = p.session_id
@@ -146,9 +146,9 @@ WHERE p.user_id = ? AND p.active = 1
 type GetAmericanoCareerStatsRow struct {
 	Tournaments int64
 	GamesPlayed int64
-	Wins        interface{}
-	Draws       interface{}
-	TotalPoints interface{}
+	Wins        int64
+	Draws       int64
+	TotalPoints int64
 }
 
 func (q *Queries) GetAmericanoCareerStats(ctx context.Context, userID sql.NullString) (GetAmericanoCareerStatsRow, error) {
@@ -183,12 +183,12 @@ func (q *Queries) GetPasswordResetToken(ctx context.Context, tokenHash string) (
 const getTennisCareerStats = `-- name: GetTennisCareerStats :one
 SELECT
     COUNT(DISTINCT p.session_id) AS tournaments,
-    COALESCE(SUM(
+    CAST(COALESCE(SUM(
         CASE WHEN json_extract(tm.state, '$.winner') = tt.team THEN 1 ELSE 0 END
-    ), 0) AS wins,
-    COALESCE(SUM(
+    ), 0) AS INTEGER) AS wins,
+    CAST(COALESCE(SUM(
         CASE WHEN json_extract(tm.state, '$.winner') != '' AND json_extract(tm.state, '$.winner') != tt.team THEN 1 ELSE 0 END
-    ), 0) AS losses
+    ), 0) AS INTEGER) AS losses
 FROM players p
 JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'tennis'
 JOIN tennis_teams tt ON tt.session_id = p.session_id AND tt.player_id = p.id
@@ -198,8 +198,8 @@ WHERE p.user_id = ? AND p.active = 1
 
 type GetTennisCareerStatsRow struct {
 	Tournaments int64
-	Wins        interface{}
-	Losses      interface{}
+	Wins        int64
+	Losses      int64
 }
 
 func (q *Queries) GetTennisCareerStats(ctx context.Context, userID sql.NullString) (GetTennisCareerStatsRow, error) {
@@ -212,7 +212,7 @@ func (q *Queries) GetTennisCareerStats(ctx context.Context, userID sql.NullStrin
 const getTournamentHistorySessions = `-- name: GetTournamentHistorySessions :many
 SELECT
     s.id,
-    COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS name,
+    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
     s.status,
     s.created_at,
     COALESCE(s.ended_early, 0) AS ended_early
@@ -225,7 +225,7 @@ ORDER BY s.created_at DESC
 
 type GetTournamentHistorySessionsRow struct {
 	ID         string
-	Name       interface{}
+	Name       string
 	Status     string
 	CreatedAt  string
 	EndedEarly int64
@@ -263,7 +263,7 @@ func (q *Queries) GetTournamentHistorySessions(ctx context.Context, userID sql.N
 const getUpcomingTournaments = `-- name: GetUpcomingTournaments :many
 SELECT
     s.id,
-    COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS name,
+    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
     s.status,
     s.game_mode,
     s.courts,
@@ -279,7 +279,7 @@ ORDER BY s.status DESC, COALESCE(s.scheduled_at, s.created_at) ASC
 
 type GetUpcomingTournamentsRow struct {
 	ID          string
-	Name        interface{}
+	Name        string
 	Status      string
 	GameMode    string
 	Courts      int64
@@ -431,5 +431,19 @@ type UpdateProfileAvatarOnPlayersParams struct {
 
 func (q *Queries) UpdateProfileAvatarOnPlayers(ctx context.Context, arg UpdateProfileAvatarOnPlayersParams) error {
 	_, err := q.db.ExecContext(ctx, updateProfileAvatarOnPlayers, arg.AvatarIcon, arg.AvatarColor, arg.UserID)
+	return err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users SET password_hash = ? WHERE id = ?
+`
+
+type UpdateUserPasswordParams struct {
+	PasswordHash string
+	ID           string
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.PasswordHash, arg.ID)
 	return err
 }
