@@ -14,7 +14,7 @@
 - [ ] **Sentry** — add `@sentry/sveltekit` + Go SDK for production error tracking with stack traces
 - [ ] **API handler tests** — scheduler is well-tested; add coverage for critical API handlers (start session, submit score, advance round)
 - [x] **v1.9.0** — Database migrations with goose: versioned `.sql` files in `internal/store/migrations/`, embedded via `//go:embed`
-- [ ] **sqlc** — generate type-safe Go from SQL queries, eliminate hand-written `rows.Scan` patterns in `internal/store/`
+- [x] **v1.9.0** — **sqlc** — generate type-safe Go from SQL queries, eliminate hand-written `rows.Scan` patterns in `internal/store/`; refactored users.go, sessions.go, players.go
 - [ ] **Playwright** — E2E tests for happy path (create session → join → submit scores)
 
 ## In Progress
