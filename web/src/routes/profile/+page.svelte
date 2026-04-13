@@ -506,7 +506,7 @@
           onclick={() => showContacts = !showContacts}
           class="flex w-full items-center justify-between"
         >
-          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Contacts</p>
+          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('profile_contacts_title')}</p>
           <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showContacts ? 'rotate-180' : ''}" />
         </button>
 
@@ -519,54 +519,66 @@
               </div>
               <input
                 type="text"
-                placeholder="Search players…"
+                placeholder={$_('profile_contacts_search_placeholder')}
                 bind:value={contactSearch}
                 oninput={onContactSearchInput}
                 class="w-full rounded-xl bg-[var(--surface-raised)] py-2.5 pl-9 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)] transition-shadow"
               />
             </div>
 
-            <!-- Search results -->
-            {#if searchResults.length > 0}
-              <div class="space-y-1.5">
-                {#each searchResults as result}
-                  <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
-                      {result.display_name[0].toUpperCase()}
-                    </div>
-                    <p class="flex-1 text-sm font-semibold truncate">{result.display_name}</p>
-                    {#if result.is_contact}
-                      <button onclick={() => handleDeleteContact({ user_id: result.id, display_name: result.display_name } as App.Contact)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
-                        <X size={16} />
-                      </button>
-                    {:else}
-                      <button onclick={() => addContact(result.id)} class="text-[var(--primary)]" aria-label="Add contact">
-                        <UserPlus size={16} />
-                      </button>
-                    {/if}
+            <!-- Search results section -->
+            {#if contactSearch.length >= 2}
+              <div class="space-y-2">
+                <p class="text-xs font-semibold text-[var(--text-secondary)] px-1">
+                  Search results {#if searchResults.length > 0}({searchResults.length}){/if}
+                </p>
+                {#if searchResults.length > 0}
+                  <div class="space-y-1.5">
+                    {#each searchResults as result}
+                      <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+                          {result.display_name[0].toUpperCase()}
+                        </div>
+                        <p class="flex-1 text-sm font-semibold truncate">{result.display_name}</p>
+                        {#if result.is_contact}
+                          <button onclick={() => handleDeleteContact({ user_id: result.id, display_name: result.display_name } as App.Contact)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
+                            <X size={16} />
+                          </button>
+                        {:else}
+                          <button onclick={() => addContact(result.id)} class="text-[var(--primary)]" aria-label="Add contact">
+                            <UserPlus size={16} />
+                          </button>
+                        {/if}
+                      </div>
+                    {/each}
                   </div>
-                {/each}
+                {:else if !searchLoading}
+                  <p class="text-sm text-[var(--text-disabled)] py-1">{$_('profile_contacts_search_empty')}</p>
+                {/if}
               </div>
-            {:else if contactSearch.length >= 2 && !searchLoading}
-              <p class="text-sm text-[var(--text-disabled)] py-1">No players found.</p>
             {/if}
 
-            <!-- Contact list -->
+            <!-- Saved contacts section (always visible) -->
             {#if contacts.length === 0 && contactSearch.length < 2}
-              <p class="text-sm text-[var(--text-disabled)] py-1">No contacts yet. Search for players above.</p>
-            {:else if contactSearch.length < 2}
-              <div class="space-y-1.5">
-                {#each contacts as contact}
-                  <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
-                      {contact.display_name[0].toUpperCase()}
+              <p class="text-sm text-[var(--text-disabled)] py-1">{$_('profile_contacts_empty')}</p>
+            {:else if contacts.length > 0}
+              <div class="space-y-2">
+                {#if contactSearch.length >= 2}
+                  <p class="text-xs font-semibold text-[var(--text-secondary)] px-1">Your contacts</p>
+                {/if}
+                <div class="space-y-1.5">
+                  {#each contacts as contact}
+                    <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
+                      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+                        {contact.display_name[0].toUpperCase()}
+                      </div>
+                      <p class="flex-1 text-sm font-semibold truncate">{contact.display_name}</p>
+                      <button onclick={() => handleDeleteContact(contact)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
+                        <X size={16} />
+                      </button>
                     </div>
-                    <p class="flex-1 text-sm font-semibold truncate">{contact.display_name}</p>
-                    <button onclick={() => handleDeleteContact(contact)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
-                      <X size={16} />
-                    </button>
-                  </div>
-                {/each}
+                  {/each}
+                </div>
               </div>
             {/if}
           </div>

@@ -233,6 +233,12 @@
   "create_duration_hint": "Turneringen avsluttes automatisk etter {n} minutter.",
   "create_duration_none_hint": "Ingen grense — avslutt turneringen manuelt.",
 
+  "profile_contacts_title": "Kontakter",
+  "profile_contacts_search_placeholder": "Søk på spillere…",
+  "profile_contacts_search_empty": "Ingen spillere funnet.",
+  "profile_contacts_empty": "Ingen kontakter ennå. Søk etter spillere over.",
+  "create_contacts_invite_label": "Inviter kontakter",
+
   "lobby_rules_button": "Slik spiller du",
   "rules_americano": "Spillere roterer partnere hver runde — du spiller aldri med samme partner to ganger hvis mulig.\nHver runde spiller alle baner til et fast poengmål (f.eks. 24).\nAlle poeng du scorer teller mot din personlige total gjennom hele turneringen.\nSpilleren med flest totale poeng til slutt vinner.",
   "rules_mexicano": "Runde 1 er tilfeldige par.\nFra runde 2 spiller de høyest rangerte mot hverandre og de lavest rangerte mot hverandre — vinnere møter vinnere.\nAlle spillere spiller hver runde (ingen benk).\nSpilleren med flest totale poeng til slutt vinner.",

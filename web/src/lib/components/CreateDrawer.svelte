@@ -426,7 +426,7 @@
             class="flex w-full items-center justify-between"
           >
             <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
-              Invite contacts
+              {$_('create_contacts_invite_label')}
               {#if selectedContacts.size > 0}
                 <span class="ml-1.5 rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-[10px] text-white">{selectedContacts.size}</span>
               {/if}

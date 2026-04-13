@@ -235,6 +235,12 @@
   "create_duration_hint": "Tournament ends automatically after {n} minutes.",
   "create_duration_none_hint": "No limit — end the tournament manually.",
 
+  "profile_contacts_title": "Contacts",
+  "profile_contacts_search_placeholder": "Search players…",
+  "profile_contacts_search_empty": "No players found.",
+  "profile_contacts_empty": "No contacts yet. Search for players above.",
+  "create_contacts_invite_label": "Invite contacts",
+
   "lobby_rules_button": "How to play",
   "rules_americano": "Players rotate partners every round — you never play with the same partner twice if possible.\nEach round every court plays to a fixed points target (e.g. 24).\nAll points you score count toward your personal total across every round.\nThe player with the most total points at the end wins.",
   "rules_mexicano": "Round 1 pairs are random.\nFrom round 2 onward, the top-ranked players face each other and the bottom-ranked face each other — winners play winners.\nEvery player plays every round (no bench).\nThe player with the most total points at the end wins.",

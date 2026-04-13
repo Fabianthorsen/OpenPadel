@@ -100,7 +100,7 @@
     {:else}
       <!-- Pull arrow, rotates as you drag -->
       <svg
-        style="transform: rotate({arrowRotation}deg); transition: transform 0.15s ease;"
+        style="transform: rotate({arrowRotation}deg); transition: {dragging ? 'none' : 'transform 0.2s ease'};"
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
