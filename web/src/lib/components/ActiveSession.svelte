@@ -501,9 +501,9 @@
               class="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-40"
             >
               <Check size={18} />
-              {submitting[match.id] ? '…' : 'Finalize Result'}
+              {submitting[match.id] ? '…' : $_('active_finalize_result')}
             </button>
-            <p class="text-center text-xs text-[var(--text-disabled)]">Scores are synced live to all player devices</p>
+            <p class="text-center text-xs text-[var(--text-disabled)]">{$_('active_scores_synced')}</p>
           {/if}
         {/if}
       {/if}

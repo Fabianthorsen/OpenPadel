@@ -239,6 +239,8 @@
   "profile_contacts_search_placeholder": "Search players…",
   "profile_contacts_search_empty": "No players found.",
   "profile_contacts_empty": "No contacts yet. Search for players above.",
+  "profile_contacts_search_results": "Search results",
+  "profile_contacts_your_contacts": "Your contacts",
   "create_contacts_invite_label": "Invite contacts",
 
   "lobby_rules_button": "How to play",
@@ -253,6 +255,8 @@
 
   "active_close": "End tournament",
   "active_cancel": "Cancel tournament",
+  "active_finalize_result": "Finalize Result",
+  "active_scores_synced": "Scores are synced live to all player devices",
   "close_dialog_title": "Close tournament?",
   "close_dialog_desc": "This will mark the tournament as complete. Results will be preserved.",
   "close_dialog_confirm": "Close tournament",

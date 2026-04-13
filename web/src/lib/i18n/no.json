@@ -237,6 +237,8 @@
   "profile_contacts_search_placeholder": "Søk på spillere…",
   "profile_contacts_search_empty": "Ingen spillere funnet.",
   "profile_contacts_empty": "Ingen kontakter ennå. Søk etter spillere over.",
+  "profile_contacts_search_results": "Søkeresultater",
+  "profile_contacts_your_contacts": "Dine kontakter",
   "create_contacts_invite_label": "Inviter kontakter",
 
   "lobby_rules_button": "Slik spiller du",
@@ -251,6 +253,8 @@
 
   "active_close": "Avslutt turnering",
   "active_cancel": "Kanseller turnering",
+  "active_finalize_result": "Bekreft resultat",
+  "active_scores_synced": "Poengsum synkroniseres direkte til alle spillere",
   "close_dialog_title": "Avslutt turneringen?",
   "close_dialog_desc": "Dette markerer turneringen som fullført. Resultatene beholdes.",
   "close_dialog_confirm": "Avslutt turnering",
