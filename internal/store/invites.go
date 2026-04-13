@@ -1,12 +1,14 @@
 package store
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/store/db"
 )
 
 var ErrAlreadyInvited = errors.New("user already invited to this session")
@@ -15,11 +17,13 @@ var ErrAlreadyInvited = errors.New("user already invited to this session")
 func (s *Store) CreateInvite(sessionID, fromUserID, toUserID string) (*domain.Invite, error) {
 	id := newInviteID()
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err := s.db.Exec(
-		`INSERT INTO invites (id, session_id, from_user_id, to_user_id, status, created_at)
-		 VALUES (?, ?, ?, ?, 'pending', ?)`,
-		id, sessionID, fromUserID, toUserID, now,
-	)
+	err := s.queries.CreateInvite(context.Background(), db.CreateInviteParams{
+		ID:         id,
+		SessionID:  sessionID,
+		FromUserID: fromUserID,
+		ToUserID:   toUserID,
+		CreatedAt:  now,
+	})
 	if err != nil {
 		if isUniqueConstraint(err, "session_id, to_user_id") || isUniqueConstraint(err, "invites") {
 			return nil, ErrAlreadyInvited
@@ -31,79 +35,56 @@ func (s *Store) CreateInvite(sessionID, fromUserID, toUserID string) (*domain.In
 
 // GetPendingInvites returns all pending invites for a user, newest first.
 func (s *Store) GetPendingInvites(toUserID string) ([]domain.Invite, error) {
-	rows, err := s.db.Query(`
-		SELECT
-			i.id, i.session_id,
-			COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS session_name,
-			i.from_user_id, u.display_name,
-			i.to_user_id, i.status, i.created_at
-		FROM invites i
-		JOIN sessions s ON s.id = i.session_id
-		JOIN users u ON u.id = i.from_user_id
-		WHERE i.to_user_id = ? AND i.status = 'pending'
-		ORDER BY i.created_at DESC`,
-		toUserID,
-	)
+	rows, err := s.queries.GetInvitesByUserID(context.Background(), toUserID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var invites []domain.Invite
-	for rows.Next() {
-		inv, err := scanInvite(rows)
-		if err != nil {
-			return nil, err
+	for _, row := range rows {
+		inv := domain.Invite{
+			ID:                row.ID,
+			SessionID:         row.SessionID,
+			SessionName:       row.SessionName,
+			FromUserID:        row.FromUserID,
+			FromDisplayName:   row.FromDisplayName,
+			ToUserID:          toUserID,
+			Status:            row.Status,
+			CreatedAt:         parseTime(row.CreatedAt),
 		}
-		invites = append(invites, *inv)
-	}
-	if invites == nil {
-		invites = []domain.Invite{}
-	}
-	return invites, rows.Err()
-}
-
-// GetSessionInvites returns all pending invites for a session, including the invited user's name.
-func (s *Store) GetSessionInvites(sessionID string) ([]domain.Invite, error) {
-	rows, err := s.db.Query(`
-		SELECT
-			i.id, i.session_id,
-			COALESCE(NULLIF(sess.name, ''), 'OpenPadel') AS session_name,
-			i.from_user_id, uf.display_name,
-			i.to_user_id, ut.display_name,
-			i.status, i.created_at
-		FROM invites i
-		JOIN sessions sess ON sess.id = i.session_id
-		JOIN users uf ON uf.id = i.from_user_id
-		JOIN users ut ON ut.id = i.to_user_id
-		WHERE i.session_id = ? AND i.status = 'pending'
-		ORDER BY i.created_at DESC`,
-		sessionID,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var invites []domain.Invite
-	for rows.Next() {
-		var inv domain.Invite
-		var createdAt string
-		if err := rows.Scan(
-			&inv.ID, &inv.SessionID, &inv.SessionName,
-			&inv.FromUserID, &inv.FromDisplayName,
-			&inv.ToUserID, &inv.ToDisplayName,
-			&inv.Status, &createdAt,
-		); err != nil {
-			return nil, err
-		}
-		inv.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
 		invites = append(invites, inv)
 	}
 	if invites == nil {
 		invites = []domain.Invite{}
 	}
-	return invites, rows.Err()
+	return invites, nil
+}
+
+// GetSessionInvites returns all pending invites for a session, including the invited user's name.
+func (s *Store) GetSessionInvites(sessionID string) ([]domain.Invite, error) {
+	rows, err := s.queries.GetPendingInvitesBySessionID(context.Background(), sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	var invites []domain.Invite
+	for _, row := range rows {
+		inv := domain.Invite{
+			ID:              row.ID,
+			SessionID:       sessionID,
+			FromUserID:      row.FromUserID,
+			FromDisplayName: row.FromDisplayName,
+			ToUserID:        row.ToUserID,
+			ToDisplayName:   row.ToDisplayName,
+			Status:          row.Status,
+			CreatedAt:       parseTime(row.CreatedAt),
+		}
+		invites = append(invites, inv)
+	}
+	if invites == nil {
+		invites = []domain.Invite{}
+	}
+	return invites, nil
 }
 
 // AcceptInvite marks the invite as accepted and adds the user as a player.
@@ -126,9 +107,11 @@ func (s *Store) AcceptInvite(inviteID, toUserID string) (*domain.Player, error) 
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(
-		`UPDATE invites SET status = 'accepted' WHERE id = ?`, inviteID,
-	); err != nil {
+	qtx := s.queries.WithTx(tx)
+	if err := qtx.UpdateInviteStatus(context.Background(), db.UpdateInviteStatusParams{
+		Status: "accepted",
+		ID:     inviteID,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -151,26 +134,27 @@ func (s *Store) DeclineInvite(inviteID, toUserID string) error {
 	if inv.Status != "pending" {
 		return errors.New("invite is no longer pending")
 	}
-	_, err = s.db.Exec(`UPDATE invites SET status = 'declined' WHERE id = ?`, inviteID)
-	return err
+	return s.queries.UpdateInviteStatus(context.Background(), db.UpdateInviteStatusParams{
+		Status: "declined",
+		ID:     inviteID,
+	})
 }
 
 func (s *Store) getInviteByID(id string) (*domain.Invite, error) {
-	row := s.db.QueryRow(`
-		SELECT
-			i.id, i.session_id,
-			COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS session_name,
-			i.from_user_id, u.display_name,
-			i.to_user_id, i.status, i.created_at
-		FROM invites i
-		JOIN sessions s ON s.id = i.session_id
-		JOIN users u ON u.id = i.from_user_id
-		WHERE i.id = ?`, id)
-
-	type scanner interface {
-		Scan(...any) error
+	row, err := s.queries.GetInvite(context.Background(), id)
+	if err != nil {
+		return nil, err
 	}
-	return scanInviteRow(row)
+	return &domain.Invite{
+		ID:              row.ID,
+		SessionID:       row.SessionID,
+		SessionName:     row.SessionName,
+		FromUserID:      row.FromUserID,
+		FromDisplayName: row.FromDisplayName,
+		ToUserID:        row.ToUserID,
+		Status:          row.Status,
+		CreatedAt:       parseTime(row.CreatedAt),
+	}, nil
 }
 
 func scanInvite(row interface{ Scan(...any) error }) (*domain.Invite, error) {

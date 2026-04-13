@@ -9,68 +9,96 @@ import (
 	"context"
 )
 
-const createPushSubscription = `-- name: CreatePushSubscription :exec
-INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?, ?)
-`
-
-type CreatePushSubscriptionParams struct {
-	ID        string
-	UserID    string
-	Endpoint  string
-	P256dh    string
-	Auth      string
-	CreatedAt string
-}
-
-func (q *Queries) CreatePushSubscription(ctx context.Context, arg CreatePushSubscriptionParams) error {
-	_, err := q.db.ExecContext(ctx, createPushSubscription,
-		arg.ID,
-		arg.UserID,
-		arg.Endpoint,
-		arg.P256dh,
-		arg.Auth,
-		arg.CreatedAt,
-	)
-	return err
-}
-
 const deletePushSubscription = `-- name: DeletePushSubscription :exec
-DELETE FROM push_subscriptions WHERE endpoint = ? AND p256dh = ? AND auth = ?
+DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?
 `
 
 type DeletePushSubscriptionParams struct {
+	UserID   string
 	Endpoint string
-	P256dh   string
-	Auth     string
 }
 
 func (q *Queries) DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error {
-	_, err := q.db.ExecContext(ctx, deletePushSubscription, arg.Endpoint, arg.P256dh, arg.Auth)
+	_, err := q.db.ExecContext(ctx, deletePushSubscription, arg.UserID, arg.Endpoint)
+	return err
+}
+
+const deleteStalePushSubscription = `-- name: DeleteStalePushSubscription :exec
+DELETE FROM push_subscriptions WHERE endpoint = ?
+`
+
+func (q *Queries) DeleteStalePushSubscription(ctx context.Context, endpoint string) error {
+	_, err := q.db.ExecContext(ctx, deleteStalePushSubscription, endpoint)
 	return err
 }
 
 const getPushSubscriptionsByUserID = `-- name: GetPushSubscriptionsByUserID :many
-SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?
+SELECT id, user_id, endpoint, p256dh, auth, created_at FROM push_subscriptions WHERE user_id = ?
 `
 
-type GetPushSubscriptionsByUserIDRow struct {
-	ID       string
-	Endpoint string
-	P256dh   string
-	Auth     string
-}
-
-func (q *Queries) GetPushSubscriptionsByUserID(ctx context.Context, userID string) ([]GetPushSubscriptionsByUserIDRow, error) {
+func (q *Queries) GetPushSubscriptionsByUserID(ctx context.Context, userID string) ([]PushSubscription, error) {
 	rows, err := q.db.QueryContext(ctx, getPushSubscriptionsByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetPushSubscriptionsByUserIDRow{}
+	items := []PushSubscription{}
 	for rows.Next() {
-		var i GetPushSubscriptionsByUserIDRow
+		var i PushSubscription
 		if err := rows.Scan(
 			&i.ID,
+			&i.UserID,
+			&i.Endpoint,
+			&i.P256dh,
+			&i.Auth,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPushSubscriptionsForSession = `-- name: GetPushSubscriptionsForSession :many
+SELECT
+    ps.id,
+    ps.user_id,
+    ps.endpoint,
+    ps.p256dh,
+    ps.auth
+FROM push_subscriptions ps
+JOIN players p ON p.user_id = ps.user_id
+WHERE p.session_id = ?
+GROUP BY ps.id
+`
+
+type GetPushSubscriptionsForSessionRow struct {
+	ID       string
+	UserID   string
+	Endpoint string
+	P256dh   string
+	Auth     string
+}
+
+func (q *Queries) GetPushSubscriptionsForSession(ctx context.Context, sessionID string) ([]GetPushSubscriptionsForSessionRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPushSubscriptionsForSession, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetPushSubscriptionsForSessionRow{}
+	for rows.Next() {
+		var i GetPushSubscriptionsForSessionRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
 			&i.Endpoint,
 			&i.P256dh,
 			&i.Auth,
@@ -86,4 +114,35 @@ func (q *Queries) GetPushSubscriptionsByUserID(ctx context.Context, userID strin
 		return nil, err
 	}
 	return items, nil
+}
+
+const savePushSubscription = `-- name: SavePushSubscription :exec
+INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth, created_at)
+VALUES (?, ?, ?, ?, ?, ?)
+ON CONFLICT(endpoint) DO UPDATE SET
+    user_id = excluded.user_id,
+    p256dh = excluded.p256dh,
+    auth = excluded.auth,
+    created_at = excluded.created_at
+`
+
+type SavePushSubscriptionParams struct {
+	ID        string
+	UserID    string
+	Endpoint  string
+	P256dh    string
+	Auth      string
+	CreatedAt string
+}
+
+func (q *Queries) SavePushSubscription(ctx context.Context, arg SavePushSubscriptionParams) error {
+	_, err := q.db.ExecContext(ctx, savePushSubscription,
+		arg.ID,
+		arg.UserID,
+		arg.Endpoint,
+		arg.P256dh,
+		arg.Auth,
+		arg.CreatedAt,
+	)
+	return err
 }

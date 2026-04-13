@@ -1,12 +1,14 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"sort"
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/store/db"
 )
 
 func (s *Store) SaveRounds(sessionID string, rounds []domain.Round) error {
@@ -16,26 +18,33 @@ func (s *Store) SaveRounds(sessionID string, rounds []domain.Round) error {
 	}
 	defer tx.Rollback()
 
+	qtx := s.queries.WithTx(tx)
 	for _, r := range rounds {
-		if _, err := tx.Exec(
-			`INSERT INTO rounds (id, session_id, number) VALUES (?, ?, ?)`,
-			r.ID, sessionID, r.Number,
-		); err != nil {
+		if err := qtx.InsertRound(context.Background(), db.InsertRoundParams{
+			ID:        r.ID,
+			SessionID: sessionID,
+			Number:    int64(r.Number),
+		}); err != nil {
 			return err
 		}
 		for _, pid := range r.Bench {
-			if _, err := tx.Exec(
-				`INSERT INTO bench (round_id, player_id) VALUES (?, ?)`,
-				r.ID, pid,
-			); err != nil {
+			if err := qtx.InsertBench(context.Background(), db.InsertBenchParams{
+				RoundID:  r.ID,
+				PlayerID: pid,
+			}); err != nil {
 				return err
 			}
 		}
 		for _, m := range r.Matches {
-			if _, err := tx.Exec(
-				`INSERT INTO matches (id, round_id, court, p1, p2, p3, p4) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-				m.ID, r.ID, m.Court, m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1],
-			); err != nil {
+			if err := qtx.InsertMatch(context.Background(), db.InsertMatchParams{
+				ID:      m.ID,
+				RoundID: r.ID,
+				Court:   int64(m.Court),
+				P1:      m.TeamA[0],
+				P2:      m.TeamA[1],
+				P3:      m.TeamB[0],
+				P4:      m.TeamB[1],
+			}); err != nil {
 				return err
 			}
 		}
@@ -44,26 +53,19 @@ func (s *Store) SaveRounds(sessionID string, rounds []domain.Round) error {
 }
 
 func (s *Store) GetRounds(sessionID string) ([]domain.Round, error) {
-	rows, err := s.db.Query(
-		`SELECT id, number FROM rounds WHERE session_id = ? ORDER BY number`,
-		sessionID,
-	)
+	rows, err := s.queries.GetRoundsBySessionID(context.Background(), sessionID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var rounds []domain.Round
-	for rows.Next() {
-		var r domain.Round
-		r.SessionID = sessionID
-		if err := rows.Scan(&r.ID, &r.Number); err != nil {
-			return nil, err
+	for _, row := range rows {
+		r := domain.Round{
+			ID:        row.ID,
+			SessionID: sessionID,
+			Number:    int(row.Number),
 		}
 		rounds = append(rounds, r)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
 	}
 
 	for i := range rounds {
@@ -116,18 +118,22 @@ func (s *Store) GetCurrentRound(sessionID string) (*domain.Round, error) {
 }
 
 func (s *Store) GetMatch(matchID string) (*domain.Match, error) {
-	row := s.db.QueryRow(
-		`SELECT id, round_id, court, p1, p2, p3, p4, score_a, score_b, live_a, live_b, server FROM matches WHERE id = ?`,
-		matchID,
-	)
-	return scanMatch(row)
+	row, err := s.queries.GetMatchByID(context.Background(), matchID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return rowToMatch(row), nil
 }
 
 func (s *Store) UpdateScore(matchID string, scoreA, scoreB int) (*domain.Match, error) {
-	_, err := s.db.Exec(
-		`UPDATE matches SET score_a = ?, score_b = ?, live_a = NULL, live_b = NULL WHERE id = ?`,
-		scoreA, scoreB, matchID,
-	)
+	err := s.queries.UpdateMatchScore(context.Background(), db.UpdateMatchScoreParams{
+		ScoreA: sql.NullInt64{Int64: int64(scoreA), Valid: true},
+		ScoreB: sql.NullInt64{Int64: int64(scoreB), Valid: true},
+		ID:     matchID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -135,70 +141,37 @@ func (s *Store) UpdateScore(matchID string, scoreA, scoreB int) (*domain.Match, 
 }
 
 func (s *Store) UpdateLiveScore(matchID, server string, a, b int) error {
-	_, err := s.db.Exec(
-		`UPDATE matches SET live_a = ?, live_b = ?, server = ? WHERE id = ?`,
-		a, b, server, matchID,
-	)
-	return err
+	return s.queries.UpdateMatchLiveScore(context.Background(), db.UpdateMatchLiveScoreParams{
+		LiveA:  sql.NullInt64{Int64: int64(a), Valid: true},
+		LiveB:  sql.NullInt64{Int64: int64(b), Valid: true},
+		Server: sql.NullString{String: server, Valid: true},
+		ID:     matchID,
+	})
 }
 
 func (s *Store) GetLeaderboard(sessionID string) ([]domain.Standing, error) {
-	rows, err := s.db.Query(`
-		SELECT
-			p.id,
-			p.user_id,
-			p.name,
-			COALESCE(SUM(
-				CASE
-					WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
-					WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
-					ELSE 0
-				END
-			), 0) AS points,
-			COALESCE(SUM(
-				CASE
-					WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_b
-					WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_a
-					ELSE 0
-				END
-			), 0) AS points_conceded,
-			COUNT(m.id) AS games_played,
-			COALESCE(SUM(
-				CASE
-					WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
-					WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
-					ELSE 0
-				END
-			), 0) AS wins,
-			COALESCE(SUM(
-				CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END
-			), 0) AS draws,
-			p.avatar_icon,
-			p.avatar_color
-		FROM players p
-		LEFT JOIN rounds r ON r.session_id = p.session_id
-		LEFT JOIN matches m ON m.round_id = r.id
-			AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
-			AND m.score_a IS NOT NULL
-		WHERE p.session_id = ? AND p.active = 1
-		GROUP BY p.id, p.name`,
-		sessionID,
-	)
+	rows, err := s.queries.GetLeaderboard(context.Background(), sessionID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var standings []domain.Standing
-	for rows.Next() {
-		var st domain.Standing
-		if err := rows.Scan(&st.PlayerID, &st.UserID, &st.Name, &st.Points, &st.PointsConceded, &st.GamesPlayed, &st.Wins, &st.Draws, &st.AvatarIcon, &st.AvatarColor); err != nil {
-			return nil, err
+	for _, row := range rows {
+		st := domain.Standing{
+			PlayerID:       row.ID,
+			Name:           row.Name,
+			Points:         int(row.Points),
+			PointsConceded: int(row.PointsConceded),
+			GamesPlayed:    int(row.GamesPlayed),
+			Wins:           int(row.Wins),
+			Draws:          int(row.Draws),
+			AvatarIcon:     row.AvatarIcon,
+			AvatarColor:    row.AvatarColor,
+		}
+		if row.UserID.Valid {
+			st.UserID = &row.UserID.String
 		}
 		standings = append(standings, st)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
 	}
 
 	// Build head-to-head lookup: h2h[playerA][playerB] = points playerA scored against playerB's team.
@@ -305,33 +278,41 @@ func (s *Store) AdvanceMexicanoRound(sessionID string, round domain.Round) error
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(
-		`INSERT INTO rounds (id, session_id, number) VALUES (?, ?, ?)`,
-		round.ID, sessionID, round.Number,
-	); err != nil {
+	qtx := s.queries.WithTx(tx)
+	if err := qtx.InsertRound(context.Background(), db.InsertRoundParams{
+		ID:        round.ID,
+		SessionID: sessionID,
+		Number:    int64(round.Number),
+	}); err != nil {
 		return err
 	}
 	for _, pid := range round.Bench {
-		if _, err := tx.Exec(
-			`INSERT INTO bench (round_id, player_id) VALUES (?, ?)`,
-			round.ID, pid,
-		); err != nil {
+		if err := qtx.InsertBench(context.Background(), db.InsertBenchParams{
+			RoundID:  round.ID,
+			PlayerID: pid,
+		}); err != nil {
 			return err
 		}
 	}
 	for _, m := range round.Matches {
-		if _, err := tx.Exec(
-			`INSERT INTO matches (id, round_id, court, p1, p2, p3, p4) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			m.ID, round.ID, m.Court, m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1],
-		); err != nil {
+		if err := qtx.InsertMatch(context.Background(), db.InsertMatchParams{
+			ID:      m.ID,
+			RoundID: round.ID,
+			Court:   int64(m.Court),
+			P1:      m.TeamA[0],
+			P2:      m.TeamA[1],
+			P3:      m.TeamB[0],
+			P4:      m.TeamB[1],
+		}); err != nil {
 			return err
 		}
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	if _, err := tx.Exec(
-		`UPDATE sessions SET current_round = ?, updated_at = ? WHERE id = ?`,
-		round.Number, now, sessionID,
-	); err != nil {
+	if err := qtx.UpdateSessionCurrentRound(context.Background(), db.UpdateSessionCurrentRoundParams{
+		CurrentRound: int64(round.Number),
+		UpdatedAt:    now,
+		ID:           sessionID,
+	}); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -339,13 +320,7 @@ func (s *Store) AdvanceMexicanoRound(sessionID string, round domain.Round) error
 
 // AllRoundsComplete returns true when every match in the session has a score.
 func (s *Store) AllRoundsComplete(sessionID string) (bool, error) {
-	var count int
-	err := s.db.QueryRow(`
-		SELECT COUNT(*) FROM matches m
-		JOIN rounds r ON r.id = m.round_id
-		WHERE r.session_id = ? AND m.score_a IS NULL`,
-		sessionID,
-	).Scan(&count)
+	count, err := s.queries.AllRoundsComplete(context.Background(), sessionID)
 	return count == 0, err
 }
 
@@ -438,6 +413,23 @@ func (r *singleRow) Scan(dest ...any) error {
 		}
 	}
 	return nil
+}
+
+func rowToMatch(row db.Match) *domain.Match {
+	m := &domain.Match{
+		ID:      row.ID,
+		RoundID: row.RoundID,
+		Court:   int(row.Court),
+		TeamA:   [2]string{row.P1, row.P2},
+		TeamB:   [2]string{row.P3, row.P4},
+	}
+	if row.ScoreA.Valid {
+		m.Score = &domain.Score{A: int(row.ScoreA.Int64), B: int(row.ScoreB.Int64)}
+	}
+	if row.LiveA.Valid {
+		m.Live = &domain.LiveScore{A: int(row.LiveA.Int64), B: int(row.LiveB.Int64), Server: row.Server.String}
+	}
+	return m
 }
 
 func scanMatch(s interface {

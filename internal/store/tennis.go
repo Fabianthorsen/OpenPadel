@@ -1,12 +1,14 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/store/db"
 )
 
 // SaveTennisTeams replaces all team assignments for a session.
@@ -17,14 +19,16 @@ func (s *Store) SaveTennisTeams(sessionID string, teams []domain.TennisTeam) err
 	}
 	defer tx.Rollback() //nolint:errcheck
 
-	if _, err := tx.Exec(`DELETE FROM tennis_teams WHERE session_id = ?`, sessionID); err != nil {
+	qtx := s.queries.WithTx(tx)
+	if err := qtx.DeleteTennisTeams(context.Background(), sessionID); err != nil {
 		return err
 	}
 	for _, t := range teams {
-		if _, err := tx.Exec(
-			`INSERT INTO tennis_teams (session_id, player_id, team) VALUES (?, ?, ?)`,
-			sessionID, t.PlayerID, t.Team,
-		); err != nil {
+		if err := qtx.InsertTennisTeam(context.Background(), db.InsertTennisTeamParams{
+			SessionID: sessionID,
+			PlayerID:  t.PlayerID,
+			Team:      t.Team,
+		}); err != nil {
 			return err
 		}
 	}
@@ -33,25 +37,21 @@ func (s *Store) SaveTennisTeams(sessionID string, teams []domain.TennisTeam) err
 
 // GetTennisTeams returns all team assignments for a session, with player names joined.
 func (s *Store) GetTennisTeams(sessionID string) ([]domain.TennisTeam, error) {
-	rows, err := s.db.Query(`
-		SELECT tt.player_id, p.name, tt.team
-		FROM tennis_teams tt
-		JOIN players p ON p.id = tt.player_id
-		WHERE tt.session_id = ?`, sessionID)
+	rows, err := s.queries.GetTennisTeamsBySessionID(context.Background(), sessionID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var teams []domain.TennisTeam
-	for rows.Next() {
-		var t domain.TennisTeam
-		if err := rows.Scan(&t.PlayerID, &t.Name, &t.Team); err != nil {
-			return nil, err
+	for _, row := range rows {
+		t := domain.TennisTeam{
+			PlayerID: row.PlayerID,
+			Name:     row.Name,
+			Team:     row.Team,
 		}
 		teams = append(teams, t)
 	}
-	return teams, rows.Err()
+	return teams, nil
 }
 
 // CreateTennisMatch creates the initial match record for a tennis session.
@@ -60,11 +60,13 @@ func (s *Store) CreateTennisMatch(sessionID string) (*domain.TennisMatch, error)
 	state := domain.TennisState{Sets: [][2]int{}}
 	stateJSON, _ := json.Marshal(state)
 	id := newID()
-	_, err := s.db.Exec(
-		`INSERT INTO tennis_matches (id, session_id, state, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
-		id, sessionID, string(stateJSON),
-		now.Format(time.RFC3339), now.Format(time.RFC3339),
-	)
+	err := s.queries.CreateTennisMatch(context.Background(), db.CreateTennisMatchParams{
+		ID:        id,
+		SessionID: sessionID,
+		State:     string(stateJSON),
+		CreatedAt: now.Format(time.RFC3339),
+		UpdatedAt: now.Format(time.RFC3339),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -79,14 +81,7 @@ func (s *Store) CreateTennisMatch(sessionID string) (*domain.TennisMatch, error)
 
 // GetTennisMatch retrieves the tennis match state and teams for a session.
 func (s *Store) GetTennisMatch(sessionID string) (*domain.TennisMatch, error) {
-	var m domain.TennisMatch
-	var stateJSON string
-	var createdAt, updatedAt string
-
-	err := s.db.QueryRow(
-		`SELECT id, session_id, state, created_at, updated_at FROM tennis_matches WHERE session_id = ?`,
-		sessionID,
-	).Scan(&m.ID, &m.SessionID, &stateJSON, &createdAt, &updatedAt)
+	row, err := s.queries.GetTennisMatch(context.Background(), sessionID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -94,15 +89,20 @@ func (s *Store) GetTennisMatch(sessionID string) (*domain.TennisMatch, error) {
 		return nil, err
 	}
 
+	m := &domain.TennisMatch{
+		ID:        row.ID,
+		SessionID: row.SessionID,
+		CreatedAt: parseTime(row.CreatedAt),
+		UpdatedAt: parseTime(row.UpdatedAt),
+	}
+
 	m.State.Sets = [][2]int{} // ensure non-null JSON array
-	if err := json.Unmarshal([]byte(stateJSON), &m.State); err != nil {
+	if err := json.Unmarshal([]byte(row.State), &m.State); err != nil {
 		return nil, err
 	}
 	if m.State.Sets == nil {
 		m.State.Sets = [][2]int{}
 	}
-	m.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
-	m.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
 
 	teams, err := s.GetTennisTeams(sessionID)
 	if err != nil {
@@ -117,7 +117,7 @@ func (s *Store) GetTennisMatch(sessionID string) (*domain.TennisMatch, error) {
 		}
 	}
 
-	return &m, nil
+	return m, nil
 }
 
 // SaveTennisState persists updated match state.
@@ -129,9 +129,9 @@ func (s *Store) SaveTennisState(matchID string, state domain.TennisState) error 
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(
-		`UPDATE tennis_matches SET state = ?, updated_at = ? WHERE id = ?`,
-		string(stateJSON), time.Now().UTC().Format(time.RFC3339), matchID,
-	)
-	return err
+	return s.queries.UpdateTennisState(context.Background(), db.UpdateTennisStateParams{
+		State:     string(stateJSON),
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		ID:        matchID,
+	})
 }

@@ -24,23 +24,46 @@ func (q *Queries) AddContact(ctx context.Context, arg AddContactParams) error {
 	return err
 }
 
-const getContactsByUserID = `-- name: GetContactsByUserID :many
-SELECT contact_user_id FROM contacts WHERE user_id = ? ORDER BY created_at DESC
+const getContacts = `-- name: GetContacts :many
+SELECT
+    c.contact_user_id,
+    u.display_name,
+    u.avatar_icon,
+    u.avatar_color,
+    c.created_at
+FROM contacts c
+JOIN users u ON u.id = c.contact_user_id
+WHERE c.user_id = ?
+ORDER BY c.created_at DESC
 `
 
-func (q *Queries) GetContactsByUserID(ctx context.Context, userID string) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, getContactsByUserID, userID)
+type GetContactsRow struct {
+	ContactUserID string
+	DisplayName   string
+	AvatarIcon    string
+	AvatarColor   string
+	CreatedAt     string
+}
+
+func (q *Queries) GetContacts(ctx context.Context, userID string) ([]GetContactsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getContacts, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []string{}
+	items := []GetContactsRow{}
 	for rows.Next() {
-		var contact_user_id string
-		if err := rows.Scan(&contact_user_id); err != nil {
+		var i GetContactsRow
+		if err := rows.Scan(
+			&i.ContactUserID,
+			&i.DisplayName,
+			&i.AvatarIcon,
+			&i.AvatarColor,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
-		items = append(items, contact_user_id)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -66,12 +89,21 @@ func (q *Queries) RemoveContact(ctx context.Context, arg RemoveContactParams) er
 }
 
 const searchUsers = `-- name: SearchUsers :many
-SELECT id, email, display_name, avatar_icon, avatar_color FROM users
-WHERE display_name LIKE ? AND id != ?
-ORDER BY display_name LIMIT ?
+SELECT
+    u.id,
+    u.email,
+    u.display_name,
+    u.avatar_icon,
+    u.avatar_color,
+    CASE WHEN c.contact_user_id IS NOT NULL THEN 1 ELSE 0 END AS is_contact
+FROM users u
+LEFT JOIN contacts c ON c.contact_user_id = u.id AND c.user_id = ?
+WHERE u.display_name LIKE ? AND u.id != ?
+ORDER BY u.display_name LIMIT ?
 `
 
 type SearchUsersParams struct {
+	UserID      string
 	DisplayName string
 	ID          string
 	Limit       int64
@@ -83,10 +115,16 @@ type SearchUsersRow struct {
 	DisplayName string
 	AvatarIcon  string
 	AvatarColor string
+	IsContact   int64
 }
 
 func (q *Queries) SearchUsers(ctx context.Context, arg SearchUsersParams) ([]SearchUsersRow, error) {
-	rows, err := q.db.QueryContext(ctx, searchUsers, arg.DisplayName, arg.ID, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, searchUsers,
+		arg.UserID,
+		arg.DisplayName,
+		arg.ID,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +138,7 @@ func (q *Queries) SearchUsers(ctx context.Context, arg SearchUsersParams) ([]Sea
 			&i.DisplayName,
 			&i.AvatarIcon,
 			&i.AvatarColor,
+			&i.IsContact,
 		); err != nil {
 			return nil, err
 		}
@@ -112,4 +151,15 @@ func (q *Queries) SearchUsers(ctx context.Context, arg SearchUsersParams) ([]Sea
 		return nil, err
 	}
 	return items, nil
+}
+
+const userExists = `-- name: UserExists :one
+SELECT COUNT(*) FROM users WHERE id = ?
+`
+
+func (q *Queries) UserExists(ctx context.Context, id string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, userExists, id)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }

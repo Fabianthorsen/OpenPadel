@@ -1,11 +1,13 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/store/db"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -38,30 +40,46 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		CreatedAt:            now,
 		UpdatedAt:            now,
 	}
-	var scheduledAtStr *string
+	var scheduledAtStr sql.NullString
 	if scheduledAt != nil {
-		s := scheduledAt.UTC().Format(time.RFC3339)
-		scheduledAtStr = &s
+		scheduledAtStr = sql.NullString{String: scheduledAt.UTC().Format(time.RFC3339), Valid: true}
 	}
-	_, err := s.db.Exec(
-		`INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		sess.ID, sess.AdminToken, sess.Status, sess.Name, sess.GameMode, sess.SetsToWin, sess.GamesPerSet,
-		sess.Courts, sess.Points, roundsTotal, scheduledAtStr, courtDurationMinutes,
-		sess.CreatedAt.Format(time.RFC3339), sess.UpdatedAt.Format(time.RFC3339),
-	)
+	var courtDurationMinutesVal sql.NullInt64
+	if courtDurationMinutes != nil {
+		courtDurationMinutesVal = sql.NullInt64{Int64: int64(*courtDurationMinutes), Valid: true}
+	}
+	var roundsTotalVal sql.NullInt64
+	if roundsTotal != nil {
+		roundsTotalVal = sql.NullInt64{Int64: int64(*roundsTotal), Valid: true}
+	}
+	err := s.queries.CreateSession(context.Background(), db.CreateSessionParams{
+		ID:                   sess.ID,
+		AdminToken:           sess.AdminToken,
+		Status:               string(sess.Status),
+		Name:                 sess.Name,
+		GameMode:             sess.GameMode,
+		SetsToWin:            int64(sess.SetsToWin),
+		GamesPerSet:          int64(sess.GamesPerSet),
+		Courts:               int64(sess.Courts),
+		Points:               int64(sess.Points),
+		RoundsTotal:          roundsTotalVal,
+		ScheduledAt:          scheduledAtStr,
+		CourtDurationMinutes: courtDurationMinutesVal,
+		CreatedAt:            sess.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:            sess.UpdatedAt.Format(time.RFC3339),
+	})
 	return sess, err
 }
 
 func (s *Store) GetSession(id string) (*domain.Session, error) {
-	row := s.db.QueryRow(
-		`SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, current_round, scheduled_at, court_duration_minutes, ends_at, created_at, updated_at
-		 FROM sessions WHERE id = ?`, id,
-	)
-	sess, err := scanSession(row)
+	row, err := s.queries.GetSession(context.Background(), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
+	sess := rowToSession(row)
 	players, err := s.GetPlayers(id)
 	if err != nil {
 		return nil, err
@@ -71,148 +89,130 @@ func (s *Store) GetSession(id string) (*domain.Session, error) {
 }
 
 func (s *Store) SetCreatorPlayer(sessionID, playerID string) error {
-	_, err := s.db.Exec(
-		`UPDATE sessions SET creator_player_id = ?, updated_at = ? WHERE id = ?`,
-		playerID, time.Now().UTC().Format(time.RFC3339), sessionID,
-	)
-	return err
+	return s.queries.SetCreatorPlayer(context.Background(), db.SetCreatorPlayerParams{
+		CreatorPlayerID: sql.NullString{String: playerID, Valid: true},
+		UpdatedAt:       time.Now().UTC().Format(time.RFC3339),
+		ID:              sessionID,
+	})
 }
 
 func (s *Store) StartSession(id string, roundsTotal int, endsAt *time.Time) error {
-	var endsAtStr *string
+	var endsAtStr sql.NullString
 	if endsAt != nil {
-		t := endsAt.UTC().Format(time.RFC3339)
-		endsAtStr = &t
+		endsAtStr = sql.NullString{String: endsAt.UTC().Format(time.RFC3339), Valid: true}
 	}
-	_, err := s.db.Exec(
-		`UPDATE sessions SET status = ?, rounds_total = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?`,
-		domain.StatusActive, roundsTotal, endsAtStr, time.Now().UTC().Format(time.RFC3339), id,
-	)
-	return err
+	return s.queries.StartSession(context.Background(), db.StartSessionParams{
+		Status:    string(domain.StatusActive),
+		RoundsTotal: sql.NullInt64{Int64: int64(roundsTotal), Valid: true},
+		EndsAt:    endsAtStr,
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		ID:        id,
+	})
 }
 
 // StartMexicanoSession activates the session with current_round=1.
 // rounds_total is preserved from creation time (null = open-ended, N = preset).
 func (s *Store) StartMexicanoSession(id string, endsAt *time.Time) error {
-	var endsAtStr *string
+	var endsAtStr sql.NullString
 	if endsAt != nil {
-		t := endsAt.UTC().Format(time.RFC3339)
-		endsAtStr = &t
+		endsAtStr = sql.NullString{String: endsAt.UTC().Format(time.RFC3339), Valid: true}
 	}
-	_, err := s.db.Exec(
-		`UPDATE sessions SET status = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?`,
-		domain.StatusActive, endsAtStr, time.Now().UTC().Format(time.RFC3339), id,
-	)
-	return err
+	return s.queries.StartMexicanoSession(context.Background(), db.StartMexicanoSessionParams{
+		Status:    string(domain.StatusActive),
+		EndsAt:    endsAtStr,
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		ID:        id,
+	})
 }
 
 func (s *Store) AdvanceRound(id string) error {
-	_, err := s.db.Exec(
-		`UPDATE sessions SET current_round = current_round + 1, updated_at = ? WHERE id = ?`,
-		time.Now().UTC().Format(time.RFC3339), id,
-	)
-	return err
+	return s.queries.AdvanceRound(context.Background(), db.AdvanceRoundParams{
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		ID:        id,
+	})
 }
 
 func (s *Store) CurrentRoundAllScored(sessionID string) (bool, error) {
-	var unscored int
-	err := s.db.QueryRow(`
-		SELECT COUNT(*) FROM matches m
-		JOIN rounds r ON r.id = m.round_id
-		JOIN sessions s ON s.id = r.session_id
-		WHERE s.id = ? AND r.number = s.current_round AND m.score_a IS NULL`,
-		sessionID,
-	).Scan(&unscored)
+	unscored, err := s.queries.CurrentRoundAllScored(context.Background(), sessionID)
 	return unscored == 0, err
 }
 
 func (s *Store) CompleteSession(id string, endedEarly bool) error {
-	endedEarlyInt := 0
+	endedEarlyInt := int64(0)
 	if endedEarly {
 		endedEarlyInt = 1
 	}
-	_, err := s.db.Exec(
-		`UPDATE sessions SET status = ?, ended_early = ?, updated_at = ? WHERE id = ?`,
-		domain.StatusComplete, endedEarlyInt, time.Now().UTC().Format(time.RFC3339), id,
-	)
-	return err
+	return s.queries.CompleteSession(context.Background(), db.CompleteSessionParams{
+		Status:    string(domain.StatusComplete),
+		EndedEarly: endedEarlyInt,
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		ID:        id,
+	})
 }
 
-func scanSession(row *sql.Row) (*domain.Session, error) {
-	var sess domain.Session
-	var roundsTotal sql.NullInt64
-	var creatorPlayerID sql.NullString
-	var currentRound sql.NullInt64
-	var name, gameMode sql.NullString
-	var setsToWin, gamesPerSet sql.NullInt64
-	var scheduledAt sql.NullString
-	var courtDurationMinutes sql.NullInt64
-	var endsAt sql.NullString
-	var createdAt, updatedAt string
-	err := row.Scan(
-		&sess.ID, &sess.AdminToken, &sess.Status, &name,
-		&gameMode, &setsToWin, &gamesPerSet,
-		&sess.Courts, &sess.Points, &roundsTotal,
-		&creatorPlayerID, &currentRound, &scheduledAt,
-		&courtDurationMinutes, &endsAt, &createdAt, &updatedAt,
-	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrNotFound
+func rowToSession(row db.GetSessionRow) *domain.Session {
+	sess := &domain.Session{
+		ID:         row.ID,
+		AdminToken: row.AdminToken,
+		Status:     domain.SessionStatus(row.Status),
+		Name:       row.Name,
+		GameMode:   row.GameMode,
+		SetsToWin:  int(row.SetsToWin),
+		GamesPerSet: int(row.GamesPerSet),
+		Courts:     int(row.Courts),
+		Points:     int(row.Points),
+		CurrentRound: intPtr(row.CurrentRound),
+		CreatedAt:  parseTime(row.CreatedAt),
+		UpdatedAt:  parseTime(row.UpdatedAt),
+		Players:    []domain.Player{},
 	}
-	if err != nil {
-		return nil, err
-	}
-	if name.Valid {
-		sess.Name = name.String
-	}
-	sess.GameMode = "americano"
-	if gameMode.Valid && gameMode.String != "" {
-		sess.GameMode = gameMode.String
-	}
-	sess.SetsToWin = 2
-	if setsToWin.Valid && setsToWin.Int64 > 0 {
-		sess.SetsToWin = int(setsToWin.Int64)
-	}
-	sess.GamesPerSet = 6
-	if gamesPerSet.Valid && gamesPerSet.Int64 > 0 {
-		sess.GamesPerSet = int(gamesPerSet.Int64)
-	}
-	if roundsTotal.Valid {
-		v := int(roundsTotal.Int64)
+
+	if row.RoundsTotal.Valid {
+		v := int(row.RoundsTotal.Int64)
 		sess.RoundsTotal = &v
 	}
-	if creatorPlayerID.Valid {
-		sess.CreatorPlayerID = creatorPlayerID.String
+	if row.CreatorPlayerID.Valid {
+		sess.CreatorPlayerID = row.CreatorPlayerID.String
 	}
-	if currentRound.Valid {
-		v := int(currentRound.Int64)
-		sess.CurrentRound = &v
+	if row.ScheduledAt.Valid {
+		sess.ScheduledAt = parseTimePtr(row.ScheduledAt.String)
 	}
-	if scheduledAt.Valid {
-		t, _ := time.Parse(time.RFC3339, scheduledAt.String)
-		sess.ScheduledAt = &t
-	}
-	if courtDurationMinutes.Valid {
-		v := int(courtDurationMinutes.Int64)
+	if row.CourtDurationMinutes.Valid {
+		v := int(row.CourtDurationMinutes.Int64)
 		sess.CourtDurationMinutes = &v
 	}
-	if endsAt.Valid {
-		t, _ := time.Parse(time.RFC3339, endsAt.String)
-		sess.EndsAt = &t
+	if row.EndsAt.Valid {
+		sess.EndsAt = parseTimePtr(row.EndsAt.String)
 	}
-	sess.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
-	sess.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
-	return &sess, nil
+
+	return sess
+}
+
+func intPtr(v int64) *int {
+	if v == 0 {
+		return nil
+	}
+	i := int(v)
+	return &i
+}
+
+func parseTime(s string) time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	return t
+}
+
+func parseTimePtr(s string) *time.Time {
+	t, _ := time.Parse(time.RFC3339, s)
+	return &t
 }
 
 func (s *Store) DeleteSession(id string) error {
 	// Delete in dependency order due to foreign keys.
-	s.db.Exec(`DELETE FROM tennis_matches WHERE session_id = ?`, id)
-	s.db.Exec(`DELETE FROM tennis_teams WHERE session_id = ?`, id)
-	s.db.Exec(`DELETE FROM bench WHERE round_id IN (SELECT id FROM rounds WHERE session_id = ?)`, id)
-	s.db.Exec(`DELETE FROM matches WHERE round_id IN (SELECT id FROM rounds WHERE session_id = ?)`, id)
-	s.db.Exec(`DELETE FROM rounds WHERE session_id = ?`, id)
-	s.db.Exec(`DELETE FROM players WHERE session_id = ?`, id)
-	_, err := s.db.Exec(`DELETE FROM sessions WHERE id = ?`, id)
-	return err
+	s.queries.DeleteTennisMatches(context.Background(), id)
+	s.queries.DeleteTennisTeams(context.Background(), id)
+	s.queries.DeleteBench(context.Background(), id)
+	s.queries.DeleteMatches(context.Background(), id)
+	s.queries.DeleteRounds(context.Background(), id)
+	s.queries.DeletePlayers(context.Background(), id)
+	return s.queries.DeleteSession(context.Background(), id)
 }

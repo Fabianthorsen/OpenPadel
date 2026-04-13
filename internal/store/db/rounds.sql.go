@@ -25,6 +25,19 @@ func (q *Queries) AdvanceMexicanoRound(ctx context.Context, arg AdvanceMexicanoR
 	return err
 }
 
+const allRoundsComplete = `-- name: AllRoundsComplete :one
+SELECT COUNT(*) FROM matches m
+JOIN rounds r ON r.id = m.round_id
+WHERE r.session_id = ? AND m.score_a IS NULL
+`
+
+func (q *Queries) AllRoundsComplete(ctx context.Context, sessionID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, allRoundsComplete, sessionID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countUnscored = `-- name: CountUnscored :one
 SELECT COUNT(*) FROM matches m
 JOIN rounds r ON r.id = m.round_id
@@ -150,11 +163,11 @@ SELECT
     p.id,
     p.user_id,
     p.name,
-    COALESCE(SUM(CASE WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b ELSE 0 END), 0) AS points,
-    COALESCE(SUM(CASE WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_b WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_a ELSE 0 END), 0) AS points_conceded,
+    CAST(COALESCE(SUM(CASE WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b ELSE 0 END), 0) AS INTEGER) AS points,
+    CAST(COALESCE(SUM(CASE WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_b WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_a ELSE 0 END), 0) AS INTEGER) AS points_conceded,
     COUNT(m.id) AS games_played,
-    COALESCE(SUM(CASE WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1 WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1 ELSE 0 END), 0) AS wins,
-    COALESCE(SUM(CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END), 0) AS draws,
+    CAST(COALESCE(SUM(CASE WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1 WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1 ELSE 0 END), 0) AS INTEGER) AS wins,
+    CAST(COALESCE(SUM(CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END), 0) AS INTEGER) AS draws,
     p.avatar_icon,
     p.avatar_color
 FROM players p
@@ -170,11 +183,11 @@ type GetLeaderboardRow struct {
 	ID             string
 	UserID         sql.NullString
 	Name           string
-	Points         interface{}
-	PointsConceded interface{}
+	Points         int64
+	PointsConceded int64
 	GamesPlayed    int64
-	Wins           interface{}
-	Draws          interface{}
+	Wins           int64
+	Draws          int64
 	AvatarIcon     string
 	AvatarColor    string
 }

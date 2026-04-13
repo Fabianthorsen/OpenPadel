@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
@@ -11,6 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/store/db"
 )
 
 var ErrInvalidOrExpiredToken = errors.New("invalid or expired token")
@@ -34,12 +36,15 @@ func (s *Store) CreateUser(email, displayName, password string) (*domain.User, e
 		CreatedAt:    time.Now().UTC(),
 	}
 
-	_, err = s.db.Exec(
-		`INSERT INTO users (id, email, display_name, avatar_icon, avatar_color, password_hash, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		user.ID, user.Email, user.DisplayName, user.AvatarIcon, user.AvatarColor,
-		user.PasswordHash, user.CreatedAt.Format(time.RFC3339),
-	)
+	err = s.queries.CreateUser(context.Background(), db.CreateUserParams{
+		ID:           user.ID,
+		Email:        user.Email,
+		DisplayName:  user.DisplayName,
+		AvatarIcon:   user.AvatarIcon,
+		AvatarColor:  user.AvatarColor,
+		PasswordHash: user.PasswordHash,
+		CreatedAt:    user.CreatedAt.Format(time.RFC3339),
+	})
 	if err != nil {
 		if isUniqueConstraint(err, "email") {
 			return nil, ErrEmailTaken
@@ -50,31 +55,44 @@ func (s *Store) CreateUser(email, displayName, password string) (*domain.User, e
 }
 
 func (s *Store) UpdateProfile(userID, displayName, avatarIcon, avatarColor string) (*domain.User, error) {
-	_, err := s.db.Exec(
-		`UPDATE users SET display_name = ?, avatar_icon = ?, avatar_color = ? WHERE id = ?`,
-		displayName, avatarIcon, avatarColor, userID,
-	)
+	err := s.queries.UpdateProfile(context.Background(), db.UpdateProfileParams{
+		DisplayName: displayName,
+		AvatarIcon:  avatarIcon,
+		AvatarColor: avatarColor,
+		ID:          userID,
+	})
 	if err != nil {
 		return nil, err
 	}
 	// Sync avatar to all player records for this user so in-progress sessions pick it up.
-	s.db.Exec(
-		`UPDATE players SET avatar_icon = ?, avatar_color = ? WHERE user_id = ?`,
-		avatarIcon, avatarColor, userID,
-	)
+	s.queries.UpdateProfileAvatarOnPlayers(context.Background(), db.UpdateProfileAvatarOnPlayersParams{
+		AvatarIcon:  avatarIcon,
+		AvatarColor: avatarColor,
+		UserID:      sql.NullString{String: userID, Valid: true},
+	})
 	return s.GetUserByID(userID)
 }
 
 func (s *Store) GetUserByEmail(email string) (*domain.User, error) {
-	return scanUser(s.db.QueryRow(
-		`SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at FROM users WHERE email = ?`, email,
-	))
+	row, err := s.queries.GetUserByEmail(context.Background(), email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return rowToUserEmail(row), nil
 }
 
 func (s *Store) GetUserByID(id string) (*domain.User, error) {
-	return scanUser(s.db.QueryRow(
-		`SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at FROM users WHERE id = ?`, id,
-	))
+	row, err := s.queries.GetUserByID(context.Background(), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return rowToUserID(row), nil
 }
 
 func (s *Store) AuthenticateUser(email, password string) (*domain.User, error) {
@@ -97,18 +115,16 @@ func (s *Store) CreateAuthToken(userID string) (string, error) {
 		return "", err
 	}
 	token := hex.EncodeToString(b)
-	_, err := s.db.Exec(
-		`INSERT INTO auth_tokens (token, user_id, created_at) VALUES (?, ?, ?)`,
-		token, userID, time.Now().UTC().Format(time.RFC3339),
-	)
+	err := s.queries.CreateAuthToken(context.Background(), db.CreateAuthTokenParams{
+		Token:     token,
+		UserID:    userID,
+		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+	})
 	return token, err
 }
 
 func (s *Store) GetUserByToken(token string) (*domain.User, error) {
-	var userID string
-	err := s.db.QueryRow(
-		`SELECT user_id FROM auth_tokens WHERE token = ?`, token,
-	).Scan(&userID)
+	userID, err := s.queries.GetUserIDByToken(context.Background(), token)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -119,72 +135,37 @@ func (s *Store) GetUserByToken(token string) (*domain.User, error) {
 }
 
 func (s *Store) DeleteAuthToken(token string) error {
-	_, err := s.db.Exec(`DELETE FROM auth_tokens WHERE token = ?`, token)
-	return err
+	return s.queries.DeleteAuthToken(context.Background(), token)
 }
 
 func (s *Store) GetCareerStats(userID string) (*domain.AmericanoCareerStats, error) {
-	var stats domain.AmericanoCareerStats
-	err := s.db.QueryRow(`
-		SELECT
-			COUNT(DISTINCT p.session_id) AS tournaments,
-			COUNT(m.id) AS games_played,
-			COALESCE(SUM(
-				CASE
-					WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
-					WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
-					ELSE 0
-				END
-			), 0) AS wins,
-			COALESCE(SUM(
-				CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END
-			), 0) AS draws,
-			COALESCE(SUM(
-				CASE
-					WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
-					WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
-					ELSE 0
-				END
-			), 0) AS total_points
-		FROM players p
-		JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'americano'
-		LEFT JOIN rounds r ON r.session_id = p.session_id
-		LEFT JOIN matches m ON m.round_id = r.id
-			AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
-			AND m.score_a IS NOT NULL
-		WHERE p.user_id = ? AND p.active = 1`,
-		userID,
-	).Scan(&stats.Tournaments, &stats.GamesPlayed, &stats.Wins, &stats.Draws, &stats.TotalPoints)
+	row, err := s.queries.GetAmericanoCareerStats(context.Background(), sql.NullString{String: userID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
+	stats := &domain.AmericanoCareerStats{
+		Tournaments: int(row.Tournaments),
+		GamesPlayed: int(row.GamesPlayed),
+		Wins:        int(row.Wins),
+		Draws:       int(row.Draws),
+		TotalPoints: int(row.TotalPoints),
+	}
 	stats.Losses = stats.GamesPlayed - stats.Wins - stats.Draws
-	return &stats, nil
+	return stats, nil
 }
 
 // GetTennisCareerStats returns wins/losses/tournaments for tennis (2v2) sessions.
 func (s *Store) GetTennisCareerStats(userID string) (*domain.TennisCareerStats, error) {
-	var stats domain.TennisCareerStats
-	err := s.db.QueryRow(`
-		SELECT
-			COUNT(DISTINCT p.session_id) AS tournaments,
-			COALESCE(SUM(
-				CASE WHEN json_extract(tm.state, '$.winner') = tt.team THEN 1 ELSE 0 END
-			), 0) AS wins,
-			COALESCE(SUM(
-				CASE WHEN json_extract(tm.state, '$.winner') != '' AND json_extract(tm.state, '$.winner') != tt.team THEN 1 ELSE 0 END
-			), 0) AS losses
-		FROM players p
-		JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'tennis'
-		JOIN tennis_teams tt ON tt.session_id = p.session_id AND tt.player_id = p.id
-		JOIN tennis_matches tm ON tm.session_id = p.session_id
-		WHERE p.user_id = ? AND p.active = 1`,
-		userID,
-	).Scan(&stats.Tournaments, &stats.Wins, &stats.Losses)
+	row, err := s.queries.GetTennisCareerStats(context.Background(), sql.NullString{String: userID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
-	return &stats, nil
+	stats := &domain.TennisCareerStats{
+		Tournaments: int(row.Tournaments),
+		Wins:        int(row.Wins),
+		Losses:      int(row.Losses),
+	}
+	return stats, nil
 }
 
 // CreatePasswordResetToken generates a secure token for the given email.
@@ -205,12 +186,13 @@ func (s *Store) CreatePasswordResetToken(email string) (rawToken string, err err
 	expiresAt := time.Now().UTC().Add(time.Hour).Format(time.RFC3339)
 
 	// Delete any existing token for this user first
-	s.db.Exec(`DELETE FROM password_reset_tokens WHERE user_id = ?`, user.ID)
+	s.queries.DeletePasswordResetTokensByUserID(context.Background(), user.ID)
 
-	_, err = s.db.Exec(
-		`INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)`,
-		tokenHash, user.ID, expiresAt,
-	)
+	err = s.queries.CreatePasswordResetToken(context.Background(), db.CreatePasswordResetTokenParams{
+		TokenHash: tokenHash,
+		UserID:    user.ID,
+		ExpiresAt: expiresAt,
+	})
 	return raw, err
 }
 
@@ -219,10 +201,7 @@ func (s *Store) RedeemPasswordResetToken(rawToken, newPassword string) error {
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
 
-	var userID, expiresAtStr string
-	err := s.db.QueryRow(
-		`SELECT user_id, expires_at FROM password_reset_tokens WHERE token_hash = ?`, tokenHash,
-	).Scan(&userID, &expiresAtStr)
+	row, err := s.queries.GetPasswordResetToken(context.Background(), tokenHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrInvalidOrExpiredToken
 	}
@@ -230,9 +209,9 @@ func (s *Store) RedeemPasswordResetToken(rawToken, newPassword string) error {
 		return err
 	}
 
-	expiresAt, _ := time.Parse(time.RFC3339, expiresAtStr)
+	expiresAt, _ := time.Parse(time.RFC3339, row.ExpiresAt)
 	if time.Now().UTC().After(expiresAt) {
-		s.db.Exec(`DELETE FROM password_reset_tokens WHERE token_hash = ?`, tokenHash)
+		s.queries.DeletePasswordResetToken(context.Background(), tokenHash)
 		return ErrInvalidOrExpiredToken
 	}
 
@@ -247,119 +226,75 @@ func (s *Store) RedeemPasswordResetToken(rawToken, newPassword string) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`UPDATE users SET password_hash = ? WHERE id = ?`, string(newHash), userID); err != nil {
+	qtx := s.queries.WithTx(tx)
+	if err := qtx.UpdateUserPassword(context.Background(), db.UpdateUserPasswordParams{
+		PasswordHash: string(newHash),
+		ID:           row.UserID,
+	}); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`DELETE FROM password_reset_tokens WHERE token_hash = ?`, tokenHash); err != nil {
+	if err := qtx.DeletePasswordResetToken(context.Background(), tokenHash); err != nil {
 		return err
 	}
 	return tx.Commit()
 }
 
 func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryEntry, error) {
-	rows, err := s.db.Query(`
-		WITH player_stats AS (
-			SELECT
-				p.id AS player_id,
-				p.session_id,
-				p.user_id,
-				COALESCE(SUM(
-					CASE
-						WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
-						WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
-						ELSE 0
-					END
-				), 0) AS wins,
-				COALESCE(SUM(
-					CASE
-						WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
-						WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
-						ELSE 0
-					END
-				), 0) AS points,
-				COUNT(m.id) AS games_played
-			FROM players p
-			LEFT JOIN rounds r ON r.session_id = p.session_id
-			LEFT JOIN matches m ON m.round_id = r.id
-				AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
-				AND m.score_a IS NOT NULL
-			WHERE p.active = 1
-			GROUP BY p.id
-		),
-		ranked AS (
-			SELECT
-				ps.*,
-				RANK() OVER (PARTITION BY ps.session_id ORDER BY ps.points DESC, ps.wins DESC) AS rank
-			FROM player_stats ps
-		)
-		SELECT
-			s.id,
-			COALESCE(NULLIF(s.name, ''), 'OpenPadel'),
-			s.status,
-			s.created_at,
-			rk.rank,
-			rk.points,
-			rk.games_played,
-			COALESCE(s.ended_early, 0)
-		FROM ranked rk
-		JOIN sessions s ON s.id = rk.session_id
-		WHERE rk.user_id = ? AND s.status = 'complete'
-		ORDER BY s.created_at DESC`,
-		userID,
-	)
+	sessions, err := s.queries.GetTournamentHistorySessions(context.Background(), sql.NullString{String: userID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var entries []domain.TournamentHistoryEntry
-	for rows.Next() {
-		var e domain.TournamentHistoryEntry
-		var endedEarlyInt int
-		if err := rows.Scan(&e.SessionID, &e.Name, &e.Status, &e.PlayedAt, &e.Rank, &e.Points, &e.GamesPlayed, &endedEarlyInt); err != nil {
-			return nil, err
+	for _, sess := range sessions {
+		e := domain.TournamentHistoryEntry{
+			SessionID:  sess.ID,
+			Name:       sess.Name,
+			Status:     sess.Status,
+			PlayedAt:   sess.CreatedAt,
+			EndedEarly: sess.EndedEarly == 1,
 		}
-		e.EndedEarly = endedEarlyInt == 1
+
+		// Compute rank/points/games from the leaderboard (reuses existing sort + tiebreaker logic).
+		standings, err := s.GetLeaderboard(sess.ID)
+		if err == nil {
+			for _, st := range standings {
+				if st.UserID != nil && *st.UserID == userID {
+					e.Rank = st.Rank
+					e.Points = st.Points
+					e.GamesPlayed = st.GamesPlayed
+					break
+				}
+			}
+		}
+
 		entries = append(entries, e)
 	}
 	if entries == nil {
 		entries = []domain.TournamentHistoryEntry{}
 	}
-	return entries, rows.Err()
+	return entries, nil
 }
 
 func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, error) {
-	rows, err := s.db.Query(`
-		SELECT
-			s.id,
-			COALESCE(NULLIF(s.name, ''), 'OpenPadel'),
-			s.status,
-			s.game_mode,
-			s.courts,
-			COUNT(p2.id) AS player_count,
-			s.scheduled_at
-		FROM players p
-		JOIN sessions s ON s.id = p.session_id
-		LEFT JOIN players p2 ON p2.session_id = s.id AND p2.active = 1
-		WHERE p.user_id = ? AND p.active = 1 AND s.status IN ('lobby', 'active')
-		GROUP BY s.id
-		ORDER BY s.status DESC, COALESCE(s.scheduled_at, s.created_at) ASC`,
-		userID,
-	)
+	rows, err := s.queries.GetUpcomingTournaments(context.Background(), sql.NullString{String: userID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var entries []domain.UpcomingEntry
-	for rows.Next() {
-		var e domain.UpcomingEntry
-		var scheduledAt *string
-		if err := rows.Scan(&e.SessionID, &e.Name, &e.Status, &e.GameMode, &e.Courts, &e.PlayerCount, &scheduledAt); err != nil {
-			return nil, err
+	for _, row := range rows {
+		e := domain.UpcomingEntry{
+			SessionID:   row.ID,
+			Name:        row.Name,
+			Status:      row.Status,
+			GameMode:    row.GameMode,
+			Courts:      int(row.Courts),
+			PlayerCount: int(row.PlayerCount),
 		}
-		if scheduledAt != nil {
-			t, err := time.Parse(time.RFC3339, *scheduledAt)
+		// Handle scheduled_at which is nullable
+		if row.ScheduledAt.Valid {
+			t, err := time.Parse(time.RFC3339, row.ScheduledAt.String)
 			if err == nil {
 				e.ScheduledAt = &t
 			}
@@ -369,7 +304,7 @@ func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, e
 	if entries == nil {
 		entries = []domain.UpcomingEntry{}
 	}
-	return entries, rows.Err()
+	return entries, nil
 }
 
 func (s *Store) DeleteUser(userID string) error {
@@ -379,30 +314,43 @@ func (s *Store) DeleteUser(userID string) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`DELETE FROM auth_tokens WHERE user_id = ?`, userID); err != nil {
+	qtx := s.queries.WithTx(tx)
+	if err := qtx.DeleteAuthTokensByUserID(context.Background(), userID); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`UPDATE players SET user_id = NULL WHERE user_id = ?`, userID); err != nil {
+	if err := qtx.UpdatePlayerUserIDToNull(context.Background(), sql.NullString{String: userID, Valid: true}); err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`DELETE FROM users WHERE id = ?`, userID); err != nil {
+	if err := qtx.DeleteUser(context.Background(), userID); err != nil {
 		return err
 	}
 	return tx.Commit()
 }
 
-func scanUser(row *sql.Row) (*domain.User, error) {
-	var u domain.User
-	var createdAt string
-	err := row.Scan(&u.ID, &u.Email, &u.DisplayName, &u.AvatarIcon, &u.AvatarColor, &u.PasswordHash, &createdAt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, ErrNotFound
+func rowToUserEmail(row db.GetUserByEmailRow) *domain.User {
+	u := &domain.User{
+		ID:           row.ID,
+		Email:        row.Email,
+		DisplayName:  row.DisplayName,
+		AvatarIcon:   row.AvatarIcon,
+		AvatarColor:  row.AvatarColor,
+		PasswordHash: row.PasswordHash,
 	}
-	if err != nil {
-		return nil, err
+	u.CreatedAt, _ = time.Parse(time.RFC3339, row.CreatedAt)
+	return u
+}
+
+func rowToUserID(row db.GetUserByIDRow) *domain.User {
+	u := &domain.User{
+		ID:           row.ID,
+		Email:        row.Email,
+		DisplayName:  row.DisplayName,
+		AvatarIcon:   row.AvatarIcon,
+		AvatarColor:  row.AvatarColor,
+		PasswordHash: row.PasswordHash,
 	}
-	u.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
-	return &u, nil
+	u.CreatedAt, _ = time.Parse(time.RFC3339, row.CreatedAt)
+	return u
 }
 
 func newUserID() string {
