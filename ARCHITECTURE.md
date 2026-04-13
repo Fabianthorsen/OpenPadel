@@ -23,7 +23,9 @@ No separate web server needed. SQLite on disk. Deployed as a single Fly.io machi
 
 ```
 openpadel/
-├── cmd/server/main.go          entrypoint — wires store, email, router; reads env
+├── cmd/
+│   ├── server/main.go           entrypoint — wires store, email, router; reads env
+│   └── migrate/main.go          CLI for running migrations (up, down, status, reset)
 ├── internal/
 │   ├── api/
 │   │   ├── router.go           chi router, CORS, middleware, all route registrations
@@ -40,7 +42,8 @@ openpadel/
 │   │   └── push.go             VAPID key, subscribe, unsubscribe
 │   ├── domain/session.go       all shared types (User, Session, Player, Round, Match, etc.)
 │   ├── store/                  SQLite data access — one file per domain area
-│   │   ├── store.go            DB init, WAL mode, inline schema + additive migrations
+│   │   ├── store.go            DB init via goose migrations, WAL mode, single connection
+│   │   ├── migrations/         versioned SQL migration files (goose format: -- +goose Up/Down)
 │   │   ├── id.go               newID() (4-char base32), newAdminToken() (tok_ + base58)
 │   │   ├── sessions.go
 │   │   ├── players.go
@@ -166,9 +169,14 @@ DELETE /api/push/unsubscribe
 
 ## Database
 
-Schema is defined inline in `internal/store/store.go`. Migrations are additive
-`ALTER TABLE` statements in a `var migrations []string` slice — "duplicate column"
-errors are silently swallowed. No migration framework.
+Migrations managed by **goose** (v3), a pure-Go migration tool. Migration files
+live in `internal/store/migrations/*.sql` and are embedded into the binary via
+`//go:embed`. Each migration is versioned (e.g., `000001_initial_schema.sql`)
+with `-- +goose Up` and `-- +goose Down` directives.
+
+Bootstrap logic handles existing production databases: if the schema is already
+applied but no goose version table exists, the DB is marked at version 1 without
+re-running migrations. Fresh databases get all migrations applied on first startup.
 
 ### Core tables
 

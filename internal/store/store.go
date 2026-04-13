@@ -2,6 +2,9 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
+
+	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
 
@@ -27,147 +30,62 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) migrate() error {
-	if _, err := s.db.Exec(schema); err != nil {
+	goose.SetBaseFS(MigrationsFS)
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		return fmt.Errorf("goose dialect: %w", err)
+	}
+
+	// Bootstrap existing databases: if the users table exists but goose's
+	// goose_db_version table does not, force version to 1 so goose skips
+	// the initial migration (schema is already applied).
+	if err := bootstrapIfNeeded(s.db); err != nil {
 		return err
 	}
-	// Additive column migrations — ignore "duplicate column" errors.
-	for _, stmt := range migrations {
-		s.db.Exec(stmt) //nolint:errcheck
+
+	return goose.Up(s.db, "migrations")
+}
+
+func bootstrapIfNeeded(db *sql.DB) error {
+	// Check if goose version table already exists.
+	var versionTableExists int
+	err := db.QueryRow(
+		`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='goose_db_version'`,
+	).Scan(&versionTableExists)
+	if err != nil && err != sql.ErrNoRows {
+		return err
 	}
+	if versionTableExists > 0 {
+		return nil // goose already managing this DB
+	}
+
+	// Check if users table exists (indicates a pre-goose production DB).
+	var usersExists int
+	err = db.QueryRow(
+		`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='users'`,
+	).Scan(&usersExists)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	if usersExists == 0 {
+		return nil // fresh DB — let goose apply everything from scratch
+	}
+
+	// Existing DB, no goose table: create version table and mark version 1 as applied.
+	createTableSQL := `
+	CREATE TABLE goose_db_version (
+		id       INTEGER PRIMARY KEY,
+		version_id BIGINT NOT NULL,
+		is_applied BOOLEAN NOT NULL,
+		tstamp   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`
+	if _, err := db.Exec(createTableSQL); err != nil {
+		return fmt.Errorf("create goose_db_version table: %w", err)
+	}
+
+	insertSQL := `INSERT INTO goose_db_version (version_id, is_applied) VALUES (1, 1)`
+	if _, err := db.Exec(insertSQL); err != nil {
+		return fmt.Errorf("bootstrap goose version: %w", err)
+	}
+
 	return nil
 }
-
-// migrations contains ALTER TABLE statements for columns added after initial schema.
-// SQLite has no IF NOT EXISTS for ALTER TABLE, so we run and ignore duplicate errors.
-var migrations = []string{
-	`ALTER TABLE sessions ADD COLUMN creator_player_id TEXT`,
-	`ALTER TABLE sessions ADD COLUMN current_round INTEGER NOT NULL DEFAULT 1`,
-	`ALTER TABLE sessions ADD COLUMN name TEXT NOT NULL DEFAULT ''`,
-	`ALTER TABLE players ADD COLUMN user_id TEXT REFERENCES users(id)`,
-	`ALTER TABLE sessions ADD COLUMN scheduled_at TEXT`,
-	`DROP INDEX IF EXISTS idx_players_session_name`,
-	`CREATE UNIQUE INDEX IF NOT EXISTS idx_players_session_name ON players(session_id, name) WHERE active = 1`,
-	`ALTER TABLE matches ADD COLUMN live_a INTEGER`,
-	`ALTER TABLE matches ADD COLUMN live_b INTEGER`,
-	`ALTER TABLE matches ADD COLUMN server TEXT`,
-	`CREATE TABLE IF NOT EXISTS push_subscriptions (
-		id         TEXT PRIMARY KEY,
-		user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		endpoint   TEXT NOT NULL UNIQUE,
-		p256dh     TEXT NOT NULL,
-		auth       TEXT NOT NULL,
-		created_at TEXT NOT NULL
-	)`,
-	`ALTER TABLE sessions ADD COLUMN game_mode TEXT NOT NULL DEFAULT 'americano'`,
-	`ALTER TABLE sessions ADD COLUMN sets_to_win INTEGER NOT NULL DEFAULT 2`,
-	`ALTER TABLE sessions ADD COLUMN games_per_set INTEGER NOT NULL DEFAULT 6`,
-	`CREATE TABLE IF NOT EXISTS tennis_teams (
-		session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-		player_id  TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-		team       TEXT NOT NULL,
-		PRIMARY KEY (session_id, player_id)
-	)`,
-	`CREATE TABLE IF NOT EXISTS tennis_matches (
-		id         TEXT PRIMARY KEY,
-		session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-		state      TEXT NOT NULL DEFAULT '{}',
-		created_at TEXT NOT NULL,
-		updated_at TEXT NOT NULL
-	)`,
-	`CREATE TABLE IF NOT EXISTS contacts (
-		user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		contact_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		created_at      TEXT NOT NULL,
-		PRIMARY KEY (user_id, contact_user_id)
-	)`,
-	`CREATE TABLE IF NOT EXISTS invites (
-		id          TEXT PRIMARY KEY,
-		session_id  TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-		from_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		to_user_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		status      TEXT NOT NULL DEFAULT 'pending',
-		created_at  TEXT NOT NULL,
-		UNIQUE (session_id, to_user_id)
-	)`,
-	`ALTER TABLE sessions ADD COLUMN ended_early INTEGER NOT NULL DEFAULT 0`,
-	`ALTER TABLE sessions ADD COLUMN court_duration_minutes INTEGER`,
-	`ALTER TABLE sessions ADD COLUMN ends_at TEXT`,
-	`ALTER TABLE users ADD COLUMN avatar_icon TEXT NOT NULL DEFAULT ''`,
-	`ALTER TABLE users ADD COLUMN avatar_color TEXT NOT NULL DEFAULT ''`,
-	`ALTER TABLE players ADD COLUMN avatar_icon TEXT NOT NULL DEFAULT ''`,
-	`ALTER TABLE players ADD COLUMN avatar_color TEXT NOT NULL DEFAULT ''`,
-}
-
-const schema = `
-CREATE TABLE IF NOT EXISTS users (
-	id            TEXT PRIMARY KEY,
-	email         TEXT NOT NULL UNIQUE,
-	display_name  TEXT NOT NULL,
-	password_hash TEXT NOT NULL,
-	created_at    TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS auth_tokens (
-	token      TEXT PRIMARY KEY,
-	user_id    TEXT NOT NULL REFERENCES users(id),
-	created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS password_reset_tokens (
-	token_hash TEXT PRIMARY KEY,
-	user_id    TEXT NOT NULL REFERENCES users(id),
-	expires_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS sessions (
-	id                TEXT PRIMARY KEY,
-	admin_token       TEXT NOT NULL,
-	status            TEXT NOT NULL DEFAULT 'lobby',
-	courts            INTEGER NOT NULL,
-	points            INTEGER NOT NULL,
-	rounds_total      INTEGER,
-	creator_player_id TEXT,
-	created_at        TEXT NOT NULL,
-	updated_at        TEXT NOT NULL
-);
-
-
-CREATE TABLE IF NOT EXISTS players (
-	id         TEXT PRIMARY KEY,
-	session_id TEXT NOT NULL REFERENCES sessions(id),
-	name       TEXT NOT NULL,
-	active     INTEGER NOT NULL DEFAULT 1,
-	joined_at  TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_players_session_name ON players(session_id, name) WHERE active = 1;
-CREATE INDEX IF NOT EXISTS idx_players_session ON players(session_id);
-
-CREATE TABLE IF NOT EXISTS rounds (
-	id         TEXT PRIMARY KEY,
-	session_id TEXT NOT NULL REFERENCES sessions(id),
-	number     INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_rounds_session ON rounds(session_id);
-
-CREATE TABLE IF NOT EXISTS bench (
-	round_id  TEXT NOT NULL REFERENCES rounds(id),
-	player_id TEXT NOT NULL REFERENCES players(id),
-	PRIMARY KEY (round_id, player_id)
-);
-
-CREATE TABLE IF NOT EXISTS matches (
-	id      TEXT PRIMARY KEY,
-	round_id TEXT NOT NULL REFERENCES rounds(id),
-	court   INTEGER NOT NULL,
-	p1      TEXT NOT NULL REFERENCES players(id),
-	p2      TEXT NOT NULL REFERENCES players(id),
-	p3      TEXT NOT NULL REFERENCES players(id),
-	p4      TEXT NOT NULL REFERENCES players(id),
-	score_a INTEGER,
-	score_b INTEGER
-);
-
-CREATE INDEX IF NOT EXISTS idx_matches_round ON matches(round_id);
-`

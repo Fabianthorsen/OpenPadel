@@ -1,4 +1,4 @@
-.PHONY: dev build fmt lint test setup db/reset
+.PHONY: dev build fmt lint test setup db/reset db/migrate/status db/migrate/up db/migrate/down
 
 # Go binary output
 BIN := bin/openpadel
@@ -34,6 +34,18 @@ tidy:
 db/reset:
 	sqlite3 openpadel.db "DELETE FROM bench; DELETE FROM matches; DELETE FROM rounds; DELETE FROM tennis_matches; DELETE FROM tennis_teams; DELETE FROM players; DELETE FROM sessions;"
 	@echo "Game data cleared."
+
+## Show migration status
+db/migrate/status:
+	go run ./cmd/migrate status
+
+## Run pending migrations
+db/migrate/up:
+	go run ./cmd/migrate up
+
+## Rollback last migration
+db/migrate/down:
+	go run ./cmd/migrate down
 
 ## Install git hooks (run once after cloning)
 setup:
