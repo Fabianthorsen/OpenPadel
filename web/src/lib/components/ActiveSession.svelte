@@ -239,8 +239,8 @@
   </main>
 {:else}
 
-<!-- Bottom nav -->
-<div class="fixed bottom-0 left-0 right-0 z-10 flex border-t border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+<!-- Bottom nav (sticky to viewport) -->
+<div class="fixed bottom-0 left-0 right-0 z-40 flex border-t border-[var(--border)] bg-[var(--background)] backdrop-blur-sm pb-[env(safe-area-inset-bottom)] shadow-lg">
   <button
     onclick={() => tab = 'scoring'}
     class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'scoring' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"

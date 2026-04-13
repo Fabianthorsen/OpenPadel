@@ -111,29 +111,51 @@
     return () => { document.body.style.overflow = ''; };
   });
 
-  // Drag-down-to-close
+  // Drag-down-to-close (mobile optimized)
   let dragStartY = 0;
+  let dragVelocity = 0;
+  let dragLastY = 0;
+  let dragLastTime = 0;
   let dragOffset = $state(0);
   let dragging = $state(false);
+  let scrollableContent: HTMLElement | null = $state(null);
 
   function onDragStart(e: TouchEvent) {
     dragStartY = e.touches[0].clientY;
+    dragLastY = dragStartY;
+    dragLastTime = Date.now();
     dragOffset = 0;
+    dragVelocity = 0;
     dragging = true;
   }
 
   function onDragMove(e: TouchEvent) {
-    if (!dragging) return;
-    const delta = e.touches[0].clientY - dragStartY;
-    dragOffset = Math.max(0, delta); // only allow dragging down
+    if (!dragging || !scrollableContent) return;
+    const now = Date.now();
+    const currentY = e.touches[0].clientY;
+    const delta = currentY - dragStartY;
+
+    // Only allow drag-to-close if scrolled to top or dragging downward significantly
+    const scrollTop = scrollableContent.scrollTop;
+    if (delta > 0 && (scrollTop === 0 || delta > 30)) {
+      if (delta > 0) e.preventDefault();
+      dragOffset = Math.min(300, delta); // cap at 300px
+      // Calculate velocity for momentum detection
+      dragVelocity = (currentY - dragLastY) / Math.max(16, now - dragLastTime);
+      dragLastY = currentY;
+      dragLastTime = now;
+    }
   }
 
   function onDragEnd() {
     dragging = false;
-    if (dragOffset > 120) {
+    // Threshold: 80px OR velocity > 150px/s (fast flick)
+    const shouldClose = dragOffset > 80 || (dragVelocity > 150 && dragOffset > 20);
+    if (shouldClose) {
       close();
+    } else {
+      dragOffset = 0;
     }
-    dragOffset = 0;
   }
 
   async function create() {
@@ -199,7 +221,14 @@
     </div>
 
     <!-- Scrollable content -->
-    <div class="flex-1 overflow-y-auto px-6 pb-8 space-y-6">
+    <div
+      bind:this={scrollableContent}
+      role="presentation"
+      class="flex-1 overflow-y-auto px-6 pb-8 space-y-6"
+      ontouchstart={onDragStart}
+      ontouchmove={onDragMove}
+      ontouchend={onDragEnd}
+    >
 
       <!-- Game mode -->
       <div class="space-y-2.5">
