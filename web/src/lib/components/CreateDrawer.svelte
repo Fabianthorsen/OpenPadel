@@ -105,8 +105,14 @@
   $effect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
+      // Reset drag state when drawer opens
+      dragOffset = 0;
+      dragging = false;
     } else {
       document.body.style.overflow = '';
+      // Reset drag state when drawer closes
+      dragOffset = 0;
+      dragging = false;
     }
     return () => { document.body.style.overflow = ''; };
   });
@@ -161,6 +167,9 @@
   async function create() {
     creating = true;
     error = '';
+    // Reset drag state immediately so drawer animates properly
+    dragOffset = 0;
+    dragging = false;
     try {
       let iso: string | undefined;
       if (scheduleEnabled && calendarDate) {
