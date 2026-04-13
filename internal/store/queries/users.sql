@@ -19,9 +19,6 @@ FROM users WHERE email = ?;
 SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at
 FROM users WHERE id = ?;
 
--- name: GetUserAvatarByUserID :one
-SELECT avatar_icon, avatar_color FROM users WHERE id = ?;
-
 -- name: CreateAuthToken :exec
 INSERT INTO auth_tokens (token, user_id, created_at) VALUES (?, ?, ?);
 
