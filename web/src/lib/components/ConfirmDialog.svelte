@@ -29,9 +29,10 @@
   <!-- Backdrop -->
   <div
     transition:fade={{ duration: 150 }}
-    class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+    class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center touch-none"
     onclick={() => (open = false)}
     onkeydown={(e) => e.key === 'Escape' && (open = false)}
+    ontouchmove={(e) => e.preventDefault()}
     role="presentation"
     tabindex="-1"
   >

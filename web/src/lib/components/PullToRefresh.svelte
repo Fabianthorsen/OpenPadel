@@ -3,9 +3,11 @@
 
   let {
     onRefresh,
+    disabled = false,
     children
   }: {
     onRefresh: () => Promise<void>;
+    disabled?: boolean;
     children: Snippet;
   } = $props();
 
@@ -13,6 +15,8 @@
   const MAX_PULL = 120;
 
   let dragStartY = 0;
+  let pendingDelta = 0;
+  let rafId: number | null = null;
   let dragOffset = $state(0);
   let dragging = $state(false);
   let refreshing = $state(false);
@@ -22,23 +26,31 @@
   }
 
   function onTouchStart(e: TouchEvent) {
-    if (getScrollTop() > 0) return;
+    if (disabled || getScrollTop() > 0) return;
     dragStartY = e.touches[0].clientY;
     dragging = true;
     dragOffset = 0;
   }
 
   function onTouchMove(e: TouchEvent) {
-    if (!dragging) return;
+    if (!dragging || disabled) return;
     const delta = e.touches[0].clientY - dragStartY;
     if (delta <= 0) { dragOffset = 0; return; }
     if (getScrollTop() === 0 && delta > 0) e.preventDefault();
-    dragOffset = Math.min(MAX_PULL, delta);
+    // Batch updates to sync with display refresh rate
+    pendingDelta = delta;
+    if (!rafId) {
+      rafId = requestAnimationFrame(() => {
+        dragOffset = Math.min(MAX_PULL, pendingDelta);
+        rafId = null;
+      });
+    }
   }
 
   async function onTouchEnd() {
-    if (!dragging) return;
+    if (!dragging || disabled) return;
     dragging = false;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
     if (dragOffset >= THRESHOLD) {
       refreshing = true;
       dragOffset = 0;
@@ -52,7 +64,7 @@
     }
   }
 
-  // Non-passive touchmove to allow preventDefault (same pattern as Lobby.svelte)
+  // Non-passive touchmove to allow preventDefault
   function nonPassiveTouchMove(node: HTMLElement) {
     node.addEventListener('touchmove', onTouchMove, { passive: false });
     return { destroy() { node.removeEventListener('touchmove', onTouchMove); } };
@@ -63,17 +75,17 @@
 </script>
 
 <div
-  class="relative min-h-full"
+  class="relative flex flex-1 flex-col h-full overflow-hidden"
   role="region"
   aria-label="Pull to refresh"
   ontouchstart={onTouchStart}
   ontouchend={onTouchEnd}
   use:nonPassiveTouchMove
 >
-  <!-- Indicator -->
+  <!-- Indicator: fixed 48px, positioned above content, revealed by content translateY -->
   <div
-    class="flex items-center justify-center overflow-hidden text-[var(--text-disabled)] transition-[height,opacity] duration-200 ease-out"
-    style="height: {dragOffset > 0 || refreshing ? (refreshing ? 48 : dragOffset) : 0}px; opacity: {refreshing ? 1 : progress};"
+    class="absolute inset-x-0 top-0 flex h-12 items-center justify-center text-[var(--text-disabled)]"
+    style="opacity: {refreshing ? 1 : progress};"
   >
     {#if refreshing}
       <!-- Dotted spinner: 8 dots arranged in a circle, staggered opacity -->
@@ -117,10 +129,10 @@
     {/if}
   </div>
 
-  <!-- Content pushed down while pulling -->
+  <!-- Content pushed down via transform (GPU-accelerated, no reflows) -->
   <div
-    class="will-change-transform"
-    style="transform: translateY({dragOffset}px); transition: {dragging ? 'none' : 'transform 0.2s ease'};"
+    class="flex-1 will-change-transform"
+    style="transform: translateY({refreshing ? 48 : dragOffset}px); transition: {dragging ? 'none' : 'transform 0.2s ease'};"
   >
     {@render children()}
   </div>

@@ -167,6 +167,12 @@
     }
   }
 
+  // Non-passive touchmove to allow preventDefault on iOS
+  function nonPassiveTouchMove(node: HTMLElement) {
+    node.addEventListener('touchmove', onDragMove, { passive: false });
+    return { destroy() { node.removeEventListener('touchmove', onDragMove); } };
+  }
+
   async function create() {
     creating = true;
     error = '';
@@ -218,8 +224,8 @@
       role="presentation"
       class="flex shrink-0 flex-col items-center px-6 pt-3 pb-4 touch-none"
       ontouchstart={onDragStart}
-      ontouchmove={onDragMove}
       ontouchend={onDragEnd}
+      use:nonPassiveTouchMove
     >
       <div class="mb-4 h-1 w-10 rounded-full bg-[var(--border-strong)]"></div>
       <div class="flex w-full items-center justify-between">
@@ -238,8 +244,8 @@
       role="presentation"
       class="flex-1 overflow-y-auto px-6 pb-8 space-y-6"
       ontouchstart={onDragStart}
-      ontouchmove={onDragMove}
       ontouchend={onDragEnd}
+      use:nonPassiveTouchMove
     >
 
       <!-- Game mode -->

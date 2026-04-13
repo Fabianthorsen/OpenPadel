@@ -11,7 +11,7 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import Avatar from '$lib/components/ui/Avatar.svelte';
-  import { slide } from 'svelte/transition';
+  import { fade } from 'svelte/transition';
   import { toast } from 'svelte-sonner';
   import { translateApiError } from '$lib/i18n/errors';
   import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
@@ -387,7 +387,7 @@
       </button>
 
       {#if showPreferences}
-        <div transition:slide={{ duration: 200 }} class="space-y-2">
+        <div transition:fade={{ duration: 150 }} class="space-y-2">
           {#if pushSupported}
             <div class="flex items-center gap-4 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5">
               <div class="flex-1">
@@ -454,7 +454,7 @@
         </button>
 
         {#if showStats}
-          <div transition:slide={{ duration: 200 }} class="grid grid-cols-2 gap-3">
+          <div transition:fade={{ duration: 150 }} class="grid grid-cols-2 gap-3">
             <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
               <p class="text-3xl font-[800] leading-none">{stats.tournaments}</p>
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_tournaments')}</p>
@@ -511,7 +511,7 @@
         </button>
 
         {#if showContacts}
-          <div transition:slide={{ duration: 200 }} class="space-y-3">
+          <div transition:fade={{ duration: 150 }} class="space-y-3">
             <!-- Search -->
             <div class="relative">
               <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
@@ -607,7 +607,7 @@
         </button>
 
         {#if showUpcoming}
-          <div transition:slide={{ duration: 200 }} class="space-y-2">
+          <div transition:fade={{ duration: 150 }} class="space-y-2">
             {#if upcoming.length === 0}
               <p class="text-sm text-[var(--text-disabled)] py-1">{$_('profile_upcoming_empty')}</p>
             {:else}
@@ -644,7 +644,7 @@
         </button>
 
         {#if showHistory}
-          <div transition:slide={{ duration: 200 }} class="space-y-2">
+          <div transition:fade={{ duration: 150 }} class="space-y-2">
             {#if tournaments.length === 0}
               <p class="text-sm text-[var(--text-disabled)] py-2">{$_('profile_history_empty')}</p>
             {:else}
