@@ -305,7 +305,7 @@
 {:else}
 
 <!-- Bottom nav (sticky to viewport) -->
-<div class="fixed bottom-0 left-0 right-0 z-40 flex border-t border-[var(--border)] bg-[var(--background)] backdrop-blur-sm pb-[env(safe-area-inset-bottom)] shadow-lg">
+<div class="fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--border)] bg-[var(--background)] backdrop-blur-sm shadow-lg" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom))">
   <button
     onclick={() => tab = 'scoring'}
     class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'scoring' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
@@ -331,7 +331,7 @@
 
 <!-- ── SCORING TAB ── -->
 {#if tab === 'scoring'}
-  <main class="mx-auto max-w-[480px] px-4 pb-32 pt-6 space-y-4">
+  <main class="mx-auto max-w-[480px] px-4 pb-36 pt-6 space-y-4">
 
     <!-- Nav -->
     <div class="flex items-center justify-between">
@@ -616,7 +616,7 @@
 
 <!-- ── STANDINGS TAB ── -->
 {:else if tab === 'standings'}
-  <main class="mx-auto max-w-[480px] px-4 pb-28 pt-6">
+  <main class="mx-auto max-w-[480px] px-4 pb-32 pt-6">
     <div class="mb-4 flex items-center justify-between">
       <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
@@ -626,7 +626,7 @@
 
 <!-- ── PLAYERS TAB ── -->
 {:else if tab === 'players'}
-  <main class="mx-auto max-w-[480px] px-4 pb-28 pt-6 space-y-4">
+  <main class="mx-auto max-w-[480px] px-4 pb-32 pt-6 space-y-4">
     <div class="flex items-center justify-between">
       <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
