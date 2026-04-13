@@ -52,7 +52,7 @@
   let showCourtsOverview = $state(false);
 
   // Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite)
-  type NumpadState = { matchId: string; team: 'a' | 'b'; value: string };
+  type NumpadState = { matchId: string; team: 'a' | 'b'; value: string; fresh: boolean };
   let numpad = $state<NumpadState | null>(null);
   let numpadShaking = $state(false);
   let numpadDragOffset = $state(0);
@@ -64,22 +64,22 @@
 
   function openNumpad(matchId: string, team: 'a' | 'b') {
     const current = scores[matchId]?.[team] ?? 0;
-    numpad = { matchId, team, value: current > 0 ? String(current) : '' };
+    numpad = { matchId, team, value: current > 0 ? String(current) : '', fresh: true };
     numpadDragOffset = 0;
     numpadDragging = false;
   }
 
   function numpadDigit(d: string) {
     if (!numpad) return;
-    // Overwrite mode: if non-empty value, replace instead of append
+    // Overwrite on first digit after opening/confirming, then append normally
     let next: string;
-    if (numpad.value && numpad.value !== '0') {
-      next = d; // Replace entire value
+    if (numpad.fresh && numpad.value && numpad.value !== '0') {
+      next = d; // Replace value on first digit
     } else {
       next = (numpad.value + d).replace(/^0+(\d)/, '$1');
     }
     if (parseInt(next || '0') > session.points) return;
-    numpad = { ...numpad, value: next };
+    numpad = { ...numpad, value: next, fresh: false }; // After first digit, normal append mode
   }
 
   function numpadDelete() {
