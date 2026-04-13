@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.8.0...v1.9.0) (2026-04-13)
+
+
+### Features
+
+* **db:** add sqlc for type-safe query generation ([#26](https://github.com/Fabianthorsen/OpenPadel/issues/26)) ([023c24a](https://github.com/Fabianthorsen/OpenPadel/commit/023c24a1ceb7983403a575ed72848a0671337e73))
+* **db:** add versioned migrations with goose ([#25](https://github.com/Fabianthorsen/OpenPadel/issues/25)) ([688768d](https://github.com/Fabianthorsen/OpenPadel/commit/688768d7d56d0d259e24094ea25de368b7a54495))
+
 ## [1.8.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.7.1...v1.8.0) (2026-04-12)
 
 
