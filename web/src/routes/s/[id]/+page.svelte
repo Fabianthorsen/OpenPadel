@@ -95,6 +95,7 @@
     const delta = currentY - numpadDragStartY;
 
     if (delta > 0) {
+      e.preventDefault();
       // Cap drag at the numpad element's own height
       const numpadElement = (e.target as HTMLElement)?.closest('[role="presentation"]');
       const maxDrag = numpadElement?.getBoundingClientRect().height ?? 300;
@@ -189,7 +190,7 @@
     ontouchmove={numpadTouchMove}
     ontouchend={numpadTouchEnd}
     onkeydown={numpadHandleKeydown}
-    style="bottom: 0; transform: translateY({numpadDragOffset}px); transition: {numpadDragging ? 'none' : 'transform 0.2s ease'}; opacity: {Math.max(0.5, 1 - numpadDragOffset / 400)};"
+    style="bottom: 0; transform: translateY({numpadDragOffset}px); transition: {numpadDragging ? 'none' : 'transform 0.2s ease'};"
   >
     <p class="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">
       Target: {$numpadStore.targetPoints}
