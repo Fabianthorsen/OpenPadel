@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id            TEXT PRIMARY KEY,
     email         TEXT NOT NULL UNIQUE,
     display_name  TEXT NOT NULL,
@@ -11,19 +11,19 @@ CREATE TABLE users (
     avatar_color  TEXT NOT NULL DEFAULT ''
 );
 
-CREATE TABLE auth_tokens (
+CREATE TABLE IF NOT EXISTS auth_tokens (
     token      TEXT PRIMARY KEY,
     user_id    TEXT NOT NULL REFERENCES users(id),
     created_at TEXT NOT NULL
 );
 
-CREATE TABLE password_reset_tokens (
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
     token_hash TEXT PRIMARY KEY,
     user_id    TEXT NOT NULL REFERENCES users(id),
     expires_at TEXT NOT NULL
 );
 
-CREATE TABLE sessions (
+CREATE TABLE IF NOT EXISTS sessions (
     id                     TEXT PRIMARY KEY,
     admin_token            TEXT NOT NULL,
     status                 TEXT NOT NULL DEFAULT 'lobby',
@@ -44,7 +44,7 @@ CREATE TABLE sessions (
     ends_at                TEXT
 );
 
-CREATE TABLE players (
+CREATE TABLE IF NOT EXISTS players (
     id            TEXT PRIMARY KEY,
     session_id    TEXT NOT NULL REFERENCES sessions(id),
     name          TEXT NOT NULL,
@@ -55,24 +55,24 @@ CREATE TABLE players (
     avatar_color  TEXT NOT NULL DEFAULT ''
 );
 
-CREATE UNIQUE INDEX idx_players_session_name ON players(session_id, name) WHERE active = 1;
-CREATE INDEX idx_players_session ON players(session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_players_session_name ON players(session_id, name) WHERE active = 1;
+CREATE INDEX IF NOT EXISTS idx_players_session ON players(session_id);
 
-CREATE TABLE rounds (
+CREATE TABLE IF NOT EXISTS rounds (
     id         TEXT PRIMARY KEY,
     session_id TEXT NOT NULL REFERENCES sessions(id),
     number     INTEGER NOT NULL
 );
 
-CREATE INDEX idx_rounds_session ON rounds(session_id);
+CREATE INDEX IF NOT EXISTS idx_rounds_session ON rounds(session_id);
 
-CREATE TABLE bench (
+CREATE TABLE IF NOT EXISTS bench (
     round_id  TEXT NOT NULL REFERENCES rounds(id),
     player_id TEXT NOT NULL REFERENCES players(id),
     PRIMARY KEY (round_id, player_id)
 );
 
-CREATE TABLE matches (
+CREATE TABLE IF NOT EXISTS matches (
     id       TEXT PRIMARY KEY,
     round_id TEXT NOT NULL REFERENCES rounds(id),
     court    INTEGER NOT NULL,
@@ -87,9 +87,9 @@ CREATE TABLE matches (
     server   TEXT
 );
 
-CREATE INDEX idx_matches_round ON matches(round_id);
+CREATE INDEX IF NOT EXISTS idx_matches_round ON matches(round_id);
 
-CREATE TABLE push_subscriptions (
+CREATE TABLE IF NOT EXISTS push_subscriptions (
     id         TEXT PRIMARY KEY,
     user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     endpoint   TEXT NOT NULL UNIQUE,
@@ -98,14 +98,14 @@ CREATE TABLE push_subscriptions (
     created_at TEXT NOT NULL
 );
 
-CREATE TABLE tennis_teams (
+CREATE TABLE IF NOT EXISTS tennis_teams (
     session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
     player_id  TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     team       TEXT NOT NULL,
     PRIMARY KEY (session_id, player_id)
 );
 
-CREATE TABLE tennis_matches (
+CREATE TABLE IF NOT EXISTS tennis_matches (
     id         TEXT PRIMARY KEY,
     session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
     state      TEXT NOT NULL DEFAULT '{}',
@@ -113,14 +113,14 @@ CREATE TABLE tennis_matches (
     updated_at TEXT NOT NULL
 );
 
-CREATE TABLE contacts (
+CREATE TABLE IF NOT EXISTS contacts (
     user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     contact_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at      TEXT NOT NULL,
     PRIMARY KEY (user_id, contact_user_id)
 );
 
-CREATE TABLE invites (
+CREATE TABLE IF NOT EXISTS invites (
     id           TEXT PRIMARY KEY,
     session_id   TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
     from_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
