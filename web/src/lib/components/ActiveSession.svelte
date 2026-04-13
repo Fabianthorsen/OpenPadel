@@ -1,17 +1,17 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { fly } from 'svelte/transition';
   import { toast } from 'svelte-sonner';
   import { ApiError } from '$lib/api/client';
   import { translateApiError } from '$lib/i18n/errors';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
+  import { sessionDialog } from '$lib/stores/sessionDialog';
   import { Activity, ChartBar, Users, Pencil, Shield, LayoutGrid, Check, X } from 'lucide-svelte';
   import { sessionName } from '$lib/utils';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import { numpad as numpadStore } from '$lib/stores/numpad';
 
   let {
     session,
@@ -37,9 +37,7 @@
   let initialServer = $state<Record<string, 'a' | 'b'>>({});
   const saveTimeout: Record<string, ReturnType<typeof setTimeout>> = {};
   let advancing = $state(false);
-  let showCancelDialog = $state(false);
   let cancelling = $state(false);
-  let showCloseDialog = $state(false);
   let closing = $state(false);
 
   // Court tabs
@@ -54,19 +52,24 @@
   // Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite)
   type NumpadState = { matchId: string; team: 'a' | 'b'; value: string; fresh: boolean };
   let numpad = $state<NumpadState | null>(null);
-  let numpadShaking = $state(false);
-  let numpadDragOffset = $state(0);
-  let numpadDragging = $state(false);
-  let numpadDragStartY = 0;
-  let numpadDragVelocity = 0;
-  let numpadDragLastY = 0;
-  let numpadDragLastTime = 0;
 
   function openNumpad(matchId: string, team: 'a' | 'b') {
     const current = scores[matchId]?.[team] ?? 0;
-    numpad = { matchId, team, value: current > 0 ? String(current) : '', fresh: true };
-    numpadDragOffset = 0;
-    numpadDragging = false;
+    const value = current > 0 ? String(current) : '';
+    numpad = { matchId, team, value, fresh: true };
+    numpadStore.open({
+      value,
+      fresh: true,
+      targetPoints: session.points,
+      shaking: false,
+      onDigit: numpadDigit,
+      onDelete: numpadDelete,
+      onConfirm: numpadConfirm,
+      onClose: () => {
+        numpad = null;
+        numpadStore.close();
+      }
+    });
   }
 
   function numpadDigit(d: string) {
@@ -80,19 +83,24 @@
     }
     if (parseInt(next || '0') > session.points) return;
     numpad = { ...numpad, value: next, fresh: false }; // After first digit, normal append mode
+    numpadStore.update({ value: next, fresh: false });
   }
 
   function numpadDelete() {
     if (!numpad) return;
-    numpad = { ...numpad, value: numpad.value.slice(0, -1) };
+    const next = numpad.value.slice(0, -1);
+    numpad = { ...numpad, value: next };
+    numpadStore.update({ value: next, fresh: false });
   }
 
   function numpadConfirm() {
     if (!numpad) return;
     const entered = parseInt(numpad.value || '0');
     if (entered > session.points) {
-      numpadShaking = true;
-      setTimeout(() => { numpadShaking = false; }, 400);
+      numpadStore.update({ shaking: true });
+      setTimeout(() => {
+        numpadStore.update({ shaking: false });
+      }, 400);
       return;
     }
     const other = session.points - entered;
@@ -100,56 +108,7 @@
     localScores[matchId] = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
     scheduleLiveSave(matchId);
     numpad = null;
-    numpadDragOffset = 0;
-  }
-
-  function numpadHandleKeydown(e: KeyboardEvent) {
-    if (!numpad) return;
-    if (e.key >= '0' && e.key <= '9') {
-      e.preventDefault();
-      numpadDigit(e.key);
-    } else if (e.key === 'Backspace') {
-      e.preventDefault();
-      numpadDelete();
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      numpadConfirm();
-    }
-  }
-
-  function numpadDragStart(e: TouchEvent) {
-    numpadDragStartY = e.touches[0].clientY;
-    numpadDragLastY = numpadDragStartY;
-    numpadDragLastTime = Date.now();
-    numpadDragOffset = 0;
-    numpadDragVelocity = 0;
-    numpadDragging = true;
-  }
-
-  function numpadDragMove(e: TouchEvent) {
-    if (!numpadDragging) return;
-    const now = Date.now();
-    const currentY = e.touches[0].clientY;
-    const delta = currentY - numpadDragStartY;
-
-    if (delta > 0) {
-      // Cap drag at the numpad element's own height
-      const numpadElement = (e.target as HTMLElement)?.closest('[role="presentation"]');
-      const maxDrag = numpadElement?.getBoundingClientRect().height ?? 300;
-      numpadDragOffset = Math.min(maxDrag, delta);
-      numpadDragVelocity = (currentY - numpadDragLastY) / Math.max(16, now - numpadDragLastTime);
-      numpadDragLastY = currentY;
-      numpadDragLastTime = now;
-    }
-  }
-
-  function numpadDragEnd() {
-    numpadDragging = false;
-    const shouldClose = numpadDragOffset > 80 || (numpadDragVelocity > 150 && numpadDragOffset > 20);
-    if (shouldClose) {
-      numpad = null;
-    }
-    numpadDragOffset = 0;
+    numpadStore.close();
   }
 
   const scores = $derived.by(() => {
@@ -227,7 +186,7 @@
     try {
       const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
       await api.sessions.close(session.id, adminToken);
-      showCloseDialog = false;
+      sessionDialog.close();
       closing = false;
       onRefresh();
     } catch (e) {
@@ -600,12 +559,12 @@
     {#if isAdmin}
       <div class="flex flex-col items-center gap-1 pb-2">
         <button
-          onclick={() => showCloseDialog = true}
+          onclick={() => sessionDialog.open('close', closeSession)}
           disabled={closing || cancelling}
           class="rounded-full bg-[var(--destructive)] px-5 py-2 text-xs font-semibold text-white transition-all active:scale-95 disabled:opacity-40"
         >{$_('active_close')}</button>
         <button
-          onclick={() => showCancelDialog = true}
+          onclick={() => sessionDialog.open('cancel', cancelSession)}
           disabled={closing || cancelling}
           class="px-4 py-1.5 text-xs text-[var(--text-disabled)] transition-colors hover:text-[var(--destructive)] disabled:opacity-40"
         >{$_('active_cancel')}</button>
@@ -719,61 +678,3 @@
   </div>
 {/if}
 
-<!-- ── NUMPAD BOTTOM SHEET ── -->
-{#if numpad}
-  <div
-    role="presentation"
-    class="fixed inset-0 z-40 bg-black/40"
-    onclick={() => numpad = null}
-    onkeydown={(e) => e.key === 'Escape' && (numpad = null)}
-  ></div>
-  <div
-    transition:fly={{ y: 500, duration: 300, opacity: 1 }}
-    role="presentation"
-    class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[480px] rounded-t-3xl bg-[var(--surface)] px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl"
-    ontouchstart={numpadDragStart}
-    ontouchmove={numpadDragMove}
-    ontouchend={numpadDragEnd}
-    onkeydown={numpadHandleKeydown}
-    style="transform: translateY({numpadDragOffset}px); transition: {numpadDragging ? 'none' : 'transform 0.2s ease'}; opacity: {Math.max(0.5, 1 - numpadDragOffset / 400)};"
-  >
-    <p class="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">
-      Target: {session.points}
-    </p>
-    <p class="mb-6 text-center text-[64px] font-[800] leading-none tabular-nums transition-transform
-      {numpadShaking ? 'animate-[shake_0.4s_ease-in-out]' : ''}">
-      {numpad.value || '0'}
-    </p>
-    <div class="grid grid-cols-3 gap-3">
-      {#each ['1','2','3','4','5','6','7','8','9'] as d}
-        <button
-          onclick={() => numpadDigit(d)}
-          class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95 select-none"
-        >{d}</button>
-      {/each}
-      <button onclick={numpadDelete} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95 select-none">⌫</button>
-      <button onclick={() => numpadDigit('0')} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95 select-none">0</button>
-      <button onclick={numpadConfirm} class="rounded-2xl bg-[var(--primary)] py-4 text-xl font-[800] text-white transition-all active:scale-95 select-none">✓</button>
-    </div>
-  </div>
-{/if}
-
-<ConfirmDialog
-  bind:open={showCloseDialog}
-  title={$_('close_dialog_title')}
-  description={$_('close_dialog_desc')}
-  confirmLabel={$_('close_dialog_confirm')}
-  cancelLabel={$_('close_dialog_cancel')}
-  destructive
-  onconfirm={closeSession}
-/>
-
-<ConfirmDialog
-  bind:open={showCancelDialog}
-  title={$_('cancel_dialog_title')}
-  description={$_('cancel_dialog_desc')}
-  confirmLabel={$_('cancel_dialog_confirm')}
-  cancelLabel={$_('cancel_dialog_cancel')}
-  destructive
-  onconfirm={cancelSession}
-/>
