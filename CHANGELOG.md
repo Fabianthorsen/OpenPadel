@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.1...v1.9.2) (2026-04-13)
+
+
+### Bug Fixes
+
+* **ui:** improve PWA performance and touch handling on iOS ([a693812](https://github.com/Fabianthorsen/OpenPadel/commit/a6938126855eb0b0c09fc1a6a725592c0eed8113))
+
 ## [1.9.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.0...v1.9.1) (2026-04-13)
 
 
