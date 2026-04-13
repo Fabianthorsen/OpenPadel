@@ -240,75 +240,40 @@ func (s *Store) RedeemPasswordResetToken(rawToken, newPassword string) error {
 }
 
 func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryEntry, error) {
-	rows, err := s.db.Query(`
-		WITH player_stats AS (
-			SELECT
-				p.id AS player_id,
-				p.session_id,
-				p.user_id,
-				COALESCE(SUM(
-					CASE
-						WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
-						WHEN (m.p3 = p.id OR m.p4 = p.id) AND m.score_b > m.score_a THEN 1
-						ELSE 0
-					END
-				), 0) AS wins,
-				COALESCE(SUM(
-					CASE
-						WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
-						WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
-						ELSE 0
-					END
-				), 0) AS points,
-				COUNT(m.id) AS games_played
-			FROM players p
-			LEFT JOIN rounds r ON r.session_id = p.session_id
-			LEFT JOIN matches m ON m.round_id = r.id
-				AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
-				AND m.score_a IS NOT NULL
-			WHERE p.active = 1
-			GROUP BY p.id
-		),
-		ranked AS (
-			SELECT
-				ps.*,
-				RANK() OVER (PARTITION BY ps.session_id ORDER BY ps.points DESC, ps.wins DESC) AS rank
-			FROM player_stats ps
-		)
-		SELECT
-			s.id,
-			COALESCE(NULLIF(s.name, ''), 'OpenPadel'),
-			s.status,
-			s.created_at,
-			rk.rank,
-			rk.points,
-			rk.games_played,
-			COALESCE(s.ended_early, 0)
-		FROM ranked rk
-		JOIN sessions s ON s.id = rk.session_id
-		WHERE rk.user_id = ? AND s.status = 'complete'
-		ORDER BY s.created_at DESC`,
-		userID,
-	)
+	sessions, err := s.queries.GetTournamentHistorySessions(context.Background(), sql.NullString{String: userID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var entries []domain.TournamentHistoryEntry
-	for rows.Next() {
-		var e domain.TournamentHistoryEntry
-		var endedEarlyInt int
-		if err := rows.Scan(&e.SessionID, &e.Name, &e.Status, &e.PlayedAt, &e.Rank, &e.Points, &e.GamesPlayed, &endedEarlyInt); err != nil {
-			return nil, err
+	for _, sess := range sessions {
+		e := domain.TournamentHistoryEntry{
+			SessionID:  sess.ID,
+			Name:       sess.Name,
+			Status:     sess.Status,
+			PlayedAt:   sess.CreatedAt,
+			EndedEarly: sess.EndedEarly == 1,
 		}
-		e.EndedEarly = endedEarlyInt == 1
+
+		// Compute rank/points/games from the leaderboard (reuses existing sort + tiebreaker logic).
+		standings, err := s.GetLeaderboard(sess.ID)
+		if err == nil {
+			for _, st := range standings {
+				if st.UserID != nil && *st.UserID == userID {
+					e.Rank = st.Rank
+					e.Points = st.Points
+					e.GamesPlayed = st.GamesPlayed
+					break
+				}
+			}
+		}
+
 		entries = append(entries, e)
 	}
 	if entries == nil {
 		entries = []domain.TournamentHistoryEntry{}
 	}
-	return entries, rows.Err()
+	return entries, nil
 }
 
 func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, error) {
