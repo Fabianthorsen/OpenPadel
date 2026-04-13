@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { fly } from 'svelte/transition';
   import { toast } from 'svelte-sonner';
   import { ApiError } from '$lib/api/client';
   import { translateApiError } from '$lib/i18n/errors';
@@ -50,19 +51,33 @@
 
   let showCourtsOverview = $state(false);
 
-  // Numpad
+  // Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite)
   type NumpadState = { matchId: string; team: 'a' | 'b'; value: string };
   let numpad = $state<NumpadState | null>(null);
   let numpadShaking = $state(false);
+  let numpadDragOffset = $state(0);
+  let numpadDragging = $state(false);
+  let numpadDragStartY = 0;
+  let numpadDragVelocity = 0;
+  let numpadDragLastY = 0;
+  let numpadDragLastTime = 0;
 
   function openNumpad(matchId: string, team: 'a' | 'b') {
     const current = scores[matchId]?.[team] ?? 0;
     numpad = { matchId, team, value: current > 0 ? String(current) : '' };
+    numpadDragOffset = 0;
+    numpadDragging = false;
   }
 
   function numpadDigit(d: string) {
     if (!numpad) return;
-    const next = (numpad.value + d).replace(/^0+(\d)/, '$1');
+    // Overwrite mode: if non-empty value, replace instead of append
+    let next: string;
+    if (numpad.value && numpad.value !== '0') {
+      next = d; // Replace entire value
+    } else {
+      next = (numpad.value + d).replace(/^0+(\d)/, '$1');
+    }
     if (parseInt(next || '0') > session.points) return;
     numpad = { ...numpad, value: next };
   }
@@ -85,6 +100,56 @@
     localScores[matchId] = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
     scheduleLiveSave(matchId);
     numpad = null;
+    numpadDragOffset = 0;
+  }
+
+  function numpadHandleKeydown(e: KeyboardEvent) {
+    if (!numpad) return;
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault();
+      numpadDigit(e.key);
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      numpadDelete();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      numpadConfirm();
+    }
+  }
+
+  function numpadDragStart(e: TouchEvent) {
+    numpadDragStartY = e.touches[0].clientY;
+    numpadDragLastY = numpadDragStartY;
+    numpadDragLastTime = Date.now();
+    numpadDragOffset = 0;
+    numpadDragVelocity = 0;
+    numpadDragging = true;
+  }
+
+  function numpadDragMove(e: TouchEvent) {
+    if (!numpadDragging) return;
+    const now = Date.now();
+    const currentY = e.touches[0].clientY;
+    const delta = currentY - numpadDragStartY;
+
+    if (delta > 0) {
+      // Cap drag at the numpad element's own height
+      const numpadElement = (e.target as HTMLElement)?.closest('[role="presentation"]');
+      const maxDrag = numpadElement?.getBoundingClientRect().height ?? 300;
+      numpadDragOffset = Math.min(maxDrag, delta);
+      numpadDragVelocity = (currentY - numpadDragLastY) / Math.max(16, now - numpadDragLastTime);
+      numpadDragLastY = currentY;
+      numpadDragLastTime = now;
+    }
+  }
+
+  function numpadDragEnd() {
+    numpadDragging = false;
+    const shouldClose = numpadDragOffset > 80 || (numpadDragVelocity > 150 && numpadDragOffset > 20);
+    if (shouldClose) {
+      numpad = null;
+    }
+    numpadDragOffset = 0;
   }
 
   const scores = $derived.by(() => {
@@ -662,7 +727,16 @@
     onclick={() => numpad = null}
     onkeydown={(e) => e.key === 'Escape' && (numpad = null)}
   ></div>
-  <div class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[480px] rounded-t-3xl bg-[var(--surface)] px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+  <div
+    transition:fly={{ y: 500, duration: 300, opacity: 1 }}
+    role="presentation"
+    class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[480px] rounded-t-3xl bg-[var(--surface)] px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl"
+    ontouchstart={numpadDragStart}
+    ontouchmove={numpadDragMove}
+    ontouchend={numpadDragEnd}
+    onkeydown={numpadHandleKeydown}
+    style="transform: translateY({numpadDragOffset}px); transition: {numpadDragging ? 'none' : 'transform 0.2s ease'}; opacity: {Math.max(0.5, 1 - numpadDragOffset / 400)};"
+  >
     <p class="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">
       Target: {session.points}
     </p>
@@ -674,12 +748,12 @@
       {#each ['1','2','3','4','5','6','7','8','9'] as d}
         <button
           onclick={() => numpadDigit(d)}
-          class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95"
+          class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95 select-none"
         >{d}</button>
       {/each}
-      <button onclick={numpadDelete} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95">⌫</button>
-      <button onclick={() => numpadDigit('0')} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95">0</button>
-      <button onclick={numpadConfirm} class="rounded-2xl bg-[var(--primary)] py-4 text-xl font-[800] text-white transition-all active:scale-95">✓</button>
+      <button onclick={numpadDelete} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95 select-none">⌫</button>
+      <button onclick={() => numpadDigit('0')} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95 select-none">0</button>
+      <button onclick={numpadConfirm} class="rounded-2xl bg-[var(--primary)] py-4 text-xl font-[800] text-white transition-all active:scale-95 select-none">✓</button>
     </div>
   </div>
 {/if}

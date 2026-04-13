@@ -145,7 +145,10 @@
     const scrollTop = scrollableContent.scrollTop;
     if (delta > 0 && (scrollTop === 0 || delta > 30)) {
       if (delta > 0) e.preventDefault();
-      dragOffset = Math.min(300, delta); // cap at 300px
+      // Cap drag at the drawer element's own height
+      const drawerRect = (scrollableContent.parentElement as HTMLElement)?.getBoundingClientRect();
+      const maxDrag = drawerRect?.height ?? 400;
+      dragOffset = Math.min(maxDrag, delta);
       // Calculate velocity for momentum detection
       dragVelocity = (currentY - dragLastY) / Math.max(16, now - dragLastTime);
       dragLastY = currentY;
