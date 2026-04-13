@@ -5,20 +5,25 @@ import (
 	"fmt"
 
 	"github.com/pressly/goose/v3"
+	"github.com/fabianthorsen/openpadel/internal/store/db"
 	_ "modernc.org/sqlite"
 )
 
 type Store struct {
-	db *sql.DB
+	db      *sql.DB
+	queries *db.Queries
 }
 
 func Open(path string) (*Store, error) {
-	db, err := sql.Open("sqlite", path+"?_journal_mode=WAL&_foreign_keys=on")
+	dbHandle, err := sql.Open("sqlite", path+"?_journal_mode=WAL&_foreign_keys=on")
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(1)
-	s := &Store{db: db}
+	dbHandle.SetMaxOpenConns(1)
+	s := &Store{
+		db:      dbHandle,
+		queries: db.New(dbHandle),
+	}
 	if err := s.migrate(); err != nil {
 		return nil, err
 	}
