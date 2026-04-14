@@ -217,7 +217,7 @@
   <div
     transition:fly={{ y: 600, duration: 320, opacity: 1 }}
     class="fixed bottom-0 left-1/2 z-50 flex w-full max-w-[480px] flex-col rounded-t-3xl bg-[var(--surface)] shadow-2xl"
-    style="height: 78vh; max-height: 78vh; transform: translateX(-50%) translateY({dragOffset}px); transition: {dragging ? 'none' : 'transform 0.3s ease'};"
+    style="transform: translateX(-50%) translateY({dragOffset}px); transition: {dragging ? 'none' : 'transform 0.3s ease'};"
   >
     <!-- Handle + header (drag target) -->
     <div
@@ -242,7 +242,7 @@
     <div
       bind:this={scrollableContent}
       role="presentation"
-      class="flex-1 overflow-y-auto px-6 pb-8 space-y-6"
+      class="flex-1 overflow-y-auto px-6 pb-8 space-y-4"
       ontouchstart={onDragStart}
       ontouchend={onDragEnd}
       use:nonPassiveTouchMove

@@ -96,7 +96,7 @@
 
 <div
   bind:this={container}
-  class="relative flex flex-1 flex-col h-dvh overflow-hidden"
+  class="relative flex flex-1 flex-col h-screen-safe overflow-clip"
   role="region"
   aria-label="Pull to refresh"
   ontouchstart={onTouchStart}

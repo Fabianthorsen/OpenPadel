@@ -49,6 +49,8 @@
   let showUpcoming = $state(false);
   let showHistory = $state(false);
   let showPreferences = $state(true);
+  let showAllUpcoming = $state(false);
+  let showAllHistory = $state(false);
 
   let invites = $state<App.Invite[]>([]);
   let contacts = $state<App.Contact[]>([]);
@@ -299,7 +301,7 @@
 
 
 <PullToRefresh onRefresh={load}>
-<main class="mx-auto max-w-[480px] px-6 pb-10 pt-safe-page space-y-8">
+<main class="mx-auto max-w-[480px] px-6 pb-safe-page pt-safe-page space-y-8">
 
   <!-- Header -->
   <div class="flex items-center gap-4">
@@ -613,7 +615,7 @@
             {#if upcoming.length === 0}
               <p class="text-sm text-[var(--text-disabled)] py-1">{$_('profile_upcoming_empty')}</p>
             {:else}
-              {#each upcoming as t}
+              {#each (showAllUpcoming ? upcoming : upcoming.slice(0, 4)) as t}
                 <a href="/s/{t.session_id}" class="flex items-center gap-4 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 transition-colors hover:bg-[var(--border)]">
                   <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status === 'active' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-[var(--primary-muted)] text-[var(--primary)]'}">
                     {#if t.status === 'active'}<Radio size={18} />{:else}<CalendarDays size={18} />{/if}
@@ -630,6 +632,14 @@
                   <span class="text-sm text-[var(--text-secondary)]">→</span>
                 </a>
               {/each}
+              {#if upcoming.length > 4 && !showAllUpcoming}
+                <button
+                  onclick={() => showAllUpcoming = true}
+                  class="w-full text-center text-xs font-semibold text-[var(--text-secondary)] py-2 hover:text-[var(--primary)] transition-colors"
+                >
+                  {$_('profile_show_all', { values: { count: upcoming.length } })}
+                </button>
+              {/if}
             {/if}
           </div>
         {/if}
@@ -650,7 +660,7 @@
             {#if tournaments.length === 0}
               <p class="text-sm text-[var(--text-disabled)] py-2">{$_('profile_history_empty')}</p>
             {:else}
-              {#each tournaments as t}
+              {#each (showAllHistory ? tournaments : tournaments.slice(0, 4)) as t}
                 <a href="/s/{t.session_id}" class="flex items-center gap-4 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 transition-colors hover:bg-[var(--border)]">
                   <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-[800]
                     {t.rank === 1 ? 'bg-[var(--primary)] text-white' : 'bg-[var(--border)] text-[var(--text-secondary)]'}">
@@ -668,6 +678,14 @@
                   <span class="text-sm text-[var(--text-secondary)]">→</span>
                 </a>
               {/each}
+              {#if tournaments.length > 4 && !showAllHistory}
+                <button
+                  onclick={() => showAllHistory = true}
+                  class="w-full text-center text-xs font-semibold text-[var(--text-secondary)] py-2 hover:text-[var(--primary)] transition-colors"
+                >
+                  {$_('profile_show_all', { values: { count: tournaments.length } })}
+                </button>
+              {/if}
             {/if}
           </div>
         {/if}

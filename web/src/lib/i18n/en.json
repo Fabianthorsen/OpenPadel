@@ -165,6 +165,7 @@
   "profile_history_empty": "It doesn't look like you have played any tournaments yet.",
   "profile_ended_early": "Ended early",
   "profile_history_games": "games",
+  "profile_show_all": "Show all ({count})",
   "profile_stats_section": "Stats",
   "pref_section": "Settings",
   "pref_notifications_title": "Notifications",
