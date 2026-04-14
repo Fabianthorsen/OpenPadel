@@ -273,6 +273,7 @@
       location.href = '/';
     } catch {
       cancelling = false;
+      showCancelDialog = false;
     }
   }
 
@@ -782,11 +783,12 @@
 {/if}
 
 <ConfirmDialog
-  bind:open={showCancelDialog}
+  open={showCancelDialog}
   title={$_('cancel_dialog_title')}
   description={$_('cancel_dialog_desc')}
   confirmLabel={$_('cancel_dialog_confirm')}
   cancelLabel={$_('cancel_dialog_cancel')}
   destructive
   onconfirm={cancel}
+  oncancel={() => (showCancelDialog = false)}
 />
