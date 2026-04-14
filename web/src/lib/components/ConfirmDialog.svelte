@@ -1,14 +1,20 @@
 <script lang="ts">
   import { fly, fade } from 'svelte/transition';
 
+  function nonPassiveBackdropTouch(node: HTMLElement) {
+    node.addEventListener('touchmove', (e: TouchEvent) => e.preventDefault(), { passive: false });
+    return { destroy() {} };
+  }
+
   let {
-    open = $bindable(false),
+    open,
     title,
     description,
     confirmLabel,
     cancelLabel = 'Cancel',
     destructive = false,
     onconfirm,
+    oncancel,
   }: {
     open: boolean;
     title: string;
@@ -17,12 +23,9 @@
     cancelLabel?: string;
     destructive?: boolean;
     onconfirm: () => void;
+    oncancel: () => void;
   } = $props();
 
-  function confirm() {
-    open = false;
-    onconfirm();
-  }
 </script>
 
 {#if open}
@@ -30,11 +33,11 @@
   <div
     transition:fade={{ duration: 150 }}
     class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center touch-none"
-    onclick={() => (open = false)}
-    onkeydown={(e) => e.key === 'Escape' && (open = false)}
-    ontouchmove={(e) => e.preventDefault()}
+    onclick={oncancel}
+    onkeydown={(e) => e.key === 'Escape' && oncancel()}
     role="presentation"
     tabindex="-1"
+    use:nonPassiveBackdropTouch
   >
     <!-- Sheet -->
     <div
@@ -55,7 +58,7 @@
 
       <div class="space-y-2">
         <button
-          onclick={confirm}
+          onclick={onconfirm}
           class="h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold transition-colors
             {destructive
               ? 'bg-[var(--destructive)] text-white hover:opacity-90'
@@ -64,7 +67,7 @@
           {confirmLabel}
         </button>
         <button
-          onclick={() => (open = false)}
+          onclick={oncancel}
           class="h-auto w-full rounded-2xl border border-[var(--border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-raised)]"
         >
           {cancelLabel}

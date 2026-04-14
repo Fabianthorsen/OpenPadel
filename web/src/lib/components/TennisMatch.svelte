@@ -73,6 +73,7 @@
       location.href = '/';
     } catch {
       // Error canceling, stay on current view
+      showCancelDialog = false;
     }
   }
 
@@ -311,21 +312,23 @@
 </main>
 
 <ConfirmDialog
-  bind:open={showCloseDialog}
+  open={showCloseDialog}
   title={$_('close_dialog_title')}
   description={$_('close_dialog_desc')}
   confirmLabel={$_('close_dialog_confirm')}
   cancelLabel={$_('close_dialog_cancel')}
   destructive
   onconfirm={closeMatch}
+  oncancel={() => (showCloseDialog = false)}
 />
 
 <ConfirmDialog
-  bind:open={showCancelDialog}
+  open={showCancelDialog}
   title={$_('cancel_dialog_title')}
   description={$_('cancel_dialog_desc')}
   confirmLabel={$_('cancel_dialog_confirm')}
   cancelLabel={$_('cancel_dialog_cancel')}
   destructive
   onconfirm={cancelMatch}
+  oncancel={() => (showCancelDialog = false)}
 />

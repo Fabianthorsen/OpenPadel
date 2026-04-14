@@ -33,7 +33,10 @@
     const stored = localStorage.getItem(`admin_token_${sessionId}`);
     if (stored) return stored;
     const param = new URL(location.href).searchParams.get('token');
-    if (param) localStorage.setItem(`admin_token_${sessionId}`, param);
+    if (param) {
+      localStorage.setItem(`admin_token_${sessionId}`, param);
+      window.history.replaceState({}, '', location.pathname);
+    }
     return param;
   }
 
@@ -61,13 +64,36 @@
     interval = setInterval(() => { load().then(scheduleNext); }, delay);
   }
 
-  onMount(() => { load().then(scheduleNext); });
-  onDestroy(() => clearInterval(interval));
+  function onVisibilityChange() {
+    if (document.hidden) {
+      clearInterval(interval);
+    } else {
+      load().then(scheduleNext);
+    }
+  }
+
+  onMount(() => {
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    load().then(scheduleNext);
+  });
+
+  onDestroy(() => {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    clearInterval(interval);
+    numpadStore.close();
+    sessionDialog.close();
+  });
 
   async function handleDialogConfirm() {
-    if ($sessionDialog.onConfirm) {
-      await $sessionDialog.onConfirm();
+    const callback = $sessionDialog.onConfirm;
+    sessionDialog.close();
+    if (callback) {
+      await callback();
     }
+  }
+
+  function handleDialogCancel() {
+    sessionDialog.close();
   }
 
   // Numpad drag-to-close state
@@ -129,6 +155,16 @@
       $numpadStore.onConfirm();
     }
   }
+
+  function nonPassiveNumpadTouchMove(node: HTMLElement) {
+    const handleTouchMove = (e: TouchEvent) => numpadTouchMove(e);
+    node.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return {
+      destroy() {
+        node.removeEventListener('touchmove', handleTouchMove);
+      }
+    };
+  }
 </script>
 
 <div class="flex flex-col w-screen h-screen overflow-hidden">
@@ -163,13 +199,14 @@
 {#if $sessionDialog.isOpen}
   <div class="fixed inset-0 z-50">
     <ConfirmDialog
-      bind:open={$sessionDialog.isOpen}
+      open={$sessionDialog.isOpen}
       title={$sessionDialog.type === 'close' ? $_('close_dialog_title') : $_('cancel_dialog_title')}
       description={$sessionDialog.type === 'close' ? $_('close_dialog_desc') : $_('cancel_dialog_desc')}
       confirmLabel={$sessionDialog.type === 'close' ? $_('close_dialog_confirm') : $_('cancel_dialog_confirm')}
       cancelLabel={$sessionDialog.type === 'close' ? $_('close_dialog_cancel') : $_('cancel_dialog_cancel')}
       destructive
       onconfirm={handleDialogConfirm}
+      oncancel={handleDialogCancel}
     />
   </div>
 {/if}
@@ -187,9 +224,9 @@
     role="presentation"
     class="fixed left-0 right-0 z-50 mx-auto max-w-[480px] rounded-t-3xl bg-[var(--surface)] px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl flex flex-col gap-3"
     ontouchstart={numpadTouchStart}
-    ontouchmove={numpadTouchMove}
     ontouchend={numpadTouchEnd}
     onkeydown={numpadHandleKeydown}
+    use:nonPassiveNumpadTouchMove
     style="bottom: 0; transform: translateY({numpadDragOffset}px); transition: {numpadDragging ? 'none' : 'transform 0.2s ease'};"
   >
     <p class="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">

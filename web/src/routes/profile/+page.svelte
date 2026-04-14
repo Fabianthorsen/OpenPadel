@@ -106,6 +106,7 @@
   async function confirmDeleteContact() {
     if (contactToDelete) {
       await removeContact(contactToDelete.user_id);
+      showContactDeleteConfirm = false;
     }
   }
 
@@ -587,13 +588,14 @@
 
       <!-- Delete contact confirmation -->
       <ConfirmDialog
-        bind:open={showContactDeleteConfirm}
+        open={showContactDeleteConfirm}
         title="Delete Contact?"
         description="Remove {contactToDelete?.display_name || 'this contact'} from your contacts. This action cannot be undone."
         confirmLabel="Delete"
         cancelLabel="Cancel"
         destructive={true}
         onconfirm={confirmDeleteContact}
+        oncancel={() => (showContactDeleteConfirm = false)}
       />
 
       <!-- Upcoming -->
