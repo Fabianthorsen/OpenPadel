@@ -167,7 +167,7 @@
   }
 </script>
 
-<div class="flex flex-col w-screen h-screen overflow-hidden">
+<div class="flex flex-col w-full h-screen overflow-hidden">
   {#if !session}
     <main class="flex flex-1 items-center justify-center px-4">
       <p class="text-sm text-[var(--text-secondary)]">Loading…</p>

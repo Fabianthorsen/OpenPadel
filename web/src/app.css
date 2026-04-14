@@ -8,10 +8,30 @@
 
 html {
   touch-action: pan-x pan-y;
+  height: 100vh;
+  height: 100dvh;
+}
+
+body {
+  /* Prevent iOS rubber-band bounce scroll */
+  overscroll-behavior-y: contain;
+  /* Prevent tap highlight flash on iOS */
+  -webkit-tap-highlight-color: transparent;
 }
 
 button, a, input, select, textarea {
   touch-action: manipulation;
+}
+
+/* Prevent text selection on non-input elements on mobile */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input, textarea, [contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 :root {
