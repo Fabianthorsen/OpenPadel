@@ -312,7 +312,7 @@
     <a href="/" class="text-sm text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">← {$_('auth_back_home')}</a>
   </main>
 {:else if !isAdmin && !alreadyJoined}
-  <main class="flex min-h-svh flex-col items-center px-6 py-12">
+  <main class="flex min-h-svh flex-col items-center px-6 pb-12 pt-safe-page">
     <div class="flex w-full max-w-sm justify-end">
       <a href="/" class="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-secondary)]" aria-label="Back">×</a>
     </div>
@@ -412,7 +412,7 @@
 
 <!-- ── Lobby (admin or already joined) ── -->
 {:else}
-  <main class="mx-auto max-w-[480px] px-6 py-6 space-y-6">
+  <main class="mx-auto max-w-[480px] px-6 pb-6 pt-safe-page space-y-6">
     <nav class="flex items-center justify-between">
       <div class="space-y-0.5">
         <p class="text-xs text-[var(--text-secondary)]">
