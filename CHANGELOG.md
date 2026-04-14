@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.4](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.3...v1.9.4) (2026-04-14)
+
+
+### Bug Fixes
+
+* **mobile:** resolve iOS scroll lock and improve pull-to-refresh UX ([#36](https://github.com/Fabianthorsen/OpenPadel/issues/36)) ([c2c2ead](https://github.com/Fabianthorsen/OpenPadel/commit/c2c2eadca0a803423b51ec892cc29e6baf7613e8))
+
 ## [1.9.3](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.2...v1.9.3) (2026-04-14)
 
 
