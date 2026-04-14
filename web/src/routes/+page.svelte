@@ -116,7 +116,7 @@
 
 {#if step === 'home'}
   <PullToRefresh onRefresh={loadRejoin}>
-  <main class="flex min-h-svh flex-col items-center px-6 py-12">
+  <main class="flex min-h-svh flex-col items-center px-6 pb-12 pt-safe-page">
   <div class="flex w-full max-w-sm flex-1 flex-col">
     <div class="flex flex-1 flex-col justify-center space-y-12">
       <!-- Brand -->
@@ -207,7 +207,7 @@
   </PullToRefresh>
 
 {:else}
-  <main class="flex min-h-svh flex-col items-center px-6 py-6">
+  <main class="flex min-h-svh flex-col items-center px-6 pb-6 pt-safe-page">
   <div class="w-full max-w-sm">
     <!-- Nav -->
     <nav class="flex items-center justify-between">

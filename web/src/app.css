@@ -100,6 +100,11 @@ h3 {
   line-height: 1.1;
 }
 
+/* Safe-area-aware top padding: at least 3rem, grows to clear notch/island */
+@utility pt-safe-page {
+  padding-top: max(3rem, env(safe-area-inset-top, 0px));
+}
+
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   15%       { transform: translateX(-6px); }

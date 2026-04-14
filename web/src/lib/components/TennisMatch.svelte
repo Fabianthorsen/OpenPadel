@@ -115,7 +115,7 @@
 
 </script>
 
-<main class="mx-auto max-w-[480px] px-4 py-6 space-y-4">
+<main class="mx-auto max-w-[480px] px-4 pb-6 pt-safe-page space-y-4">
 
   <!-- Nav -->
   <nav class="flex items-center justify-between px-2">

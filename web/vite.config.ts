@@ -16,6 +16,10 @@ export default defineConfig({
       strategies: 'generateSW',
       injectRegister: null,
       selfDestroying: false,
+      devOptions: {
+        enabled: true,
+        suppressWarnings: true,
+      },
       manifest: {
         name: 'OpenPadel',
         short_name: 'OpenPadel',

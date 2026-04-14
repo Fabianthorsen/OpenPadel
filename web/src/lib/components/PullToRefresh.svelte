@@ -12,7 +12,8 @@
   } = $props();
 
   const THRESHOLD = 80;
-  const MAX_PULL = 120;
+  // Rubber-band resistance factor — higher = more resistance
+  const RESISTANCE = 2.5;
 
   let dragStartY = 0;
   let pendingDelta = 0;
@@ -20,6 +21,7 @@
   let dragOffset = $state(0);
   let dragging = $state(false);
   let refreshing = $state(false);
+  let triggered = $state(false); // crossed THRESHOLD during this drag
   let scrollContainer: HTMLElement | null = null;
   let container: HTMLElement | null = null;
 
@@ -27,9 +29,13 @@
     return scrollContainer?.scrollTop ?? 0;
   }
 
+  // Rubber-band formula: feels immediate at first, then increasingly resistant
+  function rubberBand(delta: number): number {
+    return (delta * THRESHOLD) / (delta + THRESHOLD * RESISTANCE);
+  }
+
   function onTouchStart(e: TouchEvent) {
     if (disabled) return;
-    // Walk from touch target up to our container; bail if any inner element is scrolled
     let el: HTMLElement | null = e.target as HTMLElement;
     while (el && el !== container) {
       if (el.scrollTop > 0) return;
@@ -38,19 +44,20 @@
     if (getScrollTop() > 0) return;
     dragStartY = e.touches[0].clientY;
     dragging = true;
+    triggered = false;
     dragOffset = 0;
   }
 
   function onTouchMove(e: TouchEvent) {
     if (!dragging || disabled) return;
     const delta = e.touches[0].clientY - dragStartY;
-    if (delta <= 0) { dragOffset = 0; return; }
+    if (delta <= 0) { dragOffset = 0; triggered = false; return; }
     if (getScrollTop() === 0 && delta > 0) e.preventDefault();
-    // Batch updates to sync with display refresh rate
     pendingDelta = delta;
     if (!rafId) {
       rafId = requestAnimationFrame(() => {
-        dragOffset = Math.min(MAX_PULL, pendingDelta);
+        dragOffset = rubberBand(pendingDelta);
+        triggered = pendingDelta >= THRESHOLD;
         rafId = null;
       });
     }
@@ -60,9 +67,10 @@
     if (!dragging || disabled) return;
     dragging = false;
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-    if (dragOffset >= THRESHOLD) {
+    if (triggered) {
       refreshing = true;
       dragOffset = 0;
+      triggered = false;
       try {
         await Promise.all([onRefresh(), new Promise(r => setTimeout(r, 1000))]);
       } finally {
@@ -70,6 +78,7 @@
       }
     } else {
       dragOffset = 0;
+      triggered = false;
     }
   }
 
@@ -79,23 +88,31 @@
     return { destroy() { node.removeEventListener('touchmove', onTouchMove); } };
   }
 
-  let progress = $derived(Math.min(1, dragOffset / THRESHOLD));
+  let progress = $derived(Math.min(1, dragOffset / (THRESHOLD / RESISTANCE)));
   let arrowRotation = $derived(Math.min(180, progress * 180));
+  // Spring easing for the snap-back — slight overshoot feels physical
+  const springEase = 'cubic-bezier(0.34, 1.4, 0.64, 1)';
 </script>
 
 <div
   bind:this={container}
-  class="relative flex flex-1 flex-col h-full overflow-hidden"
+  class="relative flex flex-1 flex-col h-dvh overflow-hidden"
   role="region"
   aria-label="Pull to refresh"
   ontouchstart={onTouchStart}
   ontouchend={onTouchEnd}
   use:nonPassiveTouchMove
 >
-  <!-- Indicator: fixed 48px, positioned above content, revealed by content translateY -->
+  <!-- Indicator: positioned above content, revealed by content translateY. Padded below notch/island. -->
   <div
-    class="absolute inset-x-0 top-0 flex h-12 items-center justify-center text-[var(--text-disabled)]"
-    style="opacity: {refreshing ? 1 : progress};"
+    class="absolute inset-x-0 top-0 flex items-end justify-center pb-2"
+    style="
+      height: calc(4rem + env(safe-area-inset-top, 0px));
+      padding-top: env(safe-area-inset-top, 0px);
+      opacity: {refreshing ? 1 : progress};
+      color: {triggered ? 'var(--primary)' : 'var(--text-disabled)'};
+      transition: color 0.15s ease;
+    "
   >
     {#if refreshing}
       <!-- Dotted spinner: 8 dots arranged in a circle, staggered opacity -->
@@ -120,9 +137,12 @@
         {/each}
       </div>
     {:else}
-      <!-- Pull arrow, rotates as you drag -->
+      <!-- Pull arrow: rotates and scales as you drag -->
       <svg
-        style="transform: rotate({arrowRotation}deg); transition: {dragging ? 'none' : 'transform 0.2s ease'};"
+        style="
+          transform: rotate({arrowRotation}deg) scale({0.6 + progress * 0.4});
+          transition: {dragging ? 'none' : `transform 0.15s ${springEase}`};
+        "
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"
@@ -141,10 +161,14 @@
 
   <!-- Content pushed down via transform (GPU-accelerated, no reflows) -->
   <div
-    bind:this={scrollContainer}
-    class="flex-1 overflow-y-auto will-change-transform"
-    style="transform: translateY({refreshing ? 48 : dragOffset}px); transition: {dragging ? 'none' : 'transform 0.2s ease'};"
+    class="flex-1 will-change-transform min-h-0"
+    style="transform: translateY({refreshing ? 64 : dragOffset}px); transition: {dragging ? 'none' : `transform 0.45s ${springEase}`};"
   >
-    {@render children()}
+    <div
+      bind:this={scrollContainer}
+      class="h-full overflow-y-auto"
+    >
+      {@render children()}
+    </div>
   </div>
 </div>

@@ -267,7 +267,7 @@
 
 <!-- ── SCORING TAB ── -->
 {#if tab === 'scoring'}
-  <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-6 space-y-4">
+  <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-safe-page space-y-4">
 
     <!-- Nav -->
     <div class="flex items-center justify-between">
@@ -552,7 +552,7 @@
 
 <!-- ── STANDINGS TAB ── -->
 {:else if tab === 'standings'}
-  <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-6">
+  <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-safe-page">
     <div class="mb-4 flex items-center justify-between">
       <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
@@ -562,7 +562,7 @@
 
 <!-- ── PLAYERS TAB ── -->
 {:else if tab === 'players'}
-  <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-6 space-y-4">
+  <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-safe-page space-y-4">
     <div class="flex items-center justify-between">
       <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>

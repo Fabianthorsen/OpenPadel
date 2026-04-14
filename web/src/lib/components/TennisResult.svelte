@@ -45,7 +45,7 @@
   }
 </script>
 
-<main class="mx-auto max-w-[480px] px-5 py-10 space-y-8">
+<main class="mx-auto max-w-[480px] px-5 pb-10 pt-safe-page space-y-8">
 
   {#if !match}
     <div class="flex justify-center py-20">

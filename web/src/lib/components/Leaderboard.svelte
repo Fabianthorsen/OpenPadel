@@ -65,7 +65,7 @@
 
 </script>
 
-<main class="mx-auto max-w-[480px] px-4 pb-24 pt-4 space-y-6">
+<main class="mx-auto max-w-[480px] px-4 pb-24 pt-safe-page space-y-6">
   {#if !leaderboard}
     <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
 
