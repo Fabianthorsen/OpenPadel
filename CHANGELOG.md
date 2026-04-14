@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.9.3](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.2...v1.9.3) (2026-04-14)
+
+
+### Bug Fixes
+
+* **mobile:** comprehensive PWA and mobile UX improvements ([#35](https://github.com/Fabianthorsen/OpenPadel/issues/35)) ([1f8e899](https://github.com/Fabianthorsen/OpenPadel/commit/1f8e899aa47c667d459e0ea9e9736a701dc12fa9))
+* **mobile:** enable scrolling in PullToRefresh for lobby with many players ([#34](https://github.com/Fabianthorsen/OpenPadel/issues/34)) ([2b93866](https://github.com/Fabianthorsen/OpenPadel/commit/2b938666a0b24b50bc00dd0f59e5acae271cbc52))
+* **mobile:** resolve P0 dialog and touch handling issues ([#32](https://github.com/Fabianthorsen/OpenPadel/issues/32)) ([05d5f4a](https://github.com/Fabianthorsen/OpenPadel/commit/05d5f4aa39f4e05ddfc2fcf38ae4a30f601d0d6a))
+
 ## [1.9.2](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.1...v1.9.2) (2026-04-13)
 
 
