@@ -299,7 +299,7 @@
 
 
 <PullToRefresh onRefresh={load}>
-<main class="mx-auto max-w-[480px] px-6 pb-10 pt-8 space-y-8">
+<main class="mx-auto max-w-[480px] px-6 pb-10 pt-16 space-y-8">
 
   <!-- Header -->
   <div class="flex items-center gap-4">
