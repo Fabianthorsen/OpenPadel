@@ -21,7 +21,7 @@
   }
 </script>
 
-<main class="flex min-h-svh flex-col items-center px-6 py-12">
+<main class="flex min-h-svh flex-col items-center px-6 pb-12 pt-safe-page">
   <div class="flex w-full max-w-sm flex-1 flex-col justify-center space-y-8">
 
     <div class="space-y-1">
