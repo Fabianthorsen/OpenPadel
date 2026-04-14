@@ -1,4 +1,6 @@
 <script lang="ts">
+	// NOTE: Keep text-base (16px) on mobile inputs to prevent iOS auto-zoom on focus.
+	// Scale down to text-sm only on larger screens (md: breakpoint).
 	import type { HTMLInputAttributes, HTMLInputTypeAttribute } from "svelte/elements";
 	import { cn, type WithElementRef } from "$lib/utils.js";
 
