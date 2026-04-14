@@ -262,35 +262,12 @@
     <p class="text-sm text-[var(--text-secondary)]">{$_('lobby_cancelling')}</p>
   </main>
 {:else}
-
-<!-- Bottom nav (truly fixed to viewport bottom) -->
-<div class="fixed left-0 right-0 z-40 flex border-t border-[var(--border)] bg-[var(--background)] backdrop-blur-sm shadow-lg" style="bottom: 0; top: auto; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); height: auto;">
-  <button
-    onclick={() => tab = 'scoring'}
-    class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'scoring' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
-  >
-    <Activity size={20} />
-    <span class="text-[10px] font-semibold uppercase tracking-wide">Scoring</span>
-  </button>
-  <button
-    onclick={() => tab = 'standings'}
-    class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'standings' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
-  >
-    <ChartBar size={20} />
-    <span class="text-[10px] font-semibold uppercase tracking-wide">{$_('active_tab_standings')}</span>
-  </button>
-  <button
-    onclick={() => tab = 'players'}
-    class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'players' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
-  >
-    <Users size={20} />
-    <span class="text-[10px] font-semibold uppercase tracking-wide">Players</span>
-  </button>
-</div>
+<div class="flex flex-col h-full">
+  <div class="flex-1 min-h-0 overflow-y-auto">
 
 <!-- ── SCORING TAB ── -->
 {#if tab === 'scoring'}
-  <main class="mx-auto w-full max-w-[480px] min-h-screen px-4 pb-36 pt-6 space-y-4">
+  <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-6 space-y-4">
 
     <!-- Nav -->
     <div class="flex items-center justify-between">
@@ -575,7 +552,7 @@
 
 <!-- ── STANDINGS TAB ── -->
 {:else if tab === 'standings'}
-  <main class="mx-auto w-full max-w-[480px] min-h-screen px-4 pb-32 pt-6">
+  <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-6">
     <div class="mb-4 flex items-center justify-between">
       <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
@@ -585,7 +562,7 @@
 
 <!-- ── PLAYERS TAB ── -->
 {:else if tab === 'players'}
-  <main class="mx-auto w-full max-w-[480px] min-h-screen px-4 pb-32 pt-6 space-y-4">
+  <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-6 space-y-4">
     <div class="flex items-center justify-between">
       <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
@@ -630,6 +607,34 @@
     {/if}
   </main>
 {/if}
+
+  </div><!-- end scroll wrapper -->
+
+  <!-- Bottom nav: plain flex child, always at bottom -->
+  <div class="shrink-0 flex border-t border-[var(--border)] bg-[var(--background)] backdrop-blur-sm shadow-lg" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom));">
+    <button
+      onclick={() => tab = 'scoring'}
+      class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'scoring' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
+    >
+      <Activity size={20} />
+      <span class="text-[10px] font-semibold uppercase tracking-wide">Scoring</span>
+    </button>
+    <button
+      onclick={() => tab = 'standings'}
+      class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'standings' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
+    >
+      <ChartBar size={20} />
+      <span class="text-[10px] font-semibold uppercase tracking-wide">{$_('active_tab_standings')}</span>
+    </button>
+    <button
+      onclick={() => tab = 'players'}
+      class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'players' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
+    >
+      <Users size={20} />
+      <span class="text-[10px] font-semibold uppercase tracking-wide">Players</span>
+    </button>
+  </div>
+</div><!-- end flex col h-full -->
 
 {/if}
 

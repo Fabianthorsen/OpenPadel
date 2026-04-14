@@ -20,13 +20,22 @@
   let dragOffset = $state(0);
   let dragging = $state(false);
   let refreshing = $state(false);
+  let scrollContainer: HTMLElement | null = null;
+  let container: HTMLElement | null = null;
 
   function getScrollTop(): number {
-    return window.scrollY || document.documentElement.scrollTop || 0;
+    return scrollContainer?.scrollTop ?? 0;
   }
 
   function onTouchStart(e: TouchEvent) {
-    if (disabled || getScrollTop() > 0) return;
+    if (disabled) return;
+    // Walk from touch target up to our container; bail if any inner element is scrolled
+    let el: HTMLElement | null = e.target as HTMLElement;
+    while (el && el !== container) {
+      if (el.scrollTop > 0) return;
+      el = el.parentElement;
+    }
+    if (getScrollTop() > 0) return;
     dragStartY = e.touches[0].clientY;
     dragging = true;
     dragOffset = 0;
@@ -75,6 +84,7 @@
 </script>
 
 <div
+  bind:this={container}
   class="relative flex flex-1 flex-col h-full overflow-hidden"
   role="region"
   aria-label="Pull to refresh"
@@ -131,7 +141,8 @@
 
   <!-- Content pushed down via transform (GPU-accelerated, no reflows) -->
   <div
-    class="flex-1 will-change-transform"
+    bind:this={scrollContainer}
+    class="flex-1 overflow-y-auto will-change-transform"
     style="transform: translateY({refreshing ? 48 : dragOffset}px); transition: {dragging ? 'none' : 'transform 0.2s ease'};"
   >
     {@render children()}
