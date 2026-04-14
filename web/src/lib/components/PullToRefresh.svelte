@@ -20,9 +20,10 @@
   let dragOffset = $state(0);
   let dragging = $state(false);
   let refreshing = $state(false);
+  let scrollContainer: HTMLElement | null = null;
 
   function getScrollTop(): number {
-    return window.scrollY || document.documentElement.scrollTop || 0;
+    return scrollContainer?.scrollTop ?? 0;
   }
 
   function onTouchStart(e: TouchEvent) {
@@ -131,7 +132,8 @@
 
   <!-- Content pushed down via transform (GPU-accelerated, no reflows) -->
   <div
-    class="flex-1 will-change-transform"
+    bind:this={scrollContainer}
+    class="flex-1 overflow-y-auto will-change-transform"
     style="transform: translateY({refreshing ? 48 : dragOffset}px); transition: {dragging ? 'none' : 'transform 0.2s ease'};"
   >
     {@render children()}
