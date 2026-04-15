@@ -28,11 +28,11 @@
   {#snippet children({ months, weekdays })}
     <CalendarPrimitive.Header class="relative flex items-center justify-between pb-3">
       <CalendarPrimitive.PrevButton
-        class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors"
+        class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary hover:bg-border transition-colors"
       >‹</CalendarPrimitive.PrevButton>
       <CalendarPrimitive.Heading class="text-sm font-semibold" />
       <CalendarPrimitive.NextButton
-        class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors"
+        class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary hover:bg-border transition-colors"
       >›</CalendarPrimitive.NextButton>
     </CalendarPrimitive.Header>
 
@@ -41,7 +41,7 @@
         <CalendarPrimitive.GridHead>
           <CalendarPrimitive.GridRow class="flex">
             {#each weekdays as weekday}
-              <CalendarPrimitive.HeadCell class="flex-1 pb-2 text-center text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--text-disabled)]">
+              <CalendarPrimitive.HeadCell class="flex-1 pb-2 text-center text-[11px] font-semibold uppercase tracking-[0.05em] text-text-disabled">
                 {weekday.slice(0, 2)}
               </CalendarPrimitive.HeadCell>
             {/each}
@@ -55,10 +55,10 @@
                 <CalendarPrimitive.Cell {date} month={month.value} class="flex-1 p-0.5">
                   <CalendarPrimitive.Day
                     class="mx-auto flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-sm transition-colors
-                      hover:bg-[var(--surface-raised)]
-                      data-[selected]:bg-[var(--primary)] data-[selected]:font-semibold data-[selected]:text-white data-[selected]:hover:bg-[var(--primary-hover)]
-                      data-[today]:font-semibold data-[today]:text-[var(--primary)] data-[today]:data-[selected]:text-white
-                      data-[disabled]:pointer-events-none data-[disabled]:text-[var(--text-disabled)]
+                      hover:bg-surface-raised
+                      data-[selected]:bg-primary data-[selected]:font-semibold data-[selected]:text-white data-[selected]:hover:bg-primary-hover
+                      data-[today]:font-semibold data-[today]:text-primary data-[today]:data-[selected]:text-white
+                      data-[disabled]:pointer-events-none data-[disabled]:text-text-disabled
                       data-[outside-month]:opacity-30"
                   >
                   </CalendarPrimitive.Day>

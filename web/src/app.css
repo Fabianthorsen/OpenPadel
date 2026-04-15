@@ -6,6 +6,71 @@
 
 @import 'tailwindcss';
 
+@theme {
+  /* Surfaces */
+  --color-background: #edeee8;
+  --color-surface: #f4f4f0;
+  --color-surface-raised: #e3e3dc;
+  --color-border: #d2d2cb;
+  --color-border-strong: #b2b2aa;
+
+  /* Primary — dark forest green */
+  --color-primary: #2d5a1a;
+  --color-primary-hover: #234d13;
+  --color-primary-muted: #e2ede0;
+  --color-primary-foreground: #ffffff;
+
+  /* Text */
+  --color-text-primary: #1a1a16;
+  --color-text-secondary: #68685e;
+  --color-text-disabled: #aeaea4;
+
+  /* Semantic */
+  --color-positive: #2d5a1a;
+  --color-destructive: #c0392b;
+  --color-destructive-foreground: #ffffff;
+
+  /* shadcn-svelte tokens (resolved hex values) */
+  --color-foreground: #1a1a16;
+  --color-card: #f4f4f0;
+  --color-card-foreground: #1a1a16;
+  --color-popover: #f4f4f0;
+  --color-popover-foreground: #1a1a16;
+  --color-secondary: #e3e3dc;
+  --color-secondary-foreground: #1a1a16;
+  --color-muted: #e3e3dc;
+  --color-muted-foreground: #68685e;
+  --color-accent: #e2ede0;
+  --color-accent-foreground: #2d5a1a;
+  --color-input: #d2d2cb;
+  --color-ring: #2d5a1a;
+
+  /* Radius */
+  --radius: 0.75rem;
+
+  /* Font */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Animations */
+  --animate-shake: shake 0.4s ease;
+  --animate-ptr-fade: ptr-fade 0.8s linear infinite;
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    15%       { transform: translateX(-6px); }
+    30%       { transform: translateX(6px); }
+    45%       { transform: translateX(-4px); }
+    60%       { transform: translateX(4px); }
+    75%       { transform: translateX(-2px); }
+    90%       { transform: translateX(2px); }
+  }
+
+  @keyframes ptr-fade {
+    0%   { opacity: 1; }
+    100% { opacity: 0.1; }
+  }
+}
+
 html {
   touch-action: pan-x pan-y;
   height: 100vh;
@@ -34,92 +99,25 @@ input, textarea, [contenteditable] {
   -webkit-user-select: text;
 }
 
-:root {
-  /* Surfaces */
-  --background: #edeee8;
-  --surface: #f4f4f0;
-  --surface-raised: #e3e3dc;
-  --border: #d2d2cb;
-  --border-strong: #b2b2aa;
+@layer base {
+  * {
+    border-color: var(--color-border);
+    box-sizing: border-box;
+  }
 
-  /* Primary — dark forest green */
-  --primary: #2d5a1a;
-  --primary-hover: #234d13;
-  --primary-muted: #e2ede0;
-  --primary-foreground: #ffffff;
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  /* Text */
-  --text-primary: #1a1a16;
-  --text-secondary: #68685e;
-  --text-disabled: #aeaea4;
-
-  /* Semantic */
-  --positive: #2d5a1a;
-  --destructive: #c0392b;
-  --destructive-foreground: #ffffff;
-
-  /* shadcn-svelte mapping */
-  --foreground: var(--text-primary);
-  --card: var(--surface);
-  --card-foreground: var(--text-primary);
-  --popover: var(--surface);
-  --popover-foreground: var(--text-primary);
-  --secondary: var(--surface-raised);
-  --secondary-foreground: var(--text-primary);
-  --muted: var(--surface-raised);
-  --muted-foreground: var(--text-secondary);
-  --accent: var(--primary-muted);
-  --accent-foreground: var(--primary);
-  --input: var(--border);
-  --ring: var(--primary);
-  --radius: 0.75rem;
-}
-
-* {
-  border-color: var(--border);
-  box-sizing: border-box;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--text-primary);
-  font-family:
-    'Inter',
-    system-ui,
-    -apple-system,
-    sans-serif;
-  font-size: 15px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
-
-h1,
-h2,
-h3 {
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-/* Safe-area-aware top padding: at least 3rem, grows to clear notch/island */
-@utility pt-safe-page {
-  padding-top: max(3rem, env(safe-area-inset-top, 0px));
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  15%       { transform: translateX(-6px); }
-  30%       { transform: translateX(6px); }
-  45%       { transform: translateX(-4px); }
-  60%       { transform: translateX(4px); }
-  75%       { transform: translateX(-2px); }
-  90%       { transform: translateX(2px); }
-}
-
-.shake {
-  animation: shake 0.4s ease;
-}
-
-@keyframes ptr-fade {
-  0%   { opacity: 1; }
-  100% { opacity: 0.1; }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
 }

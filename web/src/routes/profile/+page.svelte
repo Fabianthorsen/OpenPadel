@@ -11,6 +11,7 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import Avatar from '$lib/components/ui/Avatar.svelte';
+  import { SectionLabel } from '$lib/components/ui/section-label';
   import { fade } from 'svelte/transition';
   import { toast } from 'svelte-sonner';
   import { translateApiError } from '$lib/i18n/errors';
@@ -310,7 +311,7 @@
     <div class="min-w-0">
       <h1 class="text-2xl font-[800] truncate">{auth.user?.display_name}</h1>
       {#if memberSince}
-        <p class="text-sm text-[var(--text-secondary)]">Member since {memberSince}</p>
+        <p class="text-sm text-text-secondary">Member since {memberSince}</p>
       {/if}
     </div>
   </div>
@@ -318,22 +319,22 @@
   <!-- Pending invites -->
   {#if invites.length > 0}
     <div class="space-y-2">
-      <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Invites</p>
+      <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">Invites</p>
       {#each invites as invite}
-        <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5">
+        <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3.5">
           <div class="flex-1 min-w-0">
             <p class="truncate text-sm font-semibold">{invite.session_name}</p>
-            <p class="text-xs text-[var(--text-secondary)]">From {invite.from_display_name}</p>
+            <p class="text-xs text-text-secondary">From {invite.from_display_name}</p>
           </div>
           <button
             onclick={() => acceptInvite(invite.id, invite.session_id)}
-            class="flex items-center gap-1 rounded-full bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-white"
+            class="flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white"
           >
             <Check size={12} /> Accept
           </button>
           <button
             onclick={() => declineInvite(invite.id)}
-            class="flex items-center justify-center rounded-full bg-[var(--surface)] p-1.5 text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors border border-[var(--border)]"
+            class="flex items-center justify-center rounded-full bg-surface p-1.5 text-text-disabled hover:text-destructive transition-colors border border-border"
             aria-label="Decline"
           >
             <X size={14} />
@@ -345,13 +346,13 @@
 
   <!-- New tournament + join code -->
   <div class="space-y-3">
-    <button onclick={() => showCreateDrawer = true} class="block w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-[15px] font-semibold text-white">
+    <button onclick={() => showCreateDrawer = true} class="block w-full rounded-2xl bg-primary px-4 py-4 text-center text-[15px] font-semibold text-white">
       {$_('profile_new_tournament')}
     </button>
     <div class="flex items-center gap-3">
-      <div class="h-px flex-1 bg-[var(--border)]"></div>
-      <span class="text-xs text-[var(--text-disabled)]">{$_('home_join_code_divider')}</span>
-      <div class="h-px flex-1 bg-[var(--border)]"></div>
+      <div class="h-px flex-1 bg-border"></div>
+      <span class="text-xs text-text-disabled">{$_('home_join_code_divider')}</span>
+      <div class="h-px flex-1 bg-border"></div>
     </div>
     <div class="flex justify-center gap-2" onpaste={onJoinPaste}>
       {#each joinChars as _, i}
@@ -365,7 +366,7 @@
           autocorrect="off"
           autocapitalize="characters"
           spellcheck={false}
-          class="w-12 rounded-xl bg-[var(--surface-raised)] py-2.5 text-center text-lg font-[700] font-mono text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--primary)] transition-shadow"
+          class="w-12 rounded-xl bg-surface-raised py-2.5 text-center text-lg font-[700] font-mono text-text-primary outline-none focus:ring-2 focus:ring-primary transition-shadow"
         />
       {/each}
     </div>
@@ -373,7 +374,7 @@
 
   {#if loading}
     <div class="flex justify-center py-12">
-      <div class="h-7 w-7 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--primary)]"></div>
+      <div class="h-7 w-7 animate-spin rounded-full border-2 border-border border-t-primary"></div>
     </div>
   {:else}
 
@@ -383,23 +384,23 @@
         onclick={() => showPreferences = !showPreferences}
         class="flex w-full items-center justify-between"
       >
-        <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('pref_section')}</p>
-        <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showPreferences ? 'rotate-180' : ''}" />
+        <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('pref_section')}</p>
+        <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showPreferences ? 'rotate-180' : ''}" />
       </button>
 
       {#if showPreferences}
         <div transition:fade={{ duration: 150 }} class="space-y-2">
           {#if pushSupported}
-            <div class="flex items-center gap-4 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5">
+            <div class="flex items-center gap-4 rounded-2xl bg-surface-raised px-4 py-3.5">
               <div class="flex-1">
                 <p class="text-sm font-semibold">{$_('pref_notifications_title')}</p>
-                <p class="text-xs text-[var(--text-secondary)]">{$_('pref_notifications_desc')}</p>
+                <p class="text-xs text-text-secondary">{$_('pref_notifications_desc')}</p>
               </div>
               <button
                 onclick={togglePush}
                 disabled={pushToggling}
                 class="relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 disabled:opacity-50
-                  {pushEnabled ? 'bg-[var(--primary)]' : 'bg-[var(--border-strong)]'}"
+                  {pushEnabled ? 'bg-primary' : 'bg-border-strong'}"
                 aria-label="Toggle notifications"
               >
                 <span class="absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-200
@@ -411,28 +412,28 @@
 
           <!-- Install prompt — shown regardless of pushSupported -->
           {#if !isStandalone && !installDismissed && (isIOS || deferredInstallPrompt)}
-            <div class="flex items-start gap-3 rounded-2xl bg-[var(--primary-muted)] px-4 py-3.5">
+            <div class="flex items-start gap-3 rounded-2xl bg-primary-muted px-4 py-3.5">
               <div class="flex-1 space-y-0.5">
                 {#if isIOS}
-                  <p class="text-sm font-semibold text-[var(--primary)]">{$_('pwa_ios_title')}</p>
-                  <p class="text-xs text-[var(--text-secondary)]">
+                  <p class="text-sm font-semibold text-primary">{$_('pwa_ios_title')}</p>
+                  <p class="text-xs text-text-secondary">
                     {$_('pwa_ios_tap')} <span class="font-semibold">{$_('pwa_ios_share')}</span> {$_('pwa_ios_then')} <span class="font-semibold">{$_('pwa_ios_add')}</span> {$_('pwa_ios_suffix')}
                   </p>
                 {:else if deferredInstallPrompt}
-                  <p class="text-sm font-semibold text-[var(--primary)]">{$_('pwa_android_title')}</p>
-                  <p class="text-xs text-[var(--text-secondary)]">{$_('pwa_android_desc')}</p>
+                  <p class="text-sm font-semibold text-primary">{$_('pwa_android_title')}</p>
+                  <p class="text-xs text-text-secondary">{$_('pwa_android_desc')}</p>
                 {/if}
               </div>
               <div class="flex shrink-0 items-center gap-2">
                 {#if deferredInstallPrompt && !isIOS}
                   <button
                     onclick={async () => { deferredInstallPrompt.prompt(); const { outcome } = await deferredInstallPrompt.userChoice; if (outcome === 'accepted') { deferredInstallPrompt = null; isStandalone = true; } }}
-                    class="rounded-full bg-[var(--primary)] px-3 py-1 text-xs font-semibold text-white"
+                    class="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white"
                   >{$_('pwa_install_btn')}</button>
                 {/if}
                 <button
                   onclick={() => { installDismissed = true; localStorage.setItem('install_dismissed', '1'); }}
-                  class="text-[var(--text-disabled)] hover:text-[var(--text-secondary)] text-lg leading-none"
+                  class="text-text-disabled hover:text-text-secondary text-lg leading-none"
                   aria-label="Dismiss"
                 >✕</button>
               </div>
@@ -450,33 +451,33 @@
           onclick={() => showStats = !showStats}
           class="flex w-full items-center justify-between"
         >
-          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">Americano</p>
-          <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showStats ? 'rotate-180' : ''}" />
+          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">Americano</p>
+          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showStats ? 'rotate-180' : ''}" />
         </button>
 
         {#if showStats}
           <div transition:fade={{ duration: 150 }} class="grid grid-cols-2 gap-3">
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+            <div class="rounded-2xl bg-surface-raised px-5 py-5 flex flex-col items-center gap-1.5">
               <p class="text-3xl font-[800] leading-none">{stats.tournaments}</p>
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_tournaments')}</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('profile_tournaments')}</p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+            <div class="rounded-2xl bg-surface-raised px-5 py-5 flex flex-col items-center gap-1.5">
               <p class="text-3xl font-[800] leading-none">{winRate}</p>
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_win_rate')} %</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('profile_win_rate')} %</p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+            <div class="rounded-2xl bg-surface-raised px-5 py-5 flex flex-col items-center gap-1.5">
               <p class="text-3xl font-[800] leading-none">{stats.games_played}</p>
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_games')}</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('profile_games')}</p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+            <div class="rounded-2xl bg-surface-raised px-5 py-5 flex flex-col items-center gap-1.5">
               <div class="flex items-baseline gap-1 leading-none font-[800] tabular-nums">
-                <span class="text-2xl text-[var(--primary)]">{stats.wins}V</span>
-                <span class="text-base text-[var(--text-disabled)]">·</span>
-                <span class="text-2xl text-[var(--text-disabled)]">{stats.draws}U</span>
-                <span class="text-base text-[var(--text-disabled)]">·</span>
+                <span class="text-2xl text-primary">{stats.wins}V</span>
+                <span class="text-base text-text-disabled">·</span>
+                <span class="text-2xl text-text-disabled">{stats.draws}U</span>
+                <span class="text-base text-text-disabled">·</span>
                 <span class="text-2xl text-[#c0392b]">{stats.losses}T</span>
               </div>
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('leaderboard_wl')}</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('leaderboard_wl')}</p>
             </div>
           </div>
         {/if}
@@ -486,16 +487,16 @@
       {#if tennisStats}
         <div class="space-y-3">
           <div class="flex w-full items-center justify-between">
-            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_mode_tennis')}</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('create_mode_tennis')}</p>
           </div>
           <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+            <div class="rounded-2xl bg-surface-raised px-5 py-5 flex flex-col items-center gap-1.5">
               <p class="text-3xl font-[800] leading-none">{tennisStats.tournaments}</p>
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_tournaments')}</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('profile_tournaments')}</p>
             </div>
-            <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 flex flex-col items-center gap-1.5">
+            <div class="rounded-2xl bg-surface-raised px-5 py-5 flex flex-col items-center gap-1.5">
               <p class="text-3xl font-[800] leading-none">{tennisWinRate}</p>
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('profile_win_rate')} %</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('profile_win_rate')} %</p>
             </div>
           </div>
         </div>
@@ -507,8 +508,8 @@
           onclick={() => showContacts = !showContacts}
           class="flex w-full items-center justify-between"
         >
-          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('profile_contacts_title')}</p>
-          <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showContacts ? 'rotate-180' : ''}" />
+          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('profile_contacts_title')}</p>
+          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showContacts ? 'rotate-180' : ''}" />
         </button>
 
         {#if showContacts}
@@ -516,37 +517,37 @@
             <!-- Search -->
             <div class="relative">
               <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
-                <Search size={15} class="text-[var(--text-disabled)]" />
+                <Search size={15} class="text-text-disabled" />
               </div>
               <input
                 type="text"
                 placeholder={$_('profile_contacts_search_placeholder')}
                 bind:value={contactSearch}
                 oninput={onContactSearchInput}
-                class="w-full rounded-xl bg-[var(--surface-raised)] py-2.5 pl-9 pr-4 text-sm outline-none focus:ring-2 focus:ring-[var(--primary)] transition-shadow"
+                class="w-full rounded-xl bg-surface-raised py-2.5 pl-9 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary transition-shadow"
               />
             </div>
 
             <!-- Search results section -->
             {#if contactSearch.length >= 2}
               <div class="space-y-2">
-                <p class="text-xs font-semibold text-[var(--text-secondary)] px-1">
+                <p class="text-xs font-semibold text-text-secondary px-1">
                   Search results {#if searchResults.length > 0}({searchResults.length}){/if}
                 </p>
                 {#if searchResults.length > 0}
                   <div class="space-y-1.5">
                     {#each searchResults as result}
-                      <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+                      <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-muted text-xs font-[800] text-primary">
                           {result.display_name[0].toUpperCase()}
                         </div>
                         <p class="flex-1 text-sm font-semibold truncate">{result.display_name}</p>
                         {#if result.is_contact}
-                          <button onclick={() => handleDeleteContact({ user_id: result.id, display_name: result.display_name } as App.Contact)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
+                          <button onclick={() => handleDeleteContact({ user_id: result.id, display_name: result.display_name } as App.Contact)} class="text-text-disabled hover:text-destructive transition-colors" aria-label="Remove contact">
                             <X size={16} />
                           </button>
                         {:else}
-                          <button onclick={() => addContact(result.id)} class="text-[var(--primary)]" aria-label="Add contact">
+                          <button onclick={() => addContact(result.id)} class="text-primary" aria-label="Add contact">
                             <UserPlus size={16} />
                           </button>
                         {/if}
@@ -554,27 +555,27 @@
                     {/each}
                   </div>
                 {:else if !searchLoading}
-                  <p class="text-sm text-[var(--text-disabled)] py-1">{$_('profile_contacts_search_empty')}</p>
+                  <p class="text-sm text-text-disabled py-1">{$_('profile_contacts_search_empty')}</p>
                 {/if}
               </div>
             {/if}
 
             <!-- Saved contacts section (always visible) -->
             {#if contacts.length === 0 && contactSearch.length < 2}
-              <p class="text-sm text-[var(--text-disabled)] py-1">{$_('profile_contacts_empty')}</p>
+              <p class="text-sm text-text-disabled py-1">{$_('profile_contacts_empty')}</p>
             {:else if contacts.length > 0}
               <div class="space-y-2">
                 {#if contactSearch.length >= 2}
-                  <p class="text-xs font-semibold text-[var(--text-secondary)] px-1">Your contacts</p>
+                  <p class="text-xs font-semibold text-text-secondary px-1">Your contacts</p>
                 {/if}
                 <div class="space-y-1.5">
                   {#each contacts as contact}
-                    <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-                      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+                    <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3">
+                      <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-muted text-xs font-[800] text-primary">
                         {contact.display_name[0].toUpperCase()}
                       </div>
                       <p class="flex-1 text-sm font-semibold truncate">{contact.display_name}</p>
-                      <button onclick={() => handleDeleteContact(contact)} class="text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors" aria-label="Remove contact">
+                      <button onclick={() => handleDeleteContact(contact)} class="text-text-disabled hover:text-destructive transition-colors" aria-label="Remove contact">
                         <X size={16} />
                       </button>
                     </div>
@@ -604,18 +605,18 @@
           onclick={() => showUpcoming = !showUpcoming}
           class="flex w-full items-center justify-between"
         >
-          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('profile_upcoming_label')}</p>
-          <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showUpcoming ? 'rotate-180' : ''}" />
+          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('profile_upcoming_label')}</p>
+          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showUpcoming ? 'rotate-180' : ''}" />
         </button>
 
         {#if showUpcoming}
           <div transition:fade={{ duration: 150 }} class="space-y-2">
             {#if upcoming.length === 0}
-              <p class="text-sm text-[var(--text-disabled)] py-1">{$_('profile_upcoming_empty')}</p>
+              <p class="text-sm text-text-disabled py-1">{$_('profile_upcoming_empty')}</p>
             {:else}
               {#each upcoming as t}
-                <a href="/s/{t.session_id}" class="flex items-center gap-4 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 transition-colors hover:bg-[var(--border)]">
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status === 'active' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-[var(--primary-muted)] text-[var(--primary)]'}">
+                <a href="/s/{t.session_id}" class="flex items-center gap-4 rounded-2xl bg-surface-raised px-4 py-3.5 transition-colors hover:bg-border">
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status === 'active' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-primary-muted text-primary'}">
                     {#if t.status === 'active'}<Radio size={18} />{:else}<CalendarDays size={18} />{/if}
                   </div>
                   <div class="flex-1 min-w-0">
@@ -625,9 +626,9 @@
                         <span class="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-500">Live</span>
                       {/if}
                     </div>
-                    <p class="text-xs text-[var(--text-secondary)]">{t.player_count} {$_('profile_upcoming_players')} · {t.game_mode === 'tennis' ? $_('create_mode_tennis') : 'Americano'}</p>
+                    <p class="text-xs text-text-secondary">{t.player_count} {$_('profile_upcoming_players')} · {t.game_mode === 'tennis' ? $_('create_mode_tennis') : 'Americano'}</p>
                   </div>
-                  <span class="text-sm text-[var(--text-secondary)]">→</span>
+                  <span class="text-sm text-text-secondary">→</span>
                 </a>
               {/each}
             {/if}
@@ -641,31 +642,31 @@
           onclick={() => showHistory = !showHistory}
           class="flex w-full items-center justify-between"
         >
-          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('profile_history_label')}</p>
-          <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showHistory ? 'rotate-180' : ''}" />
+          <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('profile_history_label')}</p>
+          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showHistory ? 'rotate-180' : ''}" />
         </button>
 
         {#if showHistory}
           <div transition:fade={{ duration: 150 }} class="space-y-2">
             {#if tournaments.length === 0}
-              <p class="text-sm text-[var(--text-disabled)] py-2">{$_('profile_history_empty')}</p>
+              <p class="text-sm text-text-disabled py-2">{$_('profile_history_empty')}</p>
             {:else}
               {#each tournaments as t}
-                <a href="/s/{t.session_id}" class="flex items-center gap-4 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 transition-colors hover:bg-[var(--border)]">
+                <a href="/s/{t.session_id}" class="flex items-center gap-4 rounded-2xl bg-surface-raised px-4 py-3.5 transition-colors hover:bg-border">
                   <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-[800]
-                    {t.rank === 1 ? 'bg-[var(--primary)] text-white' : 'bg-[var(--border)] text-[var(--text-secondary)]'}">
+                    {t.rank === 1 ? 'bg-primary text-white' : 'bg-border text-text-secondary'}">
                     {ordinal(t.rank)}
                   </div>
                   <div class="flex-1 min-w-0">
                     <p class="truncate font-semibold text-sm">{t.name}</p>
-                    <p class="text-xs text-[var(--text-secondary)]">
+                    <p class="text-xs text-text-secondary">
                       {formatDate(t.played_at)} · {t.points} pts
                       {#if t.ended_early}
-                        · <span class="text-[var(--text-disabled)]">{$_('profile_ended_early')}</span>
+                        · <span class="text-text-disabled">{$_('profile_ended_early')}</span>
                       {/if}
                     </p>
                   </div>
-                  <span class="text-sm text-[var(--text-secondary)]">→</span>
+                  <span class="text-sm text-text-secondary">→</span>
                 </a>
               {/each}
             {/if}
@@ -680,13 +681,13 @@
       <div class="pt-2 space-y-2">
         <button
           onclick={() => auth.logout().then(() => goto('/'))}
-          class="w-full rounded-2xl border border-[var(--border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:border-[var(--destructive)] hover:text-[var(--destructive)]"
+          class="w-full rounded-2xl border border-border px-4 py-3.5 text-sm font-semibold text-text-secondary transition-colors hover:border-destructive hover:text-destructive"
         >
           {$_('auth_sign_out')}
         </button>
         <button
           onclick={() => (showDeleteConfirm = true)}
-          class="w-full px-4 py-2 text-sm text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors"
+          class="w-full px-4 py-2 text-sm text-text-disabled hover:text-destructive transition-colors"
         >
           {$_('profile_delete_account')}
         </button>
@@ -704,13 +705,13 @@
 
 {#if showAvatarPicker}
   <div role="presentation" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onclick={() => showAvatarPicker = false} onkeydown={(e) => e.key === 'Escape' && (showAvatarPicker = false)}>
-    <div role="dialog" aria-modal="true" aria-label="Choose avatar" tabindex="-1" class="w-full max-w-sm rounded-3xl bg-[var(--surface)] p-6 space-y-4 shadow-xl" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
+    <div role="dialog" aria-modal="true" aria-label="Choose avatar" tabindex="-1" class="w-full max-w-sm rounded-3xl bg-surface p-6 space-y-4 shadow-xl" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <Avatar icon={pickerIcon} color="forest" name={auth.user?.display_name ?? ''} size="md" />
           <p class="font-semibold">Choose avatar</p>
         </div>
-        <button onclick={() => showAvatarPicker = false} class="text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">
+        <button onclick={() => showAvatarPicker = false} class="text-text-disabled hover:text-text-secondary">
           <X size={20} />
         </button>
       </div>
@@ -719,7 +720,7 @@
         <button
           onclick={() => pickerIcon = ''}
           class="flex items-center justify-center rounded-xl p-1 transition-colors
-            {pickerIcon === '' ? 'bg-[var(--primary-muted)] ring-2 ring-[var(--primary)]' : 'bg-[var(--surface-raised)] hover:bg-[var(--border)]'}"
+            {pickerIcon === '' ? 'bg-primary-muted ring-2 ring-primary' : 'bg-surface-raised hover:bg-border'}"
           aria-label="Use initials"
         >
           <Avatar icon="" color="forest" name={auth.user?.display_name ?? ''} size="sm" />
@@ -728,7 +729,7 @@
           <button
             onclick={() => pickerIcon = icon}
             class="flex items-center justify-center rounded-xl p-1 transition-colors
-              {pickerIcon === icon ? 'bg-[var(--primary-muted)] ring-2 ring-[var(--primary)]' : 'bg-[var(--surface-raised)] hover:bg-[var(--border)]'}"
+              {pickerIcon === icon ? 'bg-primary-muted ring-2 ring-primary' : 'bg-surface-raised hover:bg-border'}"
             aria-label={icon}
           >
             <Avatar {icon} color="forest" name="" size="sm" />
@@ -738,7 +739,7 @@
       <button
         onclick={async () => { await saveAvatar(); showAvatarPicker = false; }}
         disabled={savingAvatar}
-        class="w-full rounded-2xl bg-[var(--primary)] py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+        class="w-full rounded-2xl bg-primary py-3.5 text-sm font-semibold text-white disabled:opacity-50"
       >
         {savingAvatar ? 'Saving…' : 'Save'}
       </button>
@@ -748,16 +749,16 @@
 
 {#if showDeleteConfirm}
   <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-    <div class="w-full max-w-sm rounded-3xl bg-[var(--surface)] p-6 space-y-4 shadow-xl">
+    <div class="w-full max-w-sm rounded-3xl bg-surface p-6 space-y-4 shadow-xl">
       <div class="space-y-1">
         <h2 class="text-lg font-[800]">{$_('profile_delete_title')}</h2>
-        <p class="text-sm text-[var(--text-secondary)]">{$_('profile_delete_desc')}</p>
+        <p class="text-sm text-text-secondary">{$_('profile_delete_desc')}</p>
       </div>
       <div class="space-y-2 pt-1">
-        <button onclick={deleteAccount} disabled={deleting} class="w-full rounded-2xl bg-[var(--destructive)] px-4 py-3.5 text-sm font-semibold text-white disabled:opacity-60">
+        <button onclick={deleteAccount} disabled={deleting} class="w-full rounded-2xl bg-destructive px-4 py-3.5 text-sm font-semibold text-white disabled:opacity-60">
           {deleting ? $_('profile_delete_loading') : $_('profile_delete_confirm')}
         </button>
-        <button onclick={() => (showDeleteConfirm = false)} class="w-full rounded-2xl border border-[var(--border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-secondary)]">
+        <button onclick={() => (showDeleteConfirm = false)} class="w-full rounded-2xl border border-border px-4 py-3.5 text-sm font-semibold text-text-secondary">
           {$_('profile_delete_cancel')}
         </button>
       </div>

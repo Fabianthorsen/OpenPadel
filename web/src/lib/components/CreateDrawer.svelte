@@ -8,6 +8,9 @@
   import { fly, slide } from 'svelte/transition';
   import { Calendar } from '$lib/components/ui/calendar';
   import { Input } from '$lib/components/ui/input';
+  import { SectionLabel } from '$lib/components/ui/section-label';
+  import { Switch } from '$lib/components/ui/switch';
+  import { Separator } from '$lib/components/ui/separator';
   import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
   import { onMount } from 'svelte';
 
@@ -216,7 +219,7 @@
   <!-- Drawer -->
   <div
     transition:fly={{ y: 600, duration: 320, opacity: 1 }}
-    class="fixed bottom-0 left-1/2 z-50 flex w-full max-w-[480px] flex-col rounded-t-3xl bg-[var(--surface)] shadow-2xl"
+    class="fixed bottom-0 left-1/2 z-50 flex w-full max-w-[480px] flex-col rounded-t-3xl bg-surface shadow-2xl"
     style="height: 78vh; max-height: 78vh; transform: translateX(-50%) translateY({dragOffset}px); transition: {dragging ? 'none' : 'transform 0.3s ease'};"
   >
     <!-- Handle + header (drag target) -->
@@ -227,12 +230,12 @@
       ontouchend={onDragEnd}
       use:nonPassiveTouchMove
     >
-      <div class="mb-4 h-1 w-10 rounded-full bg-[var(--border-strong)]"></div>
+      <div class="mb-4 h-1 w-10 rounded-full bg-border-strong"></div>
       <div class="flex w-full items-center justify-between">
         <h2 class="text-lg font-[800]">{$_('create_title_line1')} {$_('create_title_line2')}</h2>
         <button
           onclick={close}
-          class="hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-raised)] text-[var(--text-secondary)] hover:bg-[var(--border)] transition-colors text-xl leading-none"
+          class="hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary hover:bg-border transition-colors text-xl leading-none"
         >×</button>
         <div class="md:hidden w-8"></div>
       </div>
@@ -250,52 +253,52 @@
 
       <!-- Game mode -->
       <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_game_mode_label')}</p>
+        <SectionLabel>{$_('create_game_mode_label')}</SectionLabel>
         <div class="flex gap-2">
           <button
             onclick={() => (gameMode = 'americano')}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'americano'
-              ? 'bg-[var(--primary)] text-white'
-              : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+              ? 'bg-primary text-white'
+              : 'bg-surface-raised text-text-primary'}"
           >Americano</button>
           <button
             onclick={() => { gameMode = 'mexicano'; if (courts < 2) courts = 2; }}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'mexicano'
-              ? 'bg-[var(--primary)] text-white'
-              : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+              ? 'bg-primary text-white'
+              : 'bg-surface-raised text-text-primary'}"
           >Mexicano</button>
           <button
             onclick={() => (gameMode = 'tennis')}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'tennis'
-              ? 'bg-[var(--primary)] text-white'
-              : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+              ? 'bg-primary text-white'
+              : 'bg-surface-raised text-text-primary'}"
           >{$_('create_mode_tennis')}</button>
         </div>
         {#if gameMode === 'mexicano'}
-          <p class="text-xs text-[var(--text-secondary)]">{$_('create_mexicano_hint')}</p>
+          <p class="text-xs text-text-secondary">{$_('create_mexicano_hint')}</p>
         {/if}
       </div>
 
       {#if gameMode === 'mexicano'}
         <!-- Mexicano: rounds or time (mutually exclusive) -->
         <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_duration_label')}</p>
+          <SectionLabel>{$_('create_duration_label')}</SectionLabel>
           <!-- Rounds row -->
           <div class="flex gap-2">
             {#each [4, 6, 8, 10] as n}
               <button
                 onclick={() => pickRounds(n)}
                 class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {mexicanoRounds === n
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+                  ? 'bg-primary text-white'
+                  : 'bg-surface-raised text-text-primary'}"
               >{n} {$_('create_duration_rounds')}</button>
             {/each}
           </div>
           <!-- Divider -->
           <div class="flex items-center gap-3">
-            <div class="h-px flex-1 bg-[var(--border)]"></div>
-            <span class="text-[11px] font-semibold text-[var(--text-disabled)]">{$_('create_duration_or')}</span>
-            <div class="h-px flex-1 bg-[var(--border)]"></div>
+            <Separator class="flex-1" />
+            <span class="text-[11px] font-semibold text-text-disabled">{$_('create_duration_or')}</span>
+            <Separator class="flex-1" />
           </div>
           <!-- Time row -->
           <div class="flex gap-2">
@@ -303,12 +306,12 @@
               <button
                 onclick={() => pickTime(min)}
                 class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courtDuration === min && !customTimeMode
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+                  ? 'bg-primary text-white'
+                  : 'bg-surface-raised text-text-primary'}"
               >{min}m</button>
             {/each}
             {#if customTimeMode}
-              <div class="flex flex-1 items-center justify-center gap-0.5 rounded-full bg-[var(--primary)] px-2 py-2.5 text-sm font-semibold text-white">
+              <div class="flex flex-1 items-center justify-center gap-0.5 rounded-full bg-primary px-2 py-2.5 text-sm font-semibold text-white">
                 <input
                   bind:this={customInputEl}
                   type="number"
@@ -323,11 +326,11 @@
             {:else}
               <button
                 onclick={pickCustomTime}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-[var(--surface-raised)] text-[var(--text-primary)]"
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary"
               >{$_('create_duration_custom')}</button>
             {/if}
           </div>
-          <p class="text-xs text-[var(--text-secondary)]">
+          <p class="text-xs text-text-secondary">
             {#if mexicanoRounds}
               {$_('create_mexicano_rounds_hint_fixed', { values: { n: mexicanoRounds } })}
             {:else if courtDuration}
@@ -342,74 +345,74 @@
       {#if gameMode === 'americano' || gameMode === 'mexicano'}
         <!-- Courts -->
         <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_courts_label')}</p>
+          <SectionLabel>{$_('create_courts_label')}</SectionLabel>
           <div class="flex gap-2">
             {#each (gameMode === 'mexicano' ? [2, 3, 4] : [1, 2, 3, 4]) as n}
               <button
                 onclick={() => (courts = n)}
                 class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courts === n
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+                  ? 'bg-primary text-white'
+                  : 'bg-surface-raised text-text-primary'}"
               >{n}</button>
             {/each}
           </div>
           {#if gameMode === 'mexicano'}
-            <p class="text-xs text-[var(--text-secondary)]">{$_('create_mexicano_courts_hint', { values: { n: courts * 4 } })}</p>
+            <p class="text-xs text-text-secondary">{$_('create_mexicano_courts_hint', { values: { n: courts * 4 } })}</p>
           {/if}
         </div>
 
         <!-- Points -->
         <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_points_label')}</p>
+          <SectionLabel>{$_('create_points_label')}</SectionLabel>
           <div class="flex gap-2">
             {#each [16, 24, 32] as p}
               <button
                 onclick={() => (points = p)}
                 class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {points === p
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+                  ? 'bg-primary text-white'
+                  : 'bg-surface-raised text-text-primary'}"
               >{p}</button>
             {/each}
           </div>
-          <p class="text-xs text-[var(--text-secondary)]">
+          <p class="text-xs text-text-secondary">
             {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
           </p>
         </div>
       {:else}
         <!-- Sets to win -->
         <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_sets_label')}</p>
+          <SectionLabel>{$_('create_sets_label')}</SectionLabel>
           <div class="flex gap-2">
             <button
               onclick={() => (setsToWin = 2)}
               class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 2
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+                ? 'bg-primary text-white'
+                : 'bg-surface-raised text-text-primary'}"
             >{$_('create_sets_bo3')}</button>
             <button
               onclick={() => (setsToWin = 3)}
               class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 3
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+                ? 'bg-primary text-white'
+                : 'bg-surface-raised text-text-primary'}"
             >{$_('create_sets_bo5')}</button>
           </div>
         </div>
 
         <!-- Games per set -->
         <div class="space-y-2.5">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_games_per_set_label')}</p>
+          <SectionLabel>{$_('create_games_per_set_label')}</SectionLabel>
           <div class="flex gap-2">
             <button
               onclick={() => (gamesPerSet = 4)}
               class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 4
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+                ? 'bg-primary text-white'
+                : 'bg-surface-raised text-text-primary'}"
             >{$_('create_games_per_set_4')}</button>
             <button
               onclick={() => (gamesPerSet = 6)}
               class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 6
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-[var(--surface-raised)] text-[var(--text-primary)]'}"
+                ? 'bg-primary text-white'
+                : 'bg-surface-raised text-text-primary'}"
             >{$_('create_games_per_set_6')}</button>
           </div>
         </div>
@@ -417,24 +420,24 @@
 
       <!-- Tournament name -->
       <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_tournament_name_label')}</p>
+        <SectionLabel>{$_('create_tournament_name_label')}</SectionLabel>
         <Input
           bind:value={tournamentName}
           placeholder={$_('create_tournament_name_placeholder')}
           maxlength={48}
-          class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+          class="rounded-2xl border-0 bg-surface-raised px-4 py-3.5 text-sm"
         />
       </div>
 
       <!-- Schedule -->
       <div class="space-y-2.5">
         <div class="flex items-center justify-between">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_schedule_label')}</p>
-          <button
-            type="button"
-            onclick={() => {
-              scheduleEnabled = !scheduleEnabled;
-              if (!scheduleEnabled) {
+          <SectionLabel>{$_('create_schedule_label')}</SectionLabel>
+          <Switch
+            checked={scheduleEnabled}
+            onCheckedChange={(checked) => {
+              scheduleEnabled = checked;
+              if (!checked) {
                 calendarDate = undefined;
                 timeSlot = 20;
               } else {
@@ -442,22 +445,18 @@
                 timeSlot = calculateNextHourSlot();
               }
             }}
-            aria-label={$_('create_schedule_label')}
-            class="relative h-6 w-11 rounded-full transition-colors {scheduleEnabled ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'}"
-          >
-            <span class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform {scheduleEnabled ? 'translate-x-5' : 'translate-x-0'}"></span>
-          </button>
+          />
         </div>
         {#if scheduleEnabled}
-          <div class="rounded-2xl bg-[var(--surface-raised)] overflow-hidden">
+          <div class="rounded-2xl bg-surface-raised overflow-hidden">
             <Calendar bind:value={calendarDate} minValue={today(getLocalTimeZone())} weekStartsOn={1} />
             <div class="px-4 pb-4 space-y-2">
               <div class="flex items-center justify-between">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('create_schedule_time_label')}</p>
-                <p class="text-sm font-[800] text-[var(--primary)]">{scheduleTime}</p>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_schedule_time_label')}</p>
+                <p class="text-sm font-[800] text-primary">{scheduleTime}</p>
               </div>
-              <input type="range" min="0" max="27" step="1" bind:value={timeSlot} class="w-full accent-[var(--primary)]" />
-              <div class="flex justify-between text-[10px] text-[var(--text-disabled)]">
+              <input type="range" min="0" max="27" step="1" bind:value={timeSlot} class="w-full accent-primary" />
+              <div class="flex justify-between text-[10px] text-text-disabled">
                 <span>08:00</span><span>21:30</span>
               </div>
             </div>
@@ -472,13 +471,13 @@
             onclick={() => showContacts = !showContacts}
             class="flex w-full items-center justify-between"
           >
-            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-secondary">
               {$_('create_contacts_invite_label')}
               {#if selectedContacts.size > 0}
-                <span class="ml-1.5 rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-[10px] text-white">{selectedContacts.size}</span>
+                <span class="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-white">{selectedContacts.size}</span>
               {/if}
             </p>
-            <ChevronDown size={14} class="text-[var(--text-disabled)] transition-transform duration-200 {showContacts ? 'rotate-180' : ''}" />
+            <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showContacts ? 'rotate-180' : ''}" />
           </button>
 
           {#if showContacts}
@@ -488,10 +487,10 @@
                 <button
                   onclick={() => toggleContact(contact.user_id)}
                   class="flex w-full items-center gap-3 rounded-2xl px-4 py-3 transition-colors
-                    {selected ? 'bg-[var(--primary)]' : 'bg-[var(--surface-raised)]'}"
+                    {selected ? 'bg-primary' : 'bg-surface-raised'}"
                 >
                   <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-[800]
-                    {selected ? 'bg-white/20 text-white' : 'bg-[var(--primary-muted)] text-[var(--primary)]'}">
+                    {selected ? 'bg-white/20 text-white' : 'bg-primary-muted text-primary'}">
                     {initials(contact.display_name)}
                   </div>
                   <span class="flex-1 text-left text-sm font-semibold {selected ? 'text-white' : ''}">{contact.display_name}</span>
@@ -506,13 +505,13 @@
       {/if}
 
 {#if error}
-        <p class="text-sm text-[var(--destructive)]">{error}</p>
+        <p class="text-sm text-destructive">{error}</p>
       {/if}
 
       <button
         onclick={create}
         disabled={creating}
-        class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white disabled:opacity-60 hover:bg-[var(--primary-hover)] transition-colors"
+        class="w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-semibold text-white disabled:opacity-60 hover:bg-primary-hover transition-colors"
       >
         {creating ? $_('create_button_loading') : $_('create_button')}
       </button>

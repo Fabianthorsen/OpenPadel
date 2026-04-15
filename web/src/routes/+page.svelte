@@ -6,6 +6,7 @@
   import { auth } from '$lib/auth.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { SectionLabel } from '$lib/components/ui/section-label';
   import Footer from '$lib/components/Footer.svelte';
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import { _ } from 'svelte-i18n';
@@ -121,8 +122,8 @@
     <div class="flex flex-1 flex-col justify-center space-y-12">
       <!-- Brand -->
       <div class="space-y-1">
-        <h1 class="text-[28px] font-[800] text-[var(--primary)]">OpenPadel</h1>
-        <p class="text-[var(--text-secondary)]">{$_('home_tagline')}</p>
+        <h1 class="text-[28px] font-[800] text-primary">OpenPadel</h1>
+        <p class="text-text-secondary">{$_('home_tagline')}</p>
       </div>
 
       <!-- Actions -->
@@ -130,38 +131,38 @@
         {#if rejoinSession}
           <a
             href={rejoinHref}
-            class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 transition-colors hover:bg-[var(--border)]"
+            class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3.5 transition-colors hover:bg-border"
           >
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary-muted)]">
-              <div class="h-2.5 w-2.5 rounded-full bg-[var(--primary)] animate-pulse"></div>
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-muted">
+              <div class="h-2.5 w-2.5 rounded-full bg-primary animate-pulse"></div>
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('home_rejoin_label')}</p>
+              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('home_rejoin_label')}</p>
               <p class="truncate text-sm font-semibold">{rejoinSession.name || 'OpenPadel'}</p>
             </div>
-            <span class="text-sm text-[var(--text-secondary)]">→</span>
+            <span class="text-sm text-text-secondary">→</span>
           </a>
         {/if}
 
         {#if auth.ready && !auth.user}
           <a
             href="/auth"
-            class="flex h-auto w-full items-center justify-center rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+            class="flex h-auto w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-[15px] font-semibold text-white hover:bg-primary-hover"
           >
             {$_('auth_sign_in')} →
           </a>
-          <p class="text-center text-sm text-[var(--text-secondary)]">
+          <p class="text-center text-sm text-text-secondary">
             {$_('auth_no_account')}
-            <a href="/auth?register=1" class="font-semibold text-[var(--primary)] hover:text-[var(--primary-hover)]">
+            <a href="/auth?register=1" class="font-semibold text-primary hover:text-primary-hover">
               {$_('auth_switch_register')}
             </a>
           </p>
         {/if}
 
         <div class="flex items-center gap-3">
-          <div class="h-px flex-1 bg-[var(--border)]"></div>
-          <span class="text-xs text-[var(--text-disabled)]">{$_('home_join_code_divider')}</span>
-          <div class="h-px flex-1 bg-[var(--border)]"></div>
+          <div class="h-px flex-1 bg-border"></div>
+          <span class="text-xs text-text-disabled">{$_('home_join_code_divider')}</span>
+          <div class="h-px flex-1 bg-border"></div>
         </div>
 
         <form onsubmit={(e) => { e.preventDefault(); joinByCode(); }} class="flex gap-2">
@@ -174,13 +175,13 @@
             autocorrect="off"
             autocapitalize="characters"
             spellcheck={false}
-            class="min-w-0 flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+            class="min-w-0 flex-1 rounded-2xl border-0 bg-surface-raised px-4 py-3.5 text-sm"
           />
           <Button
             type="submit"
             disabled={!joinCode.trim()}
             variant="secondary"
-            class="h-auto rounded-2xl bg-[var(--surface-raised)] px-5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--border)]"
+            class="h-auto rounded-2xl bg-surface-raised px-5 text-sm font-semibold text-text-primary hover:bg-border"
           >
             {$_('home_join_button')}
           </Button>
@@ -191,12 +192,12 @@
     <!-- Auth (logged-in pill — guests see the sign-in button above instead) -->
     {#if auth.user}
     <div class="flex justify-center pt-6">
-      <a href="/profile" class="flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-[var(--surface-raised)]">
-        <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+      <a href="/profile" class="flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-surface-raised">
+        <div class="flex h-7 w-7 items-center justify-center rounded-full bg-primary-muted text-xs font-[800] text-primary">
           {initials(auth.user.display_name)}
         </div>
         <span class="text-sm font-semibold">{auth.user.display_name}</span>
-        <span class="text-xs text-[var(--text-disabled)]">→</span>
+        <span class="text-xs text-text-disabled">→</span>
       </a>
     </div>
     {/if}
@@ -214,18 +215,18 @@
       <Button
         onclick={() => goto('/profile')}
         variant="ghost"
-        class="flex h-8 w-8 items-center justify-center rounded-full p-0 text-lg text-[var(--text-secondary)]"
+        class="flex h-8 w-8 items-center justify-center rounded-full p-0 text-lg text-text-secondary"
       >
         ×
       </Button>
-      <span class="text-sm font-semibold text-[var(--primary)]">OpenPadel</span>
+      <span class="text-sm font-semibold text-primary">OpenPadel</span>
       <div class="w-8"></div>
     </nav>
 
     <!-- Header -->
     <div class="mt-8 space-y-2">
       <h1 class="text-[34px] font-[800]">{$_('create_title_line1')}<br />{$_('create_title_line2')}</h1>
-      <p class="text-[var(--text-secondary)]">{$_('create_subtitle')}</p>
+      <p class="text-text-secondary">{$_('create_subtitle')}</p>
     </div>
 
     <!-- Form -->
@@ -233,21 +234,21 @@
 
       <!-- Game mode -->
       <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_game_mode_label')}</p>
+        <SectionLabel>{$_('create_game_mode_label')}</SectionLabel>
         <div class="flex gap-2">
           <button
             onclick={() => (gameMode = 'americano')}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'americano'
-              ? 'bg-[var(--primary)] text-white'
-              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+              ? 'bg-primary text-white'
+              : 'bg-surface-raised text-text-primary hover:bg-border'}"
           >
             Americano
           </button>
           <button
             onclick={() => (gameMode = 'tennis')}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'tennis'
-              ? 'bg-[var(--primary)] text-white'
-              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+              ? 'bg-primary text-white'
+              : 'bg-surface-raised text-text-primary hover:bg-border'}"
           >
             {$_('create_mode_tennis')}
           </button>
@@ -257,14 +258,14 @@
       {#if gameMode === 'americano'}
       <!-- Courts -->
       <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_courts_label')}</p>
+        <SectionLabel>{$_('create_courts_label')}</SectionLabel>
         <div class="flex gap-2">
           {#each [1, 2, 3, 4] as n}
             <button
               onclick={() => (courts = n)}
               class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courts === n
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+                ? 'bg-primary text-white'
+                : 'bg-surface-raised text-text-primary hover:bg-border'}"
             >
               {n}
             </button>
@@ -274,41 +275,41 @@
 
       <!-- Points -->
       <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_points_label')}</p>
+        <SectionLabel>{$_('create_points_label')}</SectionLabel>
         <div class="flex gap-2">
           {#each [16, 24, 32] as p}
             <button
               onclick={() => (points = p)}
               class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {points === p
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+                ? 'bg-primary text-white'
+                : 'bg-surface-raised text-text-primary hover:bg-border'}"
             >
               {p}
             </button>
           {/each}
         </div>
-        <p class="text-xs text-[var(--text-secondary)]">
+        <p class="text-xs text-text-secondary">
           {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
         </p>
       </div>
       {:else}
       <!-- Sets to win (tennis) -->
       <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_sets_label')}</p>
+        <SectionLabel>{$_('create_sets_label')}</SectionLabel>
         <div class="flex gap-2">
           <button
             onclick={() => (setsToWin = 2)}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 2
-              ? 'bg-[var(--primary)] text-white'
-              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+              ? 'bg-primary text-white'
+              : 'bg-surface-raised text-text-primary hover:bg-border'}"
           >
             {$_('create_sets_bo3')}
           </button>
           <button
             onclick={() => (setsToWin = 3)}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 3
-              ? 'bg-[var(--primary)] text-white'
-              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+              ? 'bg-primary text-white'
+              : 'bg-surface-raised text-text-primary hover:bg-border'}"
           >
             {$_('create_sets_bo5')}
           </button>
@@ -317,21 +318,21 @@
 
       <!-- Games per set (tennis) -->
       <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_games_per_set_label')}</p>
+        <SectionLabel>{$_('create_games_per_set_label')}</SectionLabel>
         <div class="flex gap-2">
           <button
             onclick={() => (gamesPerSet = 4)}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 4
-              ? 'bg-[var(--primary)] text-white'
-              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+              ? 'bg-primary text-white'
+              : 'bg-surface-raised text-text-primary hover:bg-border'}"
           >
             {$_('create_games_per_set_4')}
           </button>
           <button
             onclick={() => (gamesPerSet = 6)}
             class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 6
-              ? 'bg-[var(--primary)] text-white'
-              : 'bg-[var(--surface-raised)] text-[var(--text-primary)] hover:bg-[var(--border)]'}"
+              ? 'bg-primary text-white'
+              : 'bg-surface-raised text-text-primary hover:bg-border'}"
           >
             {$_('create_games_per_set_6')}
           </button>
@@ -341,35 +342,35 @@
 
       <!-- Tournament name (optional) -->
       <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_tournament_name_label')}</p>
+        <SectionLabel>{$_('create_tournament_name_label')}</SectionLabel>
         <Input
           bind:value={tournamentName}
           placeholder={$_('create_tournament_name_placeholder')}
           maxlength={48}
-          class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+          class="rounded-2xl border-0 bg-surface-raised px-4 py-3.5 text-sm"
         />
       </div>
 
       <!-- Schedule (optional) -->
       <div class="space-y-2.5">
         <div class="flex items-center justify-between">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_schedule_label')}</p>
+          <SectionLabel>{$_('create_schedule_label')}</SectionLabel>
           <button
             type="button"
             onclick={() => { scheduleEnabled = !scheduleEnabled; if (!scheduleEnabled) { calendarDate = undefined; timeSlot = 20; } }}
             aria-label={$_('create_schedule_label')}
-            class="relative h-6 w-11 rounded-full transition-colors {scheduleEnabled ? 'bg-[var(--primary)]' : 'bg-[var(--border)]'}"
+            class="relative h-6 w-11 rounded-full transition-colors {scheduleEnabled ? 'bg-primary' : 'bg-border'}"
           >
             <span class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform {scheduleEnabled ? 'translate-x-5' : 'translate-x-0'}"></span>
           </button>
         </div>
         {#if scheduleEnabled}
-          <div class="rounded-2xl bg-[var(--surface-raised)] overflow-hidden">
+          <div class="rounded-2xl bg-surface-raised overflow-hidden">
             <Calendar bind:value={calendarDate} minValue={today(getLocalTimeZone())} weekStartsOn={1} />
             <div class="px-4 pb-4 space-y-2">
               <div class="flex items-center justify-between">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-disabled)]">{$_('create_schedule_time_label')}</p>
-                <p class="text-sm font-[800] text-[var(--primary)]">{scheduleTime}</p>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_schedule_time_label')}</p>
+                <p class="text-sm font-[800] text-primary">{scheduleTime}</p>
               </div>
               <input
                 type="range"
@@ -377,9 +378,9 @@
                 max="27"
                 step="1"
                 bind:value={timeSlot}
-                class="w-full accent-[var(--primary)]"
+                class="w-full accent-primary"
               />
-              <div class="flex justify-between text-[10px] text-[var(--text-disabled)]">
+              <div class="flex justify-between text-[10px] text-text-disabled">
                 <span>08:00</span>
                 <span>21:30</span>
               </div>
@@ -390,9 +391,9 @@
 
       <!-- Organiser (always logged in at this point) -->
       <div class="space-y-2.5">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('create_organiser_label')}</p>
-        <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5">
-          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--primary-muted)] text-xs font-[800] text-[var(--primary)]">
+        <SectionLabel>{$_('create_organiser_label')}</SectionLabel>
+        <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3.5">
+          <div class="flex h-7 w-7 items-center justify-center rounded-full bg-primary-muted text-xs font-[800] text-primary">
             {auth.user ? initials(auth.user.display_name) : '?'}
           </div>
           <span class="text-sm font-semibold">{auth.user?.display_name}</span>
@@ -400,15 +401,15 @@
       </div>
 
       <!-- Info note -->
-      <div class="flex gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5">
-        <span class="mt-px shrink-0 text-[var(--text-secondary)]">ℹ</span>
-        <p class="text-sm text-[var(--text-secondary)]">{$_('create_info_note')}</p>
+      <div class="flex gap-3 rounded-2xl bg-surface-raised px-4 py-3.5">
+        <span class="mt-px shrink-0 text-text-secondary">ℹ</span>
+        <p class="text-sm text-text-secondary">{$_('create_info_note')}</p>
       </div>
 
       <Button
         onclick={create}
         disabled={creating}
-        class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+        class="h-auto w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-semibold text-white hover:bg-primary-hover"
       >
         {creating ? $_('create_button_loading') : $_('create_button')}
       </Button>
