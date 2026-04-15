@@ -11,6 +11,7 @@
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
   import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
+  import * as Sheet from '$lib/components/ui/sheet';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import { numpad as numpadStore } from '$lib/stores/numpad';
@@ -645,47 +646,40 @@
 {/if}
 
 <!-- ── COURTS OVERVIEW BOTTOM SHEET ── -->
-{#if showCourtsOverview}
-  <div
-    role="presentation"
-    class="fixed inset-0 z-40 bg-black/40"
-    onclick={() => showCourtsOverview = false}
-    onkeydown={(e) => e.key === 'Escape' && (showCourtsOverview = false)}
-  ></div>
-  <div class="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-surface px-4 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-3">
-    <div class="mb-1 flex items-center justify-between">
-      <h3 class="text-lg font-[800]">Courts Overview</h3>
-      <button onclick={() => showCourtsOverview = false} class="text-text-disabled hover:text-text-secondary">
-        <X size={20} />
-      </button>
+<Sheet.Root bind:open={showCourtsOverview}>
+  <Sheet.Content class="w-full max-w-sm sm:max-w-md">
+    <div class="space-y-3">
+      <Sheet.Header>
+        <Sheet.Title>Courts Overview</Sheet.Title>
+      </Sheet.Header>
+      <div class="space-y-2">
+        {#each currentRound.matches as match}
+          {@const s = scores[match.id] ?? { a: 0, b: 0 }}
+          {@const isFinalized = match.score !== null}
+          {@const inProgress = !isFinalized && (s.a + s.b > 0)}
+          <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3">
+            <div class="flex w-8 shrink-0 flex-col items-center">
+              <p class="text-[9px] font-bold uppercase tracking-widest text-text-disabled">C</p>
+              <p class="text-xl font-[800] leading-tight">{match.court}</p>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
+              <p class="truncate text-xs text-text-secondary">vs {teamLabel(match.team_b)}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-lg font-[800] tabular-nums">{s.a}–{s.b}</span>
+              {#if isFinalized}
+                <Check size={14} class="text-primary" />
+              {:else if inProgress}
+                <div class="h-2 w-2 rounded-full bg-amber-400"></div>
+              {:else}
+                <div class="h-2 w-2 rounded-full bg-border"></div>
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
     </div>
-    <div class="space-y-2">
-      {#each currentRound.matches as match}
-        {@const s = scores[match.id] ?? { a: 0, b: 0 }}
-        {@const isFinalized = match.score !== null}
-        {@const inProgress = !isFinalized && (s.a + s.b > 0)}
-        <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3">
-          <div class="flex w-8 shrink-0 flex-col items-center">
-            <p class="text-[9px] font-bold uppercase tracking-widest text-text-disabled">C</p>
-            <p class="text-xl font-[800] leading-tight">{match.court}</p>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
-            <p class="truncate text-xs text-text-secondary">vs {teamLabel(match.team_b)}</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-lg font-[800] tabular-nums">{s.a}–{s.b}</span>
-            {#if isFinalized}
-              <Check size={14} class="text-primary" />
-            {:else if inProgress}
-              <div class="h-2 w-2 rounded-full bg-amber-400"></div>
-            {:else}
-              <div class="h-2 w-2 rounded-full bg-border"></div>
-            {/if}
-          </div>
-        </div>
-      {/each}
-    </div>
-  </div>
-{/if}
+  </Sheet.Content>
+</Sheet.Root>
 
