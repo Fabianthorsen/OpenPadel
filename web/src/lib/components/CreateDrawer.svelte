@@ -11,6 +11,7 @@
   import { SectionLabel } from '$lib/components/ui/section-label';
   import { Switch } from '$lib/components/ui/switch';
   import { Separator } from '$lib/components/ui/separator';
+  import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
   import { onMount } from 'svelte';
 
@@ -254,26 +255,11 @@
       <!-- Game mode -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_game_mode_label')}</SectionLabel>
-        <div class="flex gap-2">
-          <button
-            onclick={() => (gameMode = 'americano')}
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'americano'
-              ? 'bg-primary text-white'
-              : 'bg-surface-raised text-text-primary'}"
-          >Americano</button>
-          <button
-            onclick={() => { gameMode = 'mexicano'; if (courts < 2) courts = 2; }}
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'mexicano'
-              ? 'bg-primary text-white'
-              : 'bg-surface-raised text-text-primary'}"
-          >Mexicano</button>
-          <button
-            onclick={() => (gameMode = 'tennis')}
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'tennis'
-              ? 'bg-primary text-white'
-              : 'bg-surface-raised text-text-primary'}"
-          >{$_('create_mode_tennis')}</button>
-        </div>
+        <ToggleGroup type="single" bind:value={gameMode} class="flex gap-2">
+          <ToggleGroupItem value="americano" class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white">Americano</ToggleGroupItem>
+          <ToggleGroupItem value="mexicano" class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white">Mexicano</ToggleGroupItem>
+          <ToggleGroupItem value="tennis" class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white">{$_('create_mode_tennis')}</ToggleGroupItem>
+        </ToggleGroup>
         {#if gameMode === 'mexicano'}
           <p class="text-xs text-text-secondary">{$_('create_mexicano_hint')}</p>
         {/if}
@@ -284,16 +270,19 @@
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_duration_label')}</SectionLabel>
           <!-- Rounds row -->
-          <div class="flex gap-2">
+          <ToggleGroup
+            type="single"
+            value={mexicanoRounds?.toString() ?? ''}
+            onValueChange={(val) => pickRounds(val ? parseInt(val) : null)}
+            class="flex gap-2"
+          >
             {#each [4, 6, 8, 10] as n}
-              <button
-                onclick={() => pickRounds(n)}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {mexicanoRounds === n
-                  ? 'bg-primary text-white'
-                  : 'bg-surface-raised text-text-primary'}"
-              >{n} {$_('create_duration_rounds')}</button>
+              <ToggleGroupItem
+                value={n.toString()}
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
+              >{n} {$_('create_duration_rounds')}</ToggleGroupItem>
             {/each}
-          </div>
+          </ToggleGroup>
           <!-- Divider -->
           <div class="flex items-center gap-3">
             <Separator class="flex-1" />
@@ -301,14 +290,23 @@
             <Separator class="flex-1" />
           </div>
           <!-- Time row -->
-          <div class="flex gap-2">
+          <ToggleGroup
+            type="single"
+            value={!customTimeMode && courtDuration ? courtDuration.toString() : customTimeMode ? 'custom' : ''}
+            onValueChange={(val) => {
+              if (val === 'custom') {
+                pickCustomTime();
+              } else if (val) {
+                pickTime(parseInt(val));
+              }
+            }}
+            class="flex gap-2"
+          >
             {#each [60, 90, 120] as min}
-              <button
-                onclick={() => pickTime(min)}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courtDuration === min && !customTimeMode
-                  ? 'bg-primary text-white'
-                  : 'bg-surface-raised text-text-primary'}"
-              >{min}m</button>
+              <ToggleGroupItem
+                value={min.toString()}
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
+              >{min}m</ToggleGroupItem>
             {/each}
             {#if customTimeMode}
               <div class="flex flex-1 items-center justify-center gap-0.5 rounded-full bg-primary px-2 py-2.5 text-sm font-semibold text-white">
@@ -324,12 +322,12 @@
                 <span>m</span>
               </div>
             {:else}
-              <button
-                onclick={pickCustomTime}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary"
-              >{$_('create_duration_custom')}</button>
+              <ToggleGroupItem
+                value="custom"
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
+              >{$_('create_duration_custom')}</ToggleGroupItem>
             {/if}
-          </div>
+          </ToggleGroup>
           <p class="text-xs text-text-secondary">
             {#if mexicanoRounds}
               {$_('create_mexicano_rounds_hint_fixed', { values: { n: mexicanoRounds } })}
@@ -346,16 +344,19 @@
         <!-- Courts -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_courts_label')}</SectionLabel>
-          <div class="flex gap-2">
+          <ToggleGroup
+            type="single"
+            value={courts.toString()}
+            onValueChange={(val) => courts = parseInt(val)}
+            class="flex gap-2"
+          >
             {#each (gameMode === 'mexicano' ? [2, 3, 4] : [1, 2, 3, 4]) as n}
-              <button
-                onclick={() => (courts = n)}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courts === n
-                  ? 'bg-primary text-white'
-                  : 'bg-surface-raised text-text-primary'}"
-              >{n}</button>
+              <ToggleGroupItem
+                value={n.toString()}
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
+              >{n}</ToggleGroupItem>
             {/each}
-          </div>
+          </ToggleGroup>
           {#if gameMode === 'mexicano'}
             <p class="text-xs text-text-secondary">{$_('create_mexicano_courts_hint', { values: { n: courts * 4 } })}</p>
           {/if}
@@ -364,16 +365,19 @@
         <!-- Points -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_points_label')}</SectionLabel>
-          <div class="flex gap-2">
+          <ToggleGroup
+            type="single"
+            value={points.toString()}
+            onValueChange={(val) => points = parseInt(val)}
+            class="flex gap-2"
+          >
             {#each [16, 24, 32] as p}
-              <button
-                onclick={() => (points = p)}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {points === p
-                  ? 'bg-primary text-white'
-                  : 'bg-surface-raised text-text-primary'}"
-              >{p}</button>
+              <ToggleGroupItem
+                value={p.toString()}
+                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
+              >{p}</ToggleGroupItem>
             {/each}
-          </div>
+          </ToggleGroup>
           <p class="text-xs text-text-secondary">
             {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
           </p>
@@ -382,39 +386,41 @@
         <!-- Sets to win -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_sets_label')}</SectionLabel>
-          <div class="flex gap-2">
-            <button
-              onclick={() => (setsToWin = 2)}
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 2
-                ? 'bg-primary text-white'
-                : 'bg-surface-raised text-text-primary'}"
-            >{$_('create_sets_bo3')}</button>
-            <button
-              onclick={() => (setsToWin = 3)}
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 3
-                ? 'bg-primary text-white'
-                : 'bg-surface-raised text-text-primary'}"
-            >{$_('create_sets_bo5')}</button>
-          </div>
+          <ToggleGroup
+            type="single"
+            value={setsToWin.toString()}
+            onValueChange={(val) => setsToWin = parseInt(val)}
+            class="flex gap-2"
+          >
+            <ToggleGroupItem
+              value="2"
+              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
+            >{$_('create_sets_bo3')}</ToggleGroupItem>
+            <ToggleGroupItem
+              value="3"
+              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
+            >{$_('create_sets_bo5')}</ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
         <!-- Games per set -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_games_per_set_label')}</SectionLabel>
-          <div class="flex gap-2">
-            <button
-              onclick={() => (gamesPerSet = 4)}
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 4
-                ? 'bg-primary text-white'
-                : 'bg-surface-raised text-text-primary'}"
-            >{$_('create_games_per_set_4')}</button>
-            <button
-              onclick={() => (gamesPerSet = 6)}
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 6
-                ? 'bg-primary text-white'
-                : 'bg-surface-raised text-text-primary'}"
-            >{$_('create_games_per_set_6')}</button>
-          </div>
+          <ToggleGroup
+            type="single"
+            value={gamesPerSet.toString()}
+            onValueChange={(val) => gamesPerSet = parseInt(val)}
+            class="flex gap-2"
+          >
+            <ToggleGroupItem
+              value="4"
+              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
+            >{$_('create_games_per_set_4')}</ToggleGroupItem>
+            <ToggleGroupItem
+              value="6"
+              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
+            >{$_('create_games_per_set_6')}</ToggleGroupItem>
+          </ToggleGroup>
         </div>
       {/if}
 

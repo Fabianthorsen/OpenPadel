@@ -7,6 +7,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { SectionLabel } from '$lib/components/ui/section-label';
+  import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import Footer from '$lib/components/Footer.svelte';
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import { _ } from 'svelte-i18n';
@@ -235,59 +236,66 @@
       <!-- Game mode -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_game_mode_label')}</SectionLabel>
-        <div class="flex gap-2">
-          <button
-            onclick={() => (gameMode = 'americano')}
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'americano'
-              ? 'bg-primary text-white'
-              : 'bg-surface-raised text-text-primary hover:bg-border'}"
+        <ToggleGroup
+          type="single"
+          value={gameMode}
+          onValueChange={(val) => gameMode = val as 'americano' | 'tennis'}
+          class="flex gap-2"
+        >
+          <ToggleGroupItem
+            value="americano"
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
           >
             Americano
-          </button>
-          <button
-            onclick={() => (gameMode = 'tennis')}
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gameMode === 'tennis'
-              ? 'bg-primary text-white'
-              : 'bg-surface-raised text-text-primary hover:bg-border'}"
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="tennis"
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
           >
             {$_('create_mode_tennis')}
-          </button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       {#if gameMode === 'americano'}
       <!-- Courts -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_courts_label')}</SectionLabel>
-        <div class="flex gap-2">
+        <ToggleGroup
+          type="single"
+          value={courts.toString()}
+          onValueChange={(val) => courts = parseInt(val)}
+          class="flex gap-2"
+        >
           {#each [1, 2, 3, 4] as n}
-            <button
-              onclick={() => (courts = n)}
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {courts === n
-                ? 'bg-primary text-white'
-                : 'bg-surface-raised text-text-primary hover:bg-border'}"
+            <ToggleGroupItem
+              value={n.toString()}
+              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
             >
               {n}
-            </button>
+            </ToggleGroupItem>
           {/each}
-        </div>
+        </ToggleGroup>
       </div>
 
       <!-- Points -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_points_label')}</SectionLabel>
-        <div class="flex gap-2">
+        <ToggleGroup
+          type="single"
+          value={points.toString()}
+          onValueChange={(val) => points = parseInt(val)}
+          class="flex gap-2"
+        >
           {#each [16, 24, 32] as p}
-            <button
-              onclick={() => (points = p)}
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {points === p
-                ? 'bg-primary text-white'
-                : 'bg-surface-raised text-text-primary hover:bg-border'}"
+            <ToggleGroupItem
+              value={p.toString()}
+              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
             >
               {p}
-            </button>
+            </ToggleGroupItem>
           {/each}
-        </div>
+        </ToggleGroup>
         <p class="text-xs text-text-secondary">
           {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
         </p>
@@ -296,47 +304,49 @@
       <!-- Sets to win (tennis) -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_sets_label')}</SectionLabel>
-        <div class="flex gap-2">
-          <button
-            onclick={() => (setsToWin = 2)}
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 2
-              ? 'bg-primary text-white'
-              : 'bg-surface-raised text-text-primary hover:bg-border'}"
+        <ToggleGroup
+          type="single"
+          value={setsToWin.toString()}
+          onValueChange={(val) => setsToWin = parseInt(val)}
+          class="flex gap-2"
+        >
+          <ToggleGroupItem
+            value="2"
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
           >
             {$_('create_sets_bo3')}
-          </button>
-          <button
-            onclick={() => (setsToWin = 3)}
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {setsToWin === 3
-              ? 'bg-primary text-white'
-              : 'bg-surface-raised text-text-primary hover:bg-border'}"
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="3"
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
           >
             {$_('create_sets_bo5')}
-          </button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <!-- Games per set (tennis) -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_games_per_set_label')}</SectionLabel>
-        <div class="flex gap-2">
-          <button
-            onclick={() => (gamesPerSet = 4)}
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 4
-              ? 'bg-primary text-white'
-              : 'bg-surface-raised text-text-primary hover:bg-border'}"
+        <ToggleGroup
+          type="single"
+          value={gamesPerSet.toString()}
+          onValueChange={(val) => gamesPerSet = parseInt(val)}
+          class="flex gap-2"
+        >
+          <ToggleGroupItem
+            value="4"
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
           >
             {$_('create_games_per_set_4')}
-          </button>
-          <button
-            onclick={() => (gamesPerSet = 6)}
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors {gamesPerSet === 6
-              ? 'bg-primary text-white'
-              : 'bg-surface-raised text-text-primary hover:bg-border'}"
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="6"
+            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
           >
             {$_('create_games_per_set_6')}
-          </button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
       {/if}
 

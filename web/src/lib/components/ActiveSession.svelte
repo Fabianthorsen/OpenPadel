@@ -10,6 +10,7 @@
   import { sessionName } from '$lib/utils';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
+  import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import { numpad as numpadStore } from '$lib/stores/numpad';
@@ -329,21 +330,25 @@
 
     <!-- Court tabs -->
     {#if currentRound.matches.length > 1}
-      <div class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+      <ToggleGroup
+        type="single"
+        value={activeCourt.toString()}
+        onValueChange={(val) => activeCourt = parseInt(val)}
+        class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none"
+      >
         {#each currentRound.matches as match, i}
           {@const isFinalized = match.score !== null && !editing[match.id]}
-          <button
-            onclick={() => activeCourt = i}
-            class="flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors
-              {activeCourt === i ? 'bg-primary text-white' : 'bg-surface-raised text-text-secondary'}"
+          <ToggleGroupItem
+            value={i.toString()}
+            class="flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors bg-surface-raised text-text-secondary data-[state=on]:bg-primary data-[state=on]:text-white"
           >
             🎾 Court {match.court}
             {#if isFinalized}
               <span class="h-1.5 w-1.5 rounded-full {activeCourt === i ? 'bg-white/60' : 'bg-primary'}"></span>
             {/if}
-          </button>
+          </ToggleGroupItem>
         {/each}
-      </div>
+      </ToggleGroup>
     {/if}
 
     <!-- Score cards (one per court, only active shown) -->
