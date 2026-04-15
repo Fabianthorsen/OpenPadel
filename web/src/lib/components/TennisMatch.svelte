@@ -120,20 +120,20 @@
   <!-- Nav -->
   <nav class="flex items-center justify-between px-2">
     <div class="space-y-0.5">
-      <p class="text-xs text-[var(--text-secondary)]">{$_('create_mode_tennis')}</p>
-      <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
+      <p class="text-xs text-text-secondary">{$_('create_mode_tennis')}</p>
+      <p class="text-sm font-semibold text-primary">{sessionName(session)}</p>
     </div>
     <div class="flex items-center gap-3">
-      <p class="text-xs text-[var(--text-secondary)]">{$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}</p>
+      <p class="text-xs text-text-secondary">{$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}</p>
       {#if isAdmin}
         <div class="flex items-center gap-2">
           <button
             onclick={() => (showCloseDialog = true)}
-            class="rounded-full bg-[var(--destructive)] px-3 py-1 text-xs font-semibold text-white transition-all active:scale-95"
+            class="rounded-full bg-destructive px-3 py-1 text-xs font-semibold text-white transition-all active:scale-95"
           >{$_('active_close')}</button>
           <button
             onclick={() => (showCancelDialog = true)}
-            class="text-xs text-[var(--text-disabled)] hover:text-[var(--destructive)] transition-colors"
+            class="text-xs text-text-disabled hover:text-destructive transition-colors"
           >{$_('active_cancel')}</button>
         </div>
       {/if}
@@ -142,18 +142,18 @@
 
   {#if !match}
     <div class="flex justify-center py-16">
-      <div class="h-7 w-7 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--primary)]"></div>
+      <div class="h-7 w-7 animate-spin rounded-full border-2 border-border border-t-primary"></div>
     </div>
   {:else}
 
     <!-- Score card -->
-    <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-5 space-y-1">
+    <div class="rounded-2xl bg-surface-raised px-5 py-5 space-y-1">
 
       <!-- Card header -->
       <div class="flex items-center gap-2 mb-2">
         <div class="flex-1">
           {#if state?.winner}
-            <span class="rounded-full bg-[var(--primary)] px-3 py-0.5 text-[10px] font-bold uppercase text-white">
+            <span class="rounded-full bg-primary px-3 py-0.5 text-[10px] font-bold uppercase text-white">
               {$_('tennis_winner', { values: { team: state.winner === 'a' ? teamANames : teamBNames } })}
             </span>
           {:else}
@@ -165,15 +165,15 @@
         </div>
         <!-- Column headers aligned with score boxes -->
         {#each state?.sets ?? [] as _set, i}
-          <div class="w-11 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--text-disabled)] shrink-0">
+          <div class="w-11 text-center text-[9px] font-bold uppercase tracking-wider text-text-disabled shrink-0">
             {$_('tennis_set')} {i + 1}
           </div>
         {/each}
         {#if !state?.winner}
-          <div class="w-11 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--primary)] shrink-0">
+          <div class="w-11 text-center text-[9px] font-bold uppercase tracking-wider text-primary shrink-0">
             {$_('tennis_set')} {(state?.sets?.length ?? 0) + 1}
           </div>
-          <div class="w-14 text-center text-[9px] font-bold uppercase tracking-wider text-[var(--text-disabled)] shrink-0">
+          <div class="w-14 text-center text-[9px] font-bold uppercase tracking-wider text-text-disabled shrink-0">
             {state?.in_tiebreak ? $_('tennis_tiebreak') : $_('tennis_game')}
           </div>
         {/if}
@@ -184,7 +184,7 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5">
             {#if state?.server === 'a'}
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-[var(--primary)] shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-primary shrink-0">
                 <circle cx="12" cy="12" r="10"/>
                 <path d="M6 12c0-3.3 1.5-6.2 4-8"/>
                 <path d="M18 12c0 3.3-1.5 6.2-4 8"/>
@@ -192,37 +192,37 @@
             {/if}
             <p class="text-sm font-[700] leading-snug truncate">{teamANames}</p>
           </div>
-          <p class="text-[10px] text-[var(--text-disabled)] uppercase tracking-wide mt-0.5">{$_('tennis_team_a')}</p>
+          <p class="text-[10px] text-text-disabled uppercase tracking-wide mt-0.5">{$_('tennis_team_a')}</p>
         </div>
         <!-- Completed set score boxes -->
         {#each state?.sets ?? [] as set}
           <div class="h-11 w-11 rounded-lg flex items-center justify-center text-sm font-[700] shrink-0
-            {set[0] > set[1] ? 'bg-[var(--surface)] text-[var(--text-primary)]' : 'bg-transparent text-[var(--text-disabled)]'}">
+            {set[0] > set[1] ? 'bg-surface text-text-primary' : 'bg-transparent text-text-disabled'}">
             {set[0]}
           </div>
         {/each}
         <!-- Current set games (live) -->
         {#if !state?.winner}
-          <div class="h-11 w-11 rounded-lg flex items-center justify-center text-sm font-[700] shrink-0 bg-[var(--surface)] text-[var(--text-primary)]">
+          <div class="h-11 w-11 rounded-lg flex items-center justify-center text-sm font-[700] shrink-0 bg-surface text-text-primary">
             {state?.games_a ?? 0}
           </div>
           <!-- Current game point score -->
           <div class="h-14 w-14 rounded-xl flex items-center justify-center shrink-0
-            {scoreLeadsA ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--text-primary)]'}">
+            {scoreLeadsA ? 'bg-primary text-white' : 'bg-surface text-text-primary'}">
             <p class="text-2xl font-[800] tabular-nums">{gameScoreA}</p>
           </div>
         {/if}
       </div>
 
       <!-- Divider -->
-      <div class="h-px bg-[var(--border)] mx-1"></div>
+      <div class="h-px bg-border mx-1"></div>
 
       <!-- Team B row -->
       <div class="flex items-center gap-2 py-2">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5">
             {#if state?.server === 'b'}
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-[var(--primary)] shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="text-primary shrink-0">
                 <circle cx="12" cy="12" r="10"/>
                 <path d="M6 12c0-3.3 1.5-6.2 4-8"/>
                 <path d="M18 12c0 3.3-1.5 6.2-4 8"/>
@@ -230,23 +230,23 @@
             {/if}
             <p class="text-sm font-[700] leading-snug truncate">{teamBNames}</p>
           </div>
-          <p class="text-[10px] text-[var(--text-disabled)] uppercase tracking-wide mt-0.5">{$_('tennis_team_b')}</p>
+          <p class="text-[10px] text-text-disabled uppercase tracking-wide mt-0.5">{$_('tennis_team_b')}</p>
         </div>
         <!-- Completed set score boxes -->
         {#each state?.sets ?? [] as set}
           <div class="h-11 w-11 rounded-lg flex items-center justify-center text-sm font-[700] shrink-0
-            {set[1] > set[0] ? 'bg-[var(--surface)] text-[var(--text-primary)]' : 'bg-transparent text-[var(--text-disabled)]'}">
+            {set[1] > set[0] ? 'bg-surface text-text-primary' : 'bg-transparent text-text-disabled'}">
             {set[1]}
           </div>
         {/each}
         <!-- Current set games (live) -->
         {#if !state?.winner}
-          <div class="h-11 w-11 rounded-lg flex items-center justify-center text-sm font-[700] shrink-0 bg-[var(--surface)] text-[var(--text-primary)]">
+          <div class="h-11 w-11 rounded-lg flex items-center justify-center text-sm font-[700] shrink-0 bg-surface text-text-primary">
             {state?.games_b ?? 0}
           </div>
           <!-- Current game point score -->
           <div class="h-14 w-14 rounded-xl flex items-center justify-center shrink-0
-            {scoreLeadsB ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--text-primary)]'}">
+            {scoreLeadsB ? 'bg-primary text-white' : 'bg-surface text-text-primary'}">
             <p class="text-2xl font-[800] tabular-nums">{gameScoreB}</p>
           </div>
         {/if}
@@ -254,9 +254,9 @@
 
       <!-- Deuce / tiebreak notice -->
       {#if state?.points_a === 3 && state?.points_b === 3 && !state?.in_tiebreak}
-        <p class="text-center text-[11px] font-semibold text-[var(--text-secondary)] pt-1">{$_('tennis_deuce')} — {$_('tennis_golden_point')}</p>
+        <p class="text-center text-[11px] font-semibold text-text-secondary pt-1">{$_('tennis_deuce')} — {$_('tennis_golden_point')}</p>
       {:else if state?.in_tiebreak}
-        <p class="text-center text-[11px] font-semibold text-[var(--text-secondary)] pt-1">{$_('tennis_tiebreak')}</p>
+        <p class="text-center text-[11px] font-semibold text-text-secondary pt-1">{$_('tennis_tiebreak')}</p>
       {/if}
     </div>
 
@@ -266,41 +266,41 @@
 
         <!-- Team A column -->
         <div class="space-y-2">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)] px-1">{$_('tennis_update_a')}</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-text-disabled px-1">{$_('tennis_update_a')}</p>
           <button
             onclick={() => addPoint('a')}
             disabled={!!addingPoint}
-            class="w-full rounded-2xl bg-[var(--surface-raised)] py-7 flex flex-col items-center gap-0.5 disabled:opacity-60 active:scale-95 transition-transform"
+            class="w-full rounded-2xl bg-surface-raised py-7 flex flex-col items-center gap-0.5 disabled:opacity-60 active:scale-95 transition-transform"
           >
-            <span class="text-3xl font-[200] leading-none text-[var(--text-primary)]">+</span>
-            <span class="text-[11px] font-[800] uppercase tracking-wide text-[var(--text-primary)]">{$_('active_team_a')}</span>
+            <span class="text-3xl font-[200] leading-none text-text-primary">+</span>
+            <span class="text-[11px] font-[800] uppercase tracking-wide text-text-primary">{$_('active_team_a')}</span>
           </button>
           <button
             onclick={() => setServer('a')}
             class="w-full rounded-xl py-2.5 text-[11px] font-[700] uppercase tracking-wide transition-all active:scale-95
               {state?.server === 'a'
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-[var(--surface-raised)] text-[var(--text-secondary)]'}"
+                ? 'bg-primary text-white'
+                : 'bg-surface-raised text-text-secondary'}"
           >{$_('active_serve')}</button>
         </div>
 
         <!-- Team B column -->
         <div class="space-y-2">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)] px-1">{$_('tennis_update_b')}</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-text-disabled px-1">{$_('tennis_update_b')}</p>
           <button
             onclick={() => addPoint('b')}
             disabled={!!addingPoint}
-            class="w-full rounded-2xl bg-[var(--surface-raised)] py-7 flex flex-col items-center gap-0.5 disabled:opacity-60 active:scale-95 transition-transform"
+            class="w-full rounded-2xl bg-surface-raised py-7 flex flex-col items-center gap-0.5 disabled:opacity-60 active:scale-95 transition-transform"
           >
-            <span class="text-3xl font-[200] leading-none text-[var(--text-primary)]">+</span>
-            <span class="text-[11px] font-[800] uppercase tracking-wide text-[var(--text-primary)]">{$_('active_team_b')}</span>
+            <span class="text-3xl font-[200] leading-none text-text-primary">+</span>
+            <span class="text-[11px] font-[800] uppercase tracking-wide text-text-primary">{$_('active_team_b')}</span>
           </button>
           <button
             onclick={() => setServer('b')}
             class="w-full rounded-xl py-2.5 text-[11px] font-[700] uppercase tracking-wide transition-all active:scale-95
               {state?.server === 'b'
-                ? 'bg-[var(--primary)] text-white'
-                : 'bg-[var(--surface-raised)] text-[var(--text-secondary)]'}"
+                ? 'bg-primary text-white'
+                : 'bg-surface-raised text-text-secondary'}"
           >{$_('active_serve')}</button>
         </div>
 

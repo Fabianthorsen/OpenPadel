@@ -9,7 +9,6 @@
   import TennisMatch from '$lib/components/TennisMatch.svelte';
   import Leaderboard from '$lib/components/Leaderboard.svelte';
   import TennisResult from '$lib/components/TennisResult.svelte';
-  import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { toast } from 'svelte-sonner';
   import { _ } from 'svelte-i18n';
@@ -170,27 +169,21 @@
 <div class="flex flex-col w-full h-screen overflow-hidden">
   {#if !session}
     <main class="flex flex-1 items-center justify-center px-4">
-      <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
+      <p class="text-sm text-text-secondary">Loading…</p>
     </main>
   {:else if session.status === 'lobby'}
-    <PullToRefresh disabled={$sessionDialog.isOpen || !!$numpadStore} onRefresh={load}>
       <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} />
-    </PullToRefresh>
   {:else if session.status === 'active' && session.game_mode === 'tennis'}
-    <PullToRefresh disabled={$sessionDialog.isOpen || !!$numpadStore} onRefresh={load}>
       <TennisMatch {session} {isAdmin} onRefresh={load} />
-    </PullToRefresh>
   {:else if session.status === 'active' && currentRound}
-    <PullToRefresh disabled={$sessionDialog.isOpen || !!$numpadStore} onRefresh={load}>
       <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} />
-    </PullToRefresh>
   {:else if session.status === 'complete' && session.game_mode === 'tennis'}
     <TennisResult {session} />
   {:else if session.status === 'complete'}
     <Leaderboard sessionId={session.id} sessionName={session.name} complete />
   {:else}
     <main class="flex flex-1 items-center justify-center px-4">
-      <p class="text-sm text-[var(--text-secondary)]">Loading…</p>
+      <p class="text-sm text-text-secondary">Loading…</p>
     </main>
   {/if}
 </div>
@@ -222,14 +215,14 @@
   <div
     transition:fly={{ y: 500, duration: 300, opacity: 1 }}
     role="presentation"
-    class="fixed left-0 right-0 z-50 mx-auto max-w-[480px] rounded-t-3xl bg-[var(--surface)] px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl flex flex-col gap-3"
+    class="fixed left-0 right-0 z-50 mx-auto max-w-[480px] rounded-t-3xl bg-surface px-5 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl flex flex-col gap-3"
     ontouchstart={numpadTouchStart}
     ontouchend={numpadTouchEnd}
     onkeydown={numpadHandleKeydown}
     use:nonPassiveNumpadTouchMove
     style="bottom: 0; transform: translateY({numpadDragOffset}px); transition: {numpadDragging ? 'none' : 'transform 0.2s ease'};"
   >
-    <p class="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">
+    <p class="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-text-disabled">
       Target: {$numpadStore.targetPoints}
     </p>
     <p class="mb-6 text-center text-[64px] font-[800] leading-none tabular-nums transition-transform
@@ -240,12 +233,12 @@
       {#each ['1','2','3','4','5','6','7','8','9'] as d}
         <button
           onclick={() => $numpadStore.onDigit(d)}
-          class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95 select-none"
+          class="rounded-2xl bg-surface-raised py-4 text-xl font-[800] transition-all active:scale-95 select-none"
         >{d}</button>
       {/each}
-      <button onclick={$numpadStore.onDelete} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95 select-none">⌫</button>
-      <button onclick={() => $numpadStore.onDigit('0')} class="rounded-2xl bg-[var(--surface-raised)] py-4 text-xl font-[800] transition-all active:scale-95 select-none">0</button>
-      <button onclick={$numpadStore.onConfirm} class="rounded-2xl bg-[var(--primary)] py-4 text-xl font-[800] text-white transition-all active:scale-95 select-none">✓</button>
+      <button onclick={$numpadStore.onDelete} class="rounded-2xl bg-surface-raised py-4 text-xl font-[800] transition-all active:scale-95 select-none">⌫</button>
+      <button onclick={() => $numpadStore.onDigit('0')} class="rounded-2xl bg-surface-raised py-4 text-xl font-[800] transition-all active:scale-95 select-none">0</button>
+      <button onclick={$numpadStore.onConfirm} class="rounded-2xl bg-primary py-4 text-xl font-[800] text-white transition-all active:scale-95 select-none">✓</button>
     </div>
   </div>
 {/if}

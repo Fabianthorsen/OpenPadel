@@ -5,7 +5,6 @@
   import { _ } from 'svelte-i18n';
   import { initials } from '$lib/utils';
   import { ChevronDown, Check } from 'lucide-svelte';
-  import { fly } from 'svelte/transition';
   import { Calendar } from '$lib/components/ui/calendar';
   import { Input } from '$lib/components/ui/input';
   import { SectionLabel } from '$lib/components/ui/section-label';
@@ -13,6 +12,7 @@
   import { Separator } from '$lib/components/ui/separator';
   import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import * as Collapsible from '$lib/components/ui/collapsible';
+  import * as Drawer from '$lib/components/ui/drawer';
   import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
   import { onMount } from 'svelte';
 
@@ -107,83 +107,10 @@
     open = false;
   }
 
-  $effect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-      // Reset drag state when drawer opens
-      dragOffset = 0;
-      dragging = false;
-    } else {
-      document.body.style.overflow = '';
-      // Reset drag state when drawer closes
-      dragOffset = 0;
-      dragging = false;
-    }
-    return () => { document.body.style.overflow = ''; };
-  });
-
-  // Drag-down-to-close (mobile optimized)
-  let dragStartY = 0;
-  let dragVelocity = 0;
-  let dragLastY = 0;
-  let dragLastTime = 0;
-  let dragOffset = $state(0);
-  let dragging = $state(false);
-  let scrollableContent: HTMLElement | null = $state(null);
-
-  function onDragStart(e: TouchEvent) {
-    dragStartY = e.touches[0].clientY;
-    dragLastY = dragStartY;
-    dragLastTime = Date.now();
-    dragOffset = 0;
-    dragVelocity = 0;
-    dragging = true;
-  }
-
-  function onDragMove(e: TouchEvent) {
-    if (!dragging || !scrollableContent) return;
-    const now = Date.now();
-    const currentY = e.touches[0].clientY;
-    const delta = currentY - dragStartY;
-
-    // Only allow drag-to-close if scrolled to top or dragging downward significantly
-    const scrollTop = scrollableContent.scrollTop;
-    if (delta > 0 && (scrollTop === 0 || delta > 30)) {
-      if (delta > 0) e.preventDefault();
-      // Cap drag at the drawer element's own height
-      const drawerRect = (scrollableContent.parentElement as HTMLElement)?.getBoundingClientRect();
-      const maxDrag = drawerRect?.height ?? 400;
-      dragOffset = Math.min(maxDrag, delta);
-      // Calculate velocity for momentum detection
-      dragVelocity = (currentY - dragLastY) / Math.max(16, now - dragLastTime);
-      dragLastY = currentY;
-      dragLastTime = now;
-    }
-  }
-
-  function onDragEnd() {
-    dragging = false;
-    // Threshold: 80px OR velocity > 150px/s (fast flick)
-    const shouldClose = dragOffset > 80 || (dragVelocity > 150 && dragOffset > 20);
-    if (shouldClose) {
-      close();
-    } else {
-      dragOffset = 0;
-    }
-  }
-
-  // Non-passive touchmove to allow preventDefault on iOS
-  function nonPassiveTouchMove(node: HTMLElement) {
-    node.addEventListener('touchmove', onDragMove, { passive: false });
-    return { destroy() { node.removeEventListener('touchmove', onDragMove); } };
-  }
 
   async function create() {
     creating = true;
     error = '';
-    // Reset drag state immediately so drawer animates properly
-    dragOffset = 0;
-    dragging = false;
     try {
       let iso: string | undefined;
       if (scheduleEnabled && calendarDate) {
@@ -219,39 +146,14 @@
   ></button>
 
   <!-- Drawer -->
-  <div
-    transition:fly={{ y: 600, duration: 320, opacity: 1 }}
-    class="fixed bottom-0 left-1/2 z-50 flex w-full max-w-[480px] flex-col rounded-t-3xl bg-surface shadow-2xl"
-    style="height: 78vh; max-height: 78vh; transform: translateX(-50%) translateY({dragOffset}px); transition: {dragging ? 'none' : 'transform 0.3s ease'};"
-  >
-    <!-- Handle + header (drag target) -->
-    <div
-      role="presentation"
-      class="flex shrink-0 flex-col items-center px-6 pt-3 pb-4 touch-none"
-      ontouchstart={onDragStart}
-      ontouchend={onDragEnd}
-      use:nonPassiveTouchMove
-    >
-      <div class="mb-4 h-1 w-10 rounded-full bg-border-strong"></div>
-      <div class="flex w-full items-center justify-between">
+  <Drawer.Root bind:open>
+    <Drawer.Content class="flex flex-col max-h-[78vh]">
+      <Drawer.Header class="flex items-center justify-between">
         <h2 class="text-lg font-[800]">{$_('create_title_line1')} {$_('create_title_line2')}</h2>
-        <button
-          onclick={close}
-          class="hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary hover:bg-border transition-colors text-xl leading-none"
-        >×</button>
-        <div class="md:hidden w-8"></div>
-      </div>
-    </div>
+        <Drawer.Close class="hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary hover:bg-border transition-colors text-xl leading-none">×</Drawer.Close>
+      </Drawer.Header>
 
-    <!-- Scrollable content -->
-    <div
-      bind:this={scrollableContent}
-      role="presentation"
-      class="flex-1 overflow-y-auto px-6 pb-8 space-y-6"
-      ontouchstart={onDragStart}
-      ontouchend={onDragEnd}
-      use:nonPassiveTouchMove
-    >
+      <div class="flex-1 overflow-y-auto px-6 pb-8 space-y-6">
 
       <!-- Game mode -->
       <div class="space-y-2.5">
@@ -518,6 +420,7 @@
         {creating ? $_('create_button_loading') : $_('create_button')}
       </button>
 
-    </div>
-  </div>
+      </div>
+    </Drawer.Content>
+  </Drawer.Root>
 {/if}

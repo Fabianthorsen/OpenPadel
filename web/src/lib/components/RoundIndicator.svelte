@@ -19,15 +19,15 @@
 <div class="flex items-center justify-center gap-1.5">
   {#each items() as item}
     {#if item === 'dots'}
-      <span class="text-xs text-[var(--text-disabled)]">·</span>
+      <span class="text-xs text-text-disabled">·</span>
     {:else}
       <div
         class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors
           {item === current
-            ? 'bg-[var(--primary)] text-white'
+            ? 'bg-primary text-white'
             : item < current
-              ? 'bg-[var(--primary-muted)] text-[var(--primary)]'
-              : 'bg-[var(--surface-raised)] text-[var(--text-disabled)]'}"
+              ? 'bg-primary-muted text-primary'
+              : 'bg-surface-raised text-text-disabled'}"
       >
         {item}
       </div>
