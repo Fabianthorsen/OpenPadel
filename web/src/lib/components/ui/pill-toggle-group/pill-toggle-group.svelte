@@ -8,9 +8,11 @@
 		children,
 		...restProps
 	}: {
-		value?: string | $bindable();
+		value?: string;
 		class?: string;
 		children?: any;
+		onValueChange?: (value: string) => void;
+		[key: string]: any;
 	} = $props();
 </script>
 

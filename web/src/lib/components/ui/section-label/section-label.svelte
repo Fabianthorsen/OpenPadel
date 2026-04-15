@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { Label } from '$lib/components/ui/label';
-	import type { HTMLAttributes } from 'svelte/elements';
 
-	interface Props extends HTMLAttributes<HTMLLabelElement> {
+	interface Props {
+		class?: string;
 		children?: any;
+		[key: string]: any;
 	}
 
 	let { class: className = '', children, ...restProps }: Props = $props();

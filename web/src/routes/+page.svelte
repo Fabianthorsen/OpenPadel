@@ -7,7 +7,8 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { SectionLabel } from '$lib/components/ui/section-label';
-  import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
+  import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
+  import { Switch } from '$lib/components/ui/switch';
   import Footer from '$lib/components/Footer.svelte';
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import { _ } from 'svelte-i18n';
@@ -35,6 +36,22 @@
     const h = String(Math.floor(totalMins / 60)).padStart(2, '0');
     const m = String(totalMins % 60).padStart(2, '0');
     return `${h}:${m}`;
+  }
+
+  function calculateNextHourSlot(): number {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+
+    // Calculate next whole hour
+    const nextHour = currentMinutes > 0 ? currentHour + 1 : currentHour;
+
+    // Clamp to 8-21 range (08:00 to 21:30)
+    const clampedHour = Math.min(21, Math.max(8, nextHour));
+
+    // Convert hour to slot (slot 0 = 08:00, slot 27 = 21:30)
+    // slot = (hour * 60 - 8 * 60) / 30
+    return Math.round((clampedHour * 60 - 8 * 60) / 30);
   }
 
   const scheduleTime = $derived(slotToLabel(timeSlot));
@@ -236,66 +253,48 @@
       <!-- Game mode -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_game_mode_label')}</SectionLabel>
-        <ToggleGroup
-          type="single"
+        <PillToggleGroup
           value={gameMode}
           onValueChange={(val) => gameMode = val as 'americano' | 'tennis'}
-          class="flex gap-2"
         >
-          <ToggleGroupItem
-            value="americano"
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
-          >
+          <PillToggleItem value="americano">
             Americano
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="tennis"
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
-          >
+          </PillToggleItem>
+          <PillToggleItem value="tennis">
             {$_('create_mode_tennis')}
-          </ToggleGroupItem>
-        </ToggleGroup>
+          </PillToggleItem>
+        </PillToggleGroup>
       </div>
 
       {#if gameMode === 'americano'}
       <!-- Courts -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_courts_label')}</SectionLabel>
-        <ToggleGroup
-          type="single"
+        <PillToggleGroup
           value={courts.toString()}
           onValueChange={(val) => courts = parseInt(val)}
-          class="flex gap-2"
         >
           {#each [1, 2, 3, 4] as n}
-            <ToggleGroupItem
-              value={n.toString()}
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
-            >
+            <PillToggleItem value={n.toString()}>
               {n}
-            </ToggleGroupItem>
+            </PillToggleItem>
           {/each}
-        </ToggleGroup>
+        </PillToggleGroup>
       </div>
 
       <!-- Points -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_points_label')}</SectionLabel>
-        <ToggleGroup
-          type="single"
+        <PillToggleGroup
           value={points.toString()}
           onValueChange={(val) => points = parseInt(val)}
-          class="flex gap-2"
         >
           {#each [16, 24, 32] as p}
-            <ToggleGroupItem
-              value={p.toString()}
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
-            >
+            <PillToggleItem value={p.toString()}>
               {p}
-            </ToggleGroupItem>
+            </PillToggleItem>
           {/each}
-        </ToggleGroup>
+        </PillToggleGroup>
         <p class="text-xs text-text-secondary">
           {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
         </p>
@@ -304,49 +303,33 @@
       <!-- Sets to win (tennis) -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_sets_label')}</SectionLabel>
-        <ToggleGroup
-          type="single"
+        <PillToggleGroup
           value={setsToWin.toString()}
           onValueChange={(val) => setsToWin = parseInt(val)}
-          class="flex gap-2"
         >
-          <ToggleGroupItem
-            value="2"
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
-          >
+          <PillToggleItem value="2">
             {$_('create_sets_bo3')}
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="3"
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
-          >
+          </PillToggleItem>
+          <PillToggleItem value="3">
             {$_('create_sets_bo5')}
-          </ToggleGroupItem>
-        </ToggleGroup>
+          </PillToggleItem>
+        </PillToggleGroup>
       </div>
 
       <!-- Games per set (tennis) -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_games_per_set_label')}</SectionLabel>
-        <ToggleGroup
-          type="single"
+        <PillToggleGroup
           value={gamesPerSet.toString()}
           onValueChange={(val) => gamesPerSet = parseInt(val)}
-          class="flex gap-2"
         >
-          <ToggleGroupItem
-            value="4"
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
-          >
+          <PillToggleItem value="4">
             {$_('create_games_per_set_4')}
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="6"
-            class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white hover:bg-border"
-          >
+          </PillToggleItem>
+          <PillToggleItem value="6">
             {$_('create_games_per_set_6')}
-          </ToggleGroupItem>
-        </ToggleGroup>
+          </PillToggleItem>
+        </PillToggleGroup>
       </div>
       {/if}
 
@@ -365,14 +348,19 @@
       <div class="space-y-2.5">
         <div class="flex items-center justify-between">
           <SectionLabel>{$_('create_schedule_label')}</SectionLabel>
-          <button
-            type="button"
-            onclick={() => { scheduleEnabled = !scheduleEnabled; if (!scheduleEnabled) { calendarDate = undefined; timeSlot = 20; } }}
-            aria-label={$_('create_schedule_label')}
-            class="relative h-6 w-11 rounded-full transition-colors {scheduleEnabled ? 'bg-primary' : 'bg-border'}"
-          >
-            <span class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform {scheduleEnabled ? 'translate-x-5' : 'translate-x-0'}"></span>
-          </button>
+          <Switch
+            checked={scheduleEnabled}
+            onCheckedChange={(checked) => {
+              scheduleEnabled = checked;
+              if (!checked) {
+                calendarDate = undefined;
+                timeSlot = 20;
+              } else {
+                calendarDate = today(getLocalTimeZone());
+                timeSlot = calculateNextHourSlot();
+              }
+            }}
+          />
         </div>
         {#if scheduleEnabled}
           <div class="rounded-2xl bg-surface-raised overflow-hidden">

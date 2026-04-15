@@ -10,7 +10,7 @@
   import { SectionLabel } from '$lib/components/ui/section-label';
   import { Switch } from '$lib/components/ui/switch';
   import { Separator } from '$lib/components/ui/separator';
-  import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
+  import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import * as Drawer from '$lib/components/ui/drawer';
   import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
@@ -137,20 +137,13 @@
   }
 </script>
 
-{#if open}
-  <!-- Backdrop -->
-  <button
-    class="fixed inset-0 z-40 bg-black/40"
-    onclick={close}
-    aria-label="Close"
-  ></button>
-
-  <!-- Drawer -->
-  <Drawer.Root bind:open>
-    <Drawer.Content class="flex flex-col max-h-[78vh]">
-      <Drawer.Header class="flex items-center justify-between">
-        <h2 class="text-lg font-[800]">{$_('create_title_line1')} {$_('create_title_line2')}</h2>
-        <Drawer.Close class="hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary hover:bg-border transition-colors text-xl leading-none">×</Drawer.Close>
+<Drawer.Root bind:open>
+    <Drawer.Content class="flex flex-col">
+      <Drawer.Header>
+        <div class="flex items-center justify-between w-full">
+          <h2 class="text-lg font-[800]">{$_('create_title_line1')} {$_('create_title_line2')}</h2>
+          <Drawer.Close class="hidden md:flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-text-secondary hover:bg-border transition-colors text-xl leading-none">×</Drawer.Close>
+        </div>
       </Drawer.Header>
 
       <div class="flex-1 overflow-y-auto px-6 pb-8 space-y-6">
@@ -158,11 +151,11 @@
       <!-- Game mode -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_game_mode_label')}</SectionLabel>
-        <ToggleGroup type="single" bind:value={gameMode} class="flex gap-2">
-          <ToggleGroupItem value="americano" class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white">Americano</ToggleGroupItem>
-          <ToggleGroupItem value="mexicano" class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white">Mexicano</ToggleGroupItem>
-          <ToggleGroupItem value="tennis" class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white">{$_('create_mode_tennis')}</ToggleGroupItem>
-        </ToggleGroup>
+        <PillToggleGroup bind:value={gameMode}>
+          <PillToggleItem value="americano">Americano</PillToggleItem>
+          <PillToggleItem value="mexicano">Mexicano</PillToggleItem>
+          <PillToggleItem value="tennis">{$_('create_mode_tennis')}</PillToggleItem>
+        </PillToggleGroup>
         {#if gameMode === 'mexicano'}
           <p class="text-xs text-text-secondary">{$_('create_mexicano_hint')}</p>
         {/if}
@@ -173,19 +166,16 @@
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_duration_label')}</SectionLabel>
           <!-- Rounds row -->
-          <ToggleGroup
-            type="single"
+          <PillToggleGroup
             value={mexicanoRounds?.toString() ?? ''}
             onValueChange={(val) => val && pickRounds(parseInt(val))}
-            class="flex gap-2"
           >
             {#each [4, 6, 8, 10] as n}
-              <ToggleGroupItem
-                value={n.toString()}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
-              >{n} {$_('create_duration_rounds')}</ToggleGroupItem>
+              <PillToggleItem value={n.toString()}>
+                {n} {$_('create_duration_rounds')}
+              </PillToggleItem>
             {/each}
-          </ToggleGroup>
+          </PillToggleGroup>
           <!-- Divider -->
           <div class="flex items-center gap-3">
             <Separator class="flex-1" />
@@ -193,8 +183,7 @@
             <Separator class="flex-1" />
           </div>
           <!-- Time row -->
-          <ToggleGroup
-            type="single"
+          <PillToggleGroup
             value={!customTimeMode && courtDuration ? courtDuration.toString() : customTimeMode ? 'custom' : ''}
             onValueChange={(val) => {
               if (val === 'custom') {
@@ -203,13 +192,11 @@
                 pickTime(parseInt(val));
               }
             }}
-            class="flex gap-2"
           >
             {#each [60, 90, 120] as min}
-              <ToggleGroupItem
-                value={min.toString()}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
-              >{min}m</ToggleGroupItem>
+              <PillToggleItem value={min.toString()}>
+                {min}m
+              </PillToggleItem>
             {/each}
             {#if customTimeMode}
               <div class="flex flex-1 items-center justify-center gap-0.5 rounded-full bg-primary px-2 py-2.5 text-sm font-semibold text-white">
@@ -225,12 +212,11 @@
                 <span>m</span>
               </div>
             {:else}
-              <ToggleGroupItem
-                value="custom"
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
-              >{$_('create_duration_custom')}</ToggleGroupItem>
+              <PillToggleItem value="custom">
+                {$_('create_duration_custom')}
+              </PillToggleItem>
             {/if}
-          </ToggleGroup>
+          </PillToggleGroup>
           <p class="text-xs text-text-secondary">
             {#if mexicanoRounds}
               {$_('create_mexicano_rounds_hint_fixed', { values: { n: mexicanoRounds } })}
@@ -247,19 +233,16 @@
         <!-- Courts -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_courts_label')}</SectionLabel>
-          <ToggleGroup
-            type="single"
+          <PillToggleGroup
             value={courts.toString()}
             onValueChange={(val) => courts = parseInt(val)}
-            class="flex gap-2"
           >
             {#each (gameMode === 'mexicano' ? [2, 3, 4] : [1, 2, 3, 4]) as n}
-              <ToggleGroupItem
-                value={n.toString()}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
-              >{n}</ToggleGroupItem>
+              <PillToggleItem value={n.toString()}>
+                {n}
+              </PillToggleItem>
             {/each}
-          </ToggleGroup>
+          </PillToggleGroup>
           {#if gameMode === 'mexicano'}
             <p class="text-xs text-text-secondary">{$_('create_mexicano_courts_hint', { values: { n: courts * 4 } })}</p>
           {/if}
@@ -268,19 +251,16 @@
         <!-- Points -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_points_label')}</SectionLabel>
-          <ToggleGroup
-            type="single"
+          <PillToggleGroup
             value={points.toString()}
             onValueChange={(val) => points = parseInt(val)}
-            class="flex gap-2"
           >
             {#each [16, 24, 32] as p}
-              <ToggleGroupItem
-                value={p.toString()}
-                class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
-              >{p}</ToggleGroupItem>
+              <PillToggleItem value={p.toString()}>
+                {p}
+              </PillToggleItem>
             {/each}
-          </ToggleGroup>
+          </PillToggleGroup>
           <p class="text-xs text-text-secondary">
             {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
           </p>
@@ -289,41 +269,33 @@
         <!-- Sets to win -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_sets_label')}</SectionLabel>
-          <ToggleGroup
-            type="single"
+          <PillToggleGroup
             value={setsToWin.toString()}
             onValueChange={(val) => setsToWin = parseInt(val)}
-            class="flex gap-2"
           >
-            <ToggleGroupItem
-              value="2"
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
-            >{$_('create_sets_bo3')}</ToggleGroupItem>
-            <ToggleGroupItem
-              value="3"
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
-            >{$_('create_sets_bo5')}</ToggleGroupItem>
-          </ToggleGroup>
+            <PillToggleItem value="2">
+              {$_('create_sets_bo3')}
+            </PillToggleItem>
+            <PillToggleItem value="3">
+              {$_('create_sets_bo5')}
+            </PillToggleItem>
+          </PillToggleGroup>
         </div>
 
         <!-- Games per set -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_games_per_set_label')}</SectionLabel>
-          <ToggleGroup
-            type="single"
+          <PillToggleGroup
             value={gamesPerSet.toString()}
             onValueChange={(val) => gamesPerSet = parseInt(val)}
-            class="flex gap-2"
           >
-            <ToggleGroupItem
-              value="4"
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
-            >{$_('create_games_per_set_4')}</ToggleGroupItem>
-            <ToggleGroupItem
-              value="6"
-              class="flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors bg-surface-raised text-text-primary data-[state=on]:bg-primary data-[state=on]:text-white"
-            >{$_('create_games_per_set_6')}</ToggleGroupItem>
-          </ToggleGroup>
+            <PillToggleItem value="4">
+              {$_('create_games_per_set_4')}
+            </PillToggleItem>
+            <PillToggleItem value="6">
+              {$_('create_games_per_set_6')}
+            </PillToggleItem>
+          </PillToggleGroup>
         </div>
       {/if}
 
@@ -423,4 +395,3 @@
       </div>
     </Drawer.Content>
   </Drawer.Root>
-{/if}

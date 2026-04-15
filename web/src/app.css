@@ -73,8 +73,8 @@
 
 html {
   touch-action: pan-x pan-y;
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 body {
@@ -120,4 +120,19 @@ input, textarea, [contenteditable] {
     letter-spacing: -0.02em;
     line-height: 1.1;
   }
+}
+
+/* Safe-area-aware top padding: clears notch/island + 1rem breathing room */
+@utility pt-safe-page {
+  padding-top: max(3.5rem, calc(env(safe-area-inset-top, 0px) + 1rem));
+}
+
+/* Safe-area-aware bottom padding: clears home indicator + 1rem breathing room */
+@utility pb-safe-page {
+  padding-bottom: max(2.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+}
+
+/* Full screen height including bottom safe area (iPhone home indicator / curves) */
+@utility h-screen-safe {
+  height: calc(100dvh - env(safe-area-inset-bottom, 0px));
 }
