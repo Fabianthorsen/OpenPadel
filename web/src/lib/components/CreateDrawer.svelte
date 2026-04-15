@@ -5,13 +5,14 @@
   import { _ } from 'svelte-i18n';
   import { initials } from '$lib/utils';
   import { ChevronDown, Check } from 'lucide-svelte';
-  import { fly, slide } from 'svelte/transition';
+  import { fly } from 'svelte/transition';
   import { Calendar } from '$lib/components/ui/calendar';
   import { Input } from '$lib/components/ui/input';
   import { SectionLabel } from '$lib/components/ui/section-label';
   import { Switch } from '$lib/components/ui/switch';
   import { Separator } from '$lib/components/ui/separator';
   import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
+  import * as Collapsible from '$lib/components/ui/collapsible';
   import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
   import { onMount } from 'svelte';
 
@@ -472,22 +473,18 @@
 
       <!-- Contacts picker -->
       {#if contacts.length > 0}
-        <div class="space-y-2.5">
-          <button
-            onclick={() => showContacts = !showContacts}
-            class="flex w-full items-center justify-between"
-          >
+        <Collapsible.Root bind:open={showContacts} class="space-y-2.5">
+          <Collapsible.Trigger class="flex w-full items-center justify-between">
             <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-secondary">
               {$_('create_contacts_invite_label')}
               {#if selectedContacts.size > 0}
                 <span class="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-white">{selectedContacts.size}</span>
               {/if}
             </p>
-            <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showContacts ? 'rotate-180' : ''}" />
-          </button>
+            <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180" />
+          </Collapsible.Trigger>
 
-          {#if showContacts}
-            <div transition:slide={{ duration: 200 }} class="space-y-1.5">
+          <Collapsible.Content class="space-y-1.5">
               {#each contacts as contact}
                 {@const selected = selectedContacts.has(contact.user_id)}
                 <button
@@ -505,9 +502,8 @@
                   {/if}
                 </button>
               {/each}
-            </div>
-          {/if}
-        </div>
+          </Collapsible.Content>
+        </Collapsible.Root>
       {/if}
 
 {#if error}

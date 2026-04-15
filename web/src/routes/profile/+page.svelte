@@ -12,6 +12,7 @@
   import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
+  import * as Collapsible from '$lib/components/ui/collapsible';
   import { fade } from 'svelte/transition';
   import { toast } from 'svelte-sonner';
   import { translateApiError } from '$lib/i18n/errors';
@@ -379,17 +380,13 @@
   {:else}
 
     <!-- Preferences -->
-    <div class="space-y-3">
-      <button
-        onclick={() => showPreferences = !showPreferences}
-        class="flex w-full items-center justify-between"
-      >
+    <Collapsible.Root bind:open={showPreferences} class="space-y-3">
+      <Collapsible.Trigger class="flex w-full items-center justify-between">
         <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('pref_section')}</p>
-        <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showPreferences ? 'rotate-180' : ''}" />
-      </button>
+        <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180" />
+      </Collapsible.Trigger>
 
-      {#if showPreferences}
-        <div transition:fade={{ duration: 150 }} class="space-y-2">
+      <Collapsible.Content class="space-y-2">
           {#if pushSupported}
             <div class="flex items-center gap-4 rounded-2xl bg-surface-raised px-4 py-3.5">
               <div class="flex-1">
@@ -439,24 +436,19 @@
               </div>
             </div>
           {/if}
-        </div>
-      {/if}
-    </div>
+      </Collapsible.Content>
+    </Collapsible.Root>
 
     {#if stats}
 
       <!-- Americano stats -->
-      <div class="space-y-3">
-        <button
-          onclick={() => showStats = !showStats}
-          class="flex w-full items-center justify-between"
-        >
+      <Collapsible.Root bind:open={showStats} class="space-y-3">
+        <Collapsible.Trigger class="flex w-full items-center justify-between">
           <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">Americano</p>
-          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showStats ? 'rotate-180' : ''}" />
-        </button>
+          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180" />
+        </Collapsible.Trigger>
 
-        {#if showStats}
-          <div transition:fade={{ duration: 150 }} class="grid grid-cols-2 gap-3">
+        <Collapsible.Content class="grid grid-cols-2 gap-3">
             <div class="rounded-2xl bg-surface-raised px-5 py-5 flex flex-col items-center gap-1.5">
               <p class="text-3xl font-[800] leading-none">{stats.tournaments}</p>
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('profile_tournaments')}</p>
@@ -479,9 +471,8 @@
               </div>
               <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('leaderboard_wl')}</p>
             </div>
-          </div>
-        {/if}
-      </div>
+        </Collapsible.Content>
+      </Collapsible.Root>
 
       <!-- Tennis (2v2) stats -->
       {#if tennisStats}
@@ -503,17 +494,13 @@
       {/if}
 
       <!-- Contacts -->
-      <div class="space-y-3">
-        <button
-          onclick={() => showContacts = !showContacts}
-          class="flex w-full items-center justify-between"
-        >
+      <Collapsible.Root bind:open={showContacts} class="space-y-3">
+        <Collapsible.Trigger class="flex w-full items-center justify-between">
           <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('profile_contacts_title')}</p>
-          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showContacts ? 'rotate-180' : ''}" />
-        </button>
+          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180" />
+        </Collapsible.Trigger>
 
-        {#if showContacts}
-          <div transition:fade={{ duration: 150 }} class="space-y-3">
+        <Collapsible.Content class="space-y-3">
             <!-- Search -->
             <div class="relative">
               <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
@@ -583,9 +570,8 @@
                 </div>
               </div>
             {/if}
-          </div>
-        {/if}
-      </div>
+        </Collapsible.Content>
+      </Collapsible.Root>
 
       <!-- Delete contact confirmation -->
       <ConfirmDialog
@@ -600,17 +586,13 @@
       />
 
       <!-- Upcoming -->
-      <div class="space-y-3">
-        <button
-          onclick={() => showUpcoming = !showUpcoming}
-          class="flex w-full items-center justify-between"
-        >
+      <Collapsible.Root bind:open={showUpcoming} class="space-y-3">
+        <Collapsible.Trigger class="flex w-full items-center justify-between">
           <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('profile_upcoming_label')}</p>
-          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showUpcoming ? 'rotate-180' : ''}" />
-        </button>
+          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180" />
+        </Collapsible.Trigger>
 
-        {#if showUpcoming}
-          <div transition:fade={{ duration: 150 }} class="space-y-2">
+        <Collapsible.Content class="space-y-2">
             {#if upcoming.length === 0}
               <p class="text-sm text-text-disabled py-1">{$_('profile_upcoming_empty')}</p>
             {:else}
@@ -632,22 +614,17 @@
                 </a>
               {/each}
             {/if}
-          </div>
-        {/if}
-      </div>
+        </Collapsible.Content>
+      </Collapsible.Root>
 
       <!-- Tournament history -->
-      <div class="space-y-3">
-        <button
-          onclick={() => showHistory = !showHistory}
-          class="flex w-full items-center justify-between"
-        >
+      <Collapsible.Root bind:open={showHistory} class="space-y-3">
+        <Collapsible.Trigger class="flex w-full items-center justify-between">
           <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('profile_history_label')}</p>
-          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 {showHistory ? 'rotate-180' : ''}" />
-        </button>
+          <ChevronDown size={14} class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180" />
+        </Collapsible.Trigger>
 
-        {#if showHistory}
-          <div transition:fade={{ duration: 150 }} class="space-y-2">
+        <Collapsible.Content class="space-y-2">
             {#if tournaments.length === 0}
               <p class="text-sm text-text-disabled py-2">{$_('profile_history_empty')}</p>
             {:else}
@@ -670,9 +647,8 @@
                 </a>
               {/each}
             {/if}
-          </div>
-        {/if}
-      </div>
+        </Collapsible.Content>
+      </Collapsible.Root>
 
     {/if}
 
