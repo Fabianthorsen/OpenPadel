@@ -6,6 +6,9 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import Avatar from '$lib/components/ui/Avatar.svelte';
+  import { SectionLabel } from '$lib/components/ui/section-label';
+  import * as Dialog from '$lib/components/ui/dialog';
+  import * as Card from '$lib/components/ui/card';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { _ } from 'svelte-i18n';
   import { auth } from '$lib/auth.svelte';
@@ -298,29 +301,31 @@
 
 {#if cancelling}
   <main class="flex min-h-svh flex-col items-center justify-center gap-3 px-6">
-    <div class="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--primary)]"></div>
-    <p class="text-sm text-[var(--text-secondary)]">{$_('lobby_cancelling')}</p>
+    <div class="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary"></div>
+    <p class="text-sm text-text-secondary">{$_('lobby_cancelling')}</p>
   </main>
 
 <!-- ── Join / invite screen (visitor hasn't joined yet) ── -->
 {:else if !isAdmin && !alreadyJoined && isTennis && activePlayers.length >= 4}
   <main class="flex min-h-svh flex-col items-center justify-center px-6 gap-4">
-    <div class="w-full max-w-sm rounded-2xl bg-[var(--surface-raised)] px-5 py-6 text-center space-y-2">
-      <p class="text-lg font-[800]">{sessionName(session)}</p>
-      <p class="text-sm text-[var(--text-secondary)]">{$_('tennis_session_full')}</p>
-    </div>
-    <a href="/" class="text-sm text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">← {$_('auth_back_home')}</a>
+    <Card.Root class="w-full max-w-sm">
+      <Card.Content class="pt-6 text-center space-y-2">
+        <p class="text-lg font-[800]">{sessionName(session)}</p>
+        <p class="text-sm text-text-secondary">{$_('tennis_session_full')}</p>
+      </Card.Content>
+    </Card.Root>
+    <a href="/" class="text-sm text-text-disabled hover:text-text-secondary">← {$_('auth_back_home')}</a>
   </main>
 {:else if !isAdmin && !alreadyJoined}
   <main class="flex min-h-svh flex-col items-center px-6 pb-12 pt-safe-page">
     <div class="flex w-full max-w-sm justify-end">
-      <a href="/" class="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-secondary)]" aria-label="Back">×</a>
+      <a href="/" class="flex h-7 w-7 items-center justify-center rounded-full text-text-disabled transition-colors hover:bg-surface-raised hover:text-text-secondary" aria-label="Back">×</a>
     </div>
     <div class="flex w-full max-w-sm flex-1 flex-col justify-center space-y-8">
 
       <!-- Brand + session info -->
       <div class="space-y-1">
-        <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--primary)]">OpenPadel</p>
+        <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-primary">OpenPadel</p>
         <div class="flex items-start gap-2">
           <h1 class="text-[28px] font-[800] leading-tight">
             {#if creatorName}
@@ -332,15 +337,15 @@
           <button
             onclick={() => (showRules = true)}
             aria-label={$_('lobby_rules_button')}
-            class="mt-1.5 shrink-0 text-[var(--text-disabled)] hover:text-[var(--text-secondary)] transition-colors"
+            class="mt-1.5 shrink-0 text-text-disabled hover:text-text-secondary transition-colors"
           >
             <Info size={18} />
           </button>
         </div>
         {#if session.name}
-          <p class="text-[var(--text-secondary)]">{session.name}</p>
+          <p class="text-text-secondary">{session.name}</p>
         {/if}
-        <p class="text-sm text-[var(--text-secondary)]">
+        <p class="text-sm text-text-secondary">
           {#if isTennis}
             {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
           {:else}
@@ -352,18 +357,18 @@
       <div class="space-y-4">
         {#if auth.user}
           <!-- Logged in: show account card + join -->
-          <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3.5 flex items-center gap-3">
-            <Avatar icon={auth.user.avatar_icon} color={auth.user.avatar_color} name={auth.user.display_name} ring="ring-2 ring-[var(--primary)]/30" />
+          <div class="rounded-2xl bg-surface-raised px-4 py-3.5 flex items-center gap-3">
+            <Avatar icon={auth.user.avatar_icon} color={auth.user.avatar_color} name={auth.user.display_name} ring="ring-2 ring-primary/30" />
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold truncate">{auth.user.display_name}</p>
-              <p class="text-xs text-[var(--text-secondary)] truncate">{auth.user.email}</p>
+              <p class="text-xs text-text-secondary truncate">{auth.user.email}</p>
             </div>
           </div>
 
           <Button
             onclick={join}
             disabled={joining || !joinName.trim()}
-            class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+            class="h-auto w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-semibold text-white hover:bg-primary-hover"
           >
             {joining ? $_('invite_joining') : $_('invite_join_button')}
           </Button>
@@ -371,19 +376,19 @@
           <!-- Not logged in: account options first, guest below -->
           <a
             href="/auth?redirect=/s/{session.id}"
-            class="flex h-auto w-full items-center justify-center rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+            class="flex h-auto w-full items-center justify-center rounded-2xl bg-primary px-4 py-4 text-[15px] font-semibold text-white hover:bg-primary-hover"
           >
             {$_('invite_sign_in')}
           </a>
-          <p class="text-center text-sm text-[var(--text-secondary)]">
+          <p class="text-center text-sm text-text-secondary">
             {$_('invite_no_account')}
-            <a href="/auth?register=1&redirect=/s/{session.id}" class="font-semibold text-[var(--primary)]">{$_('invite_create_account')}</a>
+            <a href="/auth?register=1&redirect=/s/{session.id}" class="font-semibold text-primary">{$_('invite_create_account')}</a>
           </p>
 
           <div class="flex items-center gap-3">
-            <div class="h-px flex-1 bg-[var(--border)]"></div>
-            <span class="text-xs text-[var(--text-disabled)]">{$_('invite_or_guest')}</span>
-            <div class="h-px flex-1 bg-[var(--border)]"></div>
+            <div class="h-px flex-1 bg-border"></div>
+            <span class="text-xs text-text-disabled">{$_('invite_or_guest')}</span>
+            <div class="h-px flex-1 bg-border"></div>
           </div>
 
           <!-- Guest fallback -->
@@ -392,12 +397,12 @@
               bind:value={joinName}
               placeholder={$_('invite_name_placeholder')}
               maxlength={32}
-              class="flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3 text-sm"
+              class="flex-1 rounded-2xl border-0 bg-surface-raised px-4 py-3 text-sm"
             />
             <Button
               type="submit"
               disabled={joining || !joinName.trim()}
-              class="h-auto rounded-2xl bg-[var(--surface-raised)] px-4 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] shadow-none"
+              class="h-auto rounded-2xl bg-surface-raised px-4 text-sm font-semibold text-text-secondary hover:text-text-primary shadow-none"
             >
               {joining ? '…' : $_('invite_guest_join')}
             </Button>
@@ -415,17 +420,17 @@
   <main class="mx-auto max-w-[480px] px-6 pb-6 pt-safe-page space-y-6">
     <nav class="flex items-center justify-between">
       <div class="space-y-0.5">
-        <p class="text-xs text-[var(--text-secondary)]">
+        <p class="text-xs text-text-secondary">
           {#if session.scheduled_at}
             {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
           {:else}
             {$_('lobby_waiting')}
           {/if}
         </p>
-        <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
+        <p class="text-sm font-semibold text-primary">{sessionName(session)}</p>
       </div>
       <div class="flex items-center gap-2">
-        <div class="text-right text-xs text-[var(--text-secondary)]">
+        <div class="text-right text-xs text-text-secondary">
           {#if isTennis}
             {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}
           {:else}
@@ -435,14 +440,14 @@
         <button
           onclick={() => (showRules = true)}
           aria-label={$_('lobby_rules_button')}
-          class="text-[var(--text-disabled)] hover:text-[var(--text-secondary)] transition-colors"
+          class="text-text-disabled hover:text-text-secondary transition-colors"
         >
           <Info size={16} />
         </button>
         {#if isAdmin || alreadyJoined}
           <a
             href="/"
-            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-secondary)]"
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-text-disabled transition-colors hover:bg-surface-raised hover:text-text-secondary"
             aria-label="Back to home"
           >×</a>
         {/if}
@@ -450,21 +455,21 @@
     </nav>
 
     <!-- Join code + share -->
-    <div class="rounded-2xl bg-[var(--surface-raised)] px-5 py-4 space-y-3">
-      <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('lobby_join_code')}</p>
+    <div class="rounded-2xl bg-surface-raised px-5 py-4 space-y-3">
+      <SectionLabel>{$_('lobby_join_code')}</SectionLabel>
       <div class="flex gap-2">
         {#each session.id.split('') as char}
-          <div class="flex flex-1 items-center justify-center rounded-xl bg-[var(--surface)] py-3 text-2xl font-[700] text-[var(--text-primary)] font-mono">
+          <div class="flex flex-1 items-center justify-center rounded-xl bg-surface py-3 text-2xl font-[700] text-text-primary font-mono">
             {char}
           </div>
         {/each}
       </div>
-      <div class="flex items-center gap-2 rounded-xl bg-[var(--surface)] px-3 py-2.5">
-        <span class="flex-1 truncate text-xs text-[var(--text-secondary)]">{joinUrl}</span>
+      <div class="flex items-center gap-2 rounded-xl bg-surface px-3 py-2.5">
+        <span class="flex-1 truncate text-xs text-text-secondary">{joinUrl}</span>
         <Button
           onclick={copyLink}
           variant="ghost"
-          class="h-auto shrink-0 p-1.5 text-[var(--primary)] hover:bg-transparent hover:text-[var(--primary-hover)]"
+          class="h-auto shrink-0 p-1.5 text-primary hover:bg-transparent hover:text-primary-hover"
         >
           {#if copied}
             <Check size={16} />
@@ -478,28 +483,28 @@
     <!-- Admin: invite or add guest -->
     {#if isAdmin && !(isTennis && activePlayers.length >= 4)}
       <div class="space-y-2">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('lobby_add_player_label')}</p>
+        <SectionLabel>{$_('lobby_add_player_label')}</SectionLabel>
         <div class="relative">
           <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
-            <Search size={15} class="text-[var(--text-disabled)]" />
+            <Search size={15} class="text-text-disabled" />
           </div>
           <Input
             bind:value={playerSearch}
             oninput={onPlayerSearchInput}
             placeholder={$_('lobby_add_player_placeholder')}
             maxlength={32}
-            class="w-full rounded-2xl border-0 bg-[var(--surface-raised)] py-3 pl-9 pr-4 text-sm"
+            class="w-full rounded-2xl border-0 bg-surface-raised py-3 pl-9 pr-4 text-sm"
           />
         </div>
         {#if playerResults.length > 0}
           <div class="space-y-1.5">
             {#each playerResults as result}
-              <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-                <Avatar icon={result.avatar_icon} color={result.avatar_color} name={result.display_name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
+              <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3">
+                <Avatar icon={result.avatar_icon} color={result.avatar_color} name={result.display_name} size="sm" ring="ring-2 ring-primary/30" />
                 <p class="flex-1 text-sm font-semibold truncate">{result.display_name}</p>
                 <button
                   onclick={() => inviteUser(result.id)}
-                  class="flex items-center gap-1 rounded-full bg-[var(--primary)] px-3 py-1.5 text-xs font-semibold text-white"
+                  class="flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white"
                 >
                   <UserPlus size={12} /> Invite
                 </button>
@@ -511,7 +516,7 @@
           <button
             onclick={() => addGuest(playerSearch.trim())}
             disabled={joining}
-            class="flex w-full items-center gap-3 rounded-2xl border border-dashed border-[var(--border)] px-4 py-3 text-sm text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-50"
+            class="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border px-4 py-3 text-sm text-text-secondary transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
           >
             <UserPlus size={15} class="shrink-0" />
             Add "{playerSearch.trim()}" as guest
@@ -522,28 +527,28 @@
 
     <!-- Player list -->
     <div class="space-y-2">
-      <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
+      <SectionLabel>
         {$_('lobby_players_label')} ({activePlayers.length})
-      </p>
+      </SectionLabel>
       {#if activePlayers.length === 0 && sessionInvites.length === 0}
-        <p class="text-sm text-[var(--text-disabled)]">{$_('lobby_waiting_players')}</p>
+        <p class="text-sm text-text-disabled">{$_('lobby_waiting_players')}</p>
       {:else}
-        <div class="rounded-2xl bg-[var(--surface-raised)] divide-y divide-[var(--border)]">
+        <div class="rounded-2xl bg-surface-raised divide-y divide-border">
           {#each activePlayers as player (player.id)}
             <div class="flex items-center gap-3 px-4 py-3">
-              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
+              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-primary/30" />
               <span class="text-sm font-medium">{player.name}</span>
               <div class="ml-auto flex items-center gap-1.5">
                 {#if player.id === session.creator_player_id}
-                  <Crown size={13} class="text-[var(--primary)]" />
+                  <Crown size={13} class="text-primary" />
                 {/if}
                 {#if player.id === myPlayerId}
-                  <span class="text-xs text-[var(--text-disabled)]">{$_('lobby_you')}</span>
+                  <span class="text-xs text-text-disabled">{$_('lobby_you')}</span>
                 {/if}
                 {#if isAdmin && player.id !== session.creator_player_id && player.id !== myPlayerId}
                   <button
                     onclick={() => removePlayer(player.id)}
-                    class="ml-1 flex h-5 w-5 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--destructive)]/10 hover:text-[var(--destructive)]"
+                    class="ml-1 flex h-5 w-5 items-center justify-center rounded-full text-text-disabled transition-colors hover:bg-destructive/10 hover:text-destructive"
                     aria-label="Remove player"
                   >
                     ×
@@ -554,9 +559,9 @@
           {/each}
           {#each pendingInvites as invite (invite.id)}
             <div class="flex items-center gap-3 px-4 py-3 opacity-60">
-              <Avatar name={invite.to_display_name ?? '?'} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
-              <span class="flex-1 text-sm font-medium text-[var(--text-secondary)] truncate">{invite.to_display_name}</span>
-              <div class="ml-auto flex items-center gap-1 text-[var(--text-disabled)]">
+              <Avatar name={invite.to_display_name ?? '?'} size="sm" ring="ring-2 ring-primary/30" />
+              <span class="flex-1 text-sm font-medium text-text-secondary truncate">{invite.to_display_name}</span>
+              <div class="ml-auto flex items-center gap-1 text-text-disabled">
                 <Clock size={11} />
                 <span class="text-xs">Invited</span>
               </div>
@@ -570,7 +575,7 @@
     {#if isTennis && isAdmin && activePlayers.length >= 4}
       <!-- Touch ghost element -->
       {#if touchGhost}
-        <div class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 rounded-full bg-[var(--primary)] px-3 py-1.5 text-sm font-semibold text-white shadow-lg opacity-90"
+        <div class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-lg opacity-90"
           style="left:{touchGhost.x}px;top:{touchGhost.y}px">
           <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">{initials(touchGhost.name)}</div>
           <span>{touchGhost.name}</span>
@@ -578,12 +583,12 @@
       {/if}
 
       <div class="space-y-3" use:nonPassiveTouchMove ontouchend={onTouchEnd} role="group" aria-label="Team assignment">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('tennis_assign_teams')}</p>
+        <SectionLabel>{$_('tennis_assign_teams')}</SectionLabel>
 
         <!-- Unassigned pool -->
         <div
           bind:this={zonePoolEl}
-          class="min-h-[52px] rounded-2xl border-2 border-dashed border-[var(--border)] px-3 py-2 flex flex-wrap gap-2 transition-colors {dragOverZone === 'pool' ? 'border-[var(--primary)] bg-[var(--primary-muted)]' : ''}"
+          class="min-h-[52px] rounded-2xl border-2 border-dashed border-border px-3 py-2 flex flex-wrap gap-2 transition-colors {dragOverZone === 'pool' ? 'border-primary bg-primary-muted' : ''}"
           ondragover={(e) => { e.preventDefault(); dragOverZone = 'pool'; }}
           ondragleave={() => { if (dragOverZone === 'pool') dragOverZone = null; }}
           ondrop={(e) => { e.preventDefault(); dragOverZone = null; if (draggingId) { unassignPlayer(draggingId); draggingId = null; } }}
@@ -591,7 +596,7 @@
           aria-label="Unassigned players"
         >
           {#if unassigned.length === 0}
-            <p class="text-xs text-[var(--text-disabled)] py-1">All assigned</p>
+            <p class="text-xs text-text-disabled py-1">All assigned</p>
           {/if}
           {#each unassigned as player (player.id)}
             <div
@@ -599,9 +604,9 @@
               ondragstart={(e) => { draggingId = player.id; e.dataTransfer!.effectAllowed = 'move'; }}
               ondragend={() => { draggingId = null; dragOverZone = null; }}
               ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
-              class="flex touch-none cursor-grab items-center gap-2 rounded-full bg-[var(--surface-raised)] px-3 py-1.5 text-sm font-semibold select-none {draggingId === player.id ? 'opacity-40' : ''}"
+              class="flex touch-none cursor-grab items-center gap-2 rounded-full bg-surface-raised px-3 py-1.5 text-sm font-semibold select-none {draggingId === player.id ? 'opacity-40' : ''}"
             >
-              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
+              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-primary/30" />
               <span>{player.name}</span>
             </div>
           {/each}
@@ -612,14 +617,14 @@
           <!-- Team A drop zone -->
           <div
             bind:this={zoneAEl}
-            class="min-h-[96px] rounded-2xl border-2 transition-colors p-3 space-y-2 {dragOverZone === 'a' ? 'border-[var(--primary)] bg-[var(--primary-muted)]' : 'border-transparent bg-[var(--surface-raised)]'}"
+            class="min-h-[96px] rounded-2xl border-2 transition-colors p-3 space-y-2 {dragOverZone === 'a' ? 'border-primary bg-primary-muted' : 'border-transparent bg-surface-raised'}"
             ondragover={(e) => { e.preventDefault(); dragOverZone = 'a'; }}
             ondragleave={() => { if (dragOverZone === 'a') dragOverZone = null; }}
             ondrop={(e) => { e.preventDefault(); dragOverZone = null; if (draggingId) { assignPlayer(draggingId, 'a'); draggingId = null; } }}
             role="region"
             aria-label="Team A"
           >
-            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--primary)]">{$_('tennis_team_a')}</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-primary">{$_('tennis_team_a')}</p>
             {#each teamA as player (player.id)}
               <div
                 draggable="true"
@@ -627,31 +632,31 @@
                 ondragend={() => { draggingId = null; dragOverZone = null; }}
                 ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
                 onclick={() => assignPlayer(player.id, 'a')}
-                class="flex touch-none cursor-grab items-center gap-2 rounded-xl bg-[var(--primary)] px-3 py-2 text-sm font-semibold text-white select-none {draggingId === player.id ? 'opacity-40' : ''}"
+                class="flex touch-none cursor-grab items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white select-none {draggingId === player.id ? 'opacity-40' : ''}"
                 role="button"
                 tabindex="0"
                 onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'a')}
               >
-                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
+                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-primary/30" />
                 <span class="truncate">{player.name}</span>
               </div>
             {/each}
             {#if teamA.length < 2}
-              <p class="text-xs text-[var(--text-disabled)]">Drop here</p>
+              <p class="text-xs text-text-disabled">Drop here</p>
             {/if}
           </div>
 
           <!-- Team B drop zone -->
           <div
             bind:this={zoneBEl}
-            class="min-h-[96px] rounded-2xl border-2 transition-colors p-3 space-y-2 {dragOverZone === 'b' ? 'border-[var(--primary)] bg-[var(--primary-muted)]' : 'border-transparent bg-[var(--surface-raised)]'}"
+            class="min-h-[96px] rounded-2xl border-2 transition-colors p-3 space-y-2 {dragOverZone === 'b' ? 'border-primary bg-primary-muted' : 'border-transparent bg-surface-raised'}"
             ondragover={(e) => { e.preventDefault(); dragOverZone = 'b'; }}
             ondragleave={() => { if (dragOverZone === 'b') dragOverZone = null; }}
             ondrop={(e) => { e.preventDefault(); dragOverZone = null; if (draggingId) { assignPlayer(draggingId, 'b'); draggingId = null; } }}
             role="region"
             aria-label="Team B"
           >
-            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('tennis_team_b')}</p>
+            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('tennis_team_b')}</p>
             {#each teamB as player (player.id)}
               <div
                 draggable="true"
@@ -659,17 +664,17 @@
                 ondragend={() => { draggingId = null; dragOverZone = null; }}
                 ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
                 onclick={() => assignPlayer(player.id, 'b')}
-                class="flex touch-none cursor-grab items-center gap-2 rounded-xl bg-[var(--border)] px-3 py-2 text-sm font-semibold text-[var(--text-primary)] select-none {draggingId === player.id ? 'opacity-40' : ''}"
+                class="flex touch-none cursor-grab items-center gap-2 rounded-xl bg-border px-3 py-2 text-sm font-semibold text-text-primary select-none {draggingId === player.id ? 'opacity-40' : ''}"
                 role="button"
                 tabindex="0"
                 onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'b')}
               >
-                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
+                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-primary/30" />
                 <span class="truncate">{player.name}</span>
               </div>
             {/each}
             {#if teamB.length < 2}
-              <p class="text-xs text-[var(--text-disabled)]">Drop here</p>
+              <p class="text-xs text-text-disabled">Drop here</p>
             {/if}
           </div>
         </div>
@@ -684,12 +689,12 @@
             bind:value={joinName}
             placeholder={$_('lobby_join_placeholder')}
             maxlength={32}
-            class="flex-1 rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3 text-sm"
+            class="flex-1 rounded-2xl border-0 bg-surface-raised px-4 py-3 text-sm"
           />
           <Button
             type="submit"
             disabled={joining || !joinName.trim()}
-            class="h-auto rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white"
+            class="h-auto rounded-2xl bg-primary px-4 text-sm font-semibold text-white"
           >
             {joining ? $_('lobby_join_loading') : $_('lobby_join_button')}
           </Button>
@@ -703,12 +708,12 @@
         <Button
           onclick={start}
           disabled={starting || !canStart}
-          class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+          class="h-auto w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-semibold text-white hover:bg-primary-hover"
         >
           {starting ? $_('lobby_start_loading') : $_('lobby_start_button')}
         </Button>
         {#if !canStart}
-          <p class="text-center text-xs text-[var(--text-disabled)]">
+          <p class="text-center text-xs text-text-disabled">
             {#if isTennis}
               {$_(activePlayers.length < 4 ? 'lobby_need_players' : 'tennis_start_locked', { values: { n: 4 } })}
             {:else if isMexicano}
@@ -721,7 +726,7 @@
         <button
           onclick={() => (showCancelDialog = true)}
           disabled={cancelling}
-          class="h-auto w-full rounded-2xl border border-[var(--border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:border-[var(--destructive)] hover:text-[var(--destructive)] disabled:opacity-40"
+          class="h-auto w-full rounded-2xl border border-border px-4 py-3.5 text-sm font-semibold text-text-secondary transition-colors hover:border-destructive hover:text-destructive disabled:opacity-40"
         >
           {cancelling ? $_('lobby_cancelling') : $_('lobby_cancel')}
         </button>
@@ -730,7 +735,7 @@
             <button
               onclick={seedPlayers}
               disabled={seeding}
-              class="rounded-full border border-dashed border-[var(--border)] px-4 py-1.5 text-xs text-[var(--text-disabled)] transition-colors hover:border-[var(--text-disabled)] hover:text-[var(--text-secondary)] disabled:opacity-40"
+              class="rounded-full border border-dashed border-border px-4 py-1.5 text-xs text-text-disabled transition-colors hover:border-text-disabled hover:text-text-secondary disabled:opacity-40"
             >
               {seeding ? $_('lobby_dev_seeding') : $_('lobby_dev_seed')}
             </button>
@@ -738,49 +743,37 @@
         {/if}
       </div>
     {:else}
-      <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-center">
-        <p class="text-sm text-[var(--text-secondary)]">{$_('lobby_waiting_admin')}</p>
+      <div class="rounded-2xl bg-surface-raised px-4 py-3 text-center">
+        <p class="text-sm text-text-secondary">{$_('lobby_waiting_admin')}</p>
       </div>
     {/if}
   </main>
 {/if}
 
-{#if showRules}
-  <div
-    class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm pb-safe sm:items-center"
-    onclick={() => (showRules = false)}
-    onkeydown={(e) => e.key === 'Escape' && (showRules = false)}
-    role="presentation"
-    tabindex="-1"
-  >
-    <div
-      class="w-full max-w-sm rounded-t-3xl bg-[var(--surface)] px-6 pb-8 pt-6 space-y-4 sm:rounded-3xl sm:mx-4"
-      onclick={(e) => e.stopPropagation()}
-      role="presentation"
-    >
-      <div class="mx-auto h-1 w-10 rounded-full bg-[var(--border)] sm:hidden"></div>
-      <h2 class="text-[18px] font-[800]">{gameModeName}</h2>
-
+<Dialog.Root bind:open={showRules}>
+  <Dialog.Content class="w-full max-w-sm">
+    <Dialog.Header>
+      <Dialog.Title>{gameModeName}</Dialog.Title>
+    </Dialog.Header>
+    <div class="space-y-2">
       <ul class="space-y-2">
         {#each $_(`rules_${session.game_mode}`).split('\n') as line}
           {#if line.trim()}
-            <li class="flex gap-2 text-sm text-[var(--text-secondary)]">
-              <span class="mt-0.5 shrink-0 text-[var(--primary)]">·</span>
+            <li class="flex gap-2 text-sm text-text-secondary">
+              <span class="mt-0.5 shrink-0 text-primary">·</span>
               <span>{line.trim()}</span>
             </li>
           {/if}
         {/each}
       </ul>
-
-      <button
-        onclick={() => (showRules = false)}
-        class="w-full rounded-2xl border border-[var(--border)] px-4 py-3.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-raised)]"
-      >
-        {$_('leaderboard_close')}
-      </button>
     </div>
-  </div>
-{/if}
+    <Dialog.Footer>
+      <Dialog.Close class="w-full rounded-2xl border border-border px-4 py-3.5 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-raised">
+        {$_('leaderboard_close')}
+      </Dialog.Close>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <ConfirmDialog
   open={showCancelDialog}

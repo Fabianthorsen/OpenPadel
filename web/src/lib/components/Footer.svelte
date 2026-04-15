@@ -5,7 +5,7 @@
   let { showLocale = true }: { showLocale?: boolean } = $props();
 </script>
 
-<footer class="flex items-center justify-center gap-3 pb-6 pt-8 text-[11px] text-[var(--text-disabled)]">
+<footer class="flex items-center justify-center gap-3 pb-6 pt-8 text-[11px] text-text-disabled">
   {#if showLocale}
     <LocaleSwitcher />
     <span>·</span>
@@ -14,7 +14,7 @@
     <img src="/github-logo-clearspace.svg" alt="GitHub" class="h-[14px] w-auto" />
   </a>
   <span>·</span>
-  <a href="https://github.com/fabianthorsen/openpadel/issues/new" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-secondary)] transition-colors">
+  <a href="https://github.com/fabianthorsen/openpadel/issues/new" target="_blank" rel="noopener noreferrer" class="hover:text-text-secondary transition-colors">
     {$_('footer_feedback')}
   </a>
 </footer>

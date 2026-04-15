@@ -55,8 +55,8 @@
 
     <!-- Brand -->
     <div class="space-y-1">
-      <h1 class="text-[28px] font-[800] text-[var(--primary)]">OpenPadel</h1>
-      <p class="text-[var(--text-secondary)]">{mode === 'login' ? $_('auth_login_subtitle') : $_('auth_register_subtitle')}</p>
+      <h1 class="text-[28px] font-[800] text-primary">OpenPadel</h1>
+      <p class="text-text-secondary">{mode === 'login' ? $_('auth_login_subtitle') : $_('auth_register_subtitle')}</p>
     </div>
 
     <form onsubmit={(e) => { e.preventDefault(); submit(); }} class="space-y-4">
@@ -64,61 +64,61 @@
       {#if mode === 'register'}
         <div class="flex gap-3">
           <div class="flex-1 space-y-2">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('auth_first_name_label')}</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-secondary">{$_('auth_first_name_label')}</p>
             <Input
               bind:value={firstName}
               placeholder={$_('auth_first_name_placeholder')}
               maxlength={32}
               autocomplete="given-name"
-              class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+              class="rounded-2xl border-0 bg-surface-raised px-4 py-3.5 text-sm"
             />
           </div>
           <div class="flex-1 space-y-2">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('auth_last_name_label')}</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-secondary">{$_('auth_last_name_label')}</p>
             <Input
               bind:value={lastName}
               placeholder={$_('auth_last_name_placeholder')}
               maxlength={32}
               autocomplete="family-name"
-              class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+              class="rounded-2xl border-0 bg-surface-raised px-4 py-3.5 text-sm"
             />
           </div>
         </div>
       {/if}
 
       <div class="space-y-2">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('auth_email_label')}</p>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-secondary">{$_('auth_email_label')}</p>
         <Input
           bind:value={email}
           type="email"
           placeholder={$_('auth_email_placeholder')}
           autocomplete="email"
-          class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+          class="rounded-2xl border-0 bg-surface-raised px-4 py-3.5 text-sm"
         />
       </div>
 
       <div class="space-y-2">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">{$_('auth_password_label')}</p>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-secondary">{$_('auth_password_label')}</p>
         <Input
           bind:value={password}
           type="password"
           placeholder={$_('auth_password_placeholder')}
           autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
-          class="rounded-2xl border-0 bg-[var(--surface-raised)] px-4 py-3.5 text-sm"
+          class="rounded-2xl border-0 bg-surface-raised px-4 py-3.5 text-sm"
         />
       </div>
 
       <Button
         type="submit"
         disabled={loading}
-        class="h-auto w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-semibold text-white hover:bg-[var(--primary-hover)]"
+        class="h-auto w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-semibold text-white hover:bg-primary-hover"
       >
         {loading ? '…' : mode === 'login' ? $_('auth_login_button') : $_('auth_register_button')}
       </Button>
 
       {#if mode === 'login'}
         <div class="flex justify-center">
-          <a href="/forgot" class="text-xs text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">
+          <a href="/forgot" class="text-xs text-text-disabled hover:text-text-secondary">
             {$_('auth_forgot_password')}
           </a>
         </div>
@@ -127,7 +127,7 @@
 
     <!-- Back -->
     <div class="flex justify-center">
-      <a href="/" class="text-xs text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">
+      <a href="/" class="text-xs text-text-disabled hover:text-text-secondary">
         ← {$_('auth_back_home')}
       </a>
     </div>

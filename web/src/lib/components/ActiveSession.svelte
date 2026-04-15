@@ -9,6 +9,9 @@
   import { Activity, ChartBar, Users, Pencil, Shield, LayoutGrid, Check, X } from 'lucide-svelte';
   import { sessionName } from '$lib/utils';
   import Avatar from '$lib/components/ui/Avatar.svelte';
+  import { SectionLabel } from '$lib/components/ui/section-label';
+  import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
+  import * as Sheet from '$lib/components/ui/sheet';
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import { numpad as numpadStore } from '$lib/stores/numpad';
@@ -258,8 +261,8 @@
 
 {#if cancelling}
   <main class="flex min-h-svh flex-col items-center justify-center gap-3 px-6">
-    <div class="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border)] border-t-[var(--primary)]"></div>
-    <p class="text-sm text-[var(--text-secondary)]">{$_('lobby_cancelling')}</p>
+    <div class="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary"></div>
+    <p class="text-sm text-text-secondary">{$_('lobby_cancelling')}</p>
   </main>
 {:else}
 <div class="flex flex-col h-full">
@@ -271,26 +274,26 @@
 
     <!-- Nav -->
     <div class="flex items-center justify-between">
-      <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
+      <p class="text-sm font-semibold text-primary">{sessionName(session)}</p>
       <a
         href="/"
-        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)] hover:text-[var(--text-secondary)]"
+        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-text-disabled transition-colors hover:bg-surface-raised hover:text-text-secondary"
         aria-label="Back to home"
       >×</a>
     </div>
 
     <!-- Admin role badge -->
     {#if isAdmin}
-      <div class="flex w-fit items-center gap-1.5 rounded-full bg-[var(--surface-raised)] px-3 py-1.5">
-        <Pencil size={11} class="text-[var(--primary)]" />
-        <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--primary)]">Active Scorekeeper</span>
+      <div class="flex w-fit items-center gap-1.5 rounded-full bg-surface-raised px-3 py-1.5">
+        <Pencil size={11} class="text-primary" />
+        <span class="text-[10px] font-bold uppercase tracking-widest text-primary">Active Scorekeeper</span>
       </div>
     {/if}
 
     <!-- Match info row -->
     <div class="flex items-center justify-between gap-3">
       <div class="min-w-0">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-text-disabled">
           {session.game_mode} tournament
         </p>
         <button onclick={() => showCourtsOverview = true} class="text-left">
@@ -303,7 +306,7 @@
       </div>
       <button
         onclick={() => showCourtsOverview = true}
-        class="flex shrink-0 items-center gap-1.5 rounded-xl bg-[var(--surface-raised)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--border)]"
+        class="flex shrink-0 items-center gap-1.5 rounded-xl bg-surface-raised px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-border"
       >
         <LayoutGrid size={13} />
         Overview
@@ -312,7 +315,7 @@
 
     {#if session.game_mode !== 'americano'}
       {#if timeLeft !== null}
-        <p class="text-xs font-mono font-semibold text-[var(--text-secondary)]">⏱ {timeLeft}</p>
+        <p class="text-xs font-mono font-semibold text-text-secondary">⏱ {timeLeft}</p>
       {/if}
 
       {#if timeExpired}
@@ -328,21 +331,25 @@
 
     <!-- Court tabs -->
     {#if currentRound.matches.length > 1}
-      <div class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+      <ToggleGroup
+        type="single"
+        value={activeCourt.toString()}
+        onValueChange={(val) => activeCourt = parseInt(val)}
+        class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none"
+      >
         {#each currentRound.matches as match, i}
           {@const isFinalized = match.score !== null && !editing[match.id]}
-          <button
-            onclick={() => activeCourt = i}
-            class="flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors
-              {activeCourt === i ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-raised)] text-[var(--text-secondary)]'}"
+          <ToggleGroupItem
+            value={i.toString()}
+            class="flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors bg-surface-raised text-text-secondary data-[state=on]:bg-primary data-[state=on]:text-white"
           >
             🎾 Court {match.court}
             {#if isFinalized}
-              <span class="h-1.5 w-1.5 rounded-full {activeCourt === i ? 'bg-white/60' : 'bg-[var(--primary)]'}"></span>
+              <span class="h-1.5 w-1.5 rounded-full {activeCourt === i ? 'bg-white/60' : 'bg-primary'}"></span>
             {/if}
-          </button>
+          </ToggleGroupItem>
         {/each}
-      </div>
+      </ToggleGroup>
     {/if}
 
     <!-- Score cards (one per court, only active shown) -->
@@ -362,38 +369,38 @@
           {@const isDraw = sa === sb}
           <button
             onclick={() => { localScores[match.id] = { a: sa, b: sb }; editing[match.id] = true; }}
-            class="w-full rounded-3xl overflow-hidden border border-[var(--primary)]/40 text-left"
+            class="w-full rounded-3xl overflow-hidden border border-primary/40 text-left"
           >
             <div class="flex items-center gap-3 px-5 py-4
-              {isDraw ? 'bg-[var(--surface-raised)]' : sa > sb ? 'bg-[var(--primary)]' : 'bg-[var(--surface-raised)]'}">
+              {isDraw ? 'bg-surface-raised' : sa > sb ? 'bg-primary' : 'bg-surface-raised'}">
               <div class="flex">
-                <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="sm" ring={!isDraw && sa > sb ? 'ring-2 ring-white/30' : 'ring-2 ring-[var(--primary)]/30'} />
+                <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="sm" ring={!isDraw && sa > sb ? 'ring-2 ring-white/30' : 'ring-2 ring-primary/30'} />
                 <div class="-ml-2">
-                  <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="sm" ring={!isDraw && sa > sb ? 'ring-2 ring-white/30' : 'ring-2 ring-[var(--primary)]/30'} />
+                  <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="sm" ring={!isDraw && sa > sb ? 'ring-2 ring-white/30' : 'ring-2 ring-primary/30'} />
                 </div>
               </div>
               <p class="flex-1 font-semibold truncate
-                {isDraw ? 'text-[var(--text-primary)]' : sa > sb ? 'text-white' : 'text-[var(--text-disabled)]'}">
+                {isDraw ? 'text-text-primary' : sa > sb ? 'text-white' : 'text-text-disabled'}">
                 {teamLabel(match.team_a)}
               </p>
               <span class="text-2xl font-[800] tabular-nums
-                {isDraw ? 'text-[var(--text-primary)]' : sa > sb ? 'text-white' : 'text-[var(--text-disabled)]'}">{sa}</span>
+                {isDraw ? 'text-text-primary' : sa > sb ? 'text-white' : 'text-text-disabled'}">{sa}</span>
             </div>
-            <div class="h-px bg-[var(--border)]"></div>
+            <div class="h-px bg-border"></div>
             <div class="flex items-center gap-3 px-5 py-4
-              {isDraw ? 'bg-[var(--surface-raised)]' : sb > sa ? 'bg-[var(--primary)]' : 'bg-[var(--surface-raised)]'}">
+              {isDraw ? 'bg-surface-raised' : sb > sa ? 'bg-primary' : 'bg-surface-raised'}">
               <div class="flex">
-                <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="sm" ring={!isDraw && sb > sa ? 'ring-2 ring-white/30' : 'ring-2 ring-[var(--primary)]/30'} />
+                <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="sm" ring={!isDraw && sb > sa ? 'ring-2 ring-white/30' : 'ring-2 ring-primary/30'} />
                 <div class="-ml-2">
-                  <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="sm" ring={!isDraw && sb > sa ? 'ring-2 ring-white/30' : 'ring-2 ring-[var(--primary)]/30'} />
+                  <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="sm" ring={!isDraw && sb > sa ? 'ring-2 ring-white/30' : 'ring-2 ring-primary/30'} />
                 </div>
               </div>
               <p class="flex-1 font-semibold truncate
-                {isDraw ? 'text-[var(--text-primary)]' : sb > sa ? 'text-white' : 'text-[var(--text-disabled)]'}">
+                {isDraw ? 'text-text-primary' : sb > sa ? 'text-white' : 'text-text-disabled'}">
                 {teamLabel(match.team_b)}
               </p>
               <span class="text-2xl font-[800] tabular-nums
-                {isDraw ? 'text-[var(--text-primary)]' : sb > sa ? 'text-white' : 'text-[var(--text-disabled)]'}">{sb}</span>
+                {isDraw ? 'text-text-primary' : sb > sa ? 'text-white' : 'text-text-disabled'}">{sb}</span>
             </div>
           </button>
 
@@ -475,12 +482,12 @@
             <button
               onclick={() => submitScore(match.id)}
               disabled={s.a + s.b !== session.points || submitting[match.id]}
-              class="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-40"
+              class="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-40"
             >
               <Check size={18} />
               {submitting[match.id] ? '…' : $_('active_finalize_result')}
             </button>
-            <p class="text-center text-xs text-[var(--text-disabled)]">{$_('active_scores_synced')}</p>
+            <p class="text-center text-xs text-text-disabled">{$_('active_scores_synced')}</p>
           {/if}
         {/if}
       {/if}
@@ -488,22 +495,22 @@
 
     <!-- Official card -->
     {#if adminPlayer}
-      <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-        <Avatar icon={adminPlayer.avatar_icon} color={adminPlayer.avatar_color} name={adminPlayer.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
-        <p class="flex-1 text-sm text-[var(--text-secondary)]">
-          Official: <span class="font-semibold text-[var(--text-primary)]">{adminPlayer.name}</span>
+      <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3">
+        <Avatar icon={adminPlayer.avatar_icon} color={adminPlayer.avatar_color} name={adminPlayer.name} size="sm" ring="ring-2 ring-primary/30" />
+        <p class="flex-1 text-sm text-text-secondary">
+          Official: <span class="font-semibold text-text-primary">{adminPlayer.name}</span>
         </p>
-        <Shield size={14} class="text-[var(--primary)]" />
+        <Shield size={14} class="text-primary" />
       </div>
     {/if}
 
     <!-- Bench -->
     {#if benchNames.length > 0}
       {@const benchPlayer = playerById[currentRound.bench[0]]}
-      <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-        <Avatar icon={benchPlayer?.avatar_icon} color={benchPlayer?.avatar_color} name={benchNames[0]} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
-        <p class="text-sm text-[var(--text-secondary)]">
-          {$_('active_bench')}: <span class="font-semibold text-[var(--text-primary)]">{benchNames.join(', ')}</span>
+      <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3">
+        <Avatar icon={benchPlayer?.avatar_icon} color={benchPlayer?.avatar_color} name={benchNames[0]} size="sm" ring="ring-2 ring-primary/30" />
+        <p class="text-sm text-text-secondary">
+          {$_('active_bench')}: <span class="font-semibold text-text-primary">{benchNames.join(', ')}</span>
         </p>
       </div>
     {/if}
@@ -514,20 +521,20 @@
       <button
         onclick={isFinalRound ? onRefresh : advanceRound}
         disabled={advancing}
-        class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
+        class="w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
       >
         {advancing ? '…' : isFinalRound ? $_('active_final_results') : $_('active_next_round')}
       </button>
     {:else if someScored && !allScored && isAdmin}
       <button
         disabled
-        class="w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-[15px] font-[700] text-white disabled:opacity-40"
+        class="w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white disabled:opacity-40"
       >
         {$_('active_next_round')}
       </button>
-      <p class="text-center text-xs text-[var(--text-disabled)]">{$_('active_courts_pending')}</p>
+      <p class="text-center text-xs text-text-disabled">{$_('active_courts_pending')}</p>
     {:else if allScored}
-      <div class="rounded-2xl bg-[var(--surface-raised)] px-4 py-3 text-center text-sm text-[var(--text-secondary)]">
+      <div class="rounded-2xl bg-surface-raised px-4 py-3 text-center text-sm text-text-secondary">
         {$_('active_round_complete')}
       </div>
     {/if}
@@ -538,12 +545,12 @@
         <button
           onclick={() => sessionDialog.open('close', closeSession)}
           disabled={closing || cancelling}
-          class="rounded-full bg-[var(--destructive)] px-5 py-2 text-xs font-semibold text-white transition-all active:scale-95 disabled:opacity-40"
+          class="rounded-full bg-destructive px-5 py-2 text-xs font-semibold text-white transition-all active:scale-95 disabled:opacity-40"
         >{$_('active_close')}</button>
         <button
           onclick={() => sessionDialog.open('cancel', cancelSession)}
           disabled={closing || cancelling}
-          class="px-4 py-1.5 text-xs text-[var(--text-disabled)] transition-colors hover:text-[var(--destructive)] disabled:opacity-40"
+          class="px-4 py-1.5 text-xs text-text-disabled transition-colors hover:text-destructive disabled:opacity-40"
         >{$_('active_cancel')}</button>
       </div>
     {/if}
@@ -554,8 +561,8 @@
 {:else if tab === 'standings'}
   <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-safe-page">
     <div class="mb-4 flex items-center justify-between">
-      <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
-      <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
+      <p class="text-sm font-semibold text-primary">{sessionName(session)}</p>
+      <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-text-disabled transition-colors hover:bg-surface-raised" aria-label="Back to home">×</a>
     </div>
     <Leaderboard sessionId={session.id} sessionName={sessionName(session)} />
   </main>
@@ -564,23 +571,23 @@
 {:else if tab === 'players'}
   <main class="mx-auto w-full max-w-[480px] px-4 pb-6 pt-safe-page space-y-4">
     <div class="flex items-center justify-between">
-      <p class="text-sm font-semibold text-[var(--primary)]">{sessionName(session)}</p>
-      <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-disabled)] transition-colors hover:bg-[var(--surface-raised)]" aria-label="Back to home">×</a>
+      <p class="text-sm font-semibold text-primary">{sessionName(session)}</p>
+      <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-text-disabled transition-colors hover:bg-surface-raised" aria-label="Back to home">×</a>
     </div>
 
     <!-- On court -->
     {#each [session.players.filter(p => p.active && !benchIds.has(p.id))] as onCourt}
     <div>
-      <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
+      <SectionLabel class="mb-2">
         On court ({onCourt.length})
-      </p>
-      <div class="divide-y divide-[var(--border)] rounded-2xl bg-[var(--surface-raised)]">
+      </SectionLabel>
+      <div class="divide-y divide-border rounded-2xl bg-surface-raised">
         {#each onCourt as player (player.id)}
           <div class="flex items-center gap-3 px-4 py-3">
-            <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
+            <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-primary/30" />
             <span class="flex-1 text-sm font-medium">{player.name}</span>
             {#if player.id === session.creator_player_id}
-              <span class="text-[10px] font-bold text-[var(--primary)]">Admin</span>
+              <span class="text-[10px] font-bold text-primary">Admin</span>
             {/if}
           </div>
         {/each}
@@ -591,14 +598,14 @@
     <!-- Bench -->
     {#if currentRound.bench.length > 0}
       <div>
-        <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
+        <SectionLabel class="mb-2">
           Bench ({currentRound.bench.length})
-        </p>
-        <div class="divide-y divide-[var(--border)] rounded-2xl bg-[var(--surface-raised)]">
+        </SectionLabel>
+        <div class="divide-y divide-border rounded-2xl bg-surface-raised">
           {#each currentRound.bench as id}
             {@const p = playerById[id]}
             <div class="flex items-center gap-3 px-4 py-3">
-              <Avatar icon={p?.avatar_icon} color={p?.avatar_color} name={p?.name ?? ''} size="sm" ring="ring-2 ring-[var(--primary)]/30" />
+              <Avatar icon={p?.avatar_icon} color={p?.avatar_color} name={p?.name ?? ''} size="sm" ring="ring-2 ring-primary/30" />
               <span class="flex-1 text-sm font-medium">{p?.name ?? id}</span>
             </div>
           {/each}
@@ -611,24 +618,24 @@
   </div><!-- end scroll wrapper -->
 
   <!-- Bottom nav: plain flex child, always at bottom -->
-  <div class="shrink-0 flex border-t border-[var(--border)] bg-[var(--background)] backdrop-blur-sm shadow-lg" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom));">
+  <div class="shrink-0 flex border-t border-border bg-background backdrop-blur-sm shadow-lg" style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom));">
     <button
       onclick={() => tab = 'scoring'}
-      class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'scoring' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
+      class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'scoring' ? 'text-primary' : 'text-text-secondary'}"
     >
       <Activity size={20} />
       <span class="text-[10px] font-semibold uppercase tracking-wide">Scoring</span>
     </button>
     <button
       onclick={() => tab = 'standings'}
-      class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'standings' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
+      class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'standings' ? 'text-primary' : 'text-text-secondary'}"
     >
       <ChartBar size={20} />
       <span class="text-[10px] font-semibold uppercase tracking-wide">{$_('active_tab_standings')}</span>
     </button>
     <button
       onclick={() => tab = 'players'}
-      class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'players' ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)]'}"
+      class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'players' ? 'text-primary' : 'text-text-secondary'}"
     >
       <Users size={20} />
       <span class="text-[10px] font-semibold uppercase tracking-wide">Players</span>
@@ -639,47 +646,40 @@
 {/if}
 
 <!-- ── COURTS OVERVIEW BOTTOM SHEET ── -->
-{#if showCourtsOverview}
-  <div
-    role="presentation"
-    class="fixed inset-0 z-40 bg-black/40"
-    onclick={() => showCourtsOverview = false}
-    onkeydown={(e) => e.key === 'Escape' && (showCourtsOverview = false)}
-  ></div>
-  <div class="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[var(--surface)] px-4 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-3">
-    <div class="mb-1 flex items-center justify-between">
-      <h3 class="text-lg font-[800]">Courts Overview</h3>
-      <button onclick={() => showCourtsOverview = false} class="text-[var(--text-disabled)] hover:text-[var(--text-secondary)]">
-        <X size={20} />
-      </button>
+<Sheet.Root bind:open={showCourtsOverview}>
+  <Sheet.Content class="w-full max-w-sm sm:max-w-md">
+    <div class="space-y-3">
+      <Sheet.Header>
+        <Sheet.Title>Courts Overview</Sheet.Title>
+      </Sheet.Header>
+      <div class="space-y-2">
+        {#each currentRound.matches as match}
+          {@const s = scores[match.id] ?? { a: 0, b: 0 }}
+          {@const isFinalized = match.score !== null}
+          {@const inProgress = !isFinalized && (s.a + s.b > 0)}
+          <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3">
+            <div class="flex w-8 shrink-0 flex-col items-center">
+              <p class="text-[9px] font-bold uppercase tracking-widest text-text-disabled">C</p>
+              <p class="text-xl font-[800] leading-tight">{match.court}</p>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
+              <p class="truncate text-xs text-text-secondary">vs {teamLabel(match.team_b)}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-lg font-[800] tabular-nums">{s.a}–{s.b}</span>
+              {#if isFinalized}
+                <Check size={14} class="text-primary" />
+              {:else if inProgress}
+                <div class="h-2 w-2 rounded-full bg-amber-400"></div>
+              {:else}
+                <div class="h-2 w-2 rounded-full bg-border"></div>
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
     </div>
-    <div class="space-y-2">
-      {#each currentRound.matches as match}
-        {@const s = scores[match.id] ?? { a: 0, b: 0 }}
-        {@const isFinalized = match.score !== null}
-        {@const inProgress = !isFinalized && (s.a + s.b > 0)}
-        <div class="flex items-center gap-3 rounded-2xl bg-[var(--surface-raised)] px-4 py-3">
-          <div class="flex w-8 shrink-0 flex-col items-center">
-            <p class="text-[9px] font-bold uppercase tracking-widest text-[var(--text-disabled)]">C</p>
-            <p class="text-xl font-[800] leading-tight">{match.court}</p>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
-            <p class="truncate text-xs text-[var(--text-secondary)]">vs {teamLabel(match.team_b)}</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-lg font-[800] tabular-nums">{s.a}–{s.b}</span>
-            {#if isFinalized}
-              <Check size={14} class="text-[var(--primary)]" />
-            {:else if inProgress}
-              <div class="h-2 w-2 rounded-full bg-amber-400"></div>
-            {:else}
-              <div class="h-2 w-2 rounded-full bg-[var(--border)]"></div>
-            {/if}
-          </div>
-        </div>
-      {/each}
-    </div>
-  </div>
-{/if}
+  </Sheet.Content>
+</Sheet.Root>
 

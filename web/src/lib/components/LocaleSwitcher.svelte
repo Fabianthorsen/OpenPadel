@@ -7,12 +7,12 @@
     <button
       onclick={() => setLocale(lang)}
       class="text-[11px] font-semibold uppercase tracking-wide transition-colors
-        {$locale === lang ? 'text-[var(--text-secondary)]' : 'text-[var(--text-disabled)] hover:text-[var(--text-secondary)]'}"
+        {$locale === lang ? 'text-text-secondary' : 'text-text-disabled hover:text-text-secondary'}"
     >
       {lang}
     </button>
     {#if lang === 'en'}
-      <span class="text-[var(--border)]">·</span>
+      <span class="text-border">·</span>
     {/if}
   {/each}
 </div>
