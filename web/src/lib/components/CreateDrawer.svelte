@@ -273,7 +273,7 @@
           <ToggleGroup
             type="single"
             value={mexicanoRounds?.toString() ?? ''}
-            onValueChange={(val) => pickRounds(val ? parseInt(val) : null)}
+            onValueChange={(val) => val && pickRounds(parseInt(val))}
             class="flex gap-2"
           >
             {#each [4, 6, 8, 10] as n}
