@@ -13,6 +13,7 @@
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
   import * as Collapsible from '$lib/components/ui/collapsible';
+  import * as Dialog from '$lib/components/ui/dialog';
   import { fade } from 'svelte/transition';
   import { toast } from 'svelte-sonner';
   import { translateApiError } from '$lib/i18n/errors';
@@ -679,39 +680,36 @@
 
 <CreateDrawer bind:open={showCreateDrawer} />
 
-{#if showAvatarPicker}
-  <div role="presentation" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onclick={() => showAvatarPicker = false} onkeydown={(e) => e.key === 'Escape' && (showAvatarPicker = false)}>
-    <div role="dialog" aria-modal="true" aria-label="Choose avatar" tabindex="-1" class="w-full max-w-sm rounded-3xl bg-surface p-6 space-y-4 shadow-xl" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <Avatar icon={pickerIcon} color="forest" name={auth.user?.display_name ?? ''} size="md" />
-          <p class="font-semibold">Choose avatar</p>
-        </div>
-        <button onclick={() => showAvatarPicker = false} class="text-text-disabled hover:text-text-secondary">
-          <X size={20} />
-        </button>
+<Dialog.Root bind:open={showAvatarPicker}>
+  <Dialog.Content class="w-full max-w-sm">
+    <Dialog.Header>
+      <div class="flex items-center gap-3">
+        <Avatar icon={pickerIcon} color="forest" name={auth.user?.display_name ?? ''} size="md" />
+        <Dialog.Title>Choose avatar</Dialog.Title>
       </div>
-      <div class="grid grid-cols-8 gap-1.5">
-        <!-- "Use initials" option -->
+    </Dialog.Header>
+    <div class="grid grid-cols-8 gap-1.5">
+      <!-- "Use initials" option -->
+      <button
+        onclick={() => pickerIcon = ''}
+        class="flex items-center justify-center rounded-xl p-1 transition-colors
+          {pickerIcon === '' ? 'bg-primary-muted ring-2 ring-primary' : 'bg-surface-raised hover:bg-border'}"
+        aria-label="Use initials"
+      >
+        <Avatar icon="" color="forest" name={auth.user?.display_name ?? ''} size="sm" />
+      </button>
+      {#each AVATAR_ICONS as icon}
         <button
-          onclick={() => pickerIcon = ''}
+          onclick={() => pickerIcon = icon}
           class="flex items-center justify-center rounded-xl p-1 transition-colors
-            {pickerIcon === '' ? 'bg-primary-muted ring-2 ring-primary' : 'bg-surface-raised hover:bg-border'}"
-          aria-label="Use initials"
+            {pickerIcon === icon ? 'bg-primary-muted ring-2 ring-primary' : 'bg-surface-raised hover:bg-border'}"
+          aria-label={icon}
         >
-          <Avatar icon="" color="forest" name={auth.user?.display_name ?? ''} size="sm" />
+          <Avatar {icon} color="forest" name="" size="sm" />
         </button>
-        {#each AVATAR_ICONS as icon}
-          <button
-            onclick={() => pickerIcon = icon}
-            class="flex items-center justify-center rounded-xl p-1 transition-colors
-              {pickerIcon === icon ? 'bg-primary-muted ring-2 ring-primary' : 'bg-surface-raised hover:bg-border'}"
-            aria-label={icon}
-          >
-            <Avatar {icon} color="forest" name="" size="sm" />
-          </button>
-        {/each}
-      </div>
+      {/each}
+    </div>
+    <Dialog.Footer>
       <button
         onclick={async () => { await saveAvatar(); showAvatarPicker = false; }}
         disabled={savingAvatar}
@@ -719,9 +717,9 @@
       >
         {savingAvatar ? 'Saving…' : 'Save'}
       </button>
-    </div>
-  </div>
-{/if}
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 {#if showDeleteConfirm}
   <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">

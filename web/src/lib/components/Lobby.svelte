@@ -7,6 +7,7 @@
   import { Input } from '$lib/components/ui/input';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
+  import * as Dialog from '$lib/components/ui/dialog';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { _ } from 'svelte-i18n';
   import { auth } from '$lib/auth.svelte';
@@ -746,22 +747,12 @@
   </main>
 {/if}
 
-{#if showRules}
-  <div
-    class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm pb-safe sm:items-center"
-    onclick={() => (showRules = false)}
-    onkeydown={(e) => e.key === 'Escape' && (showRules = false)}
-    role="presentation"
-    tabindex="-1"
-  >
-    <div
-      class="w-full max-w-sm rounded-t-3xl bg-surface px-6 pb-8 pt-6 space-y-4 sm:rounded-3xl sm:mx-4"
-      onclick={(e) => e.stopPropagation()}
-      role="presentation"
-    >
-      <div class="mx-auto h-1 w-10 rounded-full bg-border sm:hidden"></div>
-      <h2 class="text-[18px] font-[800]">{gameModeName}</h2>
-
+<Dialog.Root bind:open={showRules}>
+  <Dialog.Content class="w-full max-w-sm">
+    <Dialog.Header>
+      <Dialog.Title>{gameModeName}</Dialog.Title>
+    </Dialog.Header>
+    <div class="space-y-2">
       <ul class="space-y-2">
         {#each $_(`rules_${session.game_mode}`).split('\n') as line}
           {#if line.trim()}
@@ -772,16 +763,14 @@
           {/if}
         {/each}
       </ul>
-
-      <button
-        onclick={() => (showRules = false)}
-        class="w-full rounded-2xl border border-border px-4 py-3.5 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-raised"
-      >
-        {$_('leaderboard_close')}
-      </button>
     </div>
-  </div>
-{/if}
+    <Dialog.Footer>
+      <Dialog.Close class="w-full rounded-2xl border border-border px-4 py-3.5 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-raised">
+        {$_('leaderboard_close')}
+      </Dialog.Close>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <ConfirmDialog
   open={showCancelDialog}
