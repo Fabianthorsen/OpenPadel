@@ -8,6 +8,7 @@
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
   import * as Dialog from '$lib/components/ui/dialog';
+  import * as Card from '$lib/components/ui/card';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { _ } from 'svelte-i18n';
   import { auth } from '$lib/auth.svelte';
@@ -307,10 +308,12 @@
 <!-- ── Join / invite screen (visitor hasn't joined yet) ── -->
 {:else if !isAdmin && !alreadyJoined && isTennis && activePlayers.length >= 4}
   <main class="flex min-h-svh flex-col items-center justify-center px-6 gap-4">
-    <div class="w-full max-w-sm rounded-2xl bg-surface-raised px-5 py-6 text-center space-y-2">
-      <p class="text-lg font-[800]">{sessionName(session)}</p>
-      <p class="text-sm text-text-secondary">{$_('tennis_session_full')}</p>
-    </div>
+    <Card.Root class="w-full max-w-sm">
+      <Card.Content class="pt-6 text-center space-y-2">
+        <p class="text-lg font-[800]">{sessionName(session)}</p>
+        <p class="text-sm text-text-secondary">{$_('tennis_session_full')}</p>
+      </Card.Content>
+    </Card.Root>
     <a href="/" class="text-sm text-text-disabled hover:text-text-secondary">← {$_('auth_back_home')}</a>
   </main>
 {:else if !isAdmin && !alreadyJoined}
