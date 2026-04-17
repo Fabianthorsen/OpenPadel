@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.10.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.4...v1.10.0) (2026-04-17)
+
+
+### Features
+
+* **core:** SSE real-time updates + responsive drawer polish ([#41](https://github.com/Fabianthorsen/OpenPadel/issues/41)) ([ee27e3a](https://github.com/Fabianthorsen/OpenPadel/commit/ee27e3ab0c58f3047efde2e9297b8ec74c8e5806))
+* **ui:** end tournament sheet menu ([#43](https://github.com/Fabianthorsen/OpenPadel/issues/43)) ([df42349](https://github.com/Fabianthorsen/OpenPadel/commit/df42349c77d3cc14648f962bdbe11c0b5696b6d2))
+
+
+### Bug Fixes
+
+* **auth:** admin access recovery via creator_user_id ([#42](https://github.com/Fabianthorsen/OpenPadel/issues/42)) ([d65545e](https://github.com/Fabianthorsen/OpenPadel/commit/d65545ec1c866ffc84cd8bafdaedaff8f4948dd2))
+* **ui:** improve CreateDrawer styling and unify component patterns ([#39](https://github.com/Fabianthorsen/OpenPadel/issues/39)) ([a5475e0](https://github.com/Fabianthorsen/OpenPadel/commit/a5475e0e6cda10201a746e2efbbf46461ce873ee))
+
 ## [1.9.4](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.3...v1.9.4) (2026-04-14)
 
 
