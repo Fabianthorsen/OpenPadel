@@ -23,7 +23,8 @@ _Nothing in progress — main is clean._
 
 ## Done
 
-- [x] **v1.9.5** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, session state changes, and tennis points now push instantly to all connected clients. 30 s fallback poll retained.
+- [x] **v1.10.0** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, session state changes, and tennis points now push instantly to all connected clients. 30 s fallback poll retained.
+- [x] **v1.10.0** — Admin access recovery: sessions now store `creator_user_id`; logged-in session creator is recognised as admin even after localStorage is cleared or on a different device. Profile upcoming-session links restore the admin token automatically.
 
 - [x] **v1.8.0** — Pull-to-refresh on home, session, and profile screens
 - [x] **v1.8.0** — Structured logging: `log/slog` JSON handler, request logger middleware (mutations + errors only)
