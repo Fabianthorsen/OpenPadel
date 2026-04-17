@@ -103,10 +103,6 @@
   }
   const scheduleTime = $derived(slotToLabel(timeSlot));
 
-  function close() {
-    open = false;
-  }
-
 
   async function create() {
     creating = true;
@@ -138,7 +134,7 @@
 </script>
 
 <Drawer.Root bind:open>
-    <Drawer.Content class="flex flex-col">
+    <Drawer.Content class="flex flex-col overflow-hidden sm:data-[vaul-drawer-direction=bottom]:left-1/2 sm:data-[vaul-drawer-direction=bottom]:-translate-x-1/2 sm:data-[vaul-drawer-direction=bottom]:w-[480px] sm:data-[vaul-drawer-direction=bottom]:max-w-[480px] sm:data-[vaul-drawer-direction=bottom]:bottom-6">
       <Drawer.Header>
         <div class="flex items-center justify-between w-full">
           <h2 class="text-lg font-[800]">{$_('create_title_line1')} {$_('create_title_line2')}</h2>

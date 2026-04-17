@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/events"
 	"github.com/fabianthorsen/openpadel/internal/store"
 	"github.com/fabianthorsen/openpadel/internal/tennis"
 )
@@ -124,6 +125,7 @@ func (h *Handler) setTennisServer(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
+	h.hub.Emit(id, events.Envelope{Type: events.EventTennisUpdated, Payload: match})
 	respond(w, http.StatusOK, match)
 }
 
@@ -169,8 +171,10 @@ func (h *Handler) addTennisPoint(w http.ResponseWriter, r *http.Request) {
 	// If match just finished, mark session complete.
 	if newState.Winner != "" && sess.Status == domain.StatusActive {
 		h.store.CompleteSession(id, false) //nolint:errcheck
+		h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
 	}
 
 	match.State = newState
+	h.hub.Emit(id, events.Envelope{Type: events.EventTennisUpdated, Payload: match})
 	respond(w, http.StatusOK, match)
 }

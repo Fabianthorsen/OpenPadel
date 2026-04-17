@@ -11,6 +11,7 @@ No separate web server needed. SQLite on disk. Deployed as a single Fly.io machi
 │                                     │
 │  Go binary                          │
 │  ├── /api/*        → REST handlers  │
+│  ├── /api/sessions/:id/events → SSE │
 │  └── /*            → SvelteKit PWA  │
 │                                     │
 │  /data/openpadel.db   SQLite file   │
@@ -53,6 +54,10 @@ openpadel/
 │   │   ├── contacts.go
 │   │   ├── invites.go
 │   │   └── push.go
+│   ├── events/
+│   │   ├── envelope.go         Envelope type + event-type constants
+│   │   ├── hub.go              thread-safe SSE client registry (sync.RWMutex, per-session subs)
+│   │   └── handler.go          ServeSSE — streams events, 20s keepalive, X-Accel-Buffering: no
 │   ├── scheduler/
 │   │   ├── americano.go        greedy round-generation, full bench rotation pre-computed
 │   │   └── mexicano.go         Mexicano variant — pairings adapt based on standings
@@ -132,8 +137,13 @@ GET    /api/sessions/:id/rounds
 GET    /api/sessions/:id/rounds/current
 POST   /api/sessions/:id/rounds/advance
 PUT    /api/sessions/:id/matches/:match_id/score
-PUT    /api/sessions/:id/matches/:match_id/live-score
+PATCH  /api/sessions/:id/matches/:match_id/score   (live score tap, in-memory only)
 GET    /api/sessions/:id/leaderboard
+```
+
+### Server-Sent Events
+```
+GET    /api/sessions/:id/events   (text/event-stream, no auth required)
 ```
 
 ### Tennis
@@ -164,6 +174,89 @@ GET    /api/push/vapid-public-key
 POST   /api/push/subscribe
 DELETE /api/push/unsubscribe
 ```
+
+---
+
+## Real-Time: Server-Sent Events
+
+Live updates are pushed via SSE rather than polling. A single in-memory `Hub`
+(one per Go process) manages per-session client subscriptions.
+
+```mermaid
+flowchart LR
+    subgraph Browser["Browser (SvelteKit PWA)"]
+        P["+page.svelte"]
+        T["TennisMatch.svelte"]
+        L["Leaderboard.svelte"]
+        S["sessionStream.svelte.ts\n(factory, ref-counted)"]
+        ES["EventSource\n/api/sessions/:id/events"]
+        P --> S
+        T --> S
+        L --> S
+        S --> ES
+    end
+
+    subgraph Edge["Fly.io edge (idle 60 s)"]
+        LB["fly-proxy"]
+    end
+
+    subgraph Go["Go app :8080"]
+        H["SSE Handler\nGET /api/sessions/:id/events"]
+        HUB["events.Hub\nmap[sessionID]map[*client]{}\nsync.RWMutex"]
+        FAN["per-client chan Envelope\nbuf=16, drop-oldest"]
+        HB["heartbeat :ping 20 s"]
+
+        subgraph Mutations["API handlers (post-mutation)"]
+            RS["submitScore → round_updated"]
+            LS["updateLiveScore → live_score"]
+            AD["advanceRound → round_updated"]
+            TN["addTennisPoint / setTennisServer → tennis_updated"]
+            SE["start / close / cancel → session_updated"]
+            PL["joinSession / deactivatePlayer → session_updated"]
+        end
+
+        RS --> HUB
+        LS --> HUB
+        AD --> HUB
+        TN --> HUB
+        SE --> HUB
+        PL --> HUB
+        HUB --> FAN
+        FAN --> H
+        HB --> H
+    end
+
+    ES <-- "text/event-stream (chunked)" --> LB
+    LB <-- keepalive --> H
+```
+
+### Event types
+
+| Event | Payload | Emitted when |
+|---|---|---|
+| `session_updated` | _(signal)_ | session starts, closes, cancels; player joins/leaves |
+| `round_updated` | _(signal)_ | score submitted, round advanced |
+| `live_score` | `{match_id, a, b, server}` | live score tap (PATCH, in-memory only) |
+| `tennis_updated` | full `TennisMatch` | point scored, server changed |
+
+### Frontend store (`sessionStream.svelte.ts`)
+
+- Created once in `+page.svelte`, passed as a prop to child components
+- `start()` opens the `EventSource` and binds `visibilitychange` / `online` / `offline`
+- `onEvent(type, fn)` returns a cleanup function — components call it from `onMount` return
+- `close()` called from `onDestroy` on the page
+- Exponential back-off reconnect: 500 ms → 30 s
+- Closes on tab hidden (iOS kills it anyway); reconnects on tab visible
+
+### Edge cases
+
+1. **Fly.io 60 s idle timeout** — the 20 s `: ping\n\n` heartbeat keeps the connection alive with 3× margin.
+2. **iOS backgrounding + connection limit** — the store closes the `EventSource` when the tab is hidden, freeing the Fly soft limit of 80 concurrent connections per machine from zombie sockets.
+3. **SQLite single-writer contention** — `Emit` is called after the transaction commits and is non-blocking (drop-oldest). SSE fan-out cannot back-pressure the DB writer.
+
+### Fallback
+
+A 30 s poll remains in `+page.svelte` as silent-failure insurance for corporate proxies that buffer SSE despite `Cache-Control: no-transform` and `X-Accel-Buffering: no`.
 
 ---
 
@@ -237,7 +330,7 @@ Key patterns:
 - **Auth store** — runes-based, token in `localStorage` under `auth_token`
 - **Types** — all shared interfaces in `src/app.d.ts` under the `App` namespace
 - **i18n** — English + Norwegian via `svelte-i18n`
-- **Polling** — 3s in lobby, 15s during active play
+- **Real-time** — SSE via `sessionStream` factory store; 30 s fallback poll as belt-and-braces
 
 ---
 

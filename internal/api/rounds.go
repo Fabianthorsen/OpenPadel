@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/events"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -105,30 +106,38 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 	}
 	// Final score is now in the DB — clear any in-memory live score for this match.
 	h.live.Clear(matchID)
+	h.hub.Emit(sessionID, events.Envelope{Type: events.EventRoundUpdated})
 
 	// Auto-complete logic.
 	// Timer takes priority: if ends_at has passed, complete once current round is fully scored.
 	// Otherwise use normal per-mode logic.
+	sessionCompleted := false
 	timerExpired := sess.EndsAt != nil && time.Now().UTC().After(*sess.EndsAt)
 	if timerExpired {
 		allScored, err := h.store.CurrentRoundAllScored(sessionID)
 		if err == nil && allScored {
-			h.store.CompleteSession(sessionID, false)
+			h.store.CompleteSession(sessionID, false) //nolint:errcheck
+			sessionCompleted = true
 		}
 	} else if sess.GameMode == "mexicano" {
 		// Mexicano with preset rounds_total: complete when last round is fully scored.
 		if sess.RoundsTotal != nil && sess.CurrentRound != nil && *sess.CurrentRound == *sess.RoundsTotal {
 			allScored, err := h.store.CurrentRoundAllScored(sessionID)
 			if err == nil && allScored {
-				h.store.CompleteSession(sessionID, false)
+				h.store.CompleteSession(sessionID, false) //nolint:errcheck
+				sessionCompleted = true
 			}
 		}
 	} else {
 		// Americano: all pre-generated rounds complete.
 		done, err := h.store.AllRoundsComplete(sessionID)
 		if err == nil && done {
-			h.store.CompleteSession(sessionID, false)
+			h.store.CompleteSession(sessionID, false) //nolint:errcheck
+			sessionCompleted = true
 		}
+	}
+	if sessionCompleted {
+		h.hub.Emit(sessionID, events.Envelope{Type: events.EventSessionUpdated})
 	}
 
 	respond(w, http.StatusOK, match)
@@ -148,8 +157,13 @@ func (h *Handler) updateLiveScore(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "scores_negative")
 		return
 	}
+	sessionID := chi.URLParam(r, "id")
 	matchID := chi.URLParam(r, "matchID")
 	h.live.Set(matchID, body.Server, body.A, body.B)
+	h.hub.Emit(sessionID, events.Envelope{
+		Type:    events.EventLiveScore,
+		Payload: map[string]any{"match_id": matchID, "a": body.A, "b": body.B, "server": body.Server},
+	})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -204,6 +218,7 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	h.hub.Emit(sessionID, events.Envelope{Type: events.EventRoundUpdated})
 	w.WriteHeader(http.StatusNoContent)
 }
 

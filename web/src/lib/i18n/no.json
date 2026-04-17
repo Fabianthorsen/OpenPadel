@@ -23,7 +23,7 @@
   "create_mexicano_rounds_open": "Åpent",
   "create_mexicano_rounds_hint_fixed": "Turneringen avsluttes etter {n} runder.",
   "create_mexicano_rounds_hint_open": "Velg antall runder eller varighet.",
-  "create_mode_tennis": "Vanlig 2v2",
+  "create_mode_tennis": "2v2",
   "create_sets_label": "Best av",
   "create_sets_bo3": "Best av 3",
   "create_sets_bo5": "Best av 5",

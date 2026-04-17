@@ -9,12 +9,9 @@
   import Footer from '$lib/components/Footer.svelte';
   import CreateDrawer from '$lib/components/CreateDrawer.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-  import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import Avatar from '$lib/components/ui/Avatar.svelte';
-  import { SectionLabel } from '$lib/components/ui/section-label';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import * as Dialog from '$lib/components/ui/dialog';
-  import { fade } from 'svelte/transition';
   import { toast } from 'svelte-sonner';
   import { translateApiError } from '$lib/i18n/errors';
   import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
@@ -301,7 +298,6 @@
 
 
 
-<PullToRefresh onRefresh={load}>
 <main class="mx-auto max-w-[480px] px-6 pb-10 pt-safe-page space-y-8">
 
   <!-- Header -->
@@ -676,7 +672,6 @@
   <Footer />
 
 </main>
-</PullToRefresh>
 
 <CreateDrawer bind:open={showCreateDrawer} />
 

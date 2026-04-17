@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/events"
 	"github.com/fabianthorsen/openpadel/internal/scheduler"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
@@ -202,6 +203,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 	go h.sendPushToSession(id, "Tournament started!", notifBody)
 
 	sess.AdminToken = ""
+	h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
 	respond(w, http.StatusOK, sess)
 }
 
@@ -248,6 +250,7 @@ func (h *Handler) closeSession(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
+	h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -270,5 +273,6 @@ func (h *Handler) cancelSession(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
+	h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
 	w.WriteHeader(http.StatusNoContent)
 }

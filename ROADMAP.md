@@ -23,6 +23,8 @@ _Nothing in progress — main is clean._
 
 ## Done
 
+- [x] **v1.9.5** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, session state changes, and tennis points now push instantly to all connected clients. 30 s fallback poll retained.
+
 - [x] **v1.8.0** — Pull-to-refresh on home, session, and profile screens
 - [x] **v1.8.0** — Structured logging: `log/slog` JSON handler, request logger middleware (mutations + errors only)
 - [x] **v1.7.1** — Player avatar system: lucide icon picker on profile, avatar shown in lobby, game, and leaderboard; guests get slate Bot icon
@@ -40,7 +42,7 @@ _Nothing in progress — main is clean._
 - [x] **v1.4.0** — Web push notifications for tournament start
 - [x] **v1.4.0** — Live score sync (in-memory store)
 - [x] **v1.4.0** — 4-char uppercase join codes with home page entry
-- [x] **v1.4.0** — Adaptive polling (3s lobby / 15s active)
+- [x] **v1.4.0** — Adaptive polling (3s lobby / 15s active) — superseded by SSE in v1.9.5
 - [x] **v1.4.0** — Tournament naming and fun awards on final results
 - [x] **v1.4.0** — Admin joins as player with creator crown
 - [x] **v1.4.0** — Explicit round advance, score editing, draws support

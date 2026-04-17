@@ -1,34 +1,34 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { Trophy, UserPlus, Check } from 'lucide-svelte';
   import { shortName } from '$lib/utils';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { auth } from '$lib/auth.svelte';
+  import type { SessionStream } from '$lib/stores/sessionStream.svelte';
 
   let {
     sessionId,
     sessionName = '',
     complete = false,
+    stream = null,
   }: {
     sessionId: string;
     sessionName?: string;
     complete?: boolean;
+    stream?: SessionStream | null;
   } = $props();
 
   let leaderboard = $state<App.Leaderboard | null>(null);
-  let interval: ReturnType<typeof setInterval>;
-  // user_id → true once added this session
   let addedContacts = $state<Record<string, boolean>>({});
-  // user_id → true if already a contact before arriving
   let existingContacts = $state<Record<string, boolean>>({});
 
   async function load() {
     try {
       leaderboard = await api.leaderboard.get(sessionId);
     } catch {
-      // silently retry on next interval
+      // swallow
     }
   }
 
@@ -46,11 +46,10 @@
 
   onMount(() => {
     load();
-    if (!complete) interval = setInterval(load, 15_000);
-    if (complete) loadContacts();
+    if (complete) { loadContacts(); return; }
+    if (!stream) return;
+    return stream.onEvent('round_updated', () => { load(); });
   });
-
-  onDestroy(() => clearInterval(interval));
 
 
   const leader = $derived(leaderboard?.standings[0] ?? null);

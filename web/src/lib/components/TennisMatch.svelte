@@ -1,39 +1,42 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { shortName, sessionName } from '$lib/utils';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+  import type { SessionStream } from '$lib/stores/sessionStream.svelte';
 
   let {
     session,
     isAdmin,
     onRefresh,
+    stream,
   }: {
     session: App.Session;
     isAdmin: boolean;
     onRefresh: () => void;
+    stream: SessionStream;
   } = $props();
 
   let match = $state<App.TennisMatch | null>(null);
   let addingPoint = $state<'a' | 'b' | null>(null);
   let showCloseDialog = $state(false);
   let showCancelDialog = $state(false);
-  let interval: ReturnType<typeof setInterval>;
 
   async function loadMatch() {
     try {
       match = await api.tennis.getMatch(session.id);
     } catch {
-      // swallow — keep polling
+      // swallow
     }
   }
 
   onMount(() => {
     loadMatch();
-    interval = setInterval(loadMatch, 2000);
+    const cleanupTennis = stream.onEvent<App.TennisMatch>('tennis_updated', (p) => { match = p; });
+    const cleanupSession = stream.onEvent('session_updated', () => { onRefresh(); });
+    return () => { cleanupTennis(); cleanupSession(); };
   });
-  onDestroy(() => clearInterval(interval));
 
   async function setServer(team: 'a' | 'b') {
     if (match?.state.winner) return;
