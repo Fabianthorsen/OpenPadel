@@ -115,7 +115,7 @@ remaining active players fill future rounds normally.
 3. ACTIVE    Rounds generated upfront, bench rotation pre-calculated
                 └── Each round shows: court assignments + who is on bench
                 └── Admin enters scores after each match
-                └── Players (and spectators) watch live leaderboard on same link
+                └── Players (and spectators) watch live leaderboard on same link (SSE push)
 
 4. COMPLETE  All rounds done → final standings shown
                 └── Shareable summary
@@ -127,7 +127,7 @@ remaining active players fill future rounds normally.
 - **Join flow** — players join via shared link by entering their name
 - **Auto-pairing with bench** — fair rotation, everyone plays roughly equally
 - **Score entry** — admin-only in V1, quick input per match
-- **Live leaderboard** — public, auto-refreshes every 15s, shows points + bench count
+- **Live leaderboard** — public, updates in real-time via SSE, shows points + bench count
 - **Final summary** — standings + match history when complete
 
 ### Out of scope for V1
@@ -136,7 +136,6 @@ remaining active players fill future rounds normally.
 - Assigning score entry to other players (V2)
 - User accounts / authentication
 - Persistent history across sessions
-- WebSocket real-time push (polling is fine)
 - Other game modes
 
 ---

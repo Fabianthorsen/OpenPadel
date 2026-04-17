@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/cors"
 
 	"github.com/fabianthorsen/openpadel/internal/email"
+	"github.com/fabianthorsen/openpadel/internal/events"
 	"github.com/fabianthorsen/openpadel/internal/livescores"
 	"github.com/fabianthorsen/openpadel/internal/store"
 	"github.com/fabianthorsen/openpadel/internal/ui"
@@ -16,6 +17,7 @@ import (
 type Handler struct {
 	store        *store.Store
 	live         *livescores.Store
+	hub          *events.Hub
 	email        *email.Client
 	appURL       string
 	vapidPrivate string
@@ -26,6 +28,7 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 	h := &Handler{
 		store:        s,
 		live:         livescores.New(),
+		hub:          events.NewHub(),
 		email:        emailClient,
 		appURL:       appURL,
 		vapidPrivate: vapidPrivate,
@@ -95,6 +98,7 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 
 		r.Route("/sessions/{id}", func(r chi.Router) {
 			r.Get("/", h.getSession)
+			r.Get("/events", h.hub.ServeSSE())
 			r.Delete("/", h.cancelSession)
 			r.Post("/close", h.closeSession)
 r.Post("/start", h.startSession)

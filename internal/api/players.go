@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/events"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -81,6 +82,7 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		h.store.SetCreatorPlayer(id, player.ID) //nolint:errcheck
 	}
 
+	h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
 	respond(w, http.StatusCreated, player)
 }
 
@@ -117,6 +119,7 @@ func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Emit(sessionID, events.Envelope{Type: events.EventSessionUpdated})
 	respond(w, http.StatusOK, map[string]any{"id": playerID, "active": false})
 }
 

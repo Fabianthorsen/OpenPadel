@@ -10,7 +10,6 @@
   import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
   import { Switch } from '$lib/components/ui/switch';
   import Footer from '$lib/components/Footer.svelte';
-  import PullToRefresh from '$lib/components/PullToRefresh.svelte';
   import { _ } from 'svelte-i18n';
   import { initials } from '$lib/utils';
   import { toast } from 'svelte-sonner';
@@ -134,7 +133,6 @@
 </script>
 
 {#if step === 'home'}
-  <PullToRefresh onRefresh={loadRejoin}>
   <main class="flex min-h-svh flex-col items-center px-6 pb-12 pt-safe-page">
   <div class="flex w-full max-w-sm flex-1 flex-col">
     <div class="flex flex-1 flex-col justify-center space-y-12">
@@ -223,7 +221,6 @@
   </div>
   <Footer />
   </main>
-  </PullToRefresh>
 
 {:else}
   <main class="flex min-h-svh flex-col items-center px-6 pb-6 pt-safe-page">

@@ -15,15 +15,13 @@
   import { translateApiError } from '$lib/i18n/errors';
   import { sessionDialog } from '$lib/stores/sessionDialog';
   import { numpad as numpadStore } from '$lib/stores/numpad';
+  import { sessionStream } from '$lib/stores/sessionStream.svelte';
 
   let session = $state<App.Session | null>(null);
   let currentRound = $state<App.Round | null>(null);
-  let interval: ReturnType<typeof setInterval>;
+  let fallbackInterval: ReturnType<typeof setInterval>;
 
-  // Poll faster in lobby so players see each other join without waiting.
-  // Active sessions use 2s so live score taps are visible to other viewers quickly.
-  const POLL_LOBBY = 3_000;
-  const POLL_ACTIVE = 2_000;
+  const FALLBACK_POLL = 30_000;
 
   const sessionId = $derived(page.params.id as string);
 
@@ -57,28 +55,32 @@
     }
   }
 
-  function scheduleNext() {
-    clearInterval(interval);
-    const delay = session?.status === 'lobby' ? POLL_LOBBY : POLL_ACTIVE;
-    interval = setInterval(() => { load().then(scheduleNext); }, delay);
-  }
-
-  function onVisibilityChange() {
-    if (document.hidden) {
-      clearInterval(interval);
-    } else {
-      load().then(scheduleNext);
-    }
-  }
+  const stream = sessionStream(page.params.id as string);
 
   onMount(() => {
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    load().then(scheduleNext);
+    load();
+    stream.start();
+    const cleanupSession = stream.onEvent('session_updated', () => { load(); });
+    const cleanupRound = stream.onEvent('round_updated', () => { load(); });
+    const cleanupLive = stream.onEvent<{ match_id: string; a: number; b: number; server: string }>(
+      'live_score',
+      (p) => {
+        if (!currentRound) return;
+        currentRound = {
+          ...currentRound,
+          matches: currentRound.matches.map((m) =>
+            m.id === p.match_id ? { ...m, live: { a: p.a, b: p.b, server: p.server as 'a' | 'b' } } : m
+          ),
+        };
+      }
+    );
+    fallbackInterval = setInterval(load, FALLBACK_POLL);
+    return () => { cleanupSession(); cleanupRound(); cleanupLive(); };
   });
 
   onDestroy(() => {
-    document.removeEventListener('visibilitychange', onVisibilityChange);
-    clearInterval(interval);
+    clearInterval(fallbackInterval);
+    stream.close();
     numpadStore.close();
     sessionDialog.close();
   });
@@ -105,9 +107,9 @@
   {:else if session.status === 'lobby'}
       <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} />
   {:else if session.status === 'active' && session.game_mode === 'tennis'}
-      <TennisMatch {session} {isAdmin} onRefresh={load} />
+      <TennisMatch {session} {isAdmin} onRefresh={load} {stream} />
   {:else if session.status === 'active' && currentRound}
-      <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} />
+      <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} {stream} />
   {:else if session.status === 'complete' && session.game_mode === 'tennis'}
     <TennisResult {session} />
   {:else if session.status === 'complete'}
@@ -119,7 +121,6 @@
   {/if}
 </div>
 
-<!-- Session dialogs (rendered outside PullToRefresh at document root level) -->
 {#if $sessionDialog.isOpen}
   <div class="fixed inset-0 z-50">
     <ConfirmDialog

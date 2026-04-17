@@ -15,17 +15,20 @@
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import { numpad as numpadStore } from '$lib/stores/numpad';
+  import type { SessionStream } from '$lib/stores/sessionStream.svelte';
 
   let {
     session,
     currentRound,
     isAdmin,
     onRefresh,
+    stream,
   }: {
     session: App.Session;
     currentRound: App.Round;
     isAdmin: boolean;
     onRefresh: () => void;
+    stream: SessionStream;
   } = $props();
 
   type Tab = 'scoring' | 'standings' | 'players';
@@ -564,7 +567,7 @@
       <p class="text-sm font-semibold text-primary">{sessionName(session)}</p>
       <a href="/" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-text-disabled transition-colors hover:bg-surface-raised" aria-label="Back to home">×</a>
     </div>
-    <Leaderboard sessionId={session.id} sessionName={sessionName(session)} />
+    <Leaderboard sessionId={session.id} sessionName={sessionName(session)} {stream} />
   </main>
 
 <!-- ── PLAYERS TAB ── -->
