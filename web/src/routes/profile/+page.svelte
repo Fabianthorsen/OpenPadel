@@ -15,6 +15,17 @@
   import { toast } from 'svelte-sonner';
   import { translateApiError } from '$lib/i18n/errors';
   import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
+  import { userStream, type UserStream } from '$lib/stores/userStream.svelte';
+
+  const stream: UserStream = userStream(() => auth.token);
+  let offInvite: (() => void) | null = null;
+
+  onMount(() => {
+    return () => {
+      offInvite?.();
+      stream.close();
+    };
+  });
 
   const AVATAR_ICONS = [
     'Zap', 'Star', 'Flame', 'Shield', 'Crown', 'Trophy', 'Target', 'Rocket',
@@ -191,6 +202,12 @@
       showCreateDrawer = true;
     }
     await load();
+
+    offInvite = stream.onEvent('invite_received', async () => {
+      if (!auth.token) return;
+      try { invites = await api.invites.list(auth.token); } catch { /* heal on next load */ }
+    });
+    stream.start();
 
     // Install detection — runs immediately, no SW needed
     isStandalone = window.matchMedia('(display-mode: standalone)').matches

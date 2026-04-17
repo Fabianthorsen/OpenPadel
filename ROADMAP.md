@@ -6,7 +6,9 @@
 - [ ] Invite screen UX redesign — host avatar hero, stacked player avatars, join section
 - [ ] Round count control — allow admin to choose rounds as multiples of the rotation unit (e.g. 5, 10, 15 for a 5-player bench config)
 - [ ] Admin can add extra rounds mid-session if players want to keep playing
-- [ ] Round Robin game mode — every pair plays every other pair
+- [ ] End tournament button — admin menu with options: Keep playing, End and discard, End and save results
+- [ ] Timed Americano — game mode with time-based rounds instead of fixed rounds
+- [ ] Winners court — winners stay on court, losers rotate (losers bench or next challengers)
 - [ ] Assign score entry to other players (not admin-only)
 ### Tooling & Infrastructure
 

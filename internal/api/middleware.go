@@ -45,6 +45,12 @@ func extractAdminToken(r *http.Request) string {
 	return ""
 }
 
+// extractTokenFromQuery reads a bearer token from the ?token= query param.
+// Used by SSE endpoints where EventSource cannot set custom headers.
+func extractTokenFromQuery(r *http.Request) string {
+	return strings.TrimSpace(r.URL.Query().Get("token"))
+}
+
 func isAdmin(token, sessionAdminToken string) bool {
 	return token != "" && token == sessionAdminToken
 }
