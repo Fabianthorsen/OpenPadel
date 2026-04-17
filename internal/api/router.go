@@ -94,10 +94,10 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 		r.With(h.requireAuth).Post("/push/subscribe", h.subscribePush)
 		r.With(h.requireAuth).Delete("/push/subscribe", h.unsubscribePush)
 
-		r.Post("/sessions", h.createSession)
+		r.With(h.optionalAuth).Post("/sessions", h.createSession)
 
 		r.Route("/sessions/{id}", func(r chi.Router) {
-			r.Get("/", h.getSession)
+			r.With(h.optionalAuth).Get("/", h.getSession)
 			r.Get("/events", h.hub.ServeSSE())
 			r.Delete("/", h.cancelSession)
 			r.Post("/close", h.closeSession)

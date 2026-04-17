@@ -37,12 +37,16 @@
     return param;
   }
 
-  const isAdmin = $derived(!!getAdminToken());
+  const isAdmin = $derived(!!getAdminToken() || !!session?.is_creator);
 
   async function load() {
     const token = getAdminToken() ?? undefined;
     try {
       session = await api.sessions.get(sessionId, token);
+      // Token recovery: if the server recognises us as creator, persist the token.
+      if (session.admin_token && !token) {
+        localStorage.setItem(`admin_token_${sessionId}`, session.admin_token);
+      }
       if (session.status !== 'lobby' && session.game_mode !== 'tennis') {
         currentRound = await api.rounds.current(sessionId).catch(() => null);
       }

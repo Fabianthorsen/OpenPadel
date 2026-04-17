@@ -120,6 +120,12 @@
   let deferredInstallPrompt = $state<any>(null);
   let installDismissed = $state(false);
 
+  function sessionHref(sessionId: string) {
+    if (typeof localStorage === 'undefined') return `/s/${sessionId}`;
+    const token = localStorage.getItem(`admin_token_${sessionId}`);
+    return token ? `/s/${sessionId}?token=${token}` : `/s/${sessionId}`;
+  }
+
   function joinByCode() {
     const code = joinChars.join('').trim();
     if (code.length === 4) goto(`/s/${code}`);
@@ -594,7 +600,7 @@
               <p class="text-sm text-text-disabled py-1">{$_('profile_upcoming_empty')}</p>
             {:else}
               {#each upcoming as t}
-                <a href="/s/{t.session_id}" class="flex items-center gap-4 rounded-2xl bg-surface-raised px-4 py-3.5 transition-colors hover:bg-border">
+                <a href={sessionHref(t.session_id)} class="flex items-center gap-4 rounded-2xl bg-surface-raised px-4 py-3.5 transition-colors hover:bg-border">
                   <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status === 'active' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-primary-muted text-primary'}">
                     {#if t.status === 'active'}<Radio size={18} />{:else}<CalendarDays size={18} />{/if}
                   </div>

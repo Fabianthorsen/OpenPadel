@@ -8,7 +8,7 @@ import (
 
 func createSession(t *testing.T, s *store.Store) string {
 	t.Helper()
-	sess, err := s.CreateSession(2, 24, "", "americano", 2, 6, nil, nil, nil)
+	sess, err := s.CreateSession(2, 24, "", "americano", 2, 6, nil, nil, nil, "")
 	if err != nil {
 		t.Fatalf("createSession: %v", err)
 	}

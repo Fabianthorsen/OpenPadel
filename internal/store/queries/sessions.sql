@@ -1,9 +1,9 @@
 -- name: CreateSession :exec
-INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, creator_user_id, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: GetSession :one
-SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, current_round, scheduled_at, court_duration_minutes, ends_at, created_at, updated_at
+SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, created_at, updated_at
 FROM sessions WHERE id = ?;
 
 -- name: SetCreatorPlayer :exec

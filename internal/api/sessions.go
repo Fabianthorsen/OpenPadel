@@ -89,7 +89,11 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes)
+	creatorUserID := ""
+	if u := userFromContext(r); u != nil {
+		creatorUserID = u.ID
+	}
+	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes, creatorUserID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not create session")
 		return
@@ -109,8 +113,11 @@ func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Strip admin token from public responses.
-	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
+	// Treat the logged-in creator the same as a token-holding admin.
+	u := userFromContext(r)
+	if u != nil && sess.CreatorUserID != "" && u.ID == sess.CreatorUserID {
+		sess.IsCreator = true
+	} else if !isAdmin(extractAdminToken(r), sess.AdminToken) {
 		sess.AdminToken = ""
 	}
 
