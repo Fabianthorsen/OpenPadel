@@ -109,7 +109,7 @@
       <p class="text-sm text-text-secondary">Loading…</p>
     </main>
   {:else if session.status === 'lobby'}
-      <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} />
+      <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} {stream} />
   {:else if session.status === 'active' && session.game_mode === 'tennis'}
       <TennisMatch {session} {isAdmin} onRefresh={load} {stream} />
   {:else if session.status === 'active' && currentRound}

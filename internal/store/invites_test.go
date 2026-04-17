@@ -118,7 +118,7 @@ func TestDeclineInvite(t *testing.T) {
 
 	inv, _ := s.CreateInvite(sess, alice, bob)
 
-	if err := s.DeclineInvite(inv.ID, bob); err != nil {
+	if _, err := s.DeclineInvite(inv.ID, bob); err != nil {
 		t.Fatalf("DeclineInvite: %v", err)
 	}
 
@@ -137,7 +137,7 @@ func TestDeclineInvite_WrongUser(t *testing.T) {
 
 	inv, _ := s.CreateInvite(sess, alice, bob)
 
-	err := s.DeclineInvite(inv.ID, charlie)
+	_, err := s.DeclineInvite(inv.ID, charlie)
 	if err != store.ErrNotFound {
 		t.Errorf("expected ErrNotFound when wrong user declines, got %v", err)
 	}

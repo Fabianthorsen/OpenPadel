@@ -122,19 +122,20 @@ func (s *Store) AcceptInvite(inviteID, toUserID string) (*domain.Player, error) 
 	return s.AddContactPlayer(inv.SessionID, toUserID)
 }
 
-// DeclineInvite marks the invite as declined.
-func (s *Store) DeclineInvite(inviteID, toUserID string) error {
+// DeclineInvite marks the invite as declined. Returns the session_id so the
+// caller can emit SSE events without a second lookup.
+func (s *Store) DeclineInvite(inviteID, toUserID string) (string, error) {
 	inv, err := s.getInviteByID(inviteID)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if inv.ToUserID != toUserID {
-		return ErrNotFound
+		return "", ErrNotFound
 	}
 	if inv.Status != "pending" {
-		return errors.New("invite is no longer pending")
+		return "", errors.New("invite is no longer pending")
 	}
-	return s.queries.UpdateInviteStatus(context.Background(), db.UpdateInviteStatusParams{
+	return inv.SessionID, s.queries.UpdateInviteStatus(context.Background(), db.UpdateInviteStatusParams{
 		Status: "declined",
 		ID:     inviteID,
 	})

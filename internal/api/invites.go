@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/fabianthorsen/openpadel/internal/events"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -48,6 +49,7 @@ func (h *Handler) sendInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Emit(sessionID, events.Envelope{Type: events.EventSessionUpdated})
 	respond(w, http.StatusCreated, inv)
 }
 
@@ -91,6 +93,7 @@ func (h *Handler) acceptInvite(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
+	h.hub.Emit(player.SessionID, events.Envelope{Type: events.EventSessionUpdated})
 	respond(w, http.StatusOK, player)
 }
 
@@ -99,7 +102,7 @@ func (h *Handler) declineInvite(w http.ResponseWriter, r *http.Request) {
 	user := userFromContext(r)
 	inviteID := chi.URLParam(r, "inviteID")
 
-	err := h.store.DeclineInvite(inviteID, user.ID)
+	sessionID, err := h.store.DeclineInvite(inviteID, user.ID)
 	if errors.Is(err, store.ErrNotFound) {
 		respondError(w, http.StatusNotFound, "invite_not_found")
 		return
@@ -108,5 +111,6 @@ func (h *Handler) declineInvite(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
+	h.hub.Emit(sessionID, events.Envelope{Type: events.EventSessionUpdated})
 	respond(w, http.StatusOK, map[string]string{"status": "declined"})
 }
