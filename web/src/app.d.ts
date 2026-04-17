@@ -40,6 +40,7 @@ declare global {
       rounds_total?: number;
       current_round?: number;
       creator_player_id?: string;
+      is_creator?: boolean;
       scheduled_at?: string;
       court_duration_minutes?: number;
       ends_at?: string;

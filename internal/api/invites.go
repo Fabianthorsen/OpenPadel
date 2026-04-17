@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/fabianthorsen/openpadel/internal/events"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -48,6 +49,9 @@ func (h *Handler) sendInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.EmitToUser(body.ToUserID, events.Envelope{Type: events.EventInviteReceived})
+	notifBody := inv.FromDisplayName + " invited you to join a Padel tournament!"
+	go h.sendPushToUser(body.ToUserID, "You've been invited!", notifBody, "/s/"+sessionID)
 	respond(w, http.StatusCreated, inv)
 }
 
@@ -91,7 +95,32 @@ func (h *Handler) acceptInvite(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
+	h.hub.Emit(player.SessionID, events.Envelope{Type: events.EventSessionUpdated})
 	respond(w, http.StatusOK, player)
+}
+
+// handleUserEvents streams SSE events for the authenticated user.
+// Accepts a bearer token via Authorization header or ?token= query param
+// because EventSource cannot set custom headers.
+func (h *Handler) handleUserEvents(w http.ResponseWriter, r *http.Request) {
+	token := extractAdminToken(r)
+	if token == "" {
+		token = extractTokenFromQuery(r)
+	}
+	if token == "" {
+		respondError(w, http.StatusUnauthorized, "not_authenticated")
+		return
+	}
+	user, err := h.store.GetUserByToken(token)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			respondError(w, http.StatusUnauthorized, "invalid_token")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "server_error")
+		return
+	}
+	h.hub.ServeUserSSE(user.ID)(w, r)
 }
 
 // declineInvite declines a pending invite.
@@ -99,7 +128,7 @@ func (h *Handler) declineInvite(w http.ResponseWriter, r *http.Request) {
 	user := userFromContext(r)
 	inviteID := chi.URLParam(r, "inviteID")
 
-	err := h.store.DeclineInvite(inviteID, user.ID)
+	sessionID, err := h.store.DeclineInvite(inviteID, user.ID)
 	if errors.Is(err, store.ErrNotFound) {
 		respondError(w, http.StatusNotFound, "invite_not_found")
 		return
@@ -108,5 +137,6 @@ func (h *Handler) declineInvite(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
+	h.hub.Emit(sessionID, events.Envelope{Type: events.EventSessionUpdated})
 	respond(w, http.StatusOK, map[string]string{"status": "declined"})
 }

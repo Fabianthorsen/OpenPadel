@@ -26,6 +26,20 @@ func (s *Store) CreateInvite(sessionID, fromUserID, toUserID string) (*domain.In
 	})
 	if err != nil {
 		if isUniqueConstraint(err, "session_id, to_user_id") || isUniqueConstraint(err, "invites") {
+			// If the existing invite was declined, reset it to pending so the
+			// admin can re-invite the same user.
+			var existingID, existingStatus string
+			row := s.db.QueryRowContext(context.Background(),
+				"SELECT id, status FROM invites WHERE session_id = ? AND to_user_id = ?",
+				sessionID, toUserID)
+			if scanErr := row.Scan(&existingID, &existingStatus); scanErr == nil && existingStatus == "declined" {
+				if _, execErr := s.db.ExecContext(context.Background(),
+					"UPDATE invites SET status = 'pending', from_user_id = ? WHERE id = ?",
+					fromUserID, existingID); execErr != nil {
+					return nil, execErr
+				}
+				return s.getInviteByID(existingID)
+			}
 			return nil, ErrAlreadyInvited
 		}
 		return nil, err
@@ -122,19 +136,20 @@ func (s *Store) AcceptInvite(inviteID, toUserID string) (*domain.Player, error) 
 	return s.AddContactPlayer(inv.SessionID, toUserID)
 }
 
-// DeclineInvite marks the invite as declined.
-func (s *Store) DeclineInvite(inviteID, toUserID string) error {
+// DeclineInvite marks the invite as declined. Returns the session_id so the
+// caller can emit SSE events without a second lookup.
+func (s *Store) DeclineInvite(inviteID, toUserID string) (string, error) {
 	inv, err := s.getInviteByID(inviteID)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if inv.ToUserID != toUserID {
-		return ErrNotFound
+		return "", ErrNotFound
 	}
 	if inv.Status != "pending" {
-		return errors.New("invite is no longer pending")
+		return "", errors.New("invite is no longer pending")
 	}
-	return s.queries.UpdateInviteStatus(context.Background(), db.UpdateInviteStatusParams{
+	return inv.SessionID, s.queries.UpdateInviteStatus(context.Background(), db.UpdateInviteStatusParams{
 		Status: "declined",
 		ID:     inviteID,
 	})

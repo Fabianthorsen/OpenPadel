@@ -6,6 +6,39 @@ import (
 	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
+func TestCreateSession_CreatorUserID(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	sess, err := s.CreateSession(2, 24, "Test", "americano", 2, 6, nil, nil, nil, alice)
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if sess.CreatorUserID != alice {
+		t.Errorf("expected CreatorUserID=%s, got %q", alice, sess.CreatorUserID)
+	}
+
+	loaded, err := s.GetSession(sess.ID)
+	if err != nil {
+		t.Fatalf("GetSession: %v", err)
+	}
+	if loaded.CreatorUserID != alice {
+		t.Errorf("expected persisted CreatorUserID=%s, got %q", alice, loaded.CreatorUserID)
+	}
+}
+
+func TestCreateSession_NoCreatorUserID(t *testing.T) {
+	s := newTestStore(t)
+
+	sess, err := s.CreateSession(2, 24, "", "americano", 2, 6, nil, nil, nil, "")
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if sess.CreatorUserID != "" {
+		t.Errorf("expected empty CreatorUserID, got %q", sess.CreatorUserID)
+	}
+}
+
 func TestCompleteSession_EndedEarly(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)

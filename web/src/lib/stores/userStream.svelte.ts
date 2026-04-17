@@ -1,8 +1,15 @@
 type Handler<T = any> = (payload: T) => void;
 
-export type SessionStream = ReturnType<typeof sessionStream>;
+export type UserStream = ReturnType<typeof userStream>;
 
-export function sessionStream(sessionId: string) {
+/**
+ * SSE stream scoped to the authenticated user.
+ *
+ * Takes a getter for the token so each reconnect reads the latest value.
+ * EventSource cannot set headers, so the token is appended as ?token=.
+ * If getToken() returns null, connect() no-ops until start() is called again.
+ */
+export function userStream(getToken: () => string | null) {
 	let es: EventSource | null = null;
 	let backoff = 500;
 	let closed = false;
@@ -17,11 +24,14 @@ export function sessionStream(sessionId: string) {
 
 	function connect() {
 		if (closed || es) return;
-		es = new EventSource(`/api/sessions/${sessionId}/events`);
+		const token = getToken();
+		if (!token) return;
+		es = new EventSource(`/api/users/events?token=${encodeURIComponent(token)}`);
 		es.onopen = () => {
 			backoff = 500;
 		};
 		es.onerror = () => {
+			// Close manually so we control reconnect timing and re-read the token.
 			es?.close();
 			es = null;
 			if (closed || document.hidden || !navigator.onLine) return;

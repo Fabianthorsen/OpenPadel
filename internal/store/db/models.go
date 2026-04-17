@@ -100,6 +100,7 @@ type Session struct {
 	EndedEarly           int64
 	CourtDurationMinutes sql.NullInt64
 	EndsAt               sql.NullString
+	CreatorUserID        sql.NullString
 }
 
 type TennisMatch struct {

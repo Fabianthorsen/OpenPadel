@@ -15,6 +15,17 @@
   import { toast } from 'svelte-sonner';
   import { translateApiError } from '$lib/i18n/errors';
   import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
+  import { userStream, type UserStream } from '$lib/stores/userStream.svelte';
+
+  const stream: UserStream = userStream(() => auth.token);
+  let offInvite: (() => void) | null = null;
+
+  onMount(() => {
+    return () => {
+      offInvite?.();
+      stream.close();
+    };
+  });
 
   const AVATAR_ICONS = [
     'Zap', 'Star', 'Flame', 'Shield', 'Crown', 'Trophy', 'Target', 'Rocket',
@@ -120,6 +131,12 @@
   let deferredInstallPrompt = $state<any>(null);
   let installDismissed = $state(false);
 
+  function sessionHref(sessionId: string) {
+    if (typeof localStorage === 'undefined') return `/s/${sessionId}`;
+    const token = localStorage.getItem(`admin_token_${sessionId}`);
+    return token ? `/s/${sessionId}?token=${token}` : `/s/${sessionId}`;
+  }
+
   function joinByCode() {
     const code = joinChars.join('').trim();
     if (code.length === 4) goto(`/s/${code}`);
@@ -185,6 +202,12 @@
       showCreateDrawer = true;
     }
     await load();
+
+    offInvite = stream.onEvent('invite_received', async () => {
+      if (!auth.token) return;
+      try { invites = await api.invites.list(auth.token); } catch { /* heal on next load */ }
+    });
+    stream.start();
 
     // Install detection — runs immediately, no SW needed
     isStandalone = window.matchMedia('(display-mode: standalone)').matches
@@ -594,7 +617,7 @@
               <p class="text-sm text-text-disabled py-1">{$_('profile_upcoming_empty')}</p>
             {:else}
               {#each upcoming as t}
-                <a href="/s/{t.session_id}" class="flex items-center gap-4 rounded-2xl bg-surface-raised px-4 py-3.5 transition-colors hover:bg-border">
+                <a href={sessionHref(t.session_id)} class="flex items-center gap-4 rounded-2xl bg-surface-raised px-4 py-3.5 transition-colors hover:bg-border">
                   <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status === 'active' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-primary-muted text-primary'}">
                     {#if t.status === 'active'}<Radio size={18} />{:else}<CalendarDays size={18} />{/if}
                   </div>

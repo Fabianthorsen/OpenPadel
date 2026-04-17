@@ -16,17 +16,21 @@
   import { toast } from 'svelte-sonner';
   import { ApiError } from '$lib/api/client';
   import { translateApiError } from '$lib/i18n/errors';
+  import type { sessionStream } from '$lib/stores/sessionStream.svelte';
+  type SessionStream = ReturnType<typeof sessionStream>;
 
   let {
     session,
     isAdmin,
     onRefresh,
     onStarted,
+    stream,
   }: {
     session: App.Session;
     isAdmin: boolean;
     onRefresh: () => void;
     onStarted: () => void;
+    stream?: SessionStream;
   } = $props();
 
   const isDev = import.meta.env.DEV;
@@ -46,9 +50,16 @@
   let playerSearchDebounce: ReturnType<typeof setTimeout>;
   let sessionInvites = $state<App.Invite[]>([]);
 
-  onMount(async () => {
+  onMount(() => {
     if (isAdmin) {
-      sessionInvites = await api.invites.listForSession(session.id).catch(() => []);
+      api.invites.listForSession(session.id).catch(() => []).then(v => { sessionInvites = v; });
+    }
+    if (stream) {
+      return stream.onEvent('session_updated', async () => {
+        if (isAdmin) {
+          sessionInvites = await api.invites.listForSession(session.id).catch(() => []);
+        }
+      });
     }
   });
 

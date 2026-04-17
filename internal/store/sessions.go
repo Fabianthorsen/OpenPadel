@@ -12,7 +12,7 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, roundsTotal *int, scheduledAt *time.Time, courtDurationMinutes *int) (*domain.Session, error) {
+func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, roundsTotal *int, scheduledAt *time.Time, courtDurationMinutes *int, creatorUserID string) (*domain.Session, error) {
 	now := time.Now().UTC()
 	if gameMode == "" {
 		gameMode = "americano"
@@ -36,6 +36,7 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		RoundsTotal:          roundsTotal,
 		ScheduledAt:          scheduledAt,
 		CourtDurationMinutes: courtDurationMinutes,
+		CreatorUserID:        creatorUserID,
 		Players:              []domain.Player{},
 		CreatedAt:            now,
 		UpdatedAt:            now,
@@ -52,6 +53,10 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 	if roundsTotal != nil {
 		roundsTotalVal = sql.NullInt64{Int64: int64(*roundsTotal), Valid: true}
 	}
+	var creatorUserIDVal sql.NullString
+	if creatorUserID != "" {
+		creatorUserIDVal = sql.NullString{String: creatorUserID, Valid: true}
+	}
 	err := s.queries.CreateSession(context.Background(), db.CreateSessionParams{
 		ID:                   sess.ID,
 		AdminToken:           sess.AdminToken,
@@ -65,6 +70,7 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		RoundsTotal:          roundsTotalVal,
 		ScheduledAt:          scheduledAtStr,
 		CourtDurationMinutes: courtDurationMinutesVal,
+		CreatorUserID:        creatorUserIDVal,
 		CreatedAt:            sess.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:            sess.UpdatedAt.Format(time.RFC3339),
 	})
@@ -173,6 +179,9 @@ func rowToSession(row db.GetSessionRow) *domain.Session {
 	}
 	if row.CreatorPlayerID.Valid {
 		sess.CreatorPlayerID = row.CreatorPlayerID.String
+	}
+	if row.CreatorUserID.Valid {
+		sess.CreatorUserID = row.CreatorUserID.String
 	}
 	if row.ScheduledAt.Valid {
 		sess.ScheduledAt = parseTimePtr(row.ScheduledAt.String)

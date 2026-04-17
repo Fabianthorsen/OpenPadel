@@ -100,6 +100,8 @@ type Session struct {
 	RoundsTotal          *int          `json:"rounds_total,omitempty"`
 	CurrentRound         *int          `json:"current_round,omitempty"`
 	CreatorPlayerID      string        `json:"creator_player_id,omitempty"`
+	CreatorUserID        string        `json:"-"`
+	IsCreator            bool          `json:"is_creator,omitempty"`
 	ScheduledAt          *time.Time    `json:"scheduled_at,omitempty"`
 	CourtDurationMinutes *int          `json:"court_duration_minutes,omitempty"`
 	EndsAt               *time.Time    `json:"ends_at,omitempty"`

@@ -6,7 +6,9 @@
 - [ ] Invite screen UX redesign — host avatar hero, stacked player avatars, join section
 - [ ] Round count control — allow admin to choose rounds as multiples of the rotation unit (e.g. 5, 10, 15 for a 5-player bench config)
 - [ ] Admin can add extra rounds mid-session if players want to keep playing
-- [ ] Round Robin game mode — every pair plays every other pair
+- [ ] End tournament button — admin menu with options: Keep playing, End and discard, End and save results
+- [ ] Timed Americano — game mode with time-based rounds instead of fixed rounds
+- [ ] Winners court — winners stay on court, losers rotate (losers bench or next challengers)
 - [ ] Assign score entry to other players (not admin-only)
 ### Tooling & Infrastructure
 
@@ -23,7 +25,8 @@ _Nothing in progress — main is clean._
 
 ## Done
 
-- [x] **v1.9.5** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, session state changes, and tennis points now push instantly to all connected clients. 30 s fallback poll retained.
+- [x] **v1.10.0** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, session state changes, and tennis points now push instantly to all connected clients. 30 s fallback poll retained.
+- [x] **v1.10.0** — Admin access recovery: sessions now store `creator_user_id`; logged-in session creator is recognised as admin even after localStorage is cleared or on a different device. Profile upcoming-session links restore the admin token automatically.
 
 - [x] **v1.8.0** — Pull-to-refresh on home, session, and profile screens
 - [x] **v1.8.0** — Structured logging: `log/slog` JSON handler, request logger middleware (mutations + errors only)
