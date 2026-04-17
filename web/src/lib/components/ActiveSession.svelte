@@ -6,7 +6,7 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { sessionDialog } from '$lib/stores/sessionDialog';
-  import { Activity, ChartBar, Users, Pencil, Shield, LayoutGrid, Check, X } from 'lucide-svelte';
+  import { Activity, ChartBar, Users, Pencil, Shield, LayoutGrid, Check } from 'lucide-svelte';
   import { sessionName } from '$lib/utils';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
@@ -45,6 +45,7 @@
   let advancing = $state(false);
   let cancelling = $state(false);
   let closing = $state(false);
+  let showEndMenu = $state(false);
 
   // Court tabs
   let activeCourt = $state(0);
@@ -546,15 +547,10 @@
     {#if isAdmin}
       <div class="flex flex-col items-center gap-1 pb-2">
         <button
-          onclick={() => sessionDialog.open('close', closeSession)}
+          onclick={() => showEndMenu = true}
           disabled={closing || cancelling}
           class="rounded-full bg-destructive px-5 py-2 text-xs font-semibold text-white transition-all active:scale-95 disabled:opacity-40"
         >{$_('active_close')}</button>
-        <button
-          onclick={() => sessionDialog.open('cancel', cancelSession)}
-          disabled={closing || cancelling}
-          class="px-4 py-1.5 text-xs text-text-disabled transition-colors hover:text-destructive disabled:opacity-40"
-        >{$_('active_cancel')}</button>
       </div>
     {/if}
 
@@ -647,6 +643,30 @@
 </div><!-- end flex col h-full -->
 
 {/if}
+
+<!-- ── END TOURNAMENT BOTTOM SHEET ── -->
+<Sheet.Root bind:open={showEndMenu}>
+  <Sheet.Content side="bottom" class="w-full">
+    <Sheet.Header>
+      <Sheet.Title>{$_('active_close')}</Sheet.Title>
+    </Sheet.Header>
+    <Sheet.Footer>
+      <button
+        onclick={() => { showEndMenu = false; closeSession(); }}
+        disabled={closing || cancelling}
+        class="h-auto w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-40"
+      >{closing ? '…' : $_('end_menu_save')}</button>
+      <button
+        onclick={() => { showEndMenu = false; cancelSession(); }}
+        disabled={closing || cancelling}
+        class="h-auto w-full rounded-2xl bg-destructive px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-40"
+      >{cancelling ? '…' : $_('end_menu_discard')}</button>
+      <Sheet.Close
+        class="h-auto w-full rounded-2xl border border-border px-4 py-3.5 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-raised"
+      >{$_('end_menu_keep')}</Sheet.Close>
+    </Sheet.Footer>
+  </Sheet.Content>
+</Sheet.Root>
 
 <!-- ── COURTS OVERVIEW BOTTOM SHEET ── -->
 <Sheet.Root bind:open={showCourtsOverview}>
