@@ -253,6 +253,9 @@
 
   "active_close": "Avslutt turnering",
   "active_cancel": "Kanseller turnering",
+  "end_menu_keep": "Fortsett å spille",
+  "end_menu_save": "Avslutt og lagre resultater",
+  "end_menu_discard": "Avslutt og forkast",
   "active_finalize_result": "Bekreft resultat",
   "active_scores_synced": "Poengsum synkroniseres direkte til alle spillere",
   "close_dialog_title": "Avslutt turneringen?",

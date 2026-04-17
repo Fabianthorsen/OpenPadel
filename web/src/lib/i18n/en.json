@@ -255,6 +255,9 @@
 
   "active_close": "End tournament",
   "active_cancel": "Cancel tournament",
+  "end_menu_keep": "Keep playing",
+  "end_menu_save": "End and save results",
+  "end_menu_discard": "End and discard",
   "active_finalize_result": "Finalize Result",
   "active_scores_synced": "Scores are synced live to all player devices",
   "close_dialog_title": "Close tournament?",
