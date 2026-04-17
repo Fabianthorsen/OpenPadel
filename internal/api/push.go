@@ -57,6 +57,42 @@ func (h *Handler) unsubscribePush(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// sendPushToUser sends a push notification to a single user's subscriptions.
+func (h *Handler) sendPushToUser(userID, title, body, url string) {
+	if h.vapidPrivate == "" || h.vapidPublic == "" {
+		return
+	}
+	subs, err := h.store.GetPushSubscriptionsForUser(userID)
+	if err != nil {
+		slog.Error("push: get user subscriptions", "err", err)
+		return
+	}
+	payload, _ := json.Marshal(map[string]string{"title": title, "body": body, "url": url})
+	for _, sub := range subs {
+		s := &webpush.Subscription{
+			Endpoint: sub.Endpoint,
+			Keys: webpush.Keys{
+				P256dh: sub.P256DH,
+				Auth:   sub.Auth,
+			},
+		}
+		resp, err := webpush.SendNotification(payload, s, &webpush.Options{
+			VAPIDPublicKey:  h.vapidPublic,
+			VAPIDPrivateKey: h.vapidPrivate,
+			Subscriber:      fmt.Sprintf("mailto:noreply@%s", "openpadel.app"),
+			TTL:             60,
+		})
+		if err != nil {
+			slog.Error("push: send to user", "endpoint", sub.Endpoint, "err", err)
+			continue
+		}
+		resp.Body.Close()
+		if resp.StatusCode == http.StatusGone {
+			h.store.DeleteStalePushSubscription(sub.Endpoint) //nolint:errcheck
+		}
+	}
+}
+
 // sendPushToSession fans out a push notification to all subscribed players in a session.
 func (h *Handler) sendPushToSession(sessionID, title, body string) {
 	if h.vapidPrivate == "" || h.vapidPublic == "" {

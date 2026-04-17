@@ -50,6 +50,8 @@ func (h *Handler) sendInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.hub.Emit(sessionID, events.Envelope{Type: events.EventSessionUpdated})
+	notifBody := inv.FromDisplayName + " invited you to join a Padel tournament!"
+	go h.sendPushToUser(body.ToUserID, "You've been invited!", notifBody, "/s/"+sessionID)
 	respond(w, http.StatusCreated, inv)
 }
 

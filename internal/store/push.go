@@ -35,6 +35,23 @@ func (s *Store) DeleteStalePushSubscription(endpoint string) error {
 	return s.queries.DeleteStalePushSubscription(context.Background(), endpoint)
 }
 
+// GetPushSubscriptionsForUser returns all push subscriptions for a user.
+func (s *Store) GetPushSubscriptionsForUser(userID string) ([]PushSubscription, error) {
+	rows, err := s.queries.GetPushSubscriptionsByUserID(context.Background(), userID)
+	if err != nil {
+		return nil, err
+	}
+	var subs []PushSubscription
+	for _, row := range rows {
+		subs = append(subs, PushSubscription{
+			Endpoint: row.Endpoint,
+			P256DH:   row.P256dh,
+			Auth:     row.Auth,
+		})
+	}
+	return subs, nil
+}
+
 // GetPushSubscriptionsForSession returns all push subscriptions for logged-in
 // players in the given session.
 func (s *Store) GetPushSubscriptionsForSession(sessionID string) ([]PushSubscription, error) {
