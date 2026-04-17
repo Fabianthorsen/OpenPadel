@@ -36,6 +36,7 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		RoundsTotal:          roundsTotal,
 		ScheduledAt:          scheduledAt,
 		CourtDurationMinutes: courtDurationMinutes,
+		CreatorUserID:        creatorUserID,
 		Players:              []domain.Player{},
 		CreatedAt:            now,
 		UpdatedAt:            now,
