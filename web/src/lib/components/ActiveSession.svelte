@@ -15,6 +15,7 @@
   import RoundIndicator from './RoundIndicator.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import { numpad as numpadStore } from '$lib/stores/numpad';
+  import { auth } from '$lib/auth.svelte';
   import type { SessionStream } from '$lib/stores/sessionStream.svelte';
 
   let {
@@ -207,7 +208,7 @@
     try {
       const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
       await api.sessions.cancel(session.id, adminToken);
-      location.href = '/';
+      location.href = auth.user ? '/profile' : '/';
     } catch (e) {
       toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
       cancelling = false;
