@@ -9,7 +9,6 @@
 - [ ] Round count control — allow admin to choose rounds as multiples of the rotation unit (e.g. 5, 10, 15 for a 5-player bench config)
 - [ ] Admin can add extra rounds mid-session if players want to keep playing
 - [ ] End tournament button — admin menu with options: Keep playing, End and discard, End and save results
-- [ ] Timed Americano — game mode with time-based rounds instead of fixed rounds
 - [ ] Winners court — winners stay on court, losers rotate (losers bench or next challengers)
 - [ ] Assign score entry to other players (not admin-only)
 
@@ -46,10 +45,11 @@
 
 ## In Progress
 
-_Nothing in progress — main is clean._
+- **Timed Americano (PR 2-4)** — API handlers, frontend UI, documentation. Foundation (PR 1) merged.
 
 ## Done
 
+- [x] **Timed Americano (PR 1: Foundation)** — Database migrations, scheduler logic (`CalculateTimedRounds`, `RecalculateRoundDuration`, `GenerateTimedAmericano`), domain model, and store layer with timer state management. All tests passing. API handlers and frontend UI in progress (PR 2-3).
 - [x] **v1.10.0** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, session state changes, and tennis points now push instantly to all connected clients. 30 s fallback poll retained.
 - [x] **v1.10.0** — Admin access recovery: sessions now store `creator_user_id`; logged-in session creator is recognised as admin even after localStorage is cleared or on a different device. Profile upcoming-session links restore the admin token automatically.
 
