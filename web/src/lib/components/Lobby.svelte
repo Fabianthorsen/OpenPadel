@@ -115,8 +115,15 @@
 
   const isTennis = $derived(session.game_mode === 'tennis');
   const isMexicano = $derived(session.game_mode === 'mexicano');
+  const isTimedAmericano = $derived(session.game_mode === 'timed_americano');
   const gameModeName = $derived(
-    session.game_mode === 'mexicano' ? 'Mexicano' : session.game_mode === 'tennis' ? 'Tennis' : 'Americano'
+    session.game_mode === 'mexicano'
+      ? $_('create_mexicano_soon')
+      : session.game_mode === 'tennis'
+        ? 'Tennis'
+        : session.game_mode === 'timed_americano'
+          ? $_('create_mode_timed_americano')
+          : 'Americano'
   );
   let showRules = $state(false);
   const activePlayers = $derived(session.players.filter((p) => p.active));
@@ -360,7 +367,7 @@
           {#if isTennis}
             {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
           {:else}
-            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} {$_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
+            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
           {/if}
         </p>
       </div>
@@ -445,7 +452,7 @@
           {#if isTennis}
             {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}
           {:else}
-            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
+            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' pts'} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
           {/if}
         </div>
         <button
