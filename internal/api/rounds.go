@@ -10,6 +10,7 @@ import (
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
 	"github.com/fabianthorsen/openpadel/internal/events"
+	"github.com/fabianthorsen/openpadel/internal/scheduler"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -86,9 +87,12 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
-	if body.ScoreA+body.ScoreB != sess.Points {
-		respondError(w, http.StatusBadRequest, "scores_invalid_sum")
-		return
+	// Timed Americano allows free scoring (no points constraint)
+	if sess.GameMode != "timed_americano" {
+		if body.ScoreA+body.ScoreB != sess.Points {
+			respondError(w, http.StatusBadRequest, "scores_invalid_sum")
+			return
+		}
 	}
 	if body.ScoreA < 0 || body.ScoreB < 0 {
 		respondError(w, http.StatusBadRequest, "scores_negative")
@@ -200,7 +204,47 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if sess.GameMode == "mexicano" {
+	if sess.GameMode == "timed_americano" {
+		// Calculate remaining time and rounds
+		now := time.Now().UTC()
+		remainingSeconds := int(sess.EndsAt.Sub(now).Seconds())
+		if remainingSeconds < 0 {
+			remainingSeconds = 0
+		}
+		remainingRounds := *sess.RoundsTotal - *sess.CurrentRound
+
+		// Recalculate round duration
+		newDurationSec := scheduler.RecalculateRoundDuration(remainingRounds, remainingSeconds, *sess.BufferSeconds)
+
+		// Update duration
+		if err := h.store.UpdateRoundDuration(sessionID, &newDurationSec); err != nil {
+			respondError(w, http.StatusInternalServerError, "server_error")
+			return
+		}
+
+		// Set round started time
+		if err := h.store.SetRoundStartedAt(sessionID, &now); err != nil {
+			respondError(w, http.StatusInternalServerError, "server_error")
+			return
+		}
+
+		// Emit timer sync event
+		h.hub.Emit(sessionID, events.Envelope{
+			Type: events.EventTimerSync,
+			Payload: map[string]any{
+				"round_duration_seconds": newDurationSec,
+				"round_started_at":       now.Format(time.RFC3339),
+				"remaining_rounds":       remainingRounds,
+				"buffer_seconds":         *sess.BufferSeconds,
+			},
+		})
+
+		// Advance normally
+		if err := h.store.AdvanceRound(sessionID); err != nil {
+			respondError(w, http.StatusInternalServerError, "server_error")
+			return
+		}
+	} else if sess.GameMode == "mexicano" {
 		nextRound := 1
 		if sess.CurrentRound != nil {
 			nextRound = *sess.CurrentRound + 1

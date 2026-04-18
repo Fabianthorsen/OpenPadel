@@ -46,8 +46,8 @@ func (q *Queries) CompleteSession(ctx context.Context, arg CompleteSessionParams
 }
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, creator_user_id, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, total_duration_minutes, buffer_seconds, creator_user_id, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateSessionParams struct {
@@ -63,6 +63,8 @@ type CreateSessionParams struct {
 	RoundsTotal          sql.NullInt64
 	ScheduledAt          sql.NullString
 	CourtDurationMinutes sql.NullInt64
+	TotalDurationMinutes sql.NullInt64
+	BufferSeconds        sql.NullInt64
 	CreatorUserID        sql.NullString
 	CreatedAt            string
 	UpdatedAt            string
@@ -82,6 +84,8 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 		arg.RoundsTotal,
 		arg.ScheduledAt,
 		arg.CourtDurationMinutes,
+		arg.TotalDurationMinutes,
+		arg.BufferSeconds,
 		arg.CreatorUserID,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -301,11 +305,12 @@ func (q *Queries) StartSession(ctx context.Context, arg StartSessionParams) erro
 }
 
 const startTimedAmericanoSession = `-- name: StartTimedAmericanoSession :exec
-UPDATE sessions SET status = ?, total_duration_minutes = ?, buffer_seconds = ?, round_duration_seconds = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?
+UPDATE sessions SET status = ?, rounds_total = ?, total_duration_minutes = ?, buffer_seconds = ?, round_duration_seconds = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?
 `
 
 type StartTimedAmericanoSessionParams struct {
 	Status               string
+	RoundsTotal          sql.NullInt64
 	TotalDurationMinutes sql.NullInt64
 	BufferSeconds        sql.NullInt64
 	RoundDurationSeconds sql.NullInt64
@@ -317,6 +322,7 @@ type StartTimedAmericanoSessionParams struct {
 func (q *Queries) StartTimedAmericanoSession(ctx context.Context, arg StartTimedAmericanoSessionParams) error {
 	_, err := q.db.ExecContext(ctx, startTimedAmericanoSession,
 		arg.Status,
+		arg.RoundsTotal,
 		arg.TotalDurationMinutes,
 		arg.BufferSeconds,
 		arg.RoundDurationSeconds,

@@ -45,11 +45,12 @@
 
 ## In Progress
 
-- **Timed Americano (PR 2-4)** — API handlers, frontend UI, documentation. Foundation (PR 1) merged.
+- **Timed Americano (PR 3-4)** — Frontend UI and final polish. Core API handlers in PR 2 merged.
 
 ## Done
 
-- [x] **Timed Americano (PR 1: Foundation)** — Database migrations, scheduler logic (`CalculateTimedRounds`, `RecalculateRoundDuration`, `GenerateTimedAmericano`), domain model, and store layer with timer state management. All tests passing. API handlers and frontend UI in progress (PR 2-3).
+- [x] **Timed Americano (PR 2: API Handlers)** — Session creation with duration/buffer validation, game start with round calculation and drift correction, score submission with free-form scoring (no points constraint), round advance with timer_sync SSE events. Full integration tests. All tests passing.
+- [x] **Timed Americano (PR 1: Foundation)** — Database migrations, scheduler logic (`CalculateTimedRounds`, `RecalculateRoundDuration`, `GenerateTimedAmericano`), domain model, and store layer with timer state management. All tests passing.
 - [x] **v1.10.0** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, session state changes, and tennis points now push instantly to all connected clients. 30 s fallback poll retained.
 - [x] **v1.10.0** — Admin access recovery: sessions now store `creator_user_id`; logged-in session creator is recognised as admin even after localStorage is cleared or on a different device. Profile upcoming-session links restore the admin token automatically.
 
