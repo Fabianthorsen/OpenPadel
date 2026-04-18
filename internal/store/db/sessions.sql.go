@@ -167,7 +167,7 @@ func (q *Queries) DeleteTennisTeams(ctx context.Context, sessionID string) error
 }
 
 const getSession = `-- name: GetSession :one
-SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, created_at, updated_at
+SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, buffer_seconds, round_duration_seconds, round_started_at, created_at, updated_at
 FROM sessions WHERE id = ?
 `
 
@@ -188,6 +188,10 @@ type GetSessionRow struct {
 	ScheduledAt          sql.NullString
 	CourtDurationMinutes sql.NullInt64
 	EndsAt               sql.NullString
+	TotalDurationMinutes sql.NullInt64
+	BufferSeconds        sql.NullInt64
+	RoundDurationSeconds sql.NullInt64
+	RoundStartedAt       sql.NullString
 	CreatedAt            string
 	UpdatedAt            string
 }
@@ -212,6 +216,10 @@ func (q *Queries) GetSession(ctx context.Context, id string) (GetSessionRow, err
 		&i.ScheduledAt,
 		&i.CourtDurationMinutes,
 		&i.EndsAt,
+		&i.TotalDurationMinutes,
+		&i.BufferSeconds,
+		&i.RoundDurationSeconds,
+		&i.RoundStartedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -230,6 +238,21 @@ type SetCreatorPlayerParams struct {
 
 func (q *Queries) SetCreatorPlayer(ctx context.Context, arg SetCreatorPlayerParams) error {
 	_, err := q.db.ExecContext(ctx, setCreatorPlayer, arg.CreatorPlayerID, arg.UpdatedAt, arg.ID)
+	return err
+}
+
+const setRoundStartedAt = `-- name: SetRoundStartedAt :exec
+UPDATE sessions SET round_started_at = ?, updated_at = ? WHERE id = ?
+`
+
+type SetRoundStartedAtParams struct {
+	RoundStartedAt sql.NullString
+	UpdatedAt      string
+	ID             string
+}
+
+func (q *Queries) SetRoundStartedAt(ctx context.Context, arg SetRoundStartedAtParams) error {
+	_, err := q.db.ExecContext(ctx, setRoundStartedAt, arg.RoundStartedAt, arg.UpdatedAt, arg.ID)
 	return err
 }
 
@@ -274,5 +297,47 @@ func (q *Queries) StartSession(ctx context.Context, arg StartSessionParams) erro
 		arg.UpdatedAt,
 		arg.ID,
 	)
+	return err
+}
+
+const startTimedAmericanoSession = `-- name: StartTimedAmericanoSession :exec
+UPDATE sessions SET status = ?, total_duration_minutes = ?, buffer_seconds = ?, round_duration_seconds = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?
+`
+
+type StartTimedAmericanoSessionParams struct {
+	Status               string
+	TotalDurationMinutes sql.NullInt64
+	BufferSeconds        sql.NullInt64
+	RoundDurationSeconds sql.NullInt64
+	EndsAt               sql.NullString
+	UpdatedAt            string
+	ID                   string
+}
+
+func (q *Queries) StartTimedAmericanoSession(ctx context.Context, arg StartTimedAmericanoSessionParams) error {
+	_, err := q.db.ExecContext(ctx, startTimedAmericanoSession,
+		arg.Status,
+		arg.TotalDurationMinutes,
+		arg.BufferSeconds,
+		arg.RoundDurationSeconds,
+		arg.EndsAt,
+		arg.UpdatedAt,
+		arg.ID,
+	)
+	return err
+}
+
+const updateRoundDuration = `-- name: UpdateRoundDuration :exec
+UPDATE sessions SET round_duration_seconds = ?, updated_at = ? WHERE id = ?
+`
+
+type UpdateRoundDurationParams struct {
+	RoundDurationSeconds sql.NullInt64
+	UpdatedAt            string
+	ID                   string
+}
+
+func (q *Queries) UpdateRoundDuration(ctx context.Context, arg UpdateRoundDurationParams) error {
+	_, err := q.db.ExecContext(ctx, updateRoundDuration, arg.RoundDurationSeconds, arg.UpdatedAt, arg.ID)
 	return err
 }

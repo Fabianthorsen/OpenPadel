@@ -5,6 +5,7 @@ sql:
     schema:
       - "internal/store/migrations/000001_initial_schema.sql"
       - "internal/store/migrations/000002_session_creator.sql"
+      - "internal/store/migrations/000003_timed_americano.sql"
     gen:
       go:
         package: "db"

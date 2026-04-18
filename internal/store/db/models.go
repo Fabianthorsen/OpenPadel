@@ -101,6 +101,10 @@ type Session struct {
 	CourtDurationMinutes sql.NullInt64
 	EndsAt               sql.NullString
 	CreatorUserID        sql.NullString
+	TotalDurationMinutes sql.NullInt64
+	BufferSeconds        sql.NullInt64
+	RoundDurationSeconds sql.NullInt64
+	RoundStartedAt       sql.NullString
 }
 
 type TennisMatch struct {

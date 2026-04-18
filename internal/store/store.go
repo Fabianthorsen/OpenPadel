@@ -14,6 +14,10 @@ type Store struct {
 	queries *db.Queries
 }
 
+func (s *Store) DB() *sql.DB {
+	return s.db
+}
+
 func Open(path string) (*Store, error) {
 	dbHandle, err := sql.Open("sqlite", path+"?_journal_mode=WAL&_foreign_keys=on")
 	if err != nil {

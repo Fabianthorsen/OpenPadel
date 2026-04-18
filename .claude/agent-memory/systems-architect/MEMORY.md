@@ -1,0 +1,2 @@
+- [Architecture patterns](architecture_patterns.md) — Key codebase conventions: sqlc queries, game mode branching, scheduler patterns, SSE events
+- [User profile](user_profile.md) — Fabian is project owner/developer of OpenPadel, builds padel tournament management PWA

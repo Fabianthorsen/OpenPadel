@@ -78,14 +78,17 @@ type Querier interface {
 	SavePushSubscription(ctx context.Context, arg SavePushSubscriptionParams) error
 	SearchUsers(ctx context.Context, arg SearchUsersParams) ([]SearchUsersRow, error)
 	SetCreatorPlayer(ctx context.Context, arg SetCreatorPlayerParams) error
+	SetRoundStartedAt(ctx context.Context, arg SetRoundStartedAtParams) error
 	StartMexicanoSession(ctx context.Context, arg StartMexicanoSessionParams) error
 	StartSession(ctx context.Context, arg StartSessionParams) error
+	StartTimedAmericanoSession(ctx context.Context, arg StartTimedAmericanoSessionParams) error
 	UpdateInviteStatus(ctx context.Context, arg UpdateInviteStatusParams) error
 	UpdateMatchLiveScore(ctx context.Context, arg UpdateMatchLiveScoreParams) error
 	UpdateMatchScore(ctx context.Context, arg UpdateMatchScoreParams) error
 	UpdatePlayerUserIDToNull(ctx context.Context, userID sql.NullString) error
 	UpdateProfile(ctx context.Context, arg UpdateProfileParams) error
 	UpdateProfileAvatarOnPlayers(ctx context.Context, arg UpdateProfileAvatarOnPlayersParams) error
+	UpdateRoundDuration(ctx context.Context, arg UpdateRoundDurationParams) error
 	UpdateSessionCurrentRound(ctx context.Context, arg UpdateSessionCurrentRoundParams) error
 	UpdateTennisState(ctx context.Context, arg UpdateTennisStateParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error

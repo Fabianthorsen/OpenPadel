@@ -193,6 +193,21 @@ func rowToSession(row db.GetSessionRow) *domain.Session {
 	if row.EndsAt.Valid {
 		sess.EndsAt = parseTimePtr(row.EndsAt.String)
 	}
+	if row.TotalDurationMinutes.Valid {
+		v := int(row.TotalDurationMinutes.Int64)
+		sess.TotalDurationMinutes = &v
+	}
+	if row.BufferSeconds.Valid {
+		v := int(row.BufferSeconds.Int64)
+		sess.BufferSeconds = &v
+	}
+	if row.RoundDurationSeconds.Valid {
+		v := int(row.RoundDurationSeconds.Int64)
+		sess.RoundDurationSeconds = &v
+	}
+	if row.RoundStartedAt.Valid {
+		sess.RoundStartedAt = parseTimePtr(row.RoundStartedAt.String)
+	}
 
 	return sess
 }
@@ -213,6 +228,64 @@ func parseTime(s string) time.Time {
 func parseTimePtr(s string) *time.Time {
 	t, _ := time.Parse(time.RFC3339, s)
 	return &t
+}
+
+func (s *Store) StartTimedAmericanoSession(id, status string, totalDurationMin, bufferSec, roundDurationSec *int, endsAt *time.Time) error {
+	var totalDurationMinVal sql.NullInt64
+	if totalDurationMin != nil {
+		totalDurationMinVal = sql.NullInt64{Int64: int64(*totalDurationMin), Valid: true}
+	}
+
+	var bufferSecVal sql.NullInt64
+	if bufferSec != nil {
+		bufferSecVal = sql.NullInt64{Int64: int64(*bufferSec), Valid: true}
+	}
+
+	var roundDurationSecVal sql.NullInt64
+	if roundDurationSec != nil {
+		roundDurationSecVal = sql.NullInt64{Int64: int64(*roundDurationSec), Valid: true}
+	}
+
+	var endsAtStr sql.NullString
+	if endsAt != nil {
+		endsAtStr = sql.NullString{String: endsAt.UTC().Format(time.RFC3339), Valid: true}
+	}
+
+	return s.queries.StartTimedAmericanoSession(context.Background(), db.StartTimedAmericanoSessionParams{
+		Status:               status,
+		TotalDurationMinutes: totalDurationMinVal,
+		BufferSeconds:        bufferSecVal,
+		RoundDurationSeconds: roundDurationSecVal,
+		EndsAt:               endsAtStr,
+		UpdatedAt:            time.Now().UTC().Format(time.RFC3339),
+		ID:                   id,
+	})
+}
+
+func (s *Store) SetRoundStartedAt(id string, roundStartedAt *time.Time) error {
+	var roundStartedAtStr sql.NullString
+	if roundStartedAt != nil {
+		roundStartedAtStr = sql.NullString{String: roundStartedAt.UTC().Format(time.RFC3339), Valid: true}
+	}
+
+	return s.queries.SetRoundStartedAt(context.Background(), db.SetRoundStartedAtParams{
+		RoundStartedAt: roundStartedAtStr,
+		UpdatedAt:      time.Now().UTC().Format(time.RFC3339),
+		ID:             id,
+	})
+}
+
+func (s *Store) UpdateRoundDuration(id string, roundDurationSec *int) error {
+	var roundDurationSecVal sql.NullInt64
+	if roundDurationSec != nil {
+		roundDurationSecVal = sql.NullInt64{Int64: int64(*roundDurationSec), Valid: true}
+	}
+
+	return s.queries.UpdateRoundDuration(context.Background(), db.UpdateRoundDurationParams{
+		RoundDurationSeconds: roundDurationSecVal,
+		UpdatedAt:            time.Now().UTC().Format(time.RFC3339),
+		ID:                   id,
+	})
 }
 
 func (s *Store) DeleteSession(id string) error {
