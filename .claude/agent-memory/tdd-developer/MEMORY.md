@@ -1,0 +1,1 @@
+- [Timed Americano Implementation Guide](timed-americano-implementation.md) — TDD patterns, API refactoring decisions, next steps

@@ -13,6 +13,7 @@
   import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import * as Sheet from '$lib/components/ui/sheet';
   import RoundIndicator from './RoundIndicator.svelte';
+  import RoundTimer from './RoundTimer.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import { numpad as numpadStore } from '$lib/stores/numpad';
   import { auth } from '$lib/auth.svelte';
@@ -37,6 +38,8 @@
 
   const playerName = $derived(Object.fromEntries(session.players.map((p) => [p.id, p.name])));
   const playerById = $derived(Object.fromEntries(session.players.map((p) => [p.id, p])));
+  const isTimedAmericano = $derived(session.game_mode === 'timed_americano');
+  const maxScore = $derived(isTimedAmericano ? 99 : session.points);
 
   let localScores = $state<Record<string, { a: number; b: number }>>({});
   let submitting = $state<Record<string, boolean>>({});
@@ -89,7 +92,7 @@
     } else {
       next = (numpad.value + d).replace(/^0+(\d)/, '$1');
     }
-    if (parseInt(next || '0') > session.points) return;
+    if (parseInt(next || '0') > maxScore) return;
     numpad = { ...numpad, value: next, fresh: false }; // After first digit, normal append mode
     numpadStore.update({ value: next, fresh: false });
   }
@@ -104,19 +107,36 @@
   function numpadConfirm() {
     if (!numpad) return;
     const entered = parseInt(numpad.value || '0');
-    if (entered > session.points) {
+    if (entered > maxScore) {
       numpadStore.update({ shaking: true });
       setTimeout(() => {
         numpadStore.update({ shaking: false });
       }, 400);
       return;
     }
-    const other = session.points - entered;
     const { matchId, team } = numpad;
-    localScores[matchId] = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
-    scheduleLiveSave(matchId);
-    numpad = null;
-    numpadStore.close();
+
+    if (isTimedAmericano) {
+      // Timed Americano: set entered score on current team, leave other for next numpad open
+      const current = localScores[matchId] ?? { a: 0, b: 0 };
+      localScores[matchId] = { ...current, [team]: entered };
+      scheduleLiveSave(matchId);
+
+      // Close numpad and prompt for next team if not yet set
+      numpad = null;
+      numpadStore.close();
+      if (current[team === 'a' ? 'b' : 'a'] === 0 && team === 'a') {
+        // Team B score not set, open numpad for team B
+        setTimeout(() => openNumpad(matchId, 'b'), 100);
+      }
+    } else {
+      // Americano/Mexicano: auto-complement to fixed points target
+      const other = session.points - entered;
+      localScores[matchId] = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
+      scheduleLiveSave(matchId);
+      numpad = null;
+      numpadStore.close();
+    }
   }
 
   const scores = $derived.by(() => {
@@ -169,7 +189,7 @@
 
   function adjust(matchId: string, team: 'a' | 'b', delta: number) {
     const s = scores[matchId] ?? { a: 0, b: 0 };
-    localScores[matchId] = { ...s, [team]: Math.max(0, Math.min(session.points, s[team] + delta)) };
+    localScores[matchId] = { ...s, [team]: Math.max(0, Math.min(maxScore, s[team] + delta)) };
     scheduleLiveSave(matchId);
   }
 
@@ -299,7 +319,7 @@
     <div class="flex items-center justify-between gap-3">
       <div class="min-w-0">
         <p class="text-[10px] font-bold uppercase tracking-widest text-text-disabled">
-          {session.game_mode} tournament
+          {isTimedAmericano ? $_('create_mode_timed_americano') : session.game_mode} tournament
         </p>
         <button onclick={() => showCourtsOverview = true} class="text-left">
           <h2 class="text-[28px] font-[800] leading-tight tracking-tight">
@@ -332,6 +352,14 @@
 
     {#if session.rounds_total != null}
       <RoundIndicator current={currentRound.number} total={session.rounds_total} />
+    {/if}
+
+    {#if isTimedAmericano && session.round_started_at && session.round_duration_seconds}
+      <RoundTimer
+        roundStartedAt={session.round_started_at}
+        roundDurationSeconds={session.round_duration_seconds}
+        bufferSeconds={session.buffer_seconds ?? 120}
+      />
     {/if}
 
     <!-- Court tabs -->
@@ -486,7 +514,7 @@
           {#if isAdmin}
             <button
               onclick={() => submitScore(match.id)}
-              disabled={s.a + s.b !== session.points || submitting[match.id]}
+              disabled={isTimedAmericano ? (s.a < 0 || s.b < 0 || submitting[match.id]) : (s.a + s.b !== session.points || submitting[match.id])}
               class="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-40"
             >
               <Check size={18} />
