@@ -1,28 +1,43 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
+	import { api } from '$lib/api/client';
+	import { onMount } from 'svelte';
 	import type { Round, Match } from '$lib/types';
 
 	let {
-		rounds,
 		currentRound,
 		courts = 1,
-		session
+		session,
+		sessionId
 	}: {
-		rounds: Round[];
 		currentRound: number;
 		courts: number;
 		session: any;
+		sessionId: string;
 	} = $props();
 
-	const nextRound = $derived(rounds.find(r => r.round_number === currentRound + 1));
+	let nextRound = $state<Round | null>(null);
+	let loading = $state(true);
+
+	onMount(async () => {
+		try {
+			const response = await api.rounds.list(sessionId);
+			const allRounds = response.rounds || [];
+			nextRound = allRounds.find((r: any) => r.round_number === currentRound + 1) || null;
+		} catch (e) {
+			console.error('Failed to load next round:', e);
+		} finally {
+			loading = false;
+		}
+	});
 
 	const courtAssignments = $derived.by(() => {
-		if (!nextRound) return [];
+		if (!nextRound || loading) return [];
 
 		const assignments: { court: number; matches: Match[] }[] = [];
 
 		for (let c = 1; c <= courts; c++) {
-			const courtMatches = nextRound.matches.filter(m => m.court === c);
+			const courtMatches = (nextRound as any).matches.filter((m: any) => m.court === c);
 			if (courtMatches.length > 0) {
 				assignments.push({ court: c, matches: courtMatches });
 			}
@@ -32,12 +47,12 @@
 	});
 
 	const benchedPlayers = $derived.by(() => {
-		if (!nextRound) return [];
+		if (!nextRound || loading) return [];
 
 		const allPlayers = new Set(session?.players?.map((p: any) => p.id) || []);
 		const playingPlayers = new Set();
 
-		nextRound.matches.forEach((match: Match) => {
+		(nextRound as any).matches.forEach((match: any) => {
 			playingPlayers.add(match.player_a_id);
 			playingPlayers.add(match.player_b_id);
 			playingPlayers.add(match.player_c_id);
@@ -52,7 +67,11 @@
 	}
 </script>
 
-{#if nextRound}
+{#if loading}
+	<div class="bg-surface-raised rounded-lg p-4 animate-pulse">
+		<p class="text-xs font-semibold text-text-secondary mb-3">Loading next round...</p>
+	</div>
+{:else if nextRound}
 	<div class="space-y-4">
 		<div class="bg-surface-raised rounded-lg p-4">
 			<p class="text-xs font-semibold text-text-secondary mb-3">
