@@ -89,12 +89,13 @@ and stored in the browser's `localStorage`.
 
 ## Game Modes
 
-| Mode       | Status | Description                                              |
-|------------|--------|----------------------------------------------------------|
-| Americano  | Live   | Rotating partners, individual scoring, pre-computed rounds |
-| Mexicano   | Live   | Like Americano, but pairings adapt each round by standings |
-| Tennis     | Live   | Regular 2v2 with sets, games, serve tracking             |
-| Round Robin| Planned| Every pair plays every other pair                        |
+| Mode            | Status | Description                                                  |
+|-----------------|--------|--------------------------------------------------------------|
+| Americano       | Live   | Rotating partners, individual scoring, pre-computed rounds   |
+| Mexicano        | Live   | Like Americano, but pairings adapt each round by standings   |
+| Tennis          | Live   | Regular 2v2 with sets, games, serve tracking                 |
+| Timed Americano | Live   | Americano with fixed duration, free scoring, drift correction|
+| Round Robin     | Planned| Every pair plays every other pair                            |
 
 ---
 
@@ -236,6 +237,7 @@ flowchart LR
 |---|---|---|
 | `session_updated` | _(signal)_ | session starts, closes, cancels; player joins/leaves |
 | `round_updated` | _(signal)_ | score submitted, round advanced |
+| `timer_sync` | `{round_duration_seconds, round_started_at, remaining_rounds, buffer_seconds}` | timed_americano round advanced (drift correction) |
 | `live_score` | `{match_id, a, b, server}` | live score tap (PATCH, in-memory only) |
 | `tennis_updated` | full `TennisMatch` | point scored, server changed |
 
@@ -315,6 +317,22 @@ Constraints (priority order):
 ### Mexicano (`internal/scheduler/mexicano.go`)
 Same constraints, but pairings are recalculated each round based on current standings.
 No bench — requires exactly `courts × 4` players.
+
+### Timed Americano (`internal/scheduler/timed_americano.go`)
+Timer-based variant of Americano with fixed tournament duration and dynamic round timing.
+
+**Key differences from Americano:**
+- **No points constraint** — scores are free-form (not constrained to sum to a fixed total like 16/24/32)
+- **Fixed tournament duration** — total minutes is configured at creation, rounds auto-play until timer expires
+- **Drift correction** — after each round, remaining time is redistributed across remaining rounds (via `RecalculateRoundDuration`)
+- **Automatic completion** — session ends when the timer expires and current round is fully scored
+- **Pairing** — uses same greedy scheduler as Americano to generate all rounds upfront based on player count
+
+Timer sync events (`timer_sync`) are emitted when advancing rounds, containing:
+- `round_duration_seconds` — recalculated duration for the next round
+- `round_started_at` — timestamp when the round started (for client-side countdown sync)
+- `remaining_rounds` — number of rounds still to play
+- `buffer_seconds` — time between rounds for setup/transitions
 
 ---
 

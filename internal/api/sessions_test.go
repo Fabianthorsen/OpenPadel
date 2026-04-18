@@ -217,3 +217,159 @@ func TestCancelSession_RequiresAdmin(t *testing.T) {
 	}
 	res.Body.Close()
 }
+
+// Timed Americano Tests
+
+func TestCreateSession_TimedAmericano(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                   1,
+		"game_mode":                "timed_americano",
+		"total_duration_minutes":   120,
+		"buffer_seconds":           120,
+	}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+	var body struct {
+		ID                   string `json:"id"`
+		GameMode             string `json:"game_mode"`
+		TotalDurationMinutes *int   `json:"total_duration_minutes"`
+		BufferSeconds        *int   `json:"buffer_seconds"`
+		Points               int    `json:"points"`
+	}
+	decodeBody(t, res, &body)
+	if body.GameMode != "timed_americano" {
+		t.Errorf("expected game_mode='timed_americano', got %q", body.GameMode)
+	}
+	if body.TotalDurationMinutes == nil || *body.TotalDurationMinutes != 120 {
+		t.Errorf("expected TotalDurationMinutes=120, got %v", body.TotalDurationMinutes)
+	}
+	if body.BufferSeconds == nil || *body.BufferSeconds != 120 {
+		t.Errorf("expected BufferSeconds=120, got %v", body.BufferSeconds)
+	}
+	if body.Points != 0 {
+		t.Errorf("expected Points=0 for timed_americano, got %d", body.Points)
+	}
+}
+
+func TestCreateSession_TimedAmericano_DefaultBuffer(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                   1,
+		"game_mode":                "timed_americano",
+		"total_duration_minutes":   120,
+	}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+	var body struct {
+		BufferSeconds *int `json:"buffer_seconds"`
+	}
+	decodeBody(t, res, &body)
+	if body.BufferSeconds == nil || *body.BufferSeconds != 120 {
+		t.Errorf("expected BufferSeconds=120 (default), got %v", body.BufferSeconds)
+	}
+}
+
+func TestCreateSession_TimedAmericano_InvalidDuration(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                   1,
+		"game_mode":                "timed_americano",
+		"total_duration_minutes":   5,
+		"buffer_seconds":           120,
+	}, "")
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid duration, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestCreateSession_TimedAmericano_InvalidBuffer(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                   1,
+		"game_mode":                "timed_americano",
+		"total_duration_minutes":   120,
+		"buffer_seconds":           30,
+	}, "")
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for invalid buffer, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestCreateSession_TimedAmericano_PointsRejected(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                   1,
+		"game_mode":                "timed_americano",
+		"total_duration_minutes":   120,
+		"buffer_seconds":           120,
+		"points":                   24,
+	}, "")
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 when points provided, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestStartSession_TimedAmericano(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+	sessID, adminToken := mustCreateTimedAmericanoSession(t, srv, userToken)
+
+	// Join 4 players
+	mustJoinSession(t, srv, sessID, "Alice", userToken)
+	mustJoinSession(t, srv, sessID, "Bob", "")
+	mustJoinSession(t, srv, sessID, "Charlie", "")
+	mustJoinSession(t, srv, sessID, "Diana", "")
+
+	// Start session
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+	var sess struct {
+		Status               string `json:"status"`
+		RoundsTotal          *int   `json:"rounds_total"`
+		RoundDurationSeconds *int   `json:"round_duration_seconds"`
+		RoundStartedAt       *string `json:"round_started_at"`
+		CurrentRound         *int   `json:"current_round"`
+	}
+	decodeBody(t, res, &sess)
+	if sess.Status != "active" {
+		t.Errorf("expected status 'active', got %q", sess.Status)
+	}
+	if sess.RoundsTotal == nil || *sess.RoundsTotal <= 0 {
+		t.Errorf("expected RoundsTotal > 0, got %v", sess.RoundsTotal)
+	}
+	if sess.RoundDurationSeconds == nil || *sess.RoundDurationSeconds <= 0 {
+		t.Errorf("expected RoundDurationSeconds > 0, got %v", sess.RoundDurationSeconds)
+	}
+	if sess.RoundStartedAt == nil {
+		t.Errorf("expected RoundStartedAt to be set")
+	}
+	if sess.CurrentRound == nil || *sess.CurrentRound != 1 {
+		t.Errorf("expected CurrentRound=1, got %v", sess.CurrentRound)
+	}
+}
+
+func TestStartSession_TimedAmericano_NotEnoughPlayers(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+	sessID, adminToken := mustCreateTimedAmericanoSession(t, srv, userToken)
+
+	// Join only 3 players (need 4 for 1 court)
+	mustJoinSession(t, srv, sessID, "Alice", userToken)
+	mustJoinSession(t, srv, sessID, "Bob", "")
+	mustJoinSession(t, srv, sessID, "Charlie", "")
+
+	// Start session
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
+	if res.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("expected 422, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}

@@ -12,7 +12,7 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, roundsTotal *int, scheduledAt *time.Time, courtDurationMinutes *int, creatorUserID string) (*domain.Session, error) {
+func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, roundsTotal *int, scheduledAt *time.Time, courtDurationMinutes *int, totalDurationMinutes *int, bufferSeconds *int, creatorUserID string) (*domain.Session, error) {
 	now := time.Now().UTC()
 	if gameMode == "" {
 		gameMode = "americano"
@@ -36,6 +36,8 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		RoundsTotal:          roundsTotal,
 		ScheduledAt:          scheduledAt,
 		CourtDurationMinutes: courtDurationMinutes,
+		TotalDurationMinutes: totalDurationMinutes,
+		BufferSeconds:        bufferSeconds,
 		CreatorUserID:        creatorUserID,
 		Players:              []domain.Player{},
 		CreatedAt:            now,
@@ -52,6 +54,14 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 	var roundsTotalVal sql.NullInt64
 	if roundsTotal != nil {
 		roundsTotalVal = sql.NullInt64{Int64: int64(*roundsTotal), Valid: true}
+	}
+	var totalDurationMinutesVal sql.NullInt64
+	if totalDurationMinutes != nil {
+		totalDurationMinutesVal = sql.NullInt64{Int64: int64(*totalDurationMinutes), Valid: true}
+	}
+	var bufferSecondsVal sql.NullInt64
+	if bufferSeconds != nil {
+		bufferSecondsVal = sql.NullInt64{Int64: int64(*bufferSeconds), Valid: true}
 	}
 	var creatorUserIDVal sql.NullString
 	if creatorUserID != "" {
@@ -70,6 +80,8 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		RoundsTotal:          roundsTotalVal,
 		ScheduledAt:          scheduledAtStr,
 		CourtDurationMinutes: courtDurationMinutesVal,
+		TotalDurationMinutes: totalDurationMinutesVal,
+		BufferSeconds:        bufferSecondsVal,
 		CreatorUserID:        creatorUserIDVal,
 		CreatedAt:            sess.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:            sess.UpdatedAt.Format(time.RFC3339),
@@ -230,7 +242,12 @@ func parseTimePtr(s string) *time.Time {
 	return &t
 }
 
-func (s *Store) StartTimedAmericanoSession(id, status string, totalDurationMin, bufferSec, roundDurationSec *int, endsAt *time.Time) error {
+func (s *Store) StartTimedAmericanoSession(id, status string, roundsTotal int, totalDurationMin, bufferSec, roundDurationSec *int, endsAt *time.Time) error {
+	var roundsTotalVal sql.NullInt64
+	if roundsTotal > 0 {
+		roundsTotalVal = sql.NullInt64{Int64: int64(roundsTotal), Valid: true}
+	}
+
 	var totalDurationMinVal sql.NullInt64
 	if totalDurationMin != nil {
 		totalDurationMinVal = sql.NullInt64{Int64: int64(*totalDurationMin), Valid: true}
@@ -253,6 +270,7 @@ func (s *Store) StartTimedAmericanoSession(id, status string, totalDurationMin, 
 
 	return s.queries.StartTimedAmericanoSession(context.Background(), db.StartTimedAmericanoSessionParams{
 		Status:               status,
+		RoundsTotal:          roundsTotalVal,
 		TotalDurationMinutes: totalDurationMinVal,
 		BufferSeconds:        bufferSecVal,
 		RoundDurationSeconds: roundDurationSecVal,

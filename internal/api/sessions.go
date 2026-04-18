@@ -27,6 +27,8 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		ScheduledAt          *string `json:"scheduled_at"`
 		RoundsTotal          *int    `json:"rounds_total"`
 		CourtDurationMinutes *int    `json:"court_duration_minutes"`
+		TotalDurationMinutes *int    `json:"total_duration_minutes"`
+		BufferSeconds        *int    `json:"buffer_seconds"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request_body")
@@ -35,23 +37,47 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	if body.GameMode == "" {
 		body.GameMode = "americano"
 	}
-	if body.GameMode != "americano" && body.GameMode != "mexicano" && body.GameMode != "tennis" {
-		respondError(w, http.StatusBadRequest, "game_mode must be 'americano', 'mexicano', or 'tennis'")
+	if body.GameMode != "americano" && body.GameMode != "mexicano" && body.GameMode != "timed_americano" && body.GameMode != "tennis" {
+		respondError(w, http.StatusBadRequest, "game_mode must be 'americano', 'mexicano', 'timed_americano', or 'tennis'")
 		return
 	}
 
-	if body.GameMode == "americano" || body.GameMode == "mexicano" {
+	if body.GameMode == "americano" || body.GameMode == "mexicano" || body.GameMode == "timed_americano" {
 		minCourts := 1
 		if body.GameMode == "mexicano" {
 			minCourts = 2
 		}
 		if body.Courts < minCourts || body.Courts > 4 {
-			respondError(w, http.StatusBadRequest, "courts must be between 2 and 4 for Mexicano")
+			respondError(w, http.StatusBadRequest, "courts must be between 1 and 4 for Americano/Timed Americano, 2 and 4 for Mexicano")
 			return
 		}
-		if body.Points != 16 && body.Points != 24 && body.Points != 32 {
-			respondError(w, http.StatusBadRequest, "points must be 16, 24, or 32")
-			return
+
+		// Timed Americano: no points, duration-based
+		if body.GameMode == "timed_americano" {
+			// Points must be 0 or omitted
+			if body.Points != 0 {
+				respondError(w, http.StatusBadRequest, "points must be 0 for timed_americano")
+				return
+			}
+			// total_duration_minutes required
+			if body.TotalDurationMinutes == nil || *body.TotalDurationMinutes < 15 || *body.TotalDurationMinutes > 300 {
+				respondError(w, http.StatusBadRequest, "total_duration_minutes required for timed_americano, must be between 15 and 300")
+				return
+			}
+			// buffer_seconds optional, default 120, must be 60-300 if provided
+			if body.BufferSeconds == nil {
+				defaultBuffer := 120
+				body.BufferSeconds = &defaultBuffer
+			} else if *body.BufferSeconds < 60 || *body.BufferSeconds > 300 {
+				respondError(w, http.StatusBadRequest, "buffer_seconds must be between 60 and 300")
+				return
+			}
+		} else {
+			// Americano/Mexicano: require points
+			if body.Points != 16 && body.Points != 24 && body.Points != 32 {
+				respondError(w, http.StatusBadRequest, "points must be 16, 24, or 32")
+				return
+			}
 		}
 	} else {
 		// Tennis: fixed 1 court, no points concept.
@@ -93,7 +119,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	if u := userFromContext(r); u != nil {
 		creatorUserID = u.ID
 	}
-	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes, creatorUserID)
+	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes, body.TotalDurationMinutes, body.BufferSeconds, creatorUserID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not create session")
 		return
@@ -165,6 +191,46 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := h.startMexicanoSession(w, id, sess, active, endsAt); err != nil {
+			return
+		}
+	case "timed_americano":
+		minPlayers := sess.Courts * 4
+		if len(active) < minPlayers {
+			respondError(w, http.StatusUnprocessableEntity, "not_enough_players")
+			return
+		}
+		// Shuffle players
+		rand.Shuffle(len(active), func(i, j int) {
+			active[i], active[j] = active[j], active[i]
+		})
+		// Calculate rounds
+		roundCount, roundDurationSec, err := scheduler.CalculateTimedRounds(len(active), *sess.TotalDurationMinutes, *sess.BufferSeconds)
+		if err != nil {
+			respondError(w, http.StatusUnprocessableEntity, err.Error())
+			return
+		}
+		// Generate rounds
+		rounds, err := scheduler.GenerateTimedAmericano(active, sess.Courts, roundCount)
+		if err != nil {
+			respondError(w, http.StatusInternalServerError, "server_error")
+			return
+		}
+		// Save rounds
+		if err := h.store.SaveRounds(id, rounds); err != nil {
+			respondError(w, http.StatusInternalServerError, "server_error")
+			return
+		}
+		// Calculate end time
+		now := time.Now().UTC()
+		endsAt := now.Add(time.Duration(*sess.TotalDurationMinutes) * time.Minute)
+		// Start session
+		if err := h.store.StartTimedAmericanoSession(id, string(domain.StatusActive), roundCount, sess.TotalDurationMinutes, sess.BufferSeconds, &roundDurationSec, &endsAt); err != nil {
+			respondError(w, http.StatusInternalServerError, "server_error")
+			return
+		}
+		// Set round started time
+		if err := h.store.SetRoundStartedAt(id, &now); err != nil {
+			respondError(w, http.StatusInternalServerError, "server_error")
 			return
 		}
 	default: // americano
