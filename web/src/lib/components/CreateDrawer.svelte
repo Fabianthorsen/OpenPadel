@@ -164,6 +164,7 @@
         <PillToggleGroup bind:value={gameMode}>
           <PillToggleItem value="americano">Americano</PillToggleItem>
           <PillToggleItem value="mexicano">Mexicano</PillToggleItem>
+          <PillToggleItem value="timed_americano">{$_('create_mode_timed_americano')}</PillToggleItem>
           <PillToggleItem value="tennis">{$_('create_mode_tennis')}</PillToggleItem>
         </PillToggleGroup>
         {#if gameMode === 'mexicano'}
