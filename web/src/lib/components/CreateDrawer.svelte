@@ -115,7 +115,17 @@
         d.setHours(h, m, 0, 0);
         iso = d.toISOString();
       }
-      const session = await api.sessions.create(courts, points, tournamentName.trim(), gameMode, setsToWin, gamesPerSet, iso, gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined, courtDuration ?? undefined);
+      const session = await api.sessions.create({
+        courts,
+        points,
+        name: tournamentName.trim(),
+        game_mode: gameMode,
+        sets_to_win: setsToWin,
+        games_per_set: gamesPerSet,
+        scheduled_at: iso,
+        rounds_total: gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined,
+        court_duration_minutes: courtDuration ?? undefined,
+      });
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
       const player = await api.players.join(session.id, auth.user!.display_name, auth.token ?? undefined, adminToken);

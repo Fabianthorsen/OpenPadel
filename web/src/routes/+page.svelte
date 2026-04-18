@@ -113,7 +113,15 @@
         d.setHours(h, m, 0, 0);
         iso = d.toISOString();
       }
-      const session = await api.sessions.create(courts, points, tournamentName.trim(), gameMode, setsToWin, gamesPerSet, iso);
+      const session = await api.sessions.create({
+        courts,
+        points,
+        name: tournamentName.trim(),
+        game_mode: gameMode,
+        sets_to_win: setsToWin,
+        games_per_set: gamesPerSet,
+        scheduled_at: iso,
+      });
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
       const player = await api.players.join(session.id, effectiveName, auth.token ?? undefined, adminToken);

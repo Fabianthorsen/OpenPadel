@@ -32,7 +32,7 @@ declare global {
       admin_token?: string;
       status: SessionStatus;
       name?: string;
-      game_mode: 'americano' | 'mexicano' | 'tennis';
+      game_mode: 'americano' | 'mexicano' | 'tennis' | 'timed_americano';
       sets_to_win: number;
       games_per_set: number;
       courts: number;
@@ -47,6 +47,10 @@ declare global {
       players: Player[];
       created_at: string;
       updated_at: string;
+      total_duration_minutes?: number;
+      buffer_seconds?: number;
+      round_duration_seconds?: number;
+      round_started_at?: string;
     }
 
     interface TennisTeam {
@@ -134,7 +138,7 @@ declare global {
       session_id: string;
       name: string;
       status: 'lobby' | 'active';
-      game_mode: 'americano' | 'mexicano' | 'tennis';
+      game_mode: 'americano' | 'mexicano' | 'tennis' | 'timed_americano';
       courts: number;
       player_count: number;
       scheduled_at?: string;
