@@ -128,6 +128,8 @@
   "active_next_round": "Next round →",
   "active_courts_pending": "All courts must finish before progressing",
   "active_final_results": "See final results →",
+  "active_advance_early": "Advance early",
+  "active_ready_advance": "Ready to advance →",
   "active_round_complete": "Round complete — waiting for admin to advance",
   "active_time_expired": "Time's up! Enter your final scores.",
   "timer_remaining": "Time remaining",

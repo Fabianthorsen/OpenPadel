@@ -128,6 +128,8 @@
   "active_next_round": "Neste runde →",
   "active_courts_pending": "Alle baner må fullføre før vi går videre",
   "active_final_results": "Se sluttresultater →",
+  "active_advance_early": "Gå videre nå",
+  "active_ready_advance": "Klar til å gå videre →",
   "active_round_complete": "Runden er ferdig — venter på at admin skal gå videre",
   "active_time_expired": "Tiden er ute! Legg inn sluttresultatene.",
   "timer_remaining": "Gjenværende tid",

@@ -14,6 +14,8 @@
   import * as Sheet from '$lib/components/ui/sheet';
   import RoundIndicator from './RoundIndicator.svelte';
   import RoundTimer from './RoundTimer.svelte';
+  import BufferTimer from './BufferTimer.svelte';
+  import NextRoundPreview from './NextRoundPreview.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import { numpad as numpadStore } from '$lib/stores/numpad';
   import { auth } from '$lib/auth.svelte';
@@ -50,6 +52,7 @@
   let cancelling = $state(false);
   let closing = $state(false);
   let showEndMenu = $state(false);
+  let bufferComplete = $state(false);
 
   // Court tabs
   let activeCourt = $state(0);
@@ -551,13 +554,41 @@
     <!-- Next round / waiting -->
     {#if allScored && isAdmin}
       {@const isFinalRound = session.rounds_total != null && currentRound.number === session.rounds_total}
-      <button
-        onclick={isFinalRound ? onRefresh : advanceRound}
-        disabled={advancing}
-        class="w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
-      >
-        {advancing ? '…' : isFinalRound ? $_('active_final_results') : $_('active_next_round')}
-      </button>
+      {@const isTimedAmericano = session.game_mode === 'timed_americano'}
+
+      {#if isTimedAmericano && !isFinalRound && session.buffer_seconds && session.buffer_seconds > 0}
+        <!-- Timed Americano: Show buffer countdown + next round preview -->
+        <div class="space-y-4">
+          <BufferTimer
+            bufferSeconds={session.buffer_seconds}
+            onComplete={() => bufferComplete = true}
+          />
+          <NextRoundPreview
+            rounds={currentMatches}
+            currentRound={currentRound.number}
+            courts={session.courts}
+            {session}
+          />
+          <div class="flex gap-2">
+            <button
+              onclick={advanceRound}
+              disabled={advancing}
+              class="flex-1 rounded-2xl bg-primary px-4 py-3 text-sm font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
+            >
+              {advancing ? '…' : bufferComplete ? $_('active_ready_advance') : $_('active_advance_early')}
+            </button>
+          </div>
+        </div>
+      {:else}
+        <!-- Default: Show advance button immediately -->
+        <button
+          onclick={isFinalRound ? onRefresh : advanceRound}
+          disabled={advancing}
+          class="w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
+        >
+          {advancing ? '…' : isFinalRound ? $_('active_final_results') : $_('active_next_round')}
+        </button>
+      {/if}
     {:else if someScored && !allScored && isAdmin}
       <button
         disabled
