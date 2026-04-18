@@ -2,6 +2,8 @@
 
 ## Planned
 
+### Features
+
 - [ ] Score screen UX redesign — court tabs, unified card, numpad entry, courts overview bottom sheet
 - [ ] Invite screen UX redesign — host avatar hero, stacked player avatars, join section
 - [ ] Round count control — allow admin to choose rounds as multiples of the rotation unit (e.g. 5, 10, 15 for a 5-player bench config)
@@ -10,14 +12,37 @@
 - [ ] Timed Americano — game mode with time-based rounds instead of fixed rounds
 - [ ] Winners court — winners stay on court, losers rotate (losers bench or next challengers)
 - [ ] Assign score entry to other players (not admin-only)
+
+### Design System
+
+- [ ] **Centralise podium / semantic colors** — replace hardcoded `#3d7a24`, `#4a7856`, `#a8c5b0`, `#c0392b` in [ActiveSession.svelte](web/src/lib/components/ActiveSession.svelte), [Leaderboard.svelte](web/src/lib/components/Leaderboard.svelte), and [profile](web/src/routes/profile/+page.svelte#L490) with new tokens (`--color-primary-strong`, `--color-podium-silver`, `--color-podium-bronze`, `--color-loss`) in [app.css](web/src/app.css)
+- [ ] **Move Avatar palette into theme tokens** — [ui/Avatar.svelte](web/src/lib/components/ui/Avatar.svelte) hardcodes 8 avatar hex colors; lift to CSS vars so they survive a dark-mode pass
+- [ ] **Typography utility classes** — add `.text-display`, `.text-h1`, `.text-h2`, `.text-h3`, `.text-small` utilities to [app.css](web/src/app.css) matching the spec in [DESIGN.md](DESIGN.md); replace scattered `text-[28px]`/`text-[34px]`/`text-[80px]`/`font-[800]` across components
+- [ ] **Radius utility aliases** — add `rounded-card` (8px), `rounded-input` (6px), `rounded-badge` (4px), `rounded-pill` (99px) to theme; stop mixing `rounded-2xl`/`rounded-3xl`/`rounded-xl` inline
+- [ ] **Unify card surfaces** — [Leaderboard](web/src/lib/components/Leaderboard.svelte), [ActiveSession](web/src/lib/components/ActiveSession.svelte), [Lobby](web/src/lib/components/Lobby.svelte) use raw `<div class="rounded-2xl bg-surface-raised">` — standardise on the shadcn [Card](web/src/lib/components/ui/card) component
+- [ ] **Consolidate toggle groups** — [pill-toggle-group](web/src/lib/components/ui/pill-toggle-group) and [toggle-group](web/src/lib/components/ui/toggle-group) diverged; share one primitive with a `variant="pill" | "square"` prop
+- [ ] **Spacing audit** — sweep `gap-2.5`/`px-3.5`/off-scale paddings across [ActiveSession](web/src/lib/components/ActiveSession.svelte), [Lobby](web/src/lib/components/Lobby.svelte), [Leaderboard](web/src/lib/components/Leaderboard.svelte), [+page.svelte](web/src/routes/+page.svelte), [auth](web/src/routes/auth/+page.svelte), [forgot](web/src/routes/forgot/+page.svelte), [reset](web/src/routes/reset/+page.svelte); enforce 4/8/12/16/20/24/32/48 scale from [DESIGN.md](DESIGN.md)
+- [ ] **Dark-mode foundation** — swap the `@theme` hex values in [app.css](web/src/app.css) for CSS custom properties under `:root` + `prefers-color-scheme: dark`; prerequisite for the V2 dark mode called out in [DESIGN.md](DESIGN.md)
+- [ ] **Accessibility sweep** — add `aria-label` to emoji-only buttons (🎾 court tabs in ActiveSession); verify 48×48 tap targets; add non-color cue (icon or letter) to podium rank backgrounds so colorblind users can distinguish silver/bronze
+
+### Backend Quality
+
+- [ ] **Finish the sqlc migration** — residual raw SQL in [rounds.go:89](internal/store/rounds.go#L89), [rounds.go:97](internal/store/rounds.go#L97), [rounds.go:229](internal/store/rounds.go#L229), [rounds.go:328](internal/store/rounds.go#L328), [rounds.go:348](internal/store/rounds.go#L348), [contacts.go:44](internal/store/contacts.go#L44), [players.go:86](internal/store/players.go#L86), [invites.go:32-38](internal/store/invites.go#L32-L38) bypasses codegen — move into `.sql` query files
+- [ ] **Session-lookup helper** — 7-line `Get → ErrNotFound → server_error` blocks repeat across [api/sessions.go](internal/api/sessions.go), [rounds.go](internal/api/rounds.go), [tennis.go](internal/api/tennis.go), [players.go](internal/api/players.go); extract `requireSession(w, r, id) *domain.Session` into [middleware.go](internal/api/middleware.go)
+- [ ] **Structured error logging in handlers** — only [auth.go](internal/api/auth.go) logs store errors today; every other handler swallows context on `respondError(w, 500, "server_error")`. Tag with handler name + request id
+- [ ] **Consistent sentinel handling** — some handlers use `errors.Is(err, store.ErrNotFound)`, others check error-message strings; make `errors.Is` the convention
+- [ ] **SSE drop metering** — [events/hub.go](internal/events/hub.go) silently drops when a client buffer fills; log at debug and expose a counter so we can tell if it ever matters in prod
+
 ### Tooling & Infrastructure
 
 - [ ] **Error toasts** — wire up svelte-sonner (already installed) to API client for global error feedback
 - [ ] **Sentry** — add `@sentry/sveltekit` + Go SDK for production error tracking with stack traces
-- [ ] **API handler tests** — scheduler is well-tested; add coverage for critical API handlers (start session, submit score, advance round)
+- [x] **Vitest** — unit tests for frontend: API client, session stream store, utility functions (35 tests across `utils.ts`, `api/client.ts`, `sessionStream.svelte.ts`); component tests deferred
+- [x] **API handler tests** — `httptest`-based coverage for auth, session lifecycle, round advance, score submission, player join/deactivate (store gap tests for users, rounds, players added too); push/mexicano handler tests deferred
+- [ ] **Playwright** — E2E tests for happy path (create session → join → submit scores); requires `data-testid` attributes on key interactive elements
+- [ ] **sqlc-only CI check** — grep for `s.db.Exec(`/`s.db.Query(`/`s.db.QueryRow(` in `internal/store/` to prevent new raw SQL sneaking back in
 - [x] **v1.9.0** — Database migrations with goose: versioned `.sql` files in `internal/store/migrations/`, embedded via `//go:embed`
 - [x] **v1.9.0** — **sqlc** — generate type-safe Go from SQL queries, eliminate hand-written `rows.Scan` patterns in `internal/store/`; refactored all store files (users, sessions, players, rounds, tennis, contacts, invites, push)
-- [ ] **Playwright** — E2E tests for happy path (create session → join → submit scores)
 
 ## In Progress
 
