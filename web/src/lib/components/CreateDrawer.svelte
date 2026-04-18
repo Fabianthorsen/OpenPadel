@@ -18,7 +18,8 @@
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
-  let gameMode = $state<'americano' | 'mexicano' | 'tennis' | 'timed_americano'>('americano');
+  let gameMode = $state<'americano' | 'mexicano' | 'tennis'>('americano');
+  let americanoVariant = $state<'points' | 'timed'>('points');
   let mexicanoRounds = $state<number | null>(null); // null = no round limit
   let courtDuration = $state<number | null>(null);  // null = no timer
   let customTimeMode = $state(false);
@@ -26,6 +27,11 @@
   let customInputEl = $state<HTMLInputElement | null>(null);
   let totalDurationMinutes = $state<number>(90);
   let bufferSeconds = $state<number>(120);
+
+  // Maps UI selection (gameMode + variant) to backend game_mode
+  const actualGameMode = $derived(gameMode === 'americano'
+    ? (americanoVariant === 'timed' ? 'timed_americano' : 'americano')
+    : gameMode);
   $effect(() => {
     if (customTimeMode && customInputEl) customInputEl.focus();
   });
@@ -119,16 +125,16 @@
       }
       const session = await api.sessions.create({
         courts,
-        points: gameMode === 'timed_americano' ? 0 : points,
+        points: actualGameMode === 'timed_americano' ? 0 : points,
         name: tournamentName.trim(),
-        game_mode: gameMode,
+        game_mode: actualGameMode,
         sets_to_win: setsToWin,
         games_per_set: gamesPerSet,
         scheduled_at: iso,
         rounds_total: gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined,
         court_duration_minutes: courtDuration ?? undefined,
-        total_duration_minutes: gameMode === 'timed_americano' ? totalDurationMinutes : undefined,
-        buffer_seconds: gameMode === 'timed_americano' ? bufferSeconds : undefined,
+        total_duration_minutes: actualGameMode === 'timed_americano' ? totalDurationMinutes : undefined,
+        buffer_seconds: actualGameMode === 'timed_americano' ? bufferSeconds : undefined,
       });
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
@@ -164,13 +170,30 @@
         <PillToggleGroup bind:value={gameMode}>
           <PillToggleItem value="americano">Americano</PillToggleItem>
           <PillToggleItem value="mexicano">Mexicano</PillToggleItem>
-          <PillToggleItem value="timed_americano">{$_('create_mode_timed_americano')}</PillToggleItem>
           <PillToggleItem value="tennis">{$_('create_mode_tennis')}</PillToggleItem>
         </PillToggleGroup>
         {#if gameMode === 'mexicano'}
           <p class="text-xs text-text-secondary">{$_('create_mexicano_hint')}</p>
         {/if}
       </div>
+
+      <!-- Americano variant selector (Points vs Timed) -->
+      {#if gameMode === 'americano'}
+        <div class="space-y-2.5">
+          <SectionLabel>{$_('create_americano_format_label')}</SectionLabel>
+          <PillToggleGroup bind:value={americanoVariant}>
+            <PillToggleItem value="points">{$_('create_americano_points_variant')}</PillToggleItem>
+            <PillToggleItem value="timed">{$_('create_americano_timed_variant')}</PillToggleItem>
+          </PillToggleGroup>
+          <p class="text-xs text-text-secondary">
+            {#if americanoVariant === 'timed'}
+              {$_('create_americano_timed_hint')}
+            {:else}
+              {$_('create_americano_points_hint')}
+            {/if}
+          </p>
+        </div>
+      {/if}
 
       {#if gameMode === 'mexicano'}
         <!-- Mexicano: rounds or time (mutually exclusive) -->
@@ -240,7 +263,7 @@
         </div>
       {/if}
 
-      {#if gameMode === 'americano' || gameMode === 'mexicano' || gameMode === 'timed_americano'}
+      {#if gameMode === 'americano' || gameMode === 'mexicano' || gameMode === 'tennis'}
         <!-- Courts -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_courts_label')}</SectionLabel>
@@ -259,7 +282,7 @@
           {/if}
         </div>
 
-        {#if gameMode === 'timed_americano'}
+        {#if gameMode === 'americano' && americanoVariant === 'timed'}
           <!-- Timed Americano Duration -->
           <div class="space-y-2.5">
             <SectionLabel>{$_('create_timed_duration_label')}</SectionLabel>
@@ -294,8 +317,8 @@
           </div>
         {/if}
 
-        <!-- Points (hidden for timed_americano) -->
-        {#if gameMode !== 'timed_americano'}
+        <!-- Points (shown for americano points variant and mexicano) -->
+        {#if (gameMode === 'americano' && americanoVariant === 'points') || gameMode === 'mexicano'}
           <div class="space-y-2.5">
             <SectionLabel>{$_('create_points_label')}</SectionLabel>
             <PillToggleGroup

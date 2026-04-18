@@ -122,8 +122,8 @@
       : session.game_mode === 'tennis'
         ? 'Tennis'
         : session.game_mode === 'timed_americano'
-          ? $_('create_mode_timed_americano')
-          : 'Americano'
+          ? 'Americano (Timed)'
+          : 'Americano (Points)'
   );
   let showRules = $state(false);
   const activePlayers = $derived(session.players.filter((p) => p.active));
