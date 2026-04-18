@@ -195,8 +195,13 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 		}
 	case "timed_americano":
 		minPlayers := sess.Courts * 4
+		maxPlayers := sess.Courts * 8
 		if len(active) < minPlayers {
 			respondError(w, http.StatusUnprocessableEntity, "not_enough_players")
+			return
+		}
+		if len(active) > maxPlayers {
+			respondError(w, http.StatusUnprocessableEntity, "too_many_players")
 			return
 		}
 		// Shuffle players

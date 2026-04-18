@@ -180,8 +180,6 @@
     currentRound.matches.some((m) => m.score !== null && !editing[m.id])
   );
 
-  const isTimedAmericano = $derived(session.game_mode === 'timed_americano');
-
   function scheduleLiveSave(matchId: string) {
     clearTimeout(saveTimeout[matchId]);
     saveTimeout[matchId] = setTimeout(async () => {

@@ -57,8 +57,12 @@ func Generate(players []domain.Player, courts, totalRounds int) []domain.Round {
 
 		var bench, active []string
 		if benchSize > 0 {
-			bench = canBench[:benchSize]
-			active = append(forced, canBench[benchSize:]...)
+			actualBenchSize := benchSize
+			if actualBenchSize > len(canBench) {
+				actualBenchSize = len(canBench)
+			}
+			bench = canBench[:actualBenchSize]
+			active = append(forced, canBench[actualBenchSize:]...)
 		} else {
 			active = append([]string{}, ids...)
 		}
