@@ -45,10 +45,11 @@
 
 ## In Progress
 
-- **Timed Americano (PR 3-4)** — Frontend UI and final polish. Core API handlers in PR 2 merged.
+(none)
 
 ## Done
 
+- [x] **Timed Americano (PR 3: Frontend)** — RoundTimer component with countdown and color state machine (green > 60s, amber 30-60s, red 1-30s, buzzer at 0). ActiveSession scoring modifications: free-form 0-99 range, no sum constraint, separate team score collection. CreateDrawer duration/buffer pickers. SSE timer_sync listener for drift correction. Lobby display updates. 19 RoundTimer tests, 15 scoring tests, 9 SSE tests. All tests passing.
 - [x] **Timed Americano (PR 2: API Handlers)** — Session creation with duration/buffer validation, game start with round calculation and drift correction, score submission with free-form scoring (no points constraint), round advance with timer_sync SSE events. Full integration tests. All tests passing.
 - [x] **Timed Americano (PR 1: Foundation)** — Database migrations, scheduler logic (`CalculateTimedRounds`, `RecalculateRoundDuration`, `GenerateTimedAmericano`), domain model, and store layer with timer state management. All tests passing.
 - [x] **v1.10.0** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, session state changes, and tennis points now push instantly to all connected clients. 30 s fallback poll retained.

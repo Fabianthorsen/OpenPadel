@@ -344,11 +344,33 @@ only process needed.
 
 Key patterns:
 - **Svelte 5 runes** enforced globally (`$state`, `$props`, `$derived`, `$effect`)
-- **API client** — single typed `api` object in `$lib/api/client.ts`
+- **API client** — single typed `api` object in `$lib/api/client.ts`; supports object-based params for extensibility
 - **Auth store** — runes-based, token in `localStorage` under `auth_token`
 - **Types** — all shared interfaces in `src/app.d.ts` under the `App` namespace
 - **i18n** — English + Norwegian via `svelte-i18n`
 - **Real-time** — SSE via `sessionStream` factory store; 30 s fallback poll as belt-and-braces
+
+### Components
+
+Key components (components follow reactive Svelte 5 patterns):
+
+- **RoundTimer** — Displays countdown timer with color state machine:
+  - Green (>60s), amber (30-60s), red (1-30s), dark red (buzzer at ≤0s)
+  - Updates every second, recalibrates on timer_sync SSE events
+  - Triggers device vibration on buzzer (if available)
+  - Used in ActiveSession for timed_americano games
+
+- **ActiveSession** — Session gameplay with score entry:
+  - Numpad-based scoring with +/- adjustments
+  - Supports two modes: Fixed sum (Americano/Mexicano) and free-form (timed_americano)
+  - For timed mode: collects team A then team B score separately
+  - Shows RoundTimer when `game_mode === 'timed_americano'` and timer data is available
+
+- **CreateDrawer** — Tournament creation with mode-specific controls:
+  - Courts picker (universal)
+  - Points picker (Americano/Mexicano only)
+  - Duration/buffer pickers (timed_americano only)
+  - Sets/games pickers (Tennis only)
 
 ---
 
