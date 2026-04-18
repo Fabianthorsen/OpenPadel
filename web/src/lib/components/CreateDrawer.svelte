@@ -18,12 +18,14 @@
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
-  let gameMode = $state<'americano' | 'mexicano' | 'tennis'>('americano');
+  let gameMode = $state<'americano' | 'mexicano' | 'tennis' | 'timed_americano'>('americano');
   let mexicanoRounds = $state<number | null>(null); // null = no round limit
   let courtDuration = $state<number | null>(null);  // null = no timer
   let customTimeMode = $state(false);
   let customTimeRaw = $state('');
   let customInputEl = $state<HTMLInputElement | null>(null);
+  let totalDurationMinutes = $state<number>(90);
+  let bufferSeconds = $state<number>(120);
   $effect(() => {
     if (customTimeMode && customInputEl) customInputEl.focus();
   });
@@ -117,7 +119,7 @@
       }
       const session = await api.sessions.create({
         courts,
-        points,
+        points: gameMode === 'timed_americano' ? 0 : points,
         name: tournamentName.trim(),
         game_mode: gameMode,
         sets_to_win: setsToWin,
@@ -125,6 +127,8 @@
         scheduled_at: iso,
         rounds_total: gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined,
         court_duration_minutes: courtDuration ?? undefined,
+        total_duration_minutes: gameMode === 'timed_americano' ? totalDurationMinutes : undefined,
+        buffer_seconds: gameMode === 'timed_americano' ? bufferSeconds : undefined,
       });
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
@@ -235,7 +239,7 @@
         </div>
       {/if}
 
-      {#if gameMode === 'americano' || gameMode === 'mexicano'}
+      {#if gameMode === 'americano' || gameMode === 'mexicano' || gameMode === 'timed_americano'}
         <!-- Courts -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_courts_label')}</SectionLabel>
@@ -254,23 +258,60 @@
           {/if}
         </div>
 
-        <!-- Points -->
-        <div class="space-y-2.5">
-          <SectionLabel>{$_('create_points_label')}</SectionLabel>
-          <PillToggleGroup
-            value={points.toString()}
-            onValueChange={(val) => points = parseInt(val)}
-          >
-            {#each [16, 24, 32] as p}
-              <PillToggleItem value={p.toString()}>
-                {p}
-              </PillToggleItem>
-            {/each}
-          </PillToggleGroup>
-          <p class="text-xs text-text-secondary">
-            {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
-          </p>
-        </div>
+        {#if gameMode === 'timed_americano'}
+          <!-- Timed Americano Duration -->
+          <div class="space-y-2.5">
+            <SectionLabel>{$_('create_timed_duration_label')}</SectionLabel>
+            <PillToggleGroup
+              value={totalDurationMinutes.toString()}
+              onValueChange={(val) => totalDurationMinutes = parseInt(val)}
+            >
+              {#each [60, 90, 120, 150, 180] as duration}
+                <PillToggleItem value={duration.toString()}>
+                  {duration}
+                </PillToggleItem>
+              {/each}
+            </PillToggleGroup>
+            <p class="text-xs text-text-secondary">
+              {$_('create_timed_duration_hint', { values: { n: totalDurationMinutes } })}
+            </p>
+          </div>
+
+          <!-- Timed Americano Buffer -->
+          <div class="space-y-2.5">
+            <SectionLabel>{$_('create_timed_buffer_label')}</SectionLabel>
+            <PillToggleGroup
+              value={bufferSeconds.toString()}
+              onValueChange={(val) => bufferSeconds = parseInt(val)}
+            >
+              <PillToggleItem value="120">2 min</PillToggleItem>
+              <PillToggleItem value="180">3 min</PillToggleItem>
+            </PillToggleGroup>
+            <p class="text-xs text-text-secondary">
+              {$_('create_timed_buffer_hint', { values: { n: (bufferSeconds / 60).toFixed(1) } })}
+            </p>
+          </div>
+        {/if}
+
+        <!-- Points (hidden for timed_americano) -->
+        {#if gameMode !== 'timed_americano'}
+          <div class="space-y-2.5">
+            <SectionLabel>{$_('create_points_label')}</SectionLabel>
+            <PillToggleGroup
+              value={points.toString()}
+              onValueChange={(val) => points = parseInt(val)}
+            >
+              {#each [16, 24, 32] as p}
+                <PillToggleItem value={p.toString()}>
+                  {p}
+                </PillToggleItem>
+              {/each}
+            </PillToggleGroup>
+            <p class="text-xs text-text-secondary">
+              {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
+            </p>
+          </div>
+        {/if}
       {:else}
         <!-- Sets to win -->
         <div class="space-y-2.5">
