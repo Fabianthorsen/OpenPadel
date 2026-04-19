@@ -10,7 +10,6 @@ import (
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
 	"github.com/fabianthorsen/openpadel/internal/events"
-	"github.com/fabianthorsen/openpadel/internal/scheduler"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -132,9 +131,9 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 				sessionCompleted = true
 			}
 		}
-	} else {
+	} else if sess.GameMode == "americano" {
 		// Americano: all pre-generated rounds complete.
-		done, err := h.store.AllRoundsComplete(sessionID)
+		done, err := h.americanoSvc.CanComplete(sessionID)
 		if err == nil && done {
 			h.store.CompleteSession(sessionID, false) //nolint:errcheck
 			sessionCompleted = true
@@ -205,43 +204,7 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if sess.GameMode == "timed_americano" {
-		// Calculate remaining time and rounds
-		now := time.Now().UTC()
-		remainingSeconds := int(sess.EndsAt.Sub(now).Seconds())
-		if remainingSeconds < 0 {
-			remainingSeconds = 0
-		}
-		remainingRounds := *sess.RoundsTotal - *sess.CurrentRound
-
-		// Recalculate round duration
-		newDurationSec := scheduler.RecalculateRoundDuration(remainingRounds, remainingSeconds, *sess.BufferSeconds)
-
-		// Update duration
-		if err := h.store.UpdateRoundDuration(sessionID, &newDurationSec); err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
-			return
-		}
-
-		// Set round started time
-		if err := h.store.SetRoundStartedAt(sessionID, &now); err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
-			return
-		}
-
-		// Emit timer sync event
-		h.hub.Emit(sessionID, events.Envelope{
-			Type: events.EventTimerSync,
-			Payload: map[string]any{
-				"round_duration_seconds": newDurationSec,
-				"round_started_at":       now.Format(time.RFC3339),
-				"remaining_rounds":       remainingRounds,
-				"buffer_seconds":         *sess.BufferSeconds,
-			},
-		})
-
-		// Advance normally
-		if err := h.store.AdvanceRound(sessionID); err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
+		if err := h.timedSvc.AdvanceRound(w, sessionID, sess); err != nil {
 			return
 		}
 	} else if sess.GameMode == "mexicano" {
@@ -253,7 +216,7 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusConflict, "round_limit_reached")
 			return
 		}
-		if err := h.advanceMexicanoRound(w, sessionID, nextRound); err != nil {
+		if err := h.mexicanoSvc.AdvanceRound(w, sessionID, nextRound); err != nil {
 			return
 		}
 	} else {

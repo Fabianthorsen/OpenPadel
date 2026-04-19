@@ -13,13 +13,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 describe('CreateDrawer - Americano Variant Selection', () => {
   describe('State & Types - gameMode and americanoVariant', () => {
     it('initializes gameMode to "americano" by default', () => {
-      // CreateDrawer should start with americano selected
       const gameMode = 'americano' as const;
       expect(gameMode).toBe('americano');
     });
 
     it('initializes americanoVariant to "points" by default', () => {
-      // When Americano is selected, variant should default to points
       const americanoVariant = 'points' as const;
       expect(americanoVariant).toBe('points');
     });
@@ -27,24 +25,20 @@ describe('CreateDrawer - Americano Variant Selection', () => {
     it('allows changing americanoVariant between "points" and "timed"', () => {
       let americanoVariant: 'points' | 'timed' = 'points';
 
-      // Change to timed
       americanoVariant = 'timed';
       expect(americanoVariant).toBe('timed');
 
-      // Change back to points
       americanoVariant = 'points';
       expect(americanoVariant).toBe('points');
     });
 
-    it('game mode type excludes "timed_americano" (only americano/mexicano/tennis)', () => {
-      type GameMode = 'americano' | 'mexicano' | 'tennis';
-      const validModes: GameMode[] = ['americano', 'mexicano', 'tennis'];
+    it('game mode type has exactly americano and mexicano', () => {
+      type GameMode = 'americano' | 'mexicano';
+      const validModes: GameMode[] = ['americano', 'mexicano'];
 
-      // Verify all valid modes are covered
       expect(validModes).toContain('americano');
       expect(validModes).toContain('mexicano');
-      expect(validModes).toContain('tennis');
-      expect(validModes.length).toBe(3);
+      expect(validModes.length).toBe(2);
     });
   });
 
@@ -73,24 +67,13 @@ describe('CreateDrawer - Americano Variant Selection', () => {
 
     it('returns "mexicano" unmodified when gameMode="mexicano"', () => {
       const gameMode = 'mexicano' as const;
-      const americanoVariant = 'points' as const; // Irrelevant
+      const americanoVariant = 'points' as const;
 
       const actualGameMode = gameMode === 'americano'
         ? (americanoVariant === 'timed' ? 'timed_americano' : 'americano')
         : gameMode;
 
       expect(actualGameMode).toBe('mexicano');
-    });
-
-    it('returns "tennis" unmodified when gameMode="tennis"', () => {
-      const gameMode = 'tennis' as const;
-      const americanoVariant = 'timed' as const; // Irrelevant
-
-      const actualGameMode = gameMode === 'americano'
-        ? (americanoVariant === 'timed' ? 'timed_americano' : 'americano')
-        : gameMode;
-
-      expect(actualGameMode).toBe('tennis');
     });
   });
 
@@ -109,21 +92,12 @@ describe('CreateDrawer - Americano Variant Selection', () => {
       expect(shouldShowVariantToggle).toBe(false);
     });
 
-    it('hides variant toggle when gameMode === "tennis"', () => {
-      const gameMode = 'tennis';
-      const shouldShowVariantToggle = gameMode === 'americano';
-
-      expect(shouldShowVariantToggle).toBe(false);
-    });
-
     it('shows variant toggle after switching from mexicano to americano', () => {
-      let gameMode: 'americano' | 'mexicano' | 'tennis' = 'mexicano';
+      let gameMode: 'americano' | 'mexicano' = 'mexicano';
 
-      // Initially hidden
       let shouldShowVariantToggle = gameMode === 'americano';
       expect(shouldShowVariantToggle).toBe(false);
 
-      // Switch to americano
       gameMode = 'americano';
       shouldShowVariantToggle = gameMode === 'americano';
       expect(shouldShowVariantToggle).toBe(true);
@@ -139,9 +113,9 @@ describe('CreateDrawer - Americano Variant Selection', () => {
       expect(shouldShowPoints).toBe(true);
     });
 
-    it('shows points input when gameMode="mexicano" (regardless of variant)', () => {
+    it('shows points input when gameMode="mexicano"', () => {
       const gameMode = 'mexicano';
-      const americanoVariant = 'points'; // irrelevant
+      const americanoVariant = 'points';
 
       const shouldShowPoints = (gameMode === 'americano' && americanoVariant === 'points') || gameMode === 'mexicano';
       expect(shouldShowPoints).toBe(true);
@@ -155,17 +129,9 @@ describe('CreateDrawer - Americano Variant Selection', () => {
       expect(shouldShowPoints).toBe(false);
     });
 
-    it('hides points input when gameMode="tennis"', () => {
-      const gameMode = 'tennis';
-      const americanoVariant = 'points'; // irrelevant
-
-      const shouldShowPoints = (gameMode === 'americano' && americanoVariant === 'points') || gameMode === 'mexicano';
-      expect(shouldShowPoints).toBe(false);
-    });
-
     it('shows points initially when americano selected (default variant is points)', () => {
       const gameMode = 'americano';
-      const americanoVariant = 'points'; // default
+      const americanoVariant = 'points';
 
       const shouldShowPoints = (gameMode === 'americano' && americanoVariant === 'points') || gameMode === 'mexicano';
       expect(shouldShowPoints).toBe(true);
@@ -175,11 +141,9 @@ describe('CreateDrawer - Americano Variant Selection', () => {
       const gameMode = 'americano';
       let americanoVariant: 'points' | 'timed' = 'points';
 
-      // Initially shown
       let shouldShowPoints = (gameMode === 'americano' && americanoVariant === 'points') || gameMode === 'mexicano';
       expect(shouldShowPoints).toBe(true);
 
-      // Change variant
       americanoVariant = 'timed';
       shouldShowPoints = (gameMode === 'americano' && americanoVariant === 'points') || gameMode === 'mexicano';
       expect(shouldShowPoints).toBe(false);
@@ -205,15 +169,7 @@ describe('CreateDrawer - Americano Variant Selection', () => {
 
     it('hides duration/buffer when gameMode="mexicano"', () => {
       const gameMode = 'mexicano';
-      const americanoVariant = 'timed'; // irrelevant
-
-      const shouldShowTimedControls = gameMode === 'americano' && americanoVariant === 'timed';
-      expect(shouldShowTimedControls).toBe(false);
-    });
-
-    it('hides duration/buffer when gameMode="tennis"', () => {
-      const gameMode = 'tennis';
-      const americanoVariant = 'points'; // irrelevant
+      const americanoVariant = 'timed';
 
       const shouldShowTimedControls = gameMode === 'americano' && americanoVariant === 'timed';
       expect(shouldShowTimedControls).toBe(false);
@@ -223,11 +179,9 @@ describe('CreateDrawer - Americano Variant Selection', () => {
       const gameMode = 'americano';
       let americanoVariant: 'points' | 'timed' = 'points';
 
-      // Initially hidden
       let shouldShowTimedControls = gameMode === 'americano' && americanoVariant === 'timed';
       expect(shouldShowTimedControls).toBe(false);
 
-      // Change variant
       americanoVariant = 'timed';
       shouldShowTimedControls = gameMode === 'americano' && americanoVariant === 'timed';
       expect(shouldShowTimedControls).toBe(true);
@@ -253,7 +207,7 @@ describe('CreateDrawer - Americano Variant Selection', () => {
     it('sends game_mode="timed_americano" and points=0 for americano with timed variant', () => {
       const gameMode = 'americano';
       const americanoVariant = 'timed';
-      const points = 24; // Not used
+      const points = 24;
 
       const actualGameMode = gameMode === 'americano'
         ? (americanoVariant === 'timed' ? 'timed_americano' : 'americano')
@@ -267,7 +221,7 @@ describe('CreateDrawer - Americano Variant Selection', () => {
 
     it('sends game_mode="mexicano" and points=24 for mexicano mode', () => {
       const gameMode = 'mexicano';
-      const americanoVariant = 'points'; // irrelevant
+      const americanoVariant = 'points';
       const points = 24;
 
       const actualGameMode = gameMode === 'americano'
@@ -280,27 +234,15 @@ describe('CreateDrawer - Americano Variant Selection', () => {
       expect(apiPoints).toBe(24);
     });
 
-    it('sends game_mode="tennis" for tennis mode', () => {
-      const gameMode = 'tennis';
-      const americanoVariant = 'timed'; // irrelevant
-
-      const actualGameMode = gameMode === 'americano'
-        ? (americanoVariant === 'timed' ? 'timed_americano' : 'americano')
-        : gameMode;
-
-      expect(actualGameMode).toBe('tennis');
-    });
-
     it('sends total_duration_minutes only when game_mode="timed_americano"', () => {
-      let testCases: Array<{
-        gameMode: 'americano' | 'mexicano' | 'tennis';
+      const testCases: Array<{
+        gameMode: 'americano' | 'mexicano';
         variant: 'points' | 'timed';
         expectedSendDuration: boolean;
       }> = [
         { gameMode: 'americano', variant: 'timed', expectedSendDuration: true },
         { gameMode: 'americano', variant: 'points', expectedSendDuration: false },
         { gameMode: 'mexicano', variant: 'points', expectedSendDuration: false },
-        { gameMode: 'tennis', variant: 'points', expectedSendDuration: false },
       ];
 
       testCases.forEach(({ gameMode, variant, expectedSendDuration }) => {
@@ -314,15 +256,14 @@ describe('CreateDrawer - Americano Variant Selection', () => {
     });
 
     it('sends buffer_seconds only when game_mode="timed_americano"', () => {
-      let testCases: Array<{
-        gameMode: 'americano' | 'mexicano' | 'tennis';
+      const testCases: Array<{
+        gameMode: 'americano' | 'mexicano';
         variant: 'points' | 'timed';
         expectedSendBuffer: boolean;
       }> = [
         { gameMode: 'americano', variant: 'timed', expectedSendBuffer: true },
         { gameMode: 'americano', variant: 'points', expectedSendBuffer: false },
         { gameMode: 'mexicano', variant: 'points', expectedSendBuffer: false },
-        { gameMode: 'tennis', variant: 'points', expectedSendBuffer: false },
       ];
 
       testCases.forEach(({ gameMode, variant, expectedSendBuffer }) => {
@@ -338,41 +279,16 @@ describe('CreateDrawer - Americano Variant Selection', () => {
 
   describe('State Persistence - Variant Selection Survives Mode Changes', () => {
     it('preserves variant selection when switching away from americano and back', () => {
-      let gameMode: 'americano' | 'mexicano' | 'tennis' = 'americano';
+      let gameMode: 'americano' | 'mexicano' = 'americano';
       let americanoVariant: 'points' | 'timed' = 'points';
 
-      // Start with americano → points
-      expect(gameMode).toBe('americano');
-      expect(americanoVariant).toBe('points');
-
-      // Change to timed
       americanoVariant = 'timed';
       expect(americanoVariant).toBe('timed');
 
-      // Switch to mexicano
       gameMode = 'mexicano';
-
-      // Switch back to americano
       gameMode = 'americano';
 
-      // Variant should still be timed
       expect(americanoVariant).toBe('timed');
-    });
-
-    it('defaults to points variant when creating new americano after mexicano', () => {
-      let gameMode: 'americano' | 'mexicano' | 'tennis' = 'mexicano';
-      let americanoVariant: 'points' | 'timed' = 'timed'; // Was set to timed in previous session
-
-      // Switch to americano with reset (new session)
-      gameMode = 'americano';
-      // If resetting on mode change, this would be reset to 'points'
-      // For this test, we're just verifying the pattern exists
-      const shouldReset = false; // Based on plan, variant persists
-      if (shouldReset) {
-        americanoVariant = 'points';
-      }
-
-      expect(gameMode).toBe('americano');
     });
   });
 
@@ -386,21 +302,11 @@ describe('CreateDrawer - Americano Variant Selection', () => {
       expect(validVariants).toContain('timed');
     });
 
-    it('game mode selection has exactly three game types (no timed_americano)', () => {
-      type GameMode = 'americano' | 'mexicano' | 'tennis';
-      const validGameModes: GameMode[] = ['americano', 'mexicano', 'tennis'];
+    it('game mode selection has exactly two game types (americano and mexicano)', () => {
+      type GameMode = 'americano' | 'mexicano';
+      const validGameModes: GameMode[] = ['americano', 'mexicano'];
 
-      expect(validGameModes.length).toBe(3);
-    });
-
-    it('variant is irrelevant for mexicano and tennis modes', () => {
-      // These modes should not be affected by americanoVariant state
-      const mexicanoActualGameMode = 'mexicano' as const;
-      const tennisActualGameMode = 'tennis' as const;
-      const irrelevantVariant = 'timed' as const; // should not affect outcome
-
-      expect(mexicanoActualGameMode).toBe('mexicano');
-      expect(tennisActualGameMode).toBe('tennis');
+      expect(validGameModes.length).toBe(2);
     });
 
     it('totalDurationMinutes and bufferSeconds have sensible defaults', () => {

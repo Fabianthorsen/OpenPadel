@@ -18,7 +18,7 @@
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
-  let gameMode = $state<'americano' | 'mexicano' | 'tennis'>('americano');
+  let gameMode = $state<'americano' | 'mexicano'>('americano');
   let americanoVariant = $state<'points' | 'timed'>('points');
   let mexicanoRounds = $state<number | null>(null); // null = no round limit
   let courtDuration = $state<number | null>(null);  // null = no timer
@@ -61,8 +61,6 @@
   }
   let courts = $state(2);
   let points = $state(24);
-  let setsToWin = $state(2);
-  let gamesPerSet = $state(6);
   let tournamentName = $state('');
   let scheduleEnabled = $state(false);
   let calendarDate = $state<DateValue | undefined>(undefined);
@@ -128,8 +126,6 @@
         points: actualGameMode === 'timed_americano' ? 0 : points,
         name: tournamentName.trim(),
         game_mode: actualGameMode,
-        sets_to_win: setsToWin,
-        games_per_set: gamesPerSet,
         scheduled_at: iso,
         rounds_total: gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined,
         court_duration_minutes: courtDuration ?? undefined,
@@ -170,7 +166,6 @@
         <PillToggleGroup bind:value={gameMode}>
           <PillToggleItem value="americano">Americano</PillToggleItem>
           <PillToggleItem value="mexicano">Mexicano</PillToggleItem>
-          <PillToggleItem value="tennis">{$_('create_mode_tennis')}</PillToggleItem>
         </PillToggleGroup>
         {#if gameMode === 'mexicano'}
           <p class="text-xs text-text-secondary">{$_('create_mexicano_hint')}</p>
@@ -263,7 +258,7 @@
         </div>
       {/if}
 
-      {#if gameMode === 'americano' || gameMode === 'mexicano' || gameMode === 'tennis'}
+      {#if gameMode === 'americano' || gameMode === 'mexicano'}
         <!-- Courts -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_courts_label')}</SectionLabel>
@@ -336,38 +331,6 @@
             </p>
           </div>
         {/if}
-      {:else}
-        <!-- Sets to win -->
-        <div class="space-y-2.5">
-          <SectionLabel>{$_('create_sets_label')}</SectionLabel>
-          <PillToggleGroup
-            value={setsToWin.toString()}
-            onValueChange={(val) => setsToWin = parseInt(val)}
-          >
-            <PillToggleItem value="2">
-              {$_('create_sets_bo3')}
-            </PillToggleItem>
-            <PillToggleItem value="3">
-              {$_('create_sets_bo5')}
-            </PillToggleItem>
-          </PillToggleGroup>
-        </div>
-
-        <!-- Games per set -->
-        <div class="space-y-2.5">
-          <SectionLabel>{$_('create_games_per_set_label')}</SectionLabel>
-          <PillToggleGroup
-            value={gamesPerSet.toString()}
-            onValueChange={(val) => gamesPerSet = parseInt(val)}
-          >
-            <PillToggleItem value="4">
-              {$_('create_games_per_set_4')}
-            </PillToggleItem>
-            <PillToggleItem value="6">
-              {$_('create_games_per_set_6')}
-            </PillToggleItem>
-          </PillToggleGroup>
-        </div>
       {/if}
 
       <!-- Tournament name -->

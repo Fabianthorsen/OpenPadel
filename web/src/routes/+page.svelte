@@ -19,11 +19,8 @@
   import { type DateValue, today, getLocalTimeZone } from '@internationalized/date';
 
   let step = $state<'home' | 'setup'>('home');
-  let gameMode = $state<'americano' | 'tennis'>('americano');
   let courts = $state(2);
   let points = $state(24);
-  let setsToWin = $state(2);
-  let gamesPerSet = $state(6);
   let tournamentName = $state('');
   let scheduleEnabled = $state(false);
   let calendarDate = $state<DateValue | undefined>(undefined);
@@ -117,9 +114,7 @@
         courts,
         points,
         name: tournamentName.trim(),
-        game_mode: gameMode,
-        sets_to_win: setsToWin,
-        games_per_set: gamesPerSet,
+        game_mode: 'americano',
         scheduled_at: iso,
       });
       const adminToken = session.admin_token!;
@@ -255,23 +250,6 @@
     <!-- Form -->
     <div class="mt-8 space-y-7">
 
-      <!-- Game mode -->
-      <div class="space-y-2.5">
-        <SectionLabel>{$_('create_game_mode_label')}</SectionLabel>
-        <PillToggleGroup
-          value={gameMode}
-          onValueChange={(val) => gameMode = val as 'americano' | 'tennis'}
-        >
-          <PillToggleItem value="americano">
-            Americano
-          </PillToggleItem>
-          <PillToggleItem value="tennis">
-            {$_('create_mode_tennis')}
-          </PillToggleItem>
-        </PillToggleGroup>
-      </div>
-
-      {#if gameMode === 'americano'}
       <!-- Courts -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_courts_label')}</SectionLabel>
@@ -304,39 +282,6 @@
           {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
         </p>
       </div>
-      {:else}
-      <!-- Sets to win (tennis) -->
-      <div class="space-y-2.5">
-        <SectionLabel>{$_('create_sets_label')}</SectionLabel>
-        <PillToggleGroup
-          value={setsToWin.toString()}
-          onValueChange={(val) => setsToWin = parseInt(val)}
-        >
-          <PillToggleItem value="2">
-            {$_('create_sets_bo3')}
-          </PillToggleItem>
-          <PillToggleItem value="3">
-            {$_('create_sets_bo5')}
-          </PillToggleItem>
-        </PillToggleGroup>
-      </div>
-
-      <!-- Games per set (tennis) -->
-      <div class="space-y-2.5">
-        <SectionLabel>{$_('create_games_per_set_label')}</SectionLabel>
-        <PillToggleGroup
-          value={gamesPerSet.toString()}
-          onValueChange={(val) => gamesPerSet = parseInt(val)}
-        >
-          <PillToggleItem value="4">
-            {$_('create_games_per_set_4')}
-          </PillToggleItem>
-          <PillToggleItem value="6">
-            {$_('create_games_per_set_6')}
-          </PillToggleItem>
-        </PillToggleGroup>
-      </div>
-      {/if}
 
       <!-- Tournament name (optional) -->
       <div class="space-y-2.5">

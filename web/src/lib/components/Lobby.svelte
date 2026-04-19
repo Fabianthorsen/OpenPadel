@@ -2,7 +2,7 @@
   import { api } from '$lib/api/client';
   import { Crown, Share, Check, Search, UserPlus, Clock, Info } from 'lucide-svelte';
   import { onMount } from 'svelte';
-  import { initials, sessionName } from '$lib/utils';
+  import { sessionName } from '$lib/utils';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -113,80 +113,17 @@
     typeof location !== 'undefined' ? `${location.origin}/s/${session.id}` : ''
   );
 
-  const isTennis = $derived(session.game_mode === 'tennis');
   const isMexicano = $derived(session.game_mode === 'mexicano');
   const isTimedAmericano = $derived(session.game_mode === 'timed_americano');
   const gameModeName = $derived(
     session.game_mode === 'mexicano'
       ? $_('create_mexicano_soon')
-      : session.game_mode === 'tennis'
-        ? 'Tennis'
-        : session.game_mode === 'timed_americano'
-          ? 'Americano (Timed)'
-          : 'Americano (Points)'
+      : session.game_mode === 'timed_americano'
+        ? 'Americano (Timed)'
+        : 'Americano (Points)'
   );
   let showRules = $state(false);
   const activePlayers = $derived(session.players.filter((p) => p.active));
-
-  // Tennis team state — maps player_id → 'a' | 'b' | null
-  let teamAssignments = $state<Record<string, 'a' | 'b'>>({});
-  let savingTeams = $state(false);
-  let draggingId = $state<string | null>(null);
-  let dragOverZone = $state<'a' | 'b' | 'pool' | null>(null);
-
-  // Touch drag state
-  let touchGhost = $state<{ name: string; x: number; y: number } | null>(null);
-  let zoneAEl = $state<HTMLElement | null>(null);
-  let zoneBEl = $state<HTMLElement | null>(null);
-  let zonePoolEl = $state<HTMLElement | null>(null);
-
-  function getZoneAtPoint(x: number, y: number): 'a' | 'b' | 'pool' | null {
-    for (const [zone, el] of [['a', zoneAEl], ['b', zoneBEl], ['pool', zonePoolEl]] as const) {
-      if (!el) continue;
-      const r = el.getBoundingClientRect();
-      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return zone;
-    }
-    return null;
-  }
-
-  function onTouchStart(e: TouchEvent, playerId: string, name: string) {
-    const t = e.touches[0];
-    draggingId = playerId;
-    touchGhost = { name, x: t.clientX, y: t.clientY };
-  }
-
-  function onTouchMove(e: TouchEvent) {
-    if (!draggingId) return;
-    try { e.preventDefault(); } catch {}
-    const t = e.touches[0];
-    const player = activePlayers.find(p => p.id === draggingId);
-    if (player) touchGhost = { name: player.name, x: t.clientX, y: t.clientY };
-    dragOverZone = getZoneAtPoint(t.clientX, t.clientY);
-  }
-
-  // Svelte makes touchmove passive by default — use an action to register non-passive.
-  function nonPassiveTouchMove(node: HTMLElement) {
-    node.addEventListener('touchmove', onTouchMove, { passive: false });
-    return { destroy() { node.removeEventListener('touchmove', onTouchMove); } };
-  }
-
-  function onTouchEnd(e: TouchEvent) {
-    if (!draggingId) return;
-    const t = e.changedTouches[0];
-    const zone = getZoneAtPoint(t.clientX, t.clientY);
-    if (zone === 'pool') {
-      unassignPlayer(draggingId);
-    } else if (zone === 'a' || zone === 'b') {
-      assignPlayer(draggingId, zone);
-    }
-    draggingId = null;
-    touchGhost = null;
-    dragOverZone = null;
-  }
-
-  const teamA = $derived(activePlayers.filter((p) => teamAssignments[p.id] === 'a'));
-  const teamB = $derived(activePlayers.filter((p) => teamAssignments[p.id] === 'b'));
-  const unassigned = $derived(activePlayers.filter((p) => !teamAssignments[p.id]));
 
   const requiredPlayers = $derived(session.courts * 4);
   const maxPlayers = $derived(
@@ -194,51 +131,12 @@
   );
   const isFull = $derived(maxPlayers ? activePlayers.length >= maxPlayers : false);
   const canStart = $derived(
-    isTennis
-      ? teamA.length === 2 && teamB.length === 2
-      : isMexicano
-        ? activePlayers.length === requiredPlayers
-        : activePlayers.length >= requiredPlayers
+    isMexicano
+      ? activePlayers.length === requiredPlayers
+      : activePlayers.length >= requiredPlayers
   );
 
   const creatorName = $derived(activePlayers.find((p) => p.id === session.creator_player_id)?.name ?? '');
-
-  function unassignPlayer(playerId: string) {
-    const next = { ...teamAssignments };
-    delete next[playerId];
-    teamAssignments = next;
-    saveTeams();
-  }
-
-  function assignPlayer(playerId: string, team: 'a' | 'b') {
-    const current = teamAssignments[playerId];
-    // Clicking a player already on this team moves them back to pool
-    if (current === team) {
-      unassignPlayer(playerId);
-      return;
-    }
-    // Check team capacity
-    const count = activePlayers.filter((p) => teamAssignments[p.id] === team).length;
-    if (count >= 2) return;
-    teamAssignments = { ...teamAssignments, [playerId]: team };
-    saveTeams();
-  }
-
-  async function saveTeams() {
-    if (!isAdmin) return;
-    savingTeams = true;
-    const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
-    const teams = activePlayers
-      .filter((p) => teamAssignments[p.id])
-      .map((p) => ({ player_id: p.id, team: teamAssignments[p.id] as 'a' | 'b' }));
-    try {
-      await api.tennis.setTeams(session.id, teams, adminToken);
-    } catch (e) {
-      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
-    } finally {
-      savingTeams = false;
-    }
-  }
 
   const myPlayerId = $derived(
     typeof localStorage !== 'undefined' ? localStorage.getItem(`player_id_${session.id}`) : null
@@ -328,16 +226,6 @@
   </main>
 
 <!-- ── Join / invite screen (visitor hasn't joined yet) ── -->
-{:else if !isAdmin && !alreadyJoined && isTennis && activePlayers.length >= 4}
-  <main class="flex min-h-svh flex-col items-center justify-center px-6 gap-4">
-    <Card.Root class="w-full max-w-sm">
-      <Card.Content class="pt-6 text-center space-y-2">
-        <p class="text-lg font-[800]">{sessionName(session)}</p>
-        <p class="text-sm text-text-secondary">{$_('tennis_session_full')}</p>
-      </Card.Content>
-    </Card.Root>
-    <a href="/" class="text-sm text-text-disabled hover:text-text-secondary">← {$_('auth_back_home')}</a>
-  </main>
 {:else if !isAdmin && !alreadyJoined}
   <main class="flex min-h-svh flex-col items-center px-6 pb-12 pt-safe-page">
     <div class="flex w-full max-w-sm justify-end">
@@ -368,11 +256,7 @@
           <p class="text-text-secondary">{session.name}</p>
         {/if}
         <p class="text-sm text-text-secondary">
-          {#if isTennis}
-            {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
-          {:else}
-            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
-          {/if}
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
         </p>
       </div>
 
@@ -460,11 +344,7 @@
       </div>
       <div class="flex items-center gap-2">
         <div class="text-right text-xs text-text-secondary">
-          {#if isTennis}
-            {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}
-          {:else}
-            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' pts'} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
-          {/if}
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' pts'} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
         </div>
         <button
           onclick={() => (showRules = true)}
@@ -510,7 +390,7 @@
     </div>
 
     <!-- Admin: invite or add guest -->
-    {#if isAdmin && !(isTennis && activePlayers.length >= 4)}
+    {#if isAdmin}
       <div class="space-y-2">
         <SectionLabel>{$_('lobby_add_player_label')}</SectionLabel>
         <div class="relative">
@@ -600,116 +480,6 @@
       {/if}
     </div>
 
-    <!-- Tennis team assignment (admin only, shown when all 4 players present) -->
-    {#if isTennis && isAdmin && activePlayers.length >= 4}
-      <!-- Touch ghost element -->
-      {#if touchGhost}
-        <div class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-lg opacity-90"
-          style="left:{touchGhost.x}px;top:{touchGhost.y}px">
-          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">{initials(touchGhost.name)}</div>
-          <span>{touchGhost.name}</span>
-        </div>
-      {/if}
-
-      <div class="space-y-3" use:nonPassiveTouchMove ontouchend={onTouchEnd} role="group" aria-label="Team assignment">
-        <SectionLabel>{$_('tennis_assign_teams')}</SectionLabel>
-
-        <!-- Unassigned pool -->
-        <div
-          bind:this={zonePoolEl}
-          class="min-h-[52px] rounded-2xl border-2 border-dashed border-border px-3 py-2 flex flex-wrap gap-2 transition-colors {dragOverZone === 'pool' ? 'border-primary bg-primary-muted' : ''}"
-          ondragover={(e) => { e.preventDefault(); dragOverZone = 'pool'; }}
-          ondragleave={() => { if (dragOverZone === 'pool') dragOverZone = null; }}
-          ondrop={(e) => { e.preventDefault(); dragOverZone = null; if (draggingId) { unassignPlayer(draggingId); draggingId = null; } }}
-          role="region"
-          aria-label="Unassigned players"
-        >
-          {#if unassigned.length === 0}
-            <p class="text-xs text-text-disabled py-1">All assigned</p>
-          {/if}
-          {#each unassigned as player (player.id)}
-            <div
-              draggable="true"
-              ondragstart={(e) => { draggingId = player.id; e.dataTransfer!.effectAllowed = 'move'; }}
-              ondragend={() => { draggingId = null; dragOverZone = null; }}
-              ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
-              class="flex touch-none cursor-grab items-center gap-2 rounded-full bg-surface-raised px-3 py-1.5 text-sm font-semibold select-none {draggingId === player.id ? 'opacity-40' : ''}"
-            >
-              <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-primary/30" />
-              <span>{player.name}</span>
-            </div>
-          {/each}
-        </div>
-
-        <!-- Team columns -->
-        <div class="grid grid-cols-2 gap-3">
-          <!-- Team A drop zone -->
-          <div
-            bind:this={zoneAEl}
-            class="min-h-[96px] rounded-2xl border-2 transition-colors p-3 space-y-2 {dragOverZone === 'a' ? 'border-primary bg-primary-muted' : 'border-transparent bg-surface-raised'}"
-            ondragover={(e) => { e.preventDefault(); dragOverZone = 'a'; }}
-            ondragleave={() => { if (dragOverZone === 'a') dragOverZone = null; }}
-            ondrop={(e) => { e.preventDefault(); dragOverZone = null; if (draggingId) { assignPlayer(draggingId, 'a'); draggingId = null; } }}
-            role="region"
-            aria-label="Team A"
-          >
-            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-primary">{$_('tennis_team_a')}</p>
-            {#each teamA as player (player.id)}
-              <div
-                draggable="true"
-                ondragstart={(e) => { draggingId = player.id; e.dataTransfer!.effectAllowed = 'move'; }}
-                ondragend={() => { draggingId = null; dragOverZone = null; }}
-                ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
-                onclick={() => assignPlayer(player.id, 'a')}
-                class="flex touch-none cursor-grab items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white select-none {draggingId === player.id ? 'opacity-40' : ''}"
-                role="button"
-                tabindex="0"
-                onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'a')}
-              >
-                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-primary/30" />
-                <span class="truncate">{player.name}</span>
-              </div>
-            {/each}
-            {#if teamA.length < 2}
-              <p class="text-xs text-text-disabled">Drop here</p>
-            {/if}
-          </div>
-
-          <!-- Team B drop zone -->
-          <div
-            bind:this={zoneBEl}
-            class="min-h-[96px] rounded-2xl border-2 transition-colors p-3 space-y-2 {dragOverZone === 'b' ? 'border-primary bg-primary-muted' : 'border-transparent bg-surface-raised'}"
-            ondragover={(e) => { e.preventDefault(); dragOverZone = 'b'; }}
-            ondragleave={() => { if (dragOverZone === 'b') dragOverZone = null; }}
-            ondrop={(e) => { e.preventDefault(); dragOverZone = null; if (draggingId) { assignPlayer(draggingId, 'b'); draggingId = null; } }}
-            role="region"
-            aria-label="Team B"
-          >
-            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('tennis_team_b')}</p>
-            {#each teamB as player (player.id)}
-              <div
-                draggable="true"
-                ondragstart={(e) => { draggingId = player.id; e.dataTransfer!.effectAllowed = 'move'; }}
-                ondragend={() => { draggingId = null; dragOverZone = null; }}
-                ontouchstart={(e) => onTouchStart(e, player.id, player.name)}
-                onclick={() => assignPlayer(player.id, 'b')}
-                class="flex touch-none cursor-grab items-center gap-2 rounded-xl bg-border px-3 py-2 text-sm font-semibold text-text-primary select-none {draggingId === player.id ? 'opacity-40' : ''}"
-                role="button"
-                tabindex="0"
-                onkeydown={(e) => e.key === 'Enter' && assignPlayer(player.id, 'b')}
-              >
-                <Avatar icon={player.avatar_icon} color={player.avatar_color} name={player.name} size="sm" ring="ring-2 ring-primary/30" />
-                <span class="truncate">{player.name}</span>
-              </div>
-            {/each}
-            {#if teamB.length < 2}
-              <p class="text-xs text-text-disabled">Drop here</p>
-            {/if}
-          </div>
-        </div>
-      </div>
-    {/if}
-
     <!-- Join form (non-admin who hasn't joined) -->
     {#if !isAdmin && !alreadyJoined}
       <div class="space-y-2">
@@ -750,9 +520,7 @@
         </Button>
         {#if !canStart}
           <p class="text-center text-xs text-text-disabled">
-            {#if isTennis}
-              {$_(activePlayers.length < 4 ? 'lobby_need_players' : 'tennis_start_locked', { values: { n: 4 } })}
-            {:else if isMexicano}
+            {#if isMexicano}
               {$_('lobby_mexicano_exact_players', { values: { n: requiredPlayers, current: activePlayers.length } })}
             {:else}
               {$_('lobby_need_players', { values: { n: requiredPlayers } })}

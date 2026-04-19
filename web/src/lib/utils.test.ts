@@ -42,10 +42,6 @@ describe('sessionName', () => {
     expect(sessionName({ name: 'My Game', game_mode: 'americano' })).toBe('My Game');
   });
 
-  it('returns tennis default for tennis mode', () => {
-    expect(sessionName({ game_mode: 'tennis' })).toBe('OpenPadel 2v2');
-  });
-
   it('returns americano default for americano mode', () => {
     expect(sessionName({ game_mode: 'americano' })).toBe('OpenPadel Americano');
   });
