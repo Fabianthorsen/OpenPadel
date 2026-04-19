@@ -152,24 +152,6 @@ func (q *Queries) DeleteSession(ctx context.Context, id string) error {
 	return err
 }
 
-const deleteTennisMatches = `-- name: DeleteTennisMatches :exec
-DELETE FROM tennis_matches WHERE session_id = ?
-`
-
-func (q *Queries) DeleteTennisMatches(ctx context.Context, sessionID string) error {
-	_, err := q.db.ExecContext(ctx, deleteTennisMatches, sessionID)
-	return err
-}
-
-const deleteTennisTeams = `-- name: DeleteTennisTeams :exec
-DELETE FROM tennis_teams WHERE session_id = ?
-`
-
-func (q *Queries) DeleteTennisTeams(ctx context.Context, sessionID string) error {
-	_, err := q.db.ExecContext(ctx, deleteTennisTeams, sessionID)
-	return err
-}
-
 const getSession = `-- name: GetSession :one
 SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, buffer_seconds, round_duration_seconds, round_started_at, created_at, updated_at
 FROM sessions WHERE id = ?

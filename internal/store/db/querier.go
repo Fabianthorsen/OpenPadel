@@ -37,8 +37,6 @@ type Querier interface {
 	DeleteRounds(ctx context.Context, sessionID string) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteStalePushSubscription(ctx context.Context, endpoint string) error
-	DeleteTennisMatches(ctx context.Context, sessionID string) error
-	DeleteTennisTeams(ctx context.Context, sessionID string) error
 	DeleteUser(ctx context.Context, id string) error
 	GetAmericanoCareerStats(ctx context.Context, userID sql.NullString) (GetAmericanoCareerStatsRow, error)
 	GetBenchByRoundID(ctx context.Context, roundID string) ([]string, error)
@@ -59,7 +57,6 @@ type Querier interface {
 	GetPushSubscriptionsForSession(ctx context.Context, sessionID string) ([]GetPushSubscriptionsForSessionRow, error)
 	GetRoundsBySessionID(ctx context.Context, sessionID string) ([]GetRoundsBySessionIDRow, error)
 	GetSession(ctx context.Context, id string) (GetSessionRow, error)
-	GetTennisCareerStats(ctx context.Context, userID sql.NullString) (GetTennisCareerStatsRow, error)
 	GetTournamentHistorySessions(ctx context.Context, userID sql.NullString) ([]GetTournamentHistorySessionsRow, error)
 	GetUpcomingTournaments(ctx context.Context, userID sql.NullString) ([]GetUpcomingTournamentsRow, error)
 	GetUserAvatarByUserID(ctx context.Context, id string) (GetUserAvatarByUserIDRow, error)
