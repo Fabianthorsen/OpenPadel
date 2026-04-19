@@ -46,7 +46,6 @@
   let showCreateDrawer = $state(false);
 
   let stats = $state<App.AmericanoCareerStats | null>(null);
-  let tennisStats = $state<App.TennisCareerStats | null>(null);
   let tournaments = $state<App.TournamentEntry[]>([]);
   let upcoming = $state<App.UpcomingEntry[]>([]);
   let loading = $state(true);
@@ -176,7 +175,6 @@
         api.invites.list(auth.token),
       ]);
       stats = profileRes.stats;
-      tennisStats = profileRes.tennis_stats;
       tournaments = historyRes.tournaments;
       upcoming = (historyRes.upcoming ?? []).sort((a, b) => {
         if (!a.scheduled_at && !b.scheduled_at) return 0;
@@ -241,12 +239,6 @@
   const winRate = $derived(
     stats && stats.games_played > 0
       ? Math.round((stats.wins / stats.games_played) * 100)
-      : 0
-  );
-
-  const tennisWinRate = $derived(
-    tennisStats && (tennisStats.wins + tennisStats.losses) > 0
-      ? Math.round((tennisStats.wins / (tennisStats.wins + tennisStats.losses)) * 100)
       : 0
   );
 
@@ -494,25 +486,6 @@
         </Collapsible.Content>
       </Collapsible.Root>
 
-      <!-- Tennis (2v2) stats -->
-      {#if tennisStats}
-        <div class="space-y-3">
-          <div class="flex w-full items-center justify-between">
-            <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-secondary">{$_('create_mode_tennis')}</p>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-2xl bg-surface-raised px-5 py-5 flex flex-col items-center gap-1.5">
-              <p class="text-3xl font-[800] leading-none">{tennisStats.tournaments}</p>
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('profile_tournaments')}</p>
-            </div>
-            <div class="rounded-2xl bg-surface-raised px-5 py-5 flex flex-col items-center gap-1.5">
-              <p class="text-3xl font-[800] leading-none">{tennisWinRate}</p>
-              <p class="text-[11px] font-bold uppercase tracking-[0.1em] text-text-disabled">{$_('profile_win_rate')} %</p>
-            </div>
-          </div>
-        </div>
-      {/if}
-
       <!-- Contacts -->
       <Collapsible.Root bind:open={showContacts} class="space-y-3">
         <Collapsible.Trigger class="flex w-full items-center justify-between">
@@ -628,7 +601,7 @@
                         <span class="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-500">Live</span>
                       {/if}
                     </div>
-                    <p class="text-xs text-text-secondary">{t.player_count} {$_('profile_upcoming_players')} · {t.game_mode === 'tennis' ? $_('create_mode_tennis') : 'Americano'}</p>
+                    <p class="text-xs text-text-secondary">{t.player_count} {$_('profile_upcoming_players')} · Americano</p>
                   </div>
                   <span class="text-sm text-text-secondary">→</span>
                 </a>

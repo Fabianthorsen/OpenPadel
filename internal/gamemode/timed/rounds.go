@@ -1,9 +1,10 @@
-package scheduler
+package timed
 
 import (
 	"fmt"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/gamemode/americano"
 )
 
 type TimedAmericanoConfig struct {
@@ -48,6 +49,6 @@ func RecalculateRoundDuration(remainingRounds, remainingSeconds, bufferSeconds i
 // GenerateTimedAmericano generates all rounds for a timed americano session.
 // It reuses the existing Americano scheduler to ensure fair rotation constraints.
 func GenerateTimedAmericano(players []domain.Player, courts, totalRounds int) ([]domain.Round, error) {
-	rounds := Generate(players, courts, totalRounds)
+	rounds := americano.Generate(players, courts, totalRounds)
 	return rounds, nil
 }

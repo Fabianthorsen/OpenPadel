@@ -1,6 +1,9 @@
-package scheduler
+package mexicano
 
 import (
+	"crypto/rand"
+	"math/big"
+
 	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
@@ -32,5 +35,25 @@ func GenerateMexicanoRound(standings []domain.Standing, courts int, roundNum int
 		Number:  roundNum,
 		Bench:   []string{},
 		Matches: matches,
+	}
+}
+
+const idAlphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+func shortID() string {
+	b := make([]byte, 6)
+	for i := range b {
+		idx, _ := rand.Int(rand.Reader, big.NewInt(int64(len(idAlphabet))))
+		b[i] = idAlphabet[idx.Int64()]
+	}
+	return string(b)
+}
+
+func shuffleTeamSides(matches []domain.Match) {
+	for i := range matches {
+		n, _ := rand.Int(rand.Reader, big.NewInt(2))
+		if n.Int64() == 1 {
+			matches[i].TeamA, matches[i].TeamB = matches[i].TeamB, matches[i].TeamA
+		}
 	}
 }

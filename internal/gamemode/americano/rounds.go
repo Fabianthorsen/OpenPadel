@@ -1,4 +1,4 @@
-package scheduler
+package americano
 
 import (
 	"crypto/rand"

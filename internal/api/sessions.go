@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"math/rand/v2"
 	"net/http"
 	"strings"
 	"time"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
 	"github.com/fabianthorsen/openpadel/internal/events"
-	"github.com/fabianthorsen/openpadel/internal/scheduler"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -174,7 +172,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusUnprocessableEntity, "mexicano_player_count")
 			return
 		}
-		if err := h.startMexicanoSession(w, id, sess, active, endsAt); err != nil {
+		if err := h.mexicanoSvc.Start(w, id, sess, active, endsAt); err != nil {
 			return
 		}
 	case "timed_americano":
@@ -188,38 +186,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusUnprocessableEntity, "too_many_players")
 			return
 		}
-		// Shuffle players
-		rand.Shuffle(len(active), func(i, j int) {
-			active[i], active[j] = active[j], active[i]
-		})
-		// Calculate rounds
-		roundCount, roundDurationSec, err := scheduler.CalculateTimedRounds(len(active), *sess.TotalDurationMinutes, *sess.BufferSeconds)
-		if err != nil {
-			respondError(w, http.StatusUnprocessableEntity, err.Error())
-			return
-		}
-		// Generate rounds
-		rounds, err := scheduler.GenerateTimedAmericano(active, sess.Courts, roundCount)
-		if err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
-			return
-		}
-		// Save rounds
-		if err := h.store.SaveRounds(id, rounds); err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
-			return
-		}
-		// Calculate end time
-		now := time.Now().UTC()
-		endsAt := now.Add(time.Duration(*sess.TotalDurationMinutes) * time.Minute)
-		// Start session
-		if err := h.store.StartTimedAmericanoSession(id, string(domain.StatusActive), roundCount, sess.TotalDurationMinutes, sess.BufferSeconds, &roundDurationSec, &endsAt); err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
-			return
-		}
-		// Set round started time
-		if err := h.store.SetRoundStartedAt(id, &now); err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
+		if err := h.timedSvc.Start(w, id, sess, active); err != nil {
 			return
 		}
 	default: // americano
@@ -228,15 +195,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusUnprocessableEntity, "not_enough_players")
 			return
 		}
-		rand.Shuffle(len(active), func(i, j int) { active[i], active[j] = active[j], active[i] })
-		totalRounds := scheduler.TotalRounds(len(active), sess.Courts)
-		rounds := scheduler.Generate(active, sess.Courts, totalRounds)
-		if err := h.store.SaveRounds(id, rounds); err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
-			return
-		}
-		if err := h.store.StartSession(id, totalRounds, endsAt); err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
+		if err := h.americanoSvc.Start(w, id, sess, active, endsAt); err != nil {
 			return
 		}
 	}
