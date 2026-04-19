@@ -1,11 +1,12 @@
 # OpenPadel
 
-A lightweight padel tournament app. Supports Americano (rotating partners, point-based) and Regular 2v2 (fixed teams, tennis scoring).
+A lightweight padel tournament app. Supports Americano (rotating partners, point-based) and Mexicano (pairings adapt by standings).
 
 ## Features
 
 - **Americano** — round-robin rotation, configurable points per game, live leaderboard
-- **Regular 2v2** — fixed teams, full tennis scoring (sets, games, points, tiebreak, golden point at deuce), serve tracking
+- **Mexicano** — dynamic pairings based on standings, no bench players
+- **Timed Americano** — fixed duration tournaments with drift-corrected round timings
 - Join by 4-character session code, no account required
 - Real-time score updates via polling
 - Push notifications when a tournament starts (PWA)
@@ -25,8 +26,8 @@ A lightweight padel tournament app. Supports Americano (rotating partners, point
 ├── internal/
 │   ├── api/             # HTTP handlers and router
 │   ├── domain/          # Shared types
+│   ├── gamemode/        # Game mode services (americano, mexicano, timed)
 │   ├── store/           # SQLite queries
-│   ├── tennis/          # Tennis scoring engine
 │   └── ui/              # Embedded SvelteKit build
 └── web/                 # SvelteKit frontend
     └── src/

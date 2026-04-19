@@ -180,35 +180,6 @@ func (q *Queries) GetPasswordResetToken(ctx context.Context, tokenHash string) (
 	return i, err
 }
 
-const getTennisCareerStats = `-- name: GetTennisCareerStats :one
-SELECT
-    COUNT(DISTINCT p.session_id) AS tournaments,
-    CAST(COALESCE(SUM(
-        CASE WHEN json_extract(tm.state, '$.winner') = tt.team THEN 1 ELSE 0 END
-    ), 0) AS INTEGER) AS wins,
-    CAST(COALESCE(SUM(
-        CASE WHEN json_extract(tm.state, '$.winner') != '' AND json_extract(tm.state, '$.winner') != tt.team THEN 1 ELSE 0 END
-    ), 0) AS INTEGER) AS losses
-FROM players p
-JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'tennis'
-JOIN tennis_teams tt ON tt.session_id = p.session_id AND tt.player_id = p.id
-JOIN tennis_matches tm ON tm.session_id = p.session_id
-WHERE p.user_id = ? AND p.active = 1
-`
-
-type GetTennisCareerStatsRow struct {
-	Tournaments int64
-	Wins        int64
-	Losses      int64
-}
-
-func (q *Queries) GetTennisCareerStats(ctx context.Context, userID sql.NullString) (GetTennisCareerStatsRow, error) {
-	row := q.db.QueryRowContext(ctx, getTennisCareerStats, userID)
-	var i GetTennisCareerStatsRow
-	err := row.Scan(&i.Tournaments, &i.Wins, &i.Losses)
-	return i, err
-}
-
 const getTournamentHistorySessions = `-- name: GetTournamentHistorySessions :many
 SELECT
     s.id,

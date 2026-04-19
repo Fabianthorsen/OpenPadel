@@ -27,7 +27,7 @@
 ### Backend Quality
 
 - [ ] **Finish the sqlc migration** — residual raw SQL in [rounds.go:89](internal/store/rounds.go#L89), [rounds.go:97](internal/store/rounds.go#L97), [rounds.go:229](internal/store/rounds.go#L229), [rounds.go:328](internal/store/rounds.go#L328), [rounds.go:348](internal/store/rounds.go#L348), [contacts.go:44](internal/store/contacts.go#L44), [players.go:86](internal/store/players.go#L86), [invites.go:32-38](internal/store/invites.go#L32-L38) bypasses codegen — move into `.sql` query files
-- [ ] **Session-lookup helper** — 7-line `Get → ErrNotFound → server_error` blocks repeat across [api/sessions.go](internal/api/sessions.go), [rounds.go](internal/api/rounds.go), [tennis.go](internal/api/tennis.go), [players.go](internal/api/players.go); extract `requireSession(w, r, id) *domain.Session` into [middleware.go](internal/api/middleware.go)
+- [ ] **Session-lookup helper** — 7-line `Get → ErrNotFound → server_error` blocks repeat across [api/sessions.go](internal/api/sessions.go), [rounds.go](internal/api/rounds.go), [players.go](internal/api/players.go); extract `requireSession(w, r, id) *domain.Session` into [middleware.go](internal/api/middleware.go)
 - [ ] **Structured error logging in handlers** — only [auth.go](internal/api/auth.go) logs store errors today; every other handler swallows context on `respondError(w, 500, "server_error")`. Tag with handler name + request id
 - [ ] **Consistent sentinel handling** — some handlers use `errors.Is(err, store.ErrNotFound)`, others check error-message strings; make `errors.Is` the convention
 - [ ] **SSE drop metering** — [events/hub.go](internal/events/hub.go) silently drops when a client buffer fills; log at debug and expose a counter so we can tell if it ever matters in prod
@@ -41,7 +41,7 @@
 - [ ] **Playwright** — E2E tests for happy path (create session → join → submit scores); requires `data-testid` attributes on key interactive elements
 - [ ] **sqlc-only CI check** — grep for `s.db.Exec(`/`s.db.Query(`/`s.db.QueryRow(` in `internal/store/` to prevent new raw SQL sneaking back in
 - [x] **v1.9.0** — Database migrations with goose: versioned `.sql` files in `internal/store/migrations/`, embedded via `//go:embed`
-- [x] **v1.9.0** — **sqlc** — generate type-safe Go from SQL queries, eliminate hand-written `rows.Scan` patterns in `internal/store/`; refactored all store files (users, sessions, players, rounds, tennis, contacts, invites, push)
+- [x] **v1.9.0** — **sqlc** — generate type-safe Go from SQL queries, eliminate hand-written `rows.Scan` patterns in `internal/store/`; refactored all store files (users, sessions, players, rounds, contacts, invites, push)
 
 ## In Progress
 
@@ -54,7 +54,7 @@
 - [x] **Timed Americano (PR 3: Frontend)** — RoundTimer component with countdown and color state machine (green > 60s, amber 30-60s, red 1-30s, buzzer at 0). ActiveSession scoring modifications: free-form 0-99 range, no sum constraint, separate team score collection. CreateDrawer duration/buffer pickers. SSE timer_sync listener for drift correction. Lobby display updates. 19 RoundTimer tests, 15 scoring tests, 9 SSE tests. All tests passing.
 - [x] **Timed Americano (PR 2: API Handlers)** — Session creation with duration/buffer validation, game start with round calculation and drift correction, score submission with free-form scoring (no points constraint), round advance with timer_sync SSE events. Full integration tests. All tests passing.
 - [x] **Timed Americano (PR 1: Foundation)** — Database migrations, scheduler logic (`CalculateTimedRounds`, `RecalculateRoundDuration`, `GenerateTimedAmericano`), domain model, and store layer with timer state management. All tests passing.
-- [x] **v1.10.0** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, session state changes, and tennis points now push instantly to all connected clients. 30 s fallback poll retained.
+- [x] **v1.10.0** — SSE real-time updates: replaced polling with Server-Sent Events (`internal/events` Hub + handler, `sessionStream.svelte.ts` factory store). Live scores, round advances, and session state changes now push instantly to all connected clients. 30 s fallback poll retained.
 - [x] **v1.10.0** — Admin access recovery: sessions now store `creator_user_id`; logged-in session creator is recognised as admin even after localStorage is cleared or on a different device. Profile upcoming-session links restore the admin token automatically.
 
 - [x] **v1.8.0** — Pull-to-refresh on home, session, and profile screens

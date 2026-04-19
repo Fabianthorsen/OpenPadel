@@ -5,8 +5,9 @@ type: project
 ---
 
 New game modes follow a consistent pattern:
-- **Scheduler**: separate file in `internal/scheduler/` (e.g., `americano.go`, `mexicano.go`) with pure functions
-- **API branching**: `startSession` in `internal/api/sessions.go` switches on `sess.GameMode`; mode-specific helpers in dedicated files (e.g., `mexicano.go`)
+- **Game mode service layer**: `internal/gamemode/{mode}/service.go` orchestrates Start() and AdvanceRound() per mode (replaces old `internal/scheduler/` pattern)
+- **Round generation**: `internal/gamemode/{mode}/rounds.go` contains mode-specific pairing logic and constraints
+- **API branching**: `startSession` and `advanceRound` handlers in `internal/api/` dispatch to mode-specific services via interface injection
 - **Store**: sqlc queries in `internal/store/queries/*.sql`, generated code in `internal/store/db/`, hand-written store methods in `internal/store/*.go`
 - **Domain types**: all in `internal/domain/session.go` — Session, Round, Match, Score, Standing, Leaderboard
 - **Frontend types**: mirrored in `web/src/app.d.ts` under `App` namespace

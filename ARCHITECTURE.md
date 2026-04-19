@@ -38,7 +38,7 @@ openpadel/
 │   │   ├── rounds.go           get rounds, current round, advance, submit score, live score, leaderboard; dispatches to gamemode services
 │   │   ├── contacts.go         get, add, remove contacts; search users
 │   │   ├── invites.go          get, send, accept, decline invites
-│   │   └── push.go             VAPID key, subscribe, unsubscribe
+│   │   └── push.go             web push notifications
 │   ├── domain/session.go       all shared types (User, Session, Player, Round, Match, etc.)
 │   ├── store/                  SQLite data access — one file per domain area
 │   │   ├── store.go            DB init via goose migrations, WAL mode, single connection
@@ -48,7 +48,6 @@ openpadel/
 │   │   ├── players.go
 │   │   ├── rounds.go
 │   │   ├── users.go
-│   │   ├── tennis.go
 │   │   ├── contacts.go
 │   │   ├── invites.go
 │   │   └── push.go
@@ -69,7 +68,6 @@ openpadel/
 │   │       ├── rounds.go       Timed Americano — rounds + timer calculation/recalculation
 │   │       ├── rounds_test.go  timer and round calculation tests
 │   │       └── service.go      Start(), AdvanceRound() with drift correction
-│   ├── tennis/scoring.go       pure tennis scoring engine (sets, games, tiebreak, golden point)
 │   ├── livescores/store.go     in-memory concurrent map for live/in-progress scores
 │   ├── email/resend.go         Resend API client — password reset only
 │   └── ui/ui.go                embed.FS wrapper — serves SPA, injects OG meta tags
@@ -101,7 +99,6 @@ and stored in the browser's `localStorage`.
 |-----------------|--------|--------------------------------------------------------------|
 | Americano       | Live   | Rotating partners, individual scoring, pre-computed rounds   |
 | Mexicano        | Live   | Like Americano, but pairings adapt each round by standings   |
-| Tennis          | Live   | Regular 2v2 with sets, games, serve tracking                 |
 | Timed Americano | Live   | Americano with fixed duration, free scoring, drift correction|
 | Round Robin     | Planned| Every pair plays every other pair                            |
 
@@ -153,14 +150,6 @@ GET    /api/sessions/:id/leaderboard
 ### Server-Sent Events
 ```
 GET    /api/sessions/:id/events   (text/event-stream, no auth required)
-```
-
-### Tennis
-```
-POST   /api/sessions/:id/tennis/teams
-GET    /api/sessions/:id/tennis
-POST   /api/sessions/:id/tennis/point
-PUT    /api/sessions/:id/tennis/server
 ```
 
 ### Contacts & Invites
@@ -219,7 +208,6 @@ flowchart LR
             RS["submitScore → round_updated"]
             LS["updateLiveScore → live_score"]
             AD["advanceRound → round_updated"]
-            TN["addTennisPoint / setTennisServer → tennis_updated"]
             SE["start / close / cancel → session_updated"]
             PL["joinSession / deactivatePlayer → session_updated"]
         end
@@ -227,7 +215,6 @@ flowchart LR
         RS --> HUB
         LS --> HUB
         AD --> HUB
-        TN --> HUB
         SE --> HUB
         PL --> HUB
         HUB --> FAN
@@ -247,7 +234,6 @@ flowchart LR
 | `round_updated` | _(signal)_ | score submitted, round advanced |
 | `timer_sync` | `{round_duration_seconds, round_started_at, remaining_rounds, buffer_seconds}` | timed_americano round advanced (drift correction) |
 | `live_score` | `{match_id, a, b, server}` | live score tap (PATCH, in-memory only) |
-| `tennis_updated` | full `TennisMatch` | point scored, server changed |
 
 ### Frontend store (`sessionStream.svelte.ts`)
 
@@ -297,8 +283,6 @@ password_reset_tokens(token, user_id, expires_at, used)
 rounds  (id, session_id, number)
 bench   (round_id, player_id)
 matches (id, round_id, court, p1, p2, p3, p4, score_a, score_b)
-
-tennis_matches (id, session_id, ...)
 
 contacts (user_id, contact_id, created_at)
 invites  (id, session_id, inviter_id, invitee_id, status, created_at)
