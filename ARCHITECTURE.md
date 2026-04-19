@@ -29,15 +29,13 @@ openpadel/
 │   └── migrate/main.go          CLI for running migrations (up, down, status, reset)
 ├── internal/
 │   ├── api/
-│   │   ├── router.go           chi router, CORS, middleware, all route registrations
+│   │   ├── router.go           chi router, CORS, middleware, all route registrations; service injection
 │   │   ├── middleware.go       requireAuth / optionalAuth, context helpers
 │   │   ├── respond.go          respond() and respondError() helpers
 │   │   ├── auth.go             register, login, logout, me, profile, history, deleteAccount, forgot/reset
-│   │   ├── sessions.go         create, get, start, cancel, close session
+│   │   ├── sessions.go         create, get, start, cancel, close session; dispatches to gamemode services
 │   │   ├── players.go          join, deactivate player
-│   │   ├── rounds.go           get rounds, current round, advance, submit score, live score, leaderboard
-│   │   ├── tennis.go           set teams, get match, add point, set server
-│   │   ├── mexicano.go         Mexicano-specific handlers
+│   │   ├── rounds.go           get rounds, current round, advance, submit score, live score, leaderboard; dispatches to gamemode services
 │   │   ├── contacts.go         get, add, remove contacts; search users
 │   │   ├── invites.go          get, send, accept, decline invites
 │   │   └── push.go             VAPID key, subscribe, unsubscribe
@@ -58,9 +56,19 @@ openpadel/
 │   │   ├── envelope.go         Envelope type + event-type constants
 │   │   ├── hub.go              thread-safe SSE client registry (sync.RWMutex, per-session subs)
 │   │   └── handler.go          ServeSSE — streams events, 20s keepalive, X-Accel-Buffering: no
-│   ├── scheduler/
-│   │   ├── americano.go        greedy round-generation, full bench rotation pre-computed
-│   │   └── mexicano.go         Mexicano variant — pairings adapt based on standings
+│   ├── gamemode/
+│   │   ├── americano/
+│   │   │   ├── rounds.go       greedy round-generation, full bench rotation pre-computed
+│   │   │   ├── rounds_test.go  round generation tests
+│   │   │   └── service.go      Start() orchestration, CanComplete() check
+│   │   ├── mexicano/
+│   │   │   ├── rounds.go       Mexicano variant — pairings adapt based on standings
+│   │   │   ├── rounds_test.go  round generation tests
+│   │   │   └── service.go      Start(), AdvanceRound() orchestration
+│   │   └── timed/
+│   │       ├── rounds.go       Timed Americano — rounds + timer calculation/recalculation
+│   │       ├── rounds_test.go  timer and round calculation tests
+│   │       └── service.go      Start(), AdvanceRound() with drift correction
 │   ├── tennis/scoring.go       pure tennis scoring engine (sets, games, tiebreak, golden point)
 │   ├── livescores/store.go     in-memory concurrent map for live/in-progress scores
 │   ├── email/resend.go         Resend API client — password reset only
@@ -303,10 +311,14 @@ UUID-style (users/players). `crypto/rand` throughout.
 
 ---
 
-## Scheduler
+## Game Mode Services
 
-### Americano (`internal/scheduler/americano.go`)
-Greedy round-by-round with a scoring function. All rounds pre-computed at session start.
+Each game mode has a service layer (`gamemode/*/service.go`) that orchestrates session start and round advancement.
+Services encapsulate mode-specific logic and declare minimal `Store` interfaces (interface segregation).
+
+### Americano (`internal/gamemode/americano/`)
+
+**Round generation** (`rounds.go`): Greedy round-by-round with a scoring function. All rounds pre-computed at session start.
 
 Constraints (priority order):
 1. **No consecutive bench** — benched in round N → must play round N+1
@@ -314,12 +326,22 @@ Constraints (priority order):
 3. **Partner variety** — penalise recent partner repeats
 4. **Opponent variety** — penalise recent opponent repeats
 
-### Mexicano (`internal/scheduler/mexicano.go`)
-Same constraints, but pairings are recalculated each round based on current standings.
+**Service** (`service.go`):
+- `Start(sessionID, sess, active, endsAt)` — shuffles players, generates all rounds, saves, activates session
+- `CanComplete(sessionID)` — checks if all pre-generated rounds are fully scored
+
+### Mexicano (`internal/gamemode/mexicano/`)
+
+**Round generation** (`rounds.go`): Same constraints as Americano, but pairings are recalculated each round based on current standings.
 No bench — requires exactly `courts × 4` players.
 
-### Timed Americano (`internal/scheduler/timed_americano.go`)
-Timer-based variant of Americano with fixed tournament duration and dynamic round timing.
+**Service** (`service.go`):
+- `Start(sessionID, sess, active, endsAt)` — generates round 1 from random standings, saves, activates session
+- `AdvanceRound(sessionID, nextRoundNum)` — computes standings, generates next round, saves
+
+### Timed Americano (`internal/gamemode/timed/`)
+
+**Round generation** (`rounds.go`): Timer-based variant of Americano with fixed tournament duration and dynamic round timing.
 
 **Key differences from Americano:**
 - **No points constraint** — scores are free-form (not constrained to sum to a fixed total like 16/24/32)
@@ -327,6 +349,10 @@ Timer-based variant of Americano with fixed tournament duration and dynamic roun
 - **Drift correction** — after each round, remaining time is redistributed across remaining rounds (via `RecalculateRoundDuration`)
 - **Automatic completion** — session ends when the timer expires and current round is fully scored
 - **Pairing** — uses same greedy scheduler as Americano to generate all rounds upfront based on player count
+
+**Service** (`service.go`):
+- `Start(sessionID, sess, active)` — shuffles players, calculates round count/duration, generates all rounds, saves, activates session
+- `AdvanceRound(sessionID, sess)` — recalculates round duration based on remaining time, updates DB, emits timer_sync SSE event
 
 Timer sync events (`timer_sync`) are emitted when advancing rounds, containing:
 - `round_duration_seconds` — recalculated duration for the next round
