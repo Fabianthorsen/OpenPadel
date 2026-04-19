@@ -136,4 +136,23 @@ describe('sessionStream', () => {
     expect(handler).toHaveBeenCalledWith({ round: 2 });
     stream.close();
   });
+
+  it('dispatches timer_sync events for timed_americano', () => {
+    const stream = sessionStream('sess123');
+    stream.start();
+
+    const handler = vi.fn();
+    stream.onEvent('timer_sync', handler);
+
+    const payload = {
+      round_duration_seconds: 600,
+      round_started_at: '2024-04-18T12:00:00Z',
+      remaining_rounds: 5,
+      buffer_seconds: 120,
+    };
+    MockEventSource.instances[0].emit('timer_sync', payload);
+
+    expect(handler).toHaveBeenCalledWith(payload);
+    stream.close();
+  });
 });

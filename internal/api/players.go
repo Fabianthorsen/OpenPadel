@@ -43,20 +43,6 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Tennis sessions are capped at 4 players.
-	if sess.GameMode == "tennis" {
-		activePlayers := 0
-		for _, p := range sess.Players {
-			if p.Active {
-				activePlayers++
-			}
-		}
-		if activePlayers >= 4 {
-			respondError(w, http.StatusConflict, "session_full")
-			return
-		}
-	}
-
 	var userID string
 	if u := userFromContext(r); u != nil {
 		userID = u.ID

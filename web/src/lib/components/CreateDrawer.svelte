@@ -19,11 +19,19 @@
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
   let gameMode = $state<'americano' | 'mexicano' | 'tennis'>('americano');
+  let americanoVariant = $state<'points' | 'timed'>('points');
   let mexicanoRounds = $state<number | null>(null); // null = no round limit
   let courtDuration = $state<number | null>(null);  // null = no timer
   let customTimeMode = $state(false);
   let customTimeRaw = $state('');
   let customInputEl = $state<HTMLInputElement | null>(null);
+  let totalDurationMinutes = $state<number>(90);
+  let bufferSeconds = $state<number>(120);
+
+  // Maps UI selection (gameMode + variant) to backend game_mode
+  const actualGameMode = $derived(gameMode === 'americano'
+    ? (americanoVariant === 'timed' ? 'timed_americano' : 'americano')
+    : gameMode);
   $effect(() => {
     if (customTimeMode && customInputEl) customInputEl.focus();
   });
@@ -115,7 +123,19 @@
         d.setHours(h, m, 0, 0);
         iso = d.toISOString();
       }
-      const session = await api.sessions.create(courts, points, tournamentName.trim(), gameMode, setsToWin, gamesPerSet, iso, gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined, courtDuration ?? undefined);
+      const session = await api.sessions.create({
+        courts,
+        points: actualGameMode === 'timed_americano' ? 0 : points,
+        name: tournamentName.trim(),
+        game_mode: actualGameMode,
+        sets_to_win: setsToWin,
+        games_per_set: gamesPerSet,
+        scheduled_at: iso,
+        rounds_total: gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined,
+        court_duration_minutes: courtDuration ?? undefined,
+        total_duration_minutes: actualGameMode === 'timed_americano' ? totalDurationMinutes : undefined,
+        buffer_seconds: actualGameMode === 'timed_americano' ? bufferSeconds : undefined,
+      });
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
       const player = await api.players.join(session.id, auth.user!.display_name, auth.token ?? undefined, adminToken);
@@ -156,6 +176,24 @@
           <p class="text-xs text-text-secondary">{$_('create_mexicano_hint')}</p>
         {/if}
       </div>
+
+      <!-- Americano variant selector (Points vs Timed) -->
+      {#if gameMode === 'americano'}
+        <div class="space-y-2.5">
+          <SectionLabel>{$_('create_americano_format_label')}</SectionLabel>
+          <PillToggleGroup bind:value={americanoVariant}>
+            <PillToggleItem value="points">{$_('create_americano_points_variant')}</PillToggleItem>
+            <PillToggleItem value="timed">{$_('create_americano_timed_variant')}</PillToggleItem>
+          </PillToggleGroup>
+          <p class="text-xs text-text-secondary">
+            {#if americanoVariant === 'timed'}
+              {$_('create_americano_timed_hint')}
+            {:else}
+              {$_('create_americano_points_hint')}
+            {/if}
+          </p>
+        </div>
+      {/if}
 
       {#if gameMode === 'mexicano'}
         <!-- Mexicano: rounds or time (mutually exclusive) -->
@@ -225,7 +263,7 @@
         </div>
       {/if}
 
-      {#if gameMode === 'americano' || gameMode === 'mexicano'}
+      {#if gameMode === 'americano' || gameMode === 'mexicano' || gameMode === 'tennis'}
         <!-- Courts -->
         <div class="space-y-2.5">
           <SectionLabel>{$_('create_courts_label')}</SectionLabel>
@@ -244,23 +282,60 @@
           {/if}
         </div>
 
-        <!-- Points -->
-        <div class="space-y-2.5">
-          <SectionLabel>{$_('create_points_label')}</SectionLabel>
-          <PillToggleGroup
-            value={points.toString()}
-            onValueChange={(val) => points = parseInt(val)}
-          >
-            {#each [16, 24, 32] as p}
-              <PillToggleItem value={p.toString()}>
-                {p}
-              </PillToggleItem>
-            {/each}
-          </PillToggleGroup>
-          <p class="text-xs text-text-secondary">
-            {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
-          </p>
-        </div>
+        {#if gameMode === 'americano' && americanoVariant === 'timed'}
+          <!-- Timed Americano Duration -->
+          <div class="space-y-2.5">
+            <SectionLabel>{$_('create_timed_duration_label')}</SectionLabel>
+            <PillToggleGroup
+              value={totalDurationMinutes.toString()}
+              onValueChange={(val) => totalDurationMinutes = parseInt(val)}
+            >
+              {#each [60, 90, 120, 150, 180] as duration}
+                <PillToggleItem value={duration.toString()}>
+                  {duration}
+                </PillToggleItem>
+              {/each}
+            </PillToggleGroup>
+            <p class="text-xs text-text-secondary">
+              {$_('create_timed_duration_hint', { values: { n: totalDurationMinutes } })}
+            </p>
+          </div>
+
+          <!-- Timed Americano Buffer -->
+          <div class="space-y-2.5">
+            <SectionLabel>{$_('create_timed_buffer_label')}</SectionLabel>
+            <PillToggleGroup
+              value={bufferSeconds.toString()}
+              onValueChange={(val) => bufferSeconds = parseInt(val)}
+            >
+              <PillToggleItem value="120">2 min</PillToggleItem>
+              <PillToggleItem value="180">3 min</PillToggleItem>
+            </PillToggleGroup>
+            <p class="text-xs text-text-secondary">
+              {$_('create_timed_buffer_hint', { values: { n: (bufferSeconds / 60).toFixed(1) } })}
+            </p>
+          </div>
+        {/if}
+
+        <!-- Points (shown for americano points variant and mexicano) -->
+        {#if (gameMode === 'americano' && americanoVariant === 'points') || gameMode === 'mexicano'}
+          <div class="space-y-2.5">
+            <SectionLabel>{$_('create_points_label')}</SectionLabel>
+            <PillToggleGroup
+              value={points.toString()}
+              onValueChange={(val) => points = parseInt(val)}
+            >
+              {#each [16, 24, 32] as p}
+                <PillToggleItem value={p.toString()}>
+                  {p}
+                </PillToggleItem>
+              {/each}
+            </PillToggleGroup>
+            <p class="text-xs text-text-secondary">
+              {points === 16 ? $_('create_points_quick') : points === 24 ? $_('create_points_standard') : $_('create_points_long')}
+            </p>
+          </div>
+        {/if}
       {:else}
         <!-- Sets to win -->
         <div class="space-y-2.5">

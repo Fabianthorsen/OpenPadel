@@ -4,7 +4,6 @@ const (
 	EventSessionUpdated = "session_updated"
 	EventRoundUpdated   = "round_updated"
 	EventLiveScore      = "live_score"
-	EventTennisUpdated  = "tennis_updated"
 	EventInviteReceived = "invite_received"
 	EventTimerSync      = "timer_sync"
 )

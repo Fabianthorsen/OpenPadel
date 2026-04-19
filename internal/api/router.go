@@ -113,11 +113,6 @@ r.Post("/start", h.startSession)
 			r.Get("/leaderboard", h.getLeaderboard)
 			r.Put("/matches/{matchID}/score", h.submitScore)
 			r.Patch("/matches/{matchID}/score", h.updateLiveScore)
-			// Tennis
-			r.Put("/tennis/teams", h.setTennisTeams)
-			r.Get("/tennis/match", h.getTennisMatch)
-			r.Post("/tennis/point/{team}", h.addTennisPoint)
-			r.Post("/tennis/server/{team}", h.setTennisServer)
 		})
 	})
 

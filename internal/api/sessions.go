@@ -22,8 +22,6 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		Points               int     `json:"points"`
 		Name                 string  `json:"name"`
 		GameMode             string  `json:"game_mode"`
-		SetsToWin            int     `json:"sets_to_win"`
-		GamesPerSet          int     `json:"games_per_set"`
 		ScheduledAt          *string `json:"scheduled_at"`
 		RoundsTotal          *int    `json:"rounds_total"`
 		CourtDurationMinutes *int    `json:"court_duration_minutes"`
@@ -37,8 +35,8 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	if body.GameMode == "" {
 		body.GameMode = "americano"
 	}
-	if body.GameMode != "americano" && body.GameMode != "mexicano" && body.GameMode != "timed_americano" && body.GameMode != "tennis" {
-		respondError(w, http.StatusBadRequest, "game_mode must be 'americano', 'mexicano', 'timed_americano', or 'tennis'")
+	if body.GameMode != "americano" && body.GameMode != "mexicano" && body.GameMode != "timed_americano" {
+		respondError(w, http.StatusBadRequest, "game_mode must be 'americano', 'mexicano', or 'timed_americano'")
 		return
 	}
 
@@ -79,16 +77,6 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-	} else {
-		// Tennis: fixed 1 court, no points concept.
-		body.Courts = 1
-		body.Points = 0
-		if body.SetsToWin != 2 && body.SetsToWin != 3 {
-			body.SetsToWin = 2 // default best of 3
-		}
-		if body.GamesPerSet != 4 && body.GamesPerSet != 6 {
-			body.GamesPerSet = 6 // default
-		}
 	}
 
 	var scheduledAt *time.Time
@@ -119,7 +107,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	if u := userFromContext(r); u != nil {
 		creatorUserID = u.ID
 	}
-	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.SetsToWin, body.GamesPerSet, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes, body.TotalDurationMinutes, body.BufferSeconds, creatorUserID)
+	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes, body.TotalDurationMinutes, body.BufferSeconds, creatorUserID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not create session")
 		return
@@ -180,10 +168,6 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch sess.GameMode {
-	case "tennis":
-		if err := h.startTennisSession(w, id, active); err != nil {
-			return
-		}
 	case "mexicano":
 		required := sess.Courts * 4
 		if len(active) != required {
@@ -195,8 +179,13 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 		}
 	case "timed_americano":
 		minPlayers := sess.Courts * 4
+		maxPlayers := sess.Courts * 8
 		if len(active) < minPlayers {
 			respondError(w, http.StatusUnprocessableEntity, "not_enough_players")
+			return
+		}
+		if len(active) > maxPlayers {
+			respondError(w, http.StatusUnprocessableEntity, "too_many_players")
 			return
 		}
 		// Shuffle players
@@ -323,6 +312,12 @@ func (h *Handler) closeSession(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
+
+	standings, err := h.store.GetLeaderboard(id)
+	if err == nil && len(standings) > 0 && standings[0].UserID != nil {
+		h.store.IncrementTournamentWinCount(*standings[0].UserID)
+	}
+
 	h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
 	w.WriteHeader(http.StatusNoContent)
 }

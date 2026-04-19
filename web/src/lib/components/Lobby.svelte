@@ -115,8 +115,15 @@
 
   const isTennis = $derived(session.game_mode === 'tennis');
   const isMexicano = $derived(session.game_mode === 'mexicano');
+  const isTimedAmericano = $derived(session.game_mode === 'timed_americano');
   const gameModeName = $derived(
-    session.game_mode === 'mexicano' ? 'Mexicano' : session.game_mode === 'tennis' ? 'Tennis' : 'Americano'
+    session.game_mode === 'mexicano'
+      ? $_('create_mexicano_soon')
+      : session.game_mode === 'tennis'
+        ? 'Tennis'
+        : session.game_mode === 'timed_americano'
+          ? 'Americano (Timed)'
+          : 'Americano (Points)'
   );
   let showRules = $state(false);
   const activePlayers = $derived(session.players.filter((p) => p.active));
@@ -182,6 +189,10 @@
   const unassigned = $derived(activePlayers.filter((p) => !teamAssignments[p.id]));
 
   const requiredPlayers = $derived(session.courts * 4);
+  const maxPlayers = $derived(
+    isTimedAmericano ? session.courts * 8 : isMexicano ? requiredPlayers : undefined
+  );
+  const isFull = $derived(maxPlayers ? activePlayers.length >= maxPlayers : false);
   const canStart = $derived(
     isTennis
       ? teamA.length === 2 && teamB.length === 2
@@ -360,7 +371,7 @@
           {#if isTennis}
             {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
           {:else}
-            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} {$_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
+            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
           {/if}
         </p>
       </div>
@@ -376,9 +387,16 @@
             </div>
           </div>
 
+          {#if isFull}
+            <div class="flex items-start gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-900">
+              <Info size={16} class="shrink-0 mt-0.5" />
+              <p>This session has reached its maximum player limit for {gameModeName}.</p>
+            </div>
+          {/if}
+
           <Button
             onclick={join}
-            disabled={joining || !joinName.trim()}
+            disabled={joining || !joinName.trim() || isFull}
             class="h-auto w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-semibold text-white hover:bg-primary-hover"
           >
             {joining ? $_('invite_joining') : $_('invite_join_button')}
@@ -412,7 +430,7 @@
             />
             <Button
               type="submit"
-              disabled={joining || !joinName.trim()}
+              disabled={joining || !joinName.trim() || isFull}
               class="h-auto rounded-2xl bg-surface-raised px-4 text-sm font-semibold text-text-secondary hover:text-text-primary shadow-none"
             >
               {joining ? '…' : $_('invite_guest_join')}
@@ -445,7 +463,7 @@
           {#if isTennis}
             {$_('create_mode_tennis')} · {$_(session.sets_to_win === 3 ? 'create_sets_bo5' : 'create_sets_bo3')}
           {:else}
-            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points} pts · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
+            {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' pts'} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
           {/if}
         </div>
         <button
@@ -526,7 +544,7 @@
         {#if playerSearch.trim().length > 0 && !playerSearchLoading}
           <button
             onclick={() => addGuest(playerSearch.trim())}
-            disabled={joining}
+            disabled={joining || isFull}
             class="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border px-4 py-3 text-sm text-text-secondary transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
           >
             <UserPlus size={15} class="shrink-0" />
@@ -695,16 +713,23 @@
     <!-- Join form (non-admin who hasn't joined) -->
     {#if !isAdmin && !alreadyJoined}
       <div class="space-y-2">
+        {#if isFull}
+          <div class="flex items-start gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-900">
+            <Info size={16} class="shrink-0 mt-0.5" />
+            <p>This session has reached its maximum player limit.</p>
+          </div>
+        {/if}
         <form onsubmit={(e) => { e.preventDefault(); join(); }} class="flex gap-2">
           <Input
             bind:value={joinName}
             placeholder={$_('lobby_join_placeholder')}
             maxlength={32}
             class="flex-1 rounded-2xl border-0 bg-surface-raised px-4 py-3 text-sm"
+            disabled={isFull}
           />
           <Button
             type="submit"
-            disabled={joining || !joinName.trim()}
+            disabled={joining || !joinName.trim() || isFull}
             class="h-auto rounded-2xl bg-primary px-4 text-sm font-semibold text-white"
           >
             {joining ? $_('lobby_join_loading') : $_('lobby_join_button')}

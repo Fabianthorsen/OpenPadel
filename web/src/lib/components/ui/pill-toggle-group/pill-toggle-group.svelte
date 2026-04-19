@@ -19,7 +19,7 @@
 <ToggleGroupPrimitive.Root
 	type="single"
 	bind:value
-	class={cn('flex gap-2', className)}
+	class={cn('flex flex-wrap gap-2', className)}
 	{...restProps}
 >
 	{@render children?.()}

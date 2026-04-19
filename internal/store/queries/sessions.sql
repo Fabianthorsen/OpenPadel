@@ -27,12 +27,6 @@ WHERE s.id = ? AND r.number = s.current_round AND m.score_a IS NULL;
 -- name: CompleteSession :exec
 UPDATE sessions SET status = ?, ended_early = ?, updated_at = ? WHERE id = ?;
 
--- name: DeleteTennisMatches :exec
-DELETE FROM tennis_matches WHERE session_id = ?;
-
--- name: DeleteTennisTeams :exec
-DELETE FROM tennis_teams WHERE session_id = ?;
-
 -- name: DeleteBench :exec
 DELETE FROM bench WHERE round_id IN (SELECT id FROM rounds WHERE session_id = ?);
 

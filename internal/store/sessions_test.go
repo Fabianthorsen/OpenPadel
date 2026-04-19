@@ -12,7 +12,7 @@ func TestCreateSession_WithTimedAmericanoParams(t *testing.T) {
 	totalDurationMin := 120
 	bufferSec := 120
 
-	sess, err := s.CreateSession(1, 0, "Timed Americano Test", "timed_americano", 2, 6, nil, nil, nil, &totalDurationMin, &bufferSec, "")
+	sess, err := s.CreateSession(1, 0, "Timed Americano Test", "timed_americano", nil, nil, nil, &totalDurationMin, &bufferSec, "")
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestCreateSession_CreatorUserID(t *testing.T) {
 	s := newTestStore(t)
 	alice := createUser(t, s, "alice@example.com", "Alice")
 
-	sess, err := s.CreateSession(2, 24, "Test", "americano", 2, 6, nil, nil, nil, nil, nil, alice)
+	sess, err := s.CreateSession(2, 24, "Test", "americano", nil, nil, nil, nil, nil, alice)
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestCreateSession_CreatorUserID(t *testing.T) {
 func TestCreateSession_NoCreatorUserID(t *testing.T) {
 	s := newTestStore(t)
 
-	sess, err := s.CreateSession(2, 24, "", "americano", 2, 6, nil, nil, nil, nil, nil, "")
+	sess, err := s.CreateSession(2, 24, "", "americano", nil, nil, nil, nil, nil, "")
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}

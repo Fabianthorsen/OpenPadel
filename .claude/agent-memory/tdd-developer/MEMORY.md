@@ -1,0 +1,2 @@
+- [PR 3 Completion Summary](pr3-completion-summary.md) — Final implementation details, test counts, file changes, validation
+- [Timed Americano Implementation Guide](timed-americano-implementation.md) — TDD patterns, testing conventions, API decisions

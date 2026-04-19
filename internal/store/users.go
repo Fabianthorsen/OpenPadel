@@ -154,20 +154,6 @@ func (s *Store) GetCareerStats(userID string) (*domain.AmericanoCareerStats, err
 	return stats, nil
 }
 
-// GetTennisCareerStats returns wins/losses/tournaments for tennis (2v2) sessions.
-func (s *Store) GetTennisCareerStats(userID string) (*domain.TennisCareerStats, error) {
-	row, err := s.queries.GetTennisCareerStats(context.Background(), sql.NullString{String: userID, Valid: true})
-	if err != nil {
-		return nil, err
-	}
-	stats := &domain.TennisCareerStats{
-		Tournaments: int(row.Tournaments),
-		Wins:        int(row.Wins),
-		Losses:      int(row.Losses),
-	}
-	return stats, nil
-}
-
 // CreatePasswordResetToken generates a secure token for the given email.
 // Returns the raw token (to be emailed) and ErrNotFound if the email doesn't exist.
 func (s *Store) CreatePasswordResetToken(email string) (rawToken string, err error) {

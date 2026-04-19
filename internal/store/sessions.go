@@ -12,16 +12,10 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToWin, gamesPerSet int, roundsTotal *int, scheduledAt *time.Time, courtDurationMinutes *int, totalDurationMinutes *int, bufferSeconds *int, creatorUserID string) (*domain.Session, error) {
+func (s *Store) CreateSession(courts, points int, name, gameMode string, roundsTotal *int, scheduledAt *time.Time, courtDurationMinutes *int, totalDurationMinutes *int, bufferSeconds *int, creatorUserID string) (*domain.Session, error) {
 	now := time.Now().UTC()
 	if gameMode == "" {
 		gameMode = "americano"
-	}
-	if setsToWin == 0 {
-		setsToWin = 2
-	}
-	if gamesPerSet != 4 && gamesPerSet != 6 {
-		gamesPerSet = 6
 	}
 	sess := &domain.Session{
 		ID:                   newID(),
@@ -29,8 +23,6 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		Status:               domain.StatusLobby,
 		Name:                 name,
 		GameMode:             gameMode,
-		SetsToWin:            setsToWin,
-		GamesPerSet:          gamesPerSet,
 		Courts:               courts,
 		Points:               points,
 		RoundsTotal:          roundsTotal,
@@ -73,8 +65,8 @@ func (s *Store) CreateSession(courts, points int, name, gameMode string, setsToW
 		Status:               string(sess.Status),
 		Name:                 sess.Name,
 		GameMode:             sess.GameMode,
-		SetsToWin:            int64(sess.SetsToWin),
-		GamesPerSet:          int64(sess.GamesPerSet),
+		SetsToWin:            0,
+		GamesPerSet:          0,
 		Courts:               int64(sess.Courts),
 		Points:               int64(sess.Points),
 		RoundsTotal:          roundsTotalVal,
@@ -120,11 +112,11 @@ func (s *Store) StartSession(id string, roundsTotal int, endsAt *time.Time) erro
 		endsAtStr = sql.NullString{String: endsAt.UTC().Format(time.RFC3339), Valid: true}
 	}
 	return s.queries.StartSession(context.Background(), db.StartSessionParams{
-		Status:    string(domain.StatusActive),
+		Status:      string(domain.StatusActive),
 		RoundsTotal: sql.NullInt64{Int64: int64(roundsTotal), Valid: true},
-		EndsAt:    endsAtStr,
-		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
-		ID:        id,
+		EndsAt:      endsAtStr,
+		UpdatedAt:   time.Now().UTC().Format(time.RFC3339),
+		ID:          id,
 	})
 }
 
@@ -155,34 +147,36 @@ func (s *Store) CurrentRoundAllScored(sessionID string) (bool, error) {
 	return unscored == 0, err
 }
 
+func (s *Store) IncrementTournamentWinCount(userID string) error {
+	return s.queries.IncrementTournamentWinCount(context.Background(), userID)
+}
+
 func (s *Store) CompleteSession(id string, endedEarly bool) error {
 	endedEarlyInt := int64(0)
 	if endedEarly {
 		endedEarlyInt = 1
 	}
 	return s.queries.CompleteSession(context.Background(), db.CompleteSessionParams{
-		Status:    string(domain.StatusComplete),
+		Status:     string(domain.StatusComplete),
 		EndedEarly: endedEarlyInt,
-		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
-		ID:        id,
+		UpdatedAt:  time.Now().UTC().Format(time.RFC3339),
+		ID:         id,
 	})
 }
 
 func rowToSession(row db.GetSessionRow) *domain.Session {
 	sess := &domain.Session{
-		ID:         row.ID,
-		AdminToken: row.AdminToken,
-		Status:     domain.SessionStatus(row.Status),
-		Name:       row.Name,
-		GameMode:   row.GameMode,
-		SetsToWin:  int(row.SetsToWin),
-		GamesPerSet: int(row.GamesPerSet),
-		Courts:     int(row.Courts),
-		Points:     int(row.Points),
+		ID:           row.ID,
+		AdminToken:   row.AdminToken,
+		Status:       domain.SessionStatus(row.Status),
+		Name:         row.Name,
+		GameMode:     row.GameMode,
+		Courts:       int(row.Courts),
+		Points:       int(row.Points),
 		CurrentRound: intPtr(row.CurrentRound),
-		CreatedAt:  parseTime(row.CreatedAt),
-		UpdatedAt:  parseTime(row.UpdatedAt),
-		Players:    []domain.Player{},
+		CreatedAt:    parseTime(row.CreatedAt),
+		UpdatedAt:    parseTime(row.UpdatedAt),
+		Players:      []domain.Player{},
 	}
 
 	if row.RoundsTotal.Valid {
@@ -308,8 +302,6 @@ func (s *Store) UpdateRoundDuration(id string, roundDurationSec *int) error {
 
 func (s *Store) DeleteSession(id string) error {
 	// Delete in dependency order due to foreign keys.
-	s.queries.DeleteTennisMatches(context.Background(), id)
-	s.queries.DeleteTennisTeams(context.Background(), id)
 	s.queries.DeleteBench(context.Background(), id)
 	s.queries.DeleteMatches(context.Background(), id)
 	s.queries.DeleteRounds(context.Background(), id)
