@@ -48,7 +48,6 @@ openpadel/
 │   │   ├── players.go
 │   │   ├── rounds.go
 │   │   ├── users.go
-│   │   ├── tennis.go
 │   │   ├── contacts.go
 │   │   ├── invites.go
 │   │   └── push.go
