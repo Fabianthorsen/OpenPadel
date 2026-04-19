@@ -389,6 +389,15 @@ func (q *Queries) GetUserIDByToken(ctx context.Context, token string) (string, e
 	return user_id, err
 }
 
+const incrementTournamentWinCount = `-- name: IncrementTournamentWinCount :exec
+UPDATE users SET win_count = win_count + 1 WHERE id = ?
+`
+
+func (q *Queries) IncrementTournamentWinCount(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, incrementTournamentWinCount, id)
+	return err
+}
+
 const updatePlayerUserIDToNull = `-- name: UpdatePlayerUserIDToNull :exec
 UPDATE players SET user_id = NULL WHERE user_id = ?
 `

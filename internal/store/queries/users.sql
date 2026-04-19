@@ -60,21 +60,6 @@ LEFT JOIN matches m ON m.round_id = r.id
     AND m.score_a IS NOT NULL
 WHERE p.user_id = ? AND p.active = 1;
 
--- name: GetTennisCareerStats :one
-SELECT
-    COUNT(DISTINCT p.session_id) AS tournaments,
-    CAST(COALESCE(SUM(
-        CASE WHEN json_extract(tm.state, '$.winner') = tt.team THEN 1 ELSE 0 END
-    ), 0) AS INTEGER) AS wins,
-    CAST(COALESCE(SUM(
-        CASE WHEN json_extract(tm.state, '$.winner') != '' AND json_extract(tm.state, '$.winner') != tt.team THEN 1 ELSE 0 END
-    ), 0) AS INTEGER) AS losses
-FROM players p
-JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode = 'tennis'
-JOIN tennis_teams tt ON tt.session_id = p.session_id AND tt.player_id = p.id
-JOIN tennis_matches tm ON tm.session_id = p.session_id
-WHERE p.user_id = ? AND p.active = 1;
-
 -- name: CreatePasswordResetToken :exec
 INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?);
 
@@ -121,3 +106,6 @@ DELETE FROM users WHERE id = ?;
 
 -- name: UpdatePlayerUserIDToNull :exec
 UPDATE players SET user_id = NULL WHERE user_id = ?;
+
+-- name: IncrementTournamentWinCount :exec
+UPDATE users SET win_count = win_count + 1 WHERE id = ?;

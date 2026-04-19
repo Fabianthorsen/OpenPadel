@@ -22,7 +22,6 @@ type Querier interface {
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreatePlayer(ctx context.Context, arg CreatePlayerParams) error
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
-	CreateTennisMatch(ctx context.Context, arg CreateTennisMatchParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) error
 	CurrentRoundAllScored(ctx context.Context, id string) (int64, error)
 	DeactivatePlayer(ctx context.Context, id string) error
@@ -40,7 +39,6 @@ type Querier interface {
 	DeleteStalePushSubscription(ctx context.Context, endpoint string) error
 	DeleteTennisMatches(ctx context.Context, sessionID string) error
 	DeleteTennisTeams(ctx context.Context, sessionID string) error
-	DeleteTennisTeamsBySessionID(ctx context.Context, sessionID string) error
 	DeleteUser(ctx context.Context, id string) error
 	GetAmericanoCareerStats(ctx context.Context, userID sql.NullString) (GetAmericanoCareerStatsRow, error)
 	GetBenchByRoundID(ctx context.Context, roundID string) ([]string, error)
@@ -62,18 +60,16 @@ type Querier interface {
 	GetRoundsBySessionID(ctx context.Context, sessionID string) ([]GetRoundsBySessionIDRow, error)
 	GetSession(ctx context.Context, id string) (GetSessionRow, error)
 	GetTennisCareerStats(ctx context.Context, userID sql.NullString) (GetTennisCareerStatsRow, error)
-	GetTennisMatch(ctx context.Context, sessionID string) (TennisMatch, error)
-	GetTennisTeamsBySessionID(ctx context.Context, sessionID string) ([]GetTennisTeamsBySessionIDRow, error)
 	GetTournamentHistorySessions(ctx context.Context, userID sql.NullString) ([]GetTournamentHistorySessionsRow, error)
 	GetUpcomingTournaments(ctx context.Context, userID sql.NullString) ([]GetUpcomingTournamentsRow, error)
 	GetUserAvatarByUserID(ctx context.Context, id string) (GetUserAvatarByUserIDRow, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id string) (GetUserByIDRow, error)
 	GetUserIDByToken(ctx context.Context, token string) (string, error)
+	IncrementTournamentWinCount(ctx context.Context, id string) error
 	InsertBench(ctx context.Context, arg InsertBenchParams) error
 	InsertMatch(ctx context.Context, arg InsertMatchParams) error
 	InsertRound(ctx context.Context, arg InsertRoundParams) error
-	InsertTennisTeam(ctx context.Context, arg InsertTennisTeamParams) error
 	RemoveContact(ctx context.Context, arg RemoveContactParams) error
 	SavePushSubscription(ctx context.Context, arg SavePushSubscriptionParams) error
 	SearchUsers(ctx context.Context, arg SearchUsersParams) ([]SearchUsersRow, error)
@@ -90,7 +86,6 @@ type Querier interface {
 	UpdateProfileAvatarOnPlayers(ctx context.Context, arg UpdateProfileAvatarOnPlayersParams) error
 	UpdateRoundDuration(ctx context.Context, arg UpdateRoundDurationParams) error
 	UpdateSessionCurrentRound(ctx context.Context, arg UpdateSessionCurrentRoundParams) error
-	UpdateTennisState(ctx context.Context, arg UpdateTennisStateParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UserExists(ctx context.Context, id string) (int64, error)
 }

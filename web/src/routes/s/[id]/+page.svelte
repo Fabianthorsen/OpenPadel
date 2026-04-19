@@ -5,9 +5,7 @@
   import { api, ApiError } from '$lib/api/client';
   import Lobby from '$lib/components/Lobby.svelte';
   import ActiveSession from '$lib/components/ActiveSession.svelte';
-  import TennisMatch from '$lib/components/TennisMatch.svelte';
   import Leaderboard from '$lib/components/Leaderboard.svelte';
-  import TennisResult from '$lib/components/TennisResult.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import * as Drawer from '$lib/components/ui/drawer';
   import { toast } from 'svelte-sonner';
@@ -47,7 +45,7 @@
       if (session.admin_token && !token) {
         localStorage.setItem(`admin_token_${sessionId}`, session.admin_token);
       }
-      if (session.status !== 'lobby' && session.game_mode !== 'tennis') {
+      if (session.status !== 'lobby') {
         currentRound = await api.rounds.current(sessionId).catch(() => null);
       }
     } catch (e) {
@@ -125,12 +123,8 @@
     </main>
   {:else if session.status === 'lobby'}
       <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} {stream} />
-  {:else if session.status === 'active' && session.game_mode === 'tennis'}
-      <TennisMatch {session} {isAdmin} onRefresh={load} {stream} />
   {:else if session.status === 'active' && currentRound}
       <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} {stream} />
-  {:else if session.status === 'complete' && session.game_mode === 'tennis'}
-    <TennisResult {session} />
   {:else if session.status === 'complete'}
     <Leaderboard sessionId={session.id} sessionName={session.name} complete />
   {:else}

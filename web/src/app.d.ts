@@ -19,12 +19,6 @@ declare global {
       tournaments: number;
     }
 
-    interface TennisCareerStats {
-      tournaments: number;
-      wins: number;
-      losses: number;
-    }
-
     type SessionStatus = 'lobby' | 'active' | 'complete';
 
     interface Session {
@@ -32,9 +26,7 @@ declare global {
       admin_token?: string;
       status: SessionStatus;
       name?: string;
-      game_mode: 'americano' | 'mexicano' | 'tennis' | 'timed_americano';
-      sets_to_win: number;
-      games_per_set: number;
+      game_mode: 'americano' | 'mexicano' | 'timed_americano';
       courts: number;
       points: number;
       rounds_total?: number;
@@ -51,34 +43,6 @@ declare global {
       buffer_seconds?: number;
       round_duration_seconds?: number;
       round_started_at?: string;
-    }
-
-    interface TennisTeam {
-      player_id: string;
-      name: string;
-      team: 'a' | 'b';
-    }
-
-    interface TennisState {
-      sets: [number, number][];
-      games_a: number;
-      games_b: number;
-      points_a: number;
-      points_b: number;
-      in_tiebreak: boolean;
-      tiebreak_a: number;
-      tiebreak_b: number;
-      server: 'a' | 'b' | '';
-      winner: 'a' | 'b' | '';
-    }
-
-    interface TennisMatch {
-      id: string;
-      session_id: string;
-      state: TennisState;
-      teams: { a: TennisTeam[]; b: TennisTeam[] };
-      created_at: string;
-      updated_at: string;
     }
 
     interface Player {
@@ -138,7 +102,7 @@ declare global {
       session_id: string;
       name: string;
       status: 'lobby' | 'active';
-      game_mode: 'americano' | 'mexicano' | 'tennis' | 'timed_americano';
+      game_mode: 'americano' | 'mexicano' | 'timed_americano';
       courts: number;
       player_count: number;
       scheduled_at?: string;
