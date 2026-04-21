@@ -28,6 +28,8 @@
   "create_timed_duration_hint": "Turneringen vil kjøre i {n} minutter og avsluttes deretter automatisk.",
   "create_timed_buffer_label": "Tid mellom runder",
   "create_timed_buffer_hint": "Tillat {n} sekunder for oppsett og overganger mellom runder.",
+  "create_timed_interval_label": "Pause mellom runder",
+  "create_timed_interval_hint": "Minutter med hviletid mellom hver runde.",
   "create_sets_label": "Best av",
   "create_sets_bo3": "Best av 3",
   "create_sets_bo5": "Best av 5",
@@ -106,6 +108,8 @@
 
   "active_round_of": "Runde {current} av {total}",
   "active_round_open": "Runde {current}",
+  "active_countdown_starting": "Neste runde starter om",
+  "active_countdown_start_now": "Start nå",
   "active_courts_one": "{n} bane",
   "active_courts_other": "{n} baner",
   "active_tab_live": "Direkte",

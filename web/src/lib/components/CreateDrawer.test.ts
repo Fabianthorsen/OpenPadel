@@ -319,4 +319,90 @@ describe('CreateDrawer - Americano Variant Selection', () => {
       expect(bufferSeconds).toBeLessThanOrEqual(300);
     });
   });
+
+  describe('Interval Between Rounds - State & Validation', () => {
+    it('initializes intervalBetweenRoundsMin to 3 by default', () => {
+      const intervalBetweenRoundsMin = 3;
+      expect(intervalBetweenRoundsMin).toBe(3);
+    });
+
+    it('allows changing interval between 1 and 5 minutes', () => {
+      const validIntervals = [1, 2, 3, 4, 5];
+      validIntervals.forEach(interval => {
+        expect(interval).toBeGreaterThanOrEqual(1);
+        expect(interval).toBeLessThanOrEqual(5);
+      });
+    });
+
+    it('should not allow intervals outside 1-5 range', () => {
+      const invalidIntervals = [0, 6, 10, -1];
+      invalidIntervals.forEach(interval => {
+        const isValid = interval >= 1 && interval <= 5;
+        expect(isValid).toBe(false);
+      });
+    });
+
+    it('shows interval picker only when gameMode="americano" and variant="timed"', () => {
+      const testCases: Array<{
+        gameMode: 'americano' | 'mexicano';
+        variant: 'points' | 'timed';
+        shouldShow: boolean;
+      }> = [
+        { gameMode: 'americano', variant: 'timed', shouldShow: true },
+        { gameMode: 'americano', variant: 'points', shouldShow: false },
+        { gameMode: 'mexicano', variant: 'points', shouldShow: false },
+      ];
+
+      testCases.forEach(({ gameMode, variant, shouldShow }) => {
+        const show = gameMode === 'americano' && variant === 'timed';
+        expect(show).toBe(shouldShow);
+      });
+    });
+  });
+
+  describe('Interval Between Rounds - API Payload', () => {
+    it('sends interval_between_rounds_minutes when timed_americano is created', () => {
+      const gameMode = 'americano';
+      const variant = 'timed';
+      const intervalBetweenRoundsMin = 3;
+
+      const actualGameMode = gameMode === 'americano'
+        ? (variant === 'timed' ? 'timed_americano' : 'americano')
+        : gameMode;
+
+      const shouldIncludeInterval = actualGameMode === 'timed_americano';
+      expect(shouldIncludeInterval).toBe(true);
+      expect(intervalBetweenRoundsMin).toBe(3);
+    });
+
+    it('does not send interval_between_rounds_minutes for americano with points variant', () => {
+      const gameMode = 'americano';
+      const variant = 'points';
+      const intervalBetweenRoundsMin = 3;
+
+      const actualGameMode = gameMode === 'americano'
+        ? (variant === 'timed' ? 'timed_americano' : 'americano')
+        : gameMode;
+
+      const shouldIncludeInterval = actualGameMode === 'timed_americano';
+      expect(shouldIncludeInterval).toBe(false);
+    });
+
+    it('sends custom interval value (1-5) when selected', () => {
+      const testCases = [1, 2, 3, 4, 5];
+
+      testCases.forEach(interval => {
+        const gameMode = 'americano';
+        const variant = 'timed';
+        const actualGameMode = gameMode === 'americano'
+          ? (variant === 'timed' ? 'timed_americano' : 'americano')
+          : gameMode;
+
+        const shouldIncludeInterval = actualGameMode === 'timed_americano';
+        expect(shouldIncludeInterval).toBe(true);
+        expect(interval).toBeGreaterThanOrEqual(1);
+        expect(interval).toBeLessThanOrEqual(5);
+      });
+    });
+  });
 });

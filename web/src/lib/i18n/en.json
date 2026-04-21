@@ -28,6 +28,8 @@
   "create_timed_duration_hint": "Tournament will run for {n} minutes and then automatically conclude.",
   "create_timed_buffer_label": "Time Between Rounds",
   "create_timed_buffer_hint": "Allow {n} seconds for setup and transitions between rounds.",
+  "create_timed_interval_label": "Break Between Rounds",
+  "create_timed_interval_hint": "Minutes of rest time between each round.",
   "create_sets_label": "Best of",
   "create_sets_bo3": "Best of 3",
   "create_sets_bo5": "Best of 5",
@@ -106,6 +108,8 @@
 
   "active_round_of": "Round {current} of {total}",
   "active_round_open": "Round {current}",
+  "active_countdown_starting": "Starting next round in",
+  "active_countdown_start_now": "Start now",
   "active_courts_one": "{n} court",
   "active_courts_other": "{n} courts",
   "active_tab_live": "Live Score",

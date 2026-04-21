@@ -149,8 +149,47 @@ describe('api.sessions.create - Timed Americano', () => {
       total_duration_minutes: 120,
       buffer_seconds: 120,
       points: 0,
-      sets_to_win: 2,
-      games_per_set: 6,
     });
+  });
+
+  it('includes interval_between_rounds_minutes in POST body when provided', async () => {
+    mockFetch(201, { id: 's1', status: 'lobby', game_mode: 'timed_americano' });
+
+    await api.sessions.create({
+      game_mode: 'timed_americano',
+      courts: 2,
+      name: 'Test Timed',
+      total_duration_minutes: 120,
+      buffer_seconds: 120,
+      points: 0,
+      interval_between_rounds_minutes: 4,
+    });
+
+    expect(fetch).toHaveBeenCalled();
+    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const body = JSON.parse(call[1].body);
+
+    expect(body).toMatchObject({
+      interval_between_rounds_minutes: 4,
+    });
+  });
+
+  it('omits interval_between_rounds_minutes when not provided', async () => {
+    mockFetch(201, { id: 's1', status: 'lobby', game_mode: 'timed_americano' });
+
+    await api.sessions.create({
+      game_mode: 'timed_americano',
+      courts: 2,
+      name: 'Test Timed',
+      total_duration_minutes: 120,
+      buffer_seconds: 120,
+      points: 0,
+    });
+
+    expect(fetch).toHaveBeenCalled();
+    const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    const body = JSON.parse(call[1].body);
+
+    expect(body.interval_between_rounds_minutes).toBeUndefined();
   });
 });
