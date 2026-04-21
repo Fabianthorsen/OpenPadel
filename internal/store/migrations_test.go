@@ -14,6 +14,7 @@ func TestMigration_TimedAmericano_ColumnsExist(t *testing.T) {
 	}{
 		{"total_duration_minutes"},
 		{"buffer_seconds"},
+		{"interval_between_rounds_minutes"},
 		{"round_duration_seconds"},
 		{"round_started_at"},
 	}
@@ -40,7 +41,7 @@ func TestMigration_TimedAmericano_ExistingDataPreserved(t *testing.T) {
 	s := newTestStore(t)
 	defer s.Close()
 
-	sess, err := s.CreateSession(2, 24, "Test Session", "americano", nil, nil, nil, nil, nil, "")
+	sess, err := s.CreateSession(2, 24, "Test Session", "americano", nil, nil, nil, nil, nil, nil, "")
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}

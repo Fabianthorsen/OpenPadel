@@ -1,2 +1,3 @@
 - [PR 3 Completion Summary](pr3-completion-summary.md) — Final implementation details, test counts, file changes, validation
 - [Timed Americano Implementation Guide](timed-americano-implementation.md) — TDD patterns, testing conventions, API decisions
+- [Interval Between Rounds](interval-between-rounds.md) — Round interval config (1-5 min), round duration math, test coverage

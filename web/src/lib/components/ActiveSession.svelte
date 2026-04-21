@@ -560,7 +560,7 @@
         <!-- Timed Americano: Show buffer countdown + next round preview -->
         <div class="space-y-4">
           <BufferTimer
-            bufferSeconds={session.buffer_seconds}
+            bufferSeconds={session.buffer_seconds ?? 120}
             onComplete={() => bufferComplete = true}
           />
           <NextRoundPreview

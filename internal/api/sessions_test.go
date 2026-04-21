@@ -373,3 +373,74 @@ func TestStartSession_TimedAmericano_NotEnoughPlayers(t *testing.T) {
 	}
 	res.Body.Close()
 }
+
+func TestCreateSession_TimedAmericano_DefaultInterval(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                   1,
+		"game_mode":                "timed_americano",
+		"total_duration_minutes":   120,
+		"buffer_seconds":           120,
+	}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+	var body struct {
+		IntervalBetweenRoundsMin *int `json:"interval_between_rounds_minutes"`
+	}
+	decodeBody(t, res, &body)
+	if body.IntervalBetweenRoundsMin == nil || *body.IntervalBetweenRoundsMin != 3 {
+		t.Errorf("expected IntervalBetweenRoundsMin=3 (default), got %v", body.IntervalBetweenRoundsMin)
+	}
+}
+
+func TestCreateSession_TimedAmericano_CustomInterval(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                      1,
+		"game_mode":                   "timed_americano",
+		"total_duration_minutes":      120,
+		"buffer_seconds":              120,
+		"interval_between_rounds_minutes": 5,
+	}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+	var body struct {
+		IntervalBetweenRoundsMin *int `json:"interval_between_rounds_minutes"`
+	}
+	decodeBody(t, res, &body)
+	if body.IntervalBetweenRoundsMin == nil || *body.IntervalBetweenRoundsMin != 5 {
+		t.Errorf("expected IntervalBetweenRoundsMin=5, got %v", body.IntervalBetweenRoundsMin)
+	}
+}
+
+func TestCreateSession_TimedAmericano_IntervalTooLow(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                      1,
+		"game_mode":                   "timed_americano",
+		"total_duration_minutes":      120,
+		"buffer_seconds":              120,
+		"interval_between_rounds_minutes": 0,
+	}, "")
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for interval < 1, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestCreateSession_TimedAmericano_IntervalTooHigh(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                      1,
+		"game_mode":                   "timed_americano",
+		"total_duration_minutes":      120,
+		"buffer_seconds":              120,
+		"interval_between_rounds_minutes": 6,
+	}, "")
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for interval > 5, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}

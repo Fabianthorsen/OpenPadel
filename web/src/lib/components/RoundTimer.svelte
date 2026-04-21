@@ -5,10 +5,14 @@
     roundStartedAt,
     roundDurationSeconds,
     bufferSeconds,
+    currentRound,
+    totalRounds,
   }: {
     roundStartedAt: string;
     roundDurationSeconds: number;
     bufferSeconds: number;
+    currentRound?: number;
+    totalRounds?: number;
   } = $props();
 
   let now = $state(Date.now());
@@ -53,6 +57,12 @@
   data-testid="timer-container"
   class="flex flex-col items-center justify-center rounded-lg {colorClass()} p-6 transition-colors duration-300"
 >
+  {#if currentRound !== undefined && totalRounds !== undefined}
+    <div data-testid="round-counter" class="text-xs font-semibold text-white/80 mb-2">
+      Round {currentRound} of {totalRounds}
+    </div>
+  {/if}
+
   <div data-testid="timer-display" class="text-5xl font-bold text-white font-mono">
     {minutes}:{displaySeconds}
   </div>

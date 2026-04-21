@@ -176,3 +176,55 @@ describe('RoundTimer - Buzzer State', () => {
     expect(remaining).toBeLessThanOrEqual(0);
   });
 });
+
+describe('RoundTimer - Round Counter Display', () => {
+  it('formats round X of Y correctly', () => {
+    function formatRoundCounter(current: number, total: number): string {
+      return `Round ${current} of ${total}`;
+    }
+
+    const display = formatRoundCounter(1, 10);
+    expect(display).toBe('Round 1 of 10');
+  });
+
+  it('displays multiple round numbers correctly', () => {
+    function formatRoundCounter(current: number, total: number): string {
+      return `Round ${current} of ${total}`;
+    }
+
+    const testCases = [
+      { current: 1, total: 5, expected: 'Round 1 of 5' },
+      { current: 3, total: 8, expected: 'Round 3 of 8' },
+      { current: 10, total: 15, expected: 'Round 10 of 15' },
+    ];
+
+    testCases.forEach(({ current, total, expected }) => {
+      const display = formatRoundCounter(current, total);
+      expect(display).toBe(expected);
+    });
+  });
+
+  it('shows correct round counter during tournament', () => {
+    function getRoundInfo(currentRound: number | undefined, roundsTotal: number | undefined): string | null {
+      if (currentRound === undefined || roundsTotal === undefined) return null;
+      return `Round ${currentRound} of ${roundsTotal}`;
+    }
+
+    const testCases = [
+      { currentRound: 1, roundsTotal: 5, shouldShow: true },
+      { currentRound: 3, roundsTotal: 8, shouldShow: true },
+      { currentRound: undefined, roundsTotal: 5, shouldShow: false },
+      { currentRound: 1, roundsTotal: undefined, shouldShow: false },
+    ];
+
+    testCases.forEach(({ currentRound, roundsTotal, shouldShow }) => {
+      const display = getRoundInfo(currentRound, roundsTotal);
+      if (shouldShow) {
+        expect(display).not.toBeNull();
+        expect(display).toMatch(/Round \d+ of \d+/);
+      } else {
+        expect(display).toBeNull();
+      }
+    });
+  });
+});

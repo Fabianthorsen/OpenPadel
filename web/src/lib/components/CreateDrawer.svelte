@@ -27,6 +27,7 @@
   let customInputEl = $state<HTMLInputElement | null>(null);
   let totalDurationMinutes = $state<number>(90);
   let bufferSeconds = $state<number>(120);
+  let intervalBetweenRoundsMin = $state<number>(3);
 
   // Maps UI selection (gameMode + variant) to backend game_mode
   const actualGameMode = $derived(gameMode === 'americano'
@@ -131,6 +132,7 @@
         court_duration_minutes: courtDuration ?? undefined,
         total_duration_minutes: actualGameMode === 'timed_americano' ? totalDurationMinutes : undefined,
         buffer_seconds: actualGameMode === 'timed_americano' ? bufferSeconds : undefined,
+        interval_between_rounds_minutes: actualGameMode === 'timed_americano' ? intervalBetweenRoundsMin : undefined,
       });
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
@@ -308,6 +310,24 @@
             </PillToggleGroup>
             <p class="text-xs text-text-secondary">
               {$_('create_timed_buffer_hint', { values: { n: (bufferSeconds / 60).toFixed(1) } })}
+            </p>
+          </div>
+
+          <!-- Timed Americano Interval Between Rounds -->
+          <div class="space-y-2.5">
+            <SectionLabel>{$_('create_timed_interval_label')}</SectionLabel>
+            <PillToggleGroup
+              value={intervalBetweenRoundsMin.toString()}
+              onValueChange={(val) => intervalBetweenRoundsMin = parseInt(val)}
+            >
+              {#each [1, 2, 3, 4, 5] as interval}
+                <PillToggleItem value={interval.toString()}>
+                  {interval}
+                </PillToggleItem>
+              {/each}
+            </PillToggleGroup>
+            <p class="text-xs text-text-secondary">
+              {$_('create_timed_interval_hint')}
             </p>
           </div>
         {/if}

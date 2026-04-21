@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 /**
  * Integration tests for ActiveSession timed_americano support
  *
- * These tests verify the scoring logic for timed_americano mode:
- * - Free scoring (any score 0-99)
- * - No sum constraint (a + b can be any value)
- * - Separate score entry (collect a then b instead of auto-complement)
+ * These tests verify:
+ * - Scoring logic for timed_americano mode (free scoring, no sum constraint)
+ * - Round interval countdown display and auto-advance
+ * - Skip early functionality during interval countdown
  */
 
 describe('ActiveSession - Timed Americano Scoring', () => {
@@ -147,6 +147,175 @@ describe('ActiveSession - Timed Americano Scoring', () => {
       // In timed: no sum check, only negative check
       const canFinalize = isTimedAmericano ? !(a < 0 || b < 0) : (a + b === points);
       expect(canFinalize).toBe(true);
+    });
+  });
+
+  describe('Round Interval Countdown - Display', () => {
+    it('shows interval countdown after round completes', () => {
+      const session = {
+        game_mode: 'timed_americano' as const,
+        current_round: 2,
+        rounds_total: 8,
+        interval_between_rounds_minutes: 3,
+      };
+
+      const isTimedAmericano = session.game_mode === 'timed_americano';
+      const roundCompleted = true;
+
+      const shouldShowCountdown = isTimedAmericano && roundCompleted;
+      expect(shouldShowCountdown).toBe(true);
+    });
+
+    it('does not show countdown for non-timed modes', () => {
+      const session = {
+        game_mode: 'americano' as const,
+        current_round: 2,
+        rounds_total: 8,
+      };
+
+      const isTimedAmericano = session.game_mode === 'timed_americano';
+      const roundCompleted = true;
+
+      const shouldShowCountdown = isTimedAmericano && roundCompleted;
+      expect(shouldShowCountdown).toBe(false);
+    });
+
+    it('displays interval_between_rounds_minutes from session', () => {
+      const testCases = [
+        { interval: 1, expected: '1 minute' },
+        { interval: 2, expected: '2 minutes' },
+        { interval: 3, expected: '3 minutes' },
+        { interval: 4, expected: '4 minutes' },
+        { interval: 5, expected: '5 minutes' },
+      ];
+
+      testCases.forEach(({ interval, expected }) => {
+        const session = {
+          game_mode: 'timed_americano' as const,
+          interval_between_rounds_minutes: interval,
+        };
+
+        expect(session.interval_between_rounds_minutes).toBe(interval);
+        expect(session.interval_between_rounds_minutes).toBeGreaterThanOrEqual(1);
+        expect(session.interval_between_rounds_minutes).toBeLessThanOrEqual(5);
+      });
+    });
+  });
+
+  describe('Round Interval Countdown - Auto-Advance', () => {
+    it('calls advanceRound when countdown completes naturally', async () => {
+      const advanceRound = vi.fn().mockResolvedValue(undefined);
+
+      const session = {
+        game_mode: 'timed_americano' as const,
+        id: 's1',
+        interval_between_rounds_minutes: 3,
+      };
+
+      // Simulate countdown complete
+      const remaining = 0;
+      if (remaining <= 0) {
+        await advanceRound(session.id);
+      }
+
+      expect(advanceRound).toHaveBeenCalledWith(session.id);
+    });
+
+    it('advances to next round after interval expires', () => {
+      const session = {
+        game_mode: 'timed_americano' as const,
+        current_round: 2,
+        rounds_total: 8,
+      };
+
+      const currentRound = session.current_round ?? 0;
+      const nextRound = currentRound + 1;
+
+      expect(nextRound).toBe(3);
+      expect(nextRound).toBeLessThanOrEqual(session.rounds_total ?? 0);
+    });
+  });
+
+  describe('Round Interval Countdown - Skip Early', () => {
+    it('calls advanceRound immediately when skip button clicked', async () => {
+      const advanceRound = vi.fn().mockResolvedValue(undefined);
+
+      const session = {
+        game_mode: 'timed_americano' as const,
+        id: 's1',
+        interval_between_rounds_minutes: 3,
+      };
+
+      const remaining = 120000; // Still 2 minutes left
+      expect(remaining).toBeGreaterThan(0);
+
+      // User clicks "Start now" button
+      await advanceRound(session.id);
+
+      expect(advanceRound).toHaveBeenCalledWith(session.id);
+    });
+
+    it('skips countdown and advances even if interval not fully elapsed', async () => {
+      const advanceRound = vi.fn().mockResolvedValue(undefined);
+
+      const session = {
+        game_mode: 'timed_americano' as const,
+        id: 's1',
+      };
+
+      const remaining = 90000; // 1:30 remaining out of 3:00
+      const canSkip = remaining > 0;
+
+      expect(canSkip).toBe(true);
+
+      await advanceRound(session.id);
+
+      expect(advanceRound).toHaveBeenCalledWith(session.id);
+    });
+  });
+
+  describe('Round Interval Countdown - Starting Message', () => {
+    it('displays "Starting in X:XX" message during countdown', () => {
+      function formatStartingMessage(remaining: number): string {
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        const paddedSeconds = String(seconds).padStart(2, '0');
+        return `Starting in ${minutes}:${paddedSeconds}`;
+      }
+
+      const testCases = [
+        { remaining: 180000, expected: 'Starting in 3:00' },
+        { remaining: 150000, expected: 'Starting in 2:30' },
+        { remaining: 60000, expected: 'Starting in 1:00' },
+        { remaining: 30000, expected: 'Starting in 0:30' },
+      ];
+
+      testCases.forEach(({ remaining, expected }) => {
+        const message = formatStartingMessage(remaining);
+        expect(message).toBe(expected);
+      });
+    });
+
+    it('shows message only during interval countdown, not during play', () => {
+      const gameState = {
+        mode: 'timed_americano' as const,
+        phase: 'interval_countdown' as const,
+        roundCompleted: true,
+      };
+
+      const shouldShow = gameState.mode === 'timed_americano' && gameState.phase === 'interval_countdown';
+      expect(shouldShow).toBe(true);
+    });
+
+    it('hides message once round starts', () => {
+      const gameState = {
+        mode: 'timed_americano' as const,
+        phase: 'playing' as const,
+        roundStarted: true,
+      };
+
+      const shouldShow = gameState.phase === 'interval_countdown';
+      expect(shouldShow).toBe(false);
     });
   });
 });

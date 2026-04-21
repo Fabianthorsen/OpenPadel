@@ -1,9 +1,9 @@
 -- name: CreateSession :exec
-INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, total_duration_minutes, buffer_seconds, creator_user_id, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, total_duration_minutes, buffer_seconds, interval_between_rounds_minutes, creator_user_id, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: GetSession :one
-SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, buffer_seconds, round_duration_seconds, round_started_at, created_at, updated_at
+SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, buffer_seconds, interval_between_rounds_minutes, round_duration_seconds, round_started_at, created_at, updated_at
 FROM sessions WHERE id = ?;
 
 -- name: SetCreatorPlayer :exec
@@ -43,7 +43,7 @@ DELETE FROM players WHERE session_id = ?;
 DELETE FROM sessions WHERE id = ?;
 
 -- name: StartTimedAmericanoSession :exec
-UPDATE sessions SET status = ?, rounds_total = ?, total_duration_minutes = ?, buffer_seconds = ?, round_duration_seconds = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?;
+UPDATE sessions SET status = ?, rounds_total = ?, total_duration_minutes = ?, buffer_seconds = ?, interval_between_rounds_minutes = ?, round_duration_seconds = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?;
 
 -- name: SetRoundStartedAt :exec
 UPDATE sessions SET round_started_at = ?, updated_at = ? WHERE id = ?;
