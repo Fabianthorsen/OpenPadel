@@ -6,6 +6,9 @@ sql:
       - "internal/store/migrations/000001_initial_schema.sql"
       - "internal/store/migrations/000002_session_creator.sql"
       - "internal/store/migrations/000003_timed_americano.sql"
+      - "internal/store/migrations/000004_add_win_count.sql"
+      - "internal/store/migrations/000005_remove_tennis.sql"
+      - "internal/store/migrations/000006_interval_between_rounds.sql"
     gen:
       go:
         package: "db"

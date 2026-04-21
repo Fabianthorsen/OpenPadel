@@ -82,43 +82,30 @@ type Round struct {
 }
 
 type Session struct {
-	ID                   string
-	AdminToken           string
-	Status               string
-	Courts               int64
-	Points               int64
-	RoundsTotal          sql.NullInt64
-	CreatorPlayerID      sql.NullString
-	CreatedAt            string
-	UpdatedAt            string
-	CurrentRound         int64
-	Name                 string
-	ScheduledAt          sql.NullString
-	GameMode             string
-	SetsToWin            int64
-	GamesPerSet          int64
-	EndedEarly           int64
-	CourtDurationMinutes sql.NullInt64
-	EndsAt               sql.NullString
-	CreatorUserID        sql.NullString
-	TotalDurationMinutes sql.NullInt64
-	BufferSeconds        sql.NullInt64
-	RoundDurationSeconds sql.NullInt64
-	RoundStartedAt       sql.NullString
-}
-
-type TennisMatch struct {
-	ID        string
-	SessionID string
-	State     string
-	CreatedAt string
-	UpdatedAt string
-}
-
-type TennisTeam struct {
-	SessionID string
-	PlayerID  string
-	Team      string
+	ID                           string
+	AdminToken                   string
+	Status                       string
+	Courts                       int64
+	Points                       int64
+	RoundsTotal                  sql.NullInt64
+	CreatorPlayerID              sql.NullString
+	CreatedAt                    string
+	UpdatedAt                    string
+	CurrentRound                 int64
+	Name                         string
+	ScheduledAt                  sql.NullString
+	GameMode                     string
+	SetsToWin                    int64
+	GamesPerSet                  int64
+	EndedEarly                   int64
+	CourtDurationMinutes         sql.NullInt64
+	EndsAt                       sql.NullString
+	CreatorUserID                sql.NullString
+	TotalDurationMinutes         sql.NullInt64
+	BufferSeconds                sql.NullInt64
+	RoundDurationSeconds         sql.NullInt64
+	RoundStartedAt               sql.NullString
+	IntervalBetweenRoundsMinutes sql.NullInt64
 }
 
 type User struct {
@@ -129,4 +116,5 @@ type User struct {
 	CreatedAt    string
 	AvatarIcon   string
 	AvatarColor  string
+	WinCount     int64
 }

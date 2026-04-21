@@ -11,8 +11,9 @@ func TestCreateSession_WithTimedAmericanoParams(t *testing.T) {
 	s := newTestStore(t)
 	totalDurationMin := 120
 	bufferSec := 120
+	interval := 3
 
-	sess, err := s.CreateSession(1, 0, "Timed Americano Test", "timed_americano", nil, nil, nil, &totalDurationMin, &bufferSec, "")
+	sess, err := s.CreateSession(1, 0, "Timed Americano Test", "timed_americano", nil, nil, nil, &totalDurationMin, &bufferSec, &interval, "")
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}
@@ -34,6 +35,10 @@ func TestCreateSession_WithTimedAmericanoParams(t *testing.T) {
 		t.Errorf("expected BufferSeconds=120, got %v", loaded.BufferSeconds)
 	}
 
+	if loaded.IntervalBetweenRoundsMin == nil || *loaded.IntervalBetweenRoundsMin != 3 {
+		t.Errorf("expected IntervalBetweenRoundsMin=3, got %v", loaded.IntervalBetweenRoundsMin)
+	}
+
 	if loaded.Points != 0 {
 		t.Errorf("expected Points=0 for timed_americano, got %d", loaded.Points)
 	}
@@ -43,7 +48,7 @@ func TestCreateSession_CreatorUserID(t *testing.T) {
 	s := newTestStore(t)
 	alice := createUser(t, s, "alice@example.com", "Alice")
 
-	sess, err := s.CreateSession(2, 24, "Test", "americano", nil, nil, nil, nil, nil, alice)
+	sess, err := s.CreateSession(2, 24, "Test", "americano", nil, nil, nil, nil, nil, nil, alice)
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}
@@ -63,7 +68,7 @@ func TestCreateSession_CreatorUserID(t *testing.T) {
 func TestCreateSession_NoCreatorUserID(t *testing.T) {
 	s := newTestStore(t)
 
-	sess, err := s.CreateSession(2, 24, "", "americano", nil, nil, nil, nil, nil, "")
+	sess, err := s.CreateSession(2, 24, "", "americano", nil, nil, nil, nil, nil, nil, "")
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}
@@ -182,9 +187,10 @@ func TestStartTimedAmericanoSession(t *testing.T) {
 
 	duration := 120
 	buffer := 120
+	interval := 3
 	roundDuration := 960
 
-	if err := s.StartTimedAmericanoSession(sess, "active", 10, &duration, &buffer, &roundDuration, nil); err != nil {
+	if err := s.StartTimedAmericanoSession(sess, "active", 10, &duration, &buffer, &interval, &roundDuration, nil); err != nil {
 		t.Fatalf("StartTimedAmericanoSession: %v", err)
 	}
 
@@ -209,6 +215,10 @@ func TestStartTimedAmericanoSession(t *testing.T) {
 		t.Errorf("expected BufferSeconds=120, got %v", loaded.BufferSeconds)
 	}
 
+	if loaded.IntervalBetweenRoundsMin == nil || *loaded.IntervalBetweenRoundsMin != 3 {
+		t.Errorf("expected IntervalBetweenRoundsMin=3, got %v", loaded.IntervalBetweenRoundsMin)
+	}
+
 	if loaded.RoundDurationSeconds == nil || *loaded.RoundDurationSeconds != 960 {
 		t.Errorf("expected RoundDurationSeconds=960, got %v", loaded.RoundDurationSeconds)
 	}
@@ -220,9 +230,10 @@ func TestSetRoundStartedAt(t *testing.T) {
 
 	duration := 120
 	buffer := 120
+	interval := 3
 	roundDuration := 960
 
-	if err := s.StartTimedAmericanoSession(sess, "active", 10, &duration, &buffer, &roundDuration, nil); err != nil {
+	if err := s.StartTimedAmericanoSession(sess, "active", 10, &duration, &buffer, &interval, &roundDuration, nil); err != nil {
 		t.Fatalf("StartTimedAmericanoSession: %v", err)
 	}
 
@@ -247,9 +258,10 @@ func TestUpdateRoundDuration(t *testing.T) {
 
 	duration := 120
 	buffer := 120
+	interval := 3
 	roundDuration := 960
 
-	if err := s.StartTimedAmericanoSession(sess, "active", 10, &duration, &buffer, &roundDuration, nil); err != nil {
+	if err := s.StartTimedAmericanoSession(sess, "active", 10, &duration, &buffer, &interval, &roundDuration, nil); err != nil {
 		t.Fatalf("StartTimedAmericanoSession: %v", err)
 	}
 

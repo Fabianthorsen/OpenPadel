@@ -46,28 +46,29 @@ func (q *Queries) CompleteSession(ctx context.Context, arg CompleteSessionParams
 }
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, total_duration_minutes, buffer_seconds, creator_user_id, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, total_duration_minutes, buffer_seconds, interval_between_rounds_minutes, creator_user_id, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateSessionParams struct {
-	ID                   string
-	AdminToken           string
-	Status               string
-	Name                 string
-	GameMode             string
-	SetsToWin            int64
-	GamesPerSet          int64
-	Courts               int64
-	Points               int64
-	RoundsTotal          sql.NullInt64
-	ScheduledAt          sql.NullString
-	CourtDurationMinutes sql.NullInt64
-	TotalDurationMinutes sql.NullInt64
-	BufferSeconds        sql.NullInt64
-	CreatorUserID        sql.NullString
-	CreatedAt            string
-	UpdatedAt            string
+	ID                           string
+	AdminToken                   string
+	Status                       string
+	Name                         string
+	GameMode                     string
+	SetsToWin                    int64
+	GamesPerSet                  int64
+	Courts                       int64
+	Points                       int64
+	RoundsTotal                  sql.NullInt64
+	ScheduledAt                  sql.NullString
+	CourtDurationMinutes         sql.NullInt64
+	TotalDurationMinutes         sql.NullInt64
+	BufferSeconds                sql.NullInt64
+	IntervalBetweenRoundsMinutes sql.NullInt64
+	CreatorUserID                sql.NullString
+	CreatedAt                    string
+	UpdatedAt                    string
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
@@ -86,6 +87,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 		arg.CourtDurationMinutes,
 		arg.TotalDurationMinutes,
 		arg.BufferSeconds,
+		arg.IntervalBetweenRoundsMinutes,
 		arg.CreatorUserID,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -153,33 +155,34 @@ func (q *Queries) DeleteSession(ctx context.Context, id string) error {
 }
 
 const getSession = `-- name: GetSession :one
-SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, buffer_seconds, round_duration_seconds, round_started_at, created_at, updated_at
+SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, buffer_seconds, interval_between_rounds_minutes, round_duration_seconds, round_started_at, created_at, updated_at
 FROM sessions WHERE id = ?
 `
 
 type GetSessionRow struct {
-	ID                   string
-	AdminToken           string
-	Status               string
-	Name                 string
-	GameMode             string
-	SetsToWin            int64
-	GamesPerSet          int64
-	Courts               int64
-	Points               int64
-	RoundsTotal          sql.NullInt64
-	CreatorPlayerID      sql.NullString
-	CreatorUserID        sql.NullString
-	CurrentRound         int64
-	ScheduledAt          sql.NullString
-	CourtDurationMinutes sql.NullInt64
-	EndsAt               sql.NullString
-	TotalDurationMinutes sql.NullInt64
-	BufferSeconds        sql.NullInt64
-	RoundDurationSeconds sql.NullInt64
-	RoundStartedAt       sql.NullString
-	CreatedAt            string
-	UpdatedAt            string
+	ID                           string
+	AdminToken                   string
+	Status                       string
+	Name                         string
+	GameMode                     string
+	SetsToWin                    int64
+	GamesPerSet                  int64
+	Courts                       int64
+	Points                       int64
+	RoundsTotal                  sql.NullInt64
+	CreatorPlayerID              sql.NullString
+	CreatorUserID                sql.NullString
+	CurrentRound                 int64
+	ScheduledAt                  sql.NullString
+	CourtDurationMinutes         sql.NullInt64
+	EndsAt                       sql.NullString
+	TotalDurationMinutes         sql.NullInt64
+	BufferSeconds                sql.NullInt64
+	IntervalBetweenRoundsMinutes sql.NullInt64
+	RoundDurationSeconds         sql.NullInt64
+	RoundStartedAt               sql.NullString
+	CreatedAt                    string
+	UpdatedAt                    string
 }
 
 func (q *Queries) GetSession(ctx context.Context, id string) (GetSessionRow, error) {
@@ -204,6 +207,7 @@ func (q *Queries) GetSession(ctx context.Context, id string) (GetSessionRow, err
 		&i.EndsAt,
 		&i.TotalDurationMinutes,
 		&i.BufferSeconds,
+		&i.IntervalBetweenRoundsMinutes,
 		&i.RoundDurationSeconds,
 		&i.RoundStartedAt,
 		&i.CreatedAt,
@@ -287,18 +291,19 @@ func (q *Queries) StartSession(ctx context.Context, arg StartSessionParams) erro
 }
 
 const startTimedAmericanoSession = `-- name: StartTimedAmericanoSession :exec
-UPDATE sessions SET status = ?, rounds_total = ?, total_duration_minutes = ?, buffer_seconds = ?, round_duration_seconds = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?
+UPDATE sessions SET status = ?, rounds_total = ?, total_duration_minutes = ?, buffer_seconds = ?, interval_between_rounds_minutes = ?, round_duration_seconds = ?, current_round = 1, ends_at = ?, updated_at = ? WHERE id = ?
 `
 
 type StartTimedAmericanoSessionParams struct {
-	Status               string
-	RoundsTotal          sql.NullInt64
-	TotalDurationMinutes sql.NullInt64
-	BufferSeconds        sql.NullInt64
-	RoundDurationSeconds sql.NullInt64
-	EndsAt               sql.NullString
-	UpdatedAt            string
-	ID                   string
+	Status                       string
+	RoundsTotal                  sql.NullInt64
+	TotalDurationMinutes         sql.NullInt64
+	BufferSeconds                sql.NullInt64
+	IntervalBetweenRoundsMinutes sql.NullInt64
+	RoundDurationSeconds         sql.NullInt64
+	EndsAt                       sql.NullString
+	UpdatedAt                    string
+	ID                           string
 }
 
 func (q *Queries) StartTimedAmericanoSession(ctx context.Context, arg StartTimedAmericanoSessionParams) error {
@@ -307,6 +312,7 @@ func (q *Queries) StartTimedAmericanoSession(ctx context.Context, arg StartTimed
 		arg.RoundsTotal,
 		arg.TotalDurationMinutes,
 		arg.BufferSeconds,
+		arg.IntervalBetweenRoundsMinutes,
 		arg.RoundDurationSeconds,
 		arg.EndsAt,
 		arg.UpdatedAt,
