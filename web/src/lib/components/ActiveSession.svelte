@@ -6,7 +6,7 @@
   import { api } from '$lib/api/client';
   import { _ } from 'svelte-i18n';
   import { sessionDialog } from '$lib/stores/sessionDialog';
-  import { Activity, ChartBar, Users, Pencil, Shield, LayoutGrid, Check } from 'lucide-svelte';
+  import { Activity, ChartBar, Users, Pencil, Shield, Check } from 'lucide-svelte';
   import { sessionName } from '$lib/utils';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
@@ -61,7 +61,12 @@
     if (activeCourt > max) activeCourt = 0;
   });
 
-  let showCourtsOverview = $state(false);
+  // Reset bufferComplete when round number changes
+  $effect(() => {
+    if (currentRound.number) {
+      bufferComplete = false;
+    }
+  });
 
   // Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite)
   type NumpadState = { matchId: string; team: 'a' | 'b'; value: string; fresh: boolean };
@@ -275,6 +280,14 @@
     return `${m}:${String(s).padStart(2, '0')}`;
   });
 
+  // Phase derivation for Timed Americano
+  const phase = $derived.by(() => {
+    if (!isTimedAmericano) return null;
+    if (allScored) return 'buffer';
+    if (!session.round_started_at || timeExpired) return 'expired';
+    return 'play';
+  }) as 'buffer' | 'play' | 'expired' | null;
+
   function shortPlayerName(name: string) {
     const parts = name.trim().split(' ');
     if (parts.length === 1) return parts[0];
@@ -324,21 +337,12 @@
         <p class="text-[10px] font-bold uppercase tracking-widest text-text-disabled">
           {isTimedAmericano ? $_('create_mode_timed_americano') : session.game_mode} tournament
         </p>
-        <button onclick={() => showCourtsOverview = true} class="text-left">
-          <h2 class="text-[28px] font-[800] leading-tight tracking-tight">
-            {session.rounds_total != null
-              ? $_('active_round_of', { values: { current: currentRound.number, total: session.rounds_total } })
-              : $_('active_round_open', { values: { current: currentRound.number } })}
-          </h2>
-        </button>
+        <h2 class="text-[28px] font-[800] leading-tight tracking-tight">
+          {session.rounds_total != null
+            ? $_('active_round_of', { values: { current: currentRound.number, total: session.rounds_total } })
+            : $_('active_round_open', { values: { current: currentRound.number } })}
+        </h2>
       </div>
-      <button
-        onclick={() => showCourtsOverview = true}
-        class="flex shrink-0 items-center gap-1.5 rounded-xl bg-surface-raised px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-border"
-      >
-        <LayoutGrid size={13} />
-        Overview
-      </button>
     </div>
 
     {#if session.game_mode !== 'americano'}
@@ -440,7 +444,35 @@
             </div>
           </button>
 
+        {:else if phase === 'buffer'}
+          <!-- Buffer phase: compact read-only matchup cards -->
+          <div class="w-full rounded-3xl overflow-hidden border border-primary/40">
+            <div class="flex items-center gap-3 px-5 py-4 bg-surface-raised">
+              <div class="flex">
+                <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="sm" ring="ring-2 ring-primary/30" />
+                <div class="-ml-2">
+                  <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="sm" ring="ring-2 ring-primary/30" />
+                </div>
+              </div>
+              <p class="flex-1 font-semibold truncate text-text-primary">
+                {teamLabel(match.team_a)}
+              </p>
+            </div>
+            <div class="h-px bg-border"></div>
+            <div class="flex items-center gap-3 px-5 py-4 bg-surface-raised">
+              <div class="flex">
+                <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="sm" ring="ring-2 ring-primary/30" />
+                <div class="-ml-2">
+                  <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="sm" ring="ring-2 ring-primary/30" />
+                </div>
+              </div>
+              <p class="flex-1 font-semibold truncate text-text-primary">
+                {teamLabel(match.team_b)}
+              </p>
+            </div>
+          </div>
         {:else}
+          <!-- Play/Expired phase: full score increment UI -->
           <!-- Team A card -->
           <div class="relative overflow-hidden rounded-3xl border border-white/25 bg-[#3d7a24] px-5 pt-6 pb-5">
             <svg class="pointer-events-none absolute inset-0 h-full w-full opacity-10" preserveAspectRatio="none" viewBox="0 0 100 100">
@@ -564,7 +596,7 @@
             onComplete={() => bufferComplete = true}
           />
           <NextRoundPreview
-            currentRound={session.current_round}
+            currentRound={currentRound.number}
             courts={session.courts}
             {session}
             sessionId={session.id}
@@ -728,41 +760,4 @@
   </Sheet.Content>
 </Sheet.Root>
 
-<!-- ── COURTS OVERVIEW BOTTOM SHEET ── -->
-<Sheet.Root bind:open={showCourtsOverview}>
-  <Sheet.Content class="w-full max-w-sm sm:max-w-md">
-    <div class="space-y-3">
-      <Sheet.Header>
-        <Sheet.Title>Courts Overview</Sheet.Title>
-      </Sheet.Header>
-      <div class="space-y-2">
-        {#each currentRound.matches as match}
-          {@const s = scores[match.id] ?? { a: 0, b: 0 }}
-          {@const isFinalized = match.score !== null}
-          {@const inProgress = !isFinalized && (s.a + s.b > 0)}
-          <div class="flex items-center gap-3 rounded-2xl bg-surface-raised px-4 py-3">
-            <div class="flex w-8 shrink-0 flex-col items-center">
-              <p class="text-[9px] font-bold uppercase tracking-widest text-text-disabled">C</p>
-              <p class="text-xl font-[800] leading-tight">{match.court}</p>
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
-              <p class="truncate text-xs text-text-secondary">vs {teamLabel(match.team_b)}</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-lg font-[800] tabular-nums">{s.a}–{s.b}</span>
-              {#if isFinalized}
-                <Check size={14} class="text-primary" />
-              {:else if inProgress}
-                <div class="h-2 w-2 rounded-full bg-amber-400"></div>
-              {:else}
-                <div class="h-2 w-2 rounded-full bg-border"></div>
-              {/if}
-            </div>
-          </div>
-        {/each}
-      </div>
-    </div>
-  </Sheet.Content>
-</Sheet.Root>
 
