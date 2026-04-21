@@ -151,7 +151,7 @@
 
 <!-- Numpad drawer -->
 <Drawer.Root open={!!$numpadStore} onOpenChange={(open) => !open && $numpadStore?.onClose()}>
-  <Drawer.Content class="flex flex-col max-h-[80vh] gap-3">
+  <Drawer.Content class="flex flex-col max-h-[80vh] gap-3 mx-auto w-full max-w-[480px]">
     <div class="px-6 pt-6">
       <p class="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-text-disabled">
         Target: {$numpadStore?.targetPoints}
@@ -161,8 +161,8 @@
         {$numpadStore?.value || '0'}
       </p>
     </div>
-    <div class="px-6 pb-8 flex-1">
-      <div class="grid grid-cols-3 gap-3">
+    <div class="px-6 flex-1 pb-[env(safe-area-inset-bottom)]">
+      <div class="grid grid-cols-3 gap-3 max-w-sm mx-auto">
         {#each ['1','2','3','4','5','6','7','8','9'] as d}
           <button
             onclick={() => $numpadStore?.onDigit(d)}
