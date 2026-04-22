@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.11.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.10.0...v1.11.0) (2026-04-21)
+
+
+### Features
+
+* **api:** implement Timed Americano API handlers and score validation ([#48](https://github.com/Fabianthorsen/OpenPadel/issues/48)) ([c0ae867](https://github.com/Fabianthorsen/OpenPadel/commit/c0ae86744a061f7ccdf38dbfa2bff011ab709b0c))
+* remove tennis game mode ([#49](https://github.com/Fabianthorsen/OpenPadel/issues/49)) ([0d675b2](https://github.com/Fabianthorsen/OpenPadel/commit/0d675b26adf9b9a5ad8d038066edd33bc870d4a4))
+* **scheduler:** implement Timed Americano tournament mode ([#46](https://github.com/Fabianthorsen/OpenPadel/issues/46)) ([b9babbe](https://github.com/Fabianthorsen/OpenPadel/commit/b9babbe438d994d358a4fb15688c261348467379))
+* **timed:** add configurable interval between rounds ([#52](https://github.com/Fabianthorsen/OpenPadel/issues/52)) ([e18bd38](https://github.com/Fabianthorsen/OpenPadel/commit/e18bd38e2ad7ef0fb9ba2d3ad8b3c6d0c545db08))
+* **ui:** complete Timed Americano UI implementation ([#55](https://github.com/Fabianthorsen/OpenPadel/issues/55)) ([0e07129](https://github.com/Fabianthorsen/OpenPadel/commit/0e071298b738443b85db75f9afdf7b3dc5ff5d10))
+
+
+### Chores
+
+* remove tennis mode references ([#51](https://github.com/Fabianthorsen/OpenPadel/issues/51)) ([87e5087](https://github.com/Fabianthorsen/OpenPadel/commit/87e5087079abb577e45f3d4b0bea667f31f45db0))
+* **roadmap:** move Timed Americano foundation to done, update in-progress ([49374d1](https://github.com/Fabianthorsen/OpenPadel/commit/49374d19a33c0eca00b894c131ef0d5655a0b156))
+* **tests:** add API handler tests and frontend unit tests ([#44](https://github.com/Fabianthorsen/OpenPadel/issues/44)) ([b2e9726](https://github.com/Fabianthorsen/OpenPadel/commit/b2e9726bf01917ae7c24644f4537f436c6315e67))
+
 ## [1.10.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.9.4...v1.10.0) (2026-04-17)
 
 
