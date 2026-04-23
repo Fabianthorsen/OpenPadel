@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/pairing/mexicano"
 )
 
 // makeStandings builds a []Standing slice from a list of player IDs, assigned
@@ -36,7 +37,7 @@ func TestMexicanoRound1_NoBench(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
 	courts := 2
 
-	r := GenerateMexicanoRound(standings, courts, 1)
+	r := mexicano.GenerateRound(standings, courts, 1)
 
 	if len(r.Matches) != courts {
 		t.Fatalf("expected %d matches, got %d", courts, len(r.Matches))
@@ -73,7 +74,7 @@ func TestMexicanoRound1_PairingCorrect(t *testing.T) {
 	ids := []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"}
 	standings := makeStandings(ids...)
 
-	r := GenerateMexicanoRound(standings, 2, 1)
+	r := mexicano.GenerateRound(standings, 2, 1)
 
 	// Court 1: rank 1+4 vs rank 2+3 → {p1,p4} vs {p2,p3}
 	if !matchHasTeams(r.Matches[0], [2]string{"p1", "p4"}, [2]string{"p2", "p3"}) {
@@ -89,7 +90,7 @@ func TestMexicanoRound1_PairingCorrect(t *testing.T) {
 // it requires exactly courts*4 players so everyone plays every round.
 func TestMexicanoRound_NoBench(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
-	r := GenerateMexicanoRound(standings, 2, 2)
+	r := mexicano.GenerateRound(standings, 2, 2)
 	if len(r.Bench) != 0 {
 		t.Errorf("Mexicano should never have a bench, got %v", r.Bench)
 	}
@@ -99,7 +100,7 @@ func TestMexicanoRound_NoBench(t *testing.T) {
 func TestMexicanoRound_CourtNumbers(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8",
 		"p9", "p10", "p11", "p12")
-	r := GenerateMexicanoRound(standings, 3, 1)
+	r := mexicano.GenerateRound(standings, 3, 1)
 
 	for i, m := range r.Matches {
 		if m.Court != i+1 {
@@ -111,7 +112,7 @@ func TestMexicanoRound_CourtNumbers(t *testing.T) {
 // TestMexicanoRound_RoundNumberSet checks that the returned round has the correct number.
 func TestMexicanoRound_RoundNumberSet(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
-	r := GenerateMexicanoRound(standings, 2, 5)
+	r := mexicano.GenerateRound(standings, 2, 5)
 	if r.Number != 5 {
 		t.Errorf("expected round number 5, got %d", r.Number)
 	}
@@ -147,7 +148,7 @@ func TestMexicanoWinnersPlayWinners(t *testing.T) {
 		{Rank: 8, PlayerID: "p8", Points: 0},
 	}
 
-	r := GenerateMexicanoRound(standings, 2, 2)
+	r := mexicano.GenerateRound(standings, 2, 2)
 
 	winners := map[string]bool{"p1": true, "p3": true, "p5": true, "p7": true}
 	losers := map[string]bool{"p2": true, "p4": true, "p6": true, "p8": true}
@@ -190,7 +191,7 @@ func TestMexicanoWinnersPlayWinners_3Courts(t *testing.T) {
 		{"p9": true, "p10": true, "p11": true, "p12": true},
 	}
 
-	r := GenerateMexicanoRound(standings, 3, 2)
+	r := mexicano.GenerateRound(standings, 3, 2)
 
 	for i, tier := range tiers {
 		for pid := range courtPlayers(r, i) {
@@ -216,7 +217,7 @@ func TestMexicanoWinnersPlayWinners_ExactPairing(t *testing.T) {
 		{Rank: 8, PlayerID: "h", Points: 0},
 	}
 
-	r := GenerateMexicanoRound(standings, 2, 2)
+	r := mexicano.GenerateRound(standings, 2, 2)
 
 	// Court 1: rank1+rank4 vs rank2+rank3 → {a,d} vs {b,c}
 	if !matchHasTeams(r.Matches[0], [2]string{"a", "d"}, [2]string{"b", "c"}) {
@@ -232,7 +233,7 @@ func TestMexicanoWinnersPlayWinners_ExactPairing(t *testing.T) {
 // TestMexicanoProgression simulates multiple rounds and verifies pairings
 // shift as the standings change between rounds.
 //
-// GenerateMexicanoRound does not sort — it uses the standings slice as-is,
+// mexicano.GenerateRound does not sort — it uses the standings slice as-is,
 // exactly as GetLeaderboard provides it (already sorted by points desc).
 func TestMexicanoProgression(t *testing.T) {
 	// After round 1: p1/p2/p5/p6 won (24 pts each), p3/p4/p7/p8 lost (0 pts).
@@ -248,7 +249,7 @@ func TestMexicanoProgression(t *testing.T) {
 		{Rank: 8, PlayerID: "p8", Points: 0},
 	}
 
-	r2 := GenerateMexicanoRound(round2Standings, 2, 2)
+	r2 := mexicano.GenerateRound(round2Standings, 2, 2)
 
 	// Court 1 must contain only the top-4 (24 pts each).
 	topFour := map[string]bool{"p1": true, "p2": true, "p5": true, "p6": true}
@@ -279,7 +280,7 @@ func TestMexicanoProgression(t *testing.T) {
 		{Rank: 8, PlayerID: "p8", Points: 0},
 	}
 
-	r3 := GenerateMexicanoRound(round3Standings, 2, 3)
+	r3 := mexicano.GenerateRound(round3Standings, 2, 3)
 
 	// Court 1 must contain the new top-4: p1, p5 (48 pts) + p2, p6 (24 pts).
 	newTopFour := map[string]bool{"p1": true, "p5": true, "p2": true, "p6": true}
@@ -299,13 +300,13 @@ func TestMexicanoProgression(t *testing.T) {
 
 // TestMexicanoUnlikeAmericano_NoPrecomputedRounds confirms that Mexicano does
 // NOT use TotalRounds — it has no fixed number of rounds.
-// Specifically: calling GenerateMexicanoRound with any round number should work,
+// Specifically: calling mexicano.GenerateRound with any round number should work,
 // meaning there is no built-in limit on how many rounds can be played.
 func TestMexicanoUnlikeAmericano_NoPrecomputedRounds(t *testing.T) {
 	standings := makeStandings("p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8")
 
 	for roundNum := 1; roundNum <= 20; roundNum++ {
-		r := GenerateMexicanoRound(standings, 2, roundNum)
+		r := mexicano.GenerateRound(standings, 2, roundNum)
 		if r.Number != roundNum {
 			t.Errorf("round %d: got number %d", roundNum, r.Number)
 		}
@@ -324,9 +325,9 @@ func TestMexicanoUnlikeAmericano_PairingsDeterministic(t *testing.T) {
 
 	// Run 20 times and verify the same two teams always face each other on each court.
 	// The first call establishes the expected pairings.
-	ref := GenerateMexicanoRound(standings, 2, 2)
+	ref := mexicano.GenerateRound(standings, 2, 2)
 	for run := 0; run < 20; run++ {
-		r := GenerateMexicanoRound(standings, 2, 2)
+		r := mexicano.GenerateRound(standings, 2, 2)
 		for i := range ref.Matches {
 			ra, rb := ref.Matches[i].TeamA, ref.Matches[i].TeamB
 			if !matchHasTeams(r.Matches[i], ra, rb) {
@@ -345,7 +346,7 @@ func TestMexicanoTeamSidesRandomised(t *testing.T) {
 	seenA := false
 	seenB := false
 	for round := 1; round <= 50; round++ {
-		r := GenerateMexicanoRound(standings, 2, round)
+		r := mexicano.GenerateRound(standings, 2, round)
 		for _, m := range r.Matches {
 			for _, pid := range m.TeamA {
 				if pid == "p1" {
