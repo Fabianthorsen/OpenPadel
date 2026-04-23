@@ -522,3 +522,66 @@ func TestPlayerJoin_CannotJoinInDone(t *testing.T) {
 	}
 	res2.Body.Close()
 }
+
+func TestSessionConfig_CourtDurationMinutes(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+
+	// Create session with custom court duration
+	duration := 60
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                   1,
+		"points":                   24,
+		"game_mode":                "americano",
+		"court_duration_minutes":   duration,
+	}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+	var sess struct {
+		ID                   string `json:"id"`
+		CourtDurationMinutes *int   `json:"court_duration_minutes"`
+	}
+	decodeBody(t, res, &sess)
+
+	// Verify duration is stored and returned
+	if sess.CourtDurationMinutes == nil || *sess.CourtDurationMinutes != duration {
+		t.Errorf("expected court_duration_minutes %d, got %v", duration, sess.CourtDurationMinutes)
+	}
+
+	// Verify duration is returned on get
+	res2 := getReq(t, srv, "/api/sessions/"+sess.ID, "")
+	var sess2 struct {
+		CourtDurationMinutes *int `json:"court_duration_minutes"`
+	}
+	decodeBody(t, res2, &sess2)
+	if sess2.CourtDurationMinutes == nil || *sess2.CourtDurationMinutes != duration {
+		t.Errorf("expected court_duration_minutes %d, got %v", duration, sess2.CourtDurationMinutes)
+	}
+}
+
+func TestSessionConfig_InvalidCourtDuration(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+
+	testCases := []struct {
+		name     string
+		duration int
+	}{
+		{"too_small", 10},
+		{"too_large", 400},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := postReq(t, srv, "/api/sessions", map[string]any{
+				"courts":                   1,
+				"points":                   24,
+				"game_mode":                "americano",
+				"court_duration_minutes":   tc.duration,
+			}, "")
+			if res.StatusCode != http.StatusBadRequest {
+				t.Fatalf("expected 400, got %d", res.StatusCode)
+			}
+			res.Body.Close()
+		})
+	}
+}
