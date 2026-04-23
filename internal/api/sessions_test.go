@@ -473,3 +473,52 @@ func TestInvalidTransition_CannotStartInPlaying(t *testing.T) {
 	}
 	res.Body.Close()
 }
+
+func TestPlayerJoin_CanJoinInLobby(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _ := mustCreateSession(t, srv, "")
+
+	// Player should be able to join in lobby state
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Alice"}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+	var player struct {
+		ID string `json:"id"`
+	}
+	decodeBody(t, res, &player)
+	if player.ID == "" {
+		t.Error("expected non-empty player ID")
+	}
+}
+
+func TestPlayerJoin_CannotJoinInPlaying(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _, _ := setupStartedSession(t, srv)
+
+	// Player should NOT be able to join once session is playing
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Eve"}, "")
+	if res.StatusCode != http.StatusConflict {
+		t.Fatalf("expected 409, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestPlayerJoin_CannotJoinInDone(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken, _ := setupStartedSession(t, srv)
+
+	// Close the session
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
+	if res.StatusCode != http.StatusNoContent {
+		t.Fatalf("close: expected 204, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+
+	// Player should NOT be able to join in done state
+	res2 := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Eve"}, "")
+	if res2.StatusCode != http.StatusConflict {
+		t.Fatalf("expected 409, got %d", res2.StatusCode)
+	}
+	res2.Body.Close()
+}
