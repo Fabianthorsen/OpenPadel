@@ -73,7 +73,7 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "server_error")
 		return
 	}
-	if sess.Status != domain.StatusActive {
+	if sess.Status != domain.StatusPlaying {
 		respondError(w, http.StatusConflict, "session_not_active")
 		return
 	}
@@ -182,7 +182,7 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusForbidden, "admin_required")
 		return
 	}
-	if sess.Status != domain.StatusActive {
+	if sess.Status != domain.StatusPlaying {
 		respondError(w, http.StatusConflict, "session_not_active")
 		return
 	}
