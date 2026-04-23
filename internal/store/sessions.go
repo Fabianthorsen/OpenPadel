@@ -100,7 +100,7 @@ func (s *Store) StartSession(id string, roundsTotal int, endsAt *time.Time) erro
 		endsAtStr = sql.NullString{String: endsAt.UTC().Format(time.RFC3339), Valid: true}
 	}
 	return s.queries.StartSession(context.Background(), db.StartSessionParams{
-		Status:      string(domain.StatusActive),
+		Status:      string(domain.StatusPlaying),
 		RoundsTotal: sql.NullInt64{Int64: int64(roundsTotal), Valid: true},
 		EndsAt:      endsAtStr,
 		UpdatedAt:   time.Now().UTC().Format(time.RFC3339),
@@ -116,7 +116,7 @@ func (s *Store) StartMexicanoSession(id string, endsAt *time.Time) error {
 		endsAtStr = sql.NullString{String: endsAt.UTC().Format(time.RFC3339), Valid: true}
 	}
 	return s.queries.StartMexicanoSession(context.Background(), db.StartMexicanoSessionParams{
-		Status:    string(domain.StatusActive),
+		Status:    string(domain.StatusPlaying),
 		EndsAt:    endsAtStr,
 		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
 		ID:        id,
@@ -145,7 +145,7 @@ func (s *Store) CompleteSession(id string, endedEarly bool) error {
 		endedEarlyInt = 1
 	}
 	return s.queries.CompleteSession(context.Background(), db.CompleteSessionParams{
-		Status:     string(domain.StatusComplete),
+		Status:     string(domain.StatusDone),
 		EndedEarly: endedEarlyInt,
 		UpdatedAt:  time.Now().UTC().Format(time.RFC3339),
 		ID:         id,

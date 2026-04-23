@@ -77,8 +77,8 @@ type SessionStatus string
 
 const (
 	StatusLobby    SessionStatus = "lobby"
-	StatusActive   SessionStatus = "active"
-	StatusComplete SessionStatus = "complete"
+	StatusPlaying  SessionStatus = "playing"
+	StatusDone     SessionStatus = "done"
 )
 
 type Session struct {
