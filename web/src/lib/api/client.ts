@@ -59,7 +59,6 @@ export const api = {
       rounds_total?: number;
       court_duration_minutes?: number;
       total_duration_minutes?: number;
-      buffer_seconds?: number;
       interval_between_rounds_minutes?: number;
     }) => {
       const body: Record<string, unknown> = {
@@ -72,7 +71,6 @@ export const api = {
       if (params.rounds_total) body.rounds_total = params.rounds_total;
       if (params.court_duration_minutes) body.court_duration_minutes = params.court_duration_minutes;
       if (params.total_duration_minutes) body.total_duration_minutes = params.total_duration_minutes;
-      if (params.buffer_seconds) body.buffer_seconds = params.buffer_seconds;
       if (params.interval_between_rounds_minutes) body.interval_between_rounds_minutes = params.interval_between_rounds_minutes;
       return request<App.Session>('POST', '/sessions', body);
     },

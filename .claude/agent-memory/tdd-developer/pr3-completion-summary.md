@@ -76,7 +76,7 @@ PR 3 (Frontend) is fully implemented and tested. All 71 tests pass, no TypeScrip
 1. **Session Page** — timer_sync event listener updates round_duration_seconds and round_started_at
 2. **ActiveSession** — RoundTimer renders when game_mode='timed_americano' and round_started_at available
 3. **RoundTimer** — Updates every 1 second via setInterval, recalibrates on timer_sync events
-4. **API Client** — Sessions.create() accepts total_duration_minutes and buffer_seconds
+4. **API Client** — Sessions.create() accepts total_duration_minutes 
 
 ## Key Decisions
 

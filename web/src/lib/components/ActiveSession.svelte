@@ -13,9 +13,6 @@
   import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import * as Sheet from '$lib/components/ui/sheet';
   import RoundIndicator from './RoundIndicator.svelte';
-  import RoundTimer from './RoundTimer.svelte';
-  import BufferTimer from './BufferTimer.svelte';
-  import NextRoundPreview from './NextRoundPreview.svelte';
   import Leaderboard from './Leaderboard.svelte';
   import { numpad as numpadStore } from '$lib/stores/numpad';
   import { auth } from '$lib/auth.svelte';
@@ -40,8 +37,7 @@
 
   const playerName = $derived(Object.fromEntries(session.players.map((p) => [p.id, p.name])));
   const playerById = $derived(Object.fromEntries(session.players.map((p) => [p.id, p])));
-  const isTimedAmericano = $derived(session.game_mode === 'timed_americano');
-  const maxScore = $derived(isTimedAmericano ? 99 : session.points);
+  const maxScore = $derived(session.points);
 
   let localScores = $state<Record<string, { a: number; b: number }>>({});
   let submitting = $state<Record<string, boolean>>({});
@@ -52,20 +48,12 @@
   let cancelling = $state(false);
   let closing = $state(false);
   let showEndMenu = $state(false);
-  let bufferComplete = $state(false);
 
   // Court tabs
   let activeCourt = $state(0);
   $effect(() => {
     const max = currentRound.matches.length - 1;
     if (activeCourt > max) activeCourt = 0;
-  });
-
-  // Reset bufferComplete when round number changes
-  $effect(() => {
-    if (currentRound.number) {
-      bufferComplete = false;
-    }
   });
 
   // Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite)
@@ -124,27 +112,12 @@
     }
     const { matchId, team } = numpad;
 
-    if (isTimedAmericano) {
-      // Timed Americano: set entered score on current team, leave other for next numpad open
-      const current = localScores[matchId] ?? { a: 0, b: 0 };
-      localScores[matchId] = { ...current, [team]: entered };
-      scheduleLiveSave(matchId);
-
-      // Close numpad and prompt for next team if not yet set
-      numpad = null;
-      numpadStore.close();
-      if (current[team === 'a' ? 'b' : 'a'] === 0 && team === 'a') {
-        // Team B score not set, open numpad for team B
-        setTimeout(() => openNumpad(matchId, 'b'), 100);
-      }
-    } else {
-      // Americano/Mexicano: auto-complement to fixed points target
-      const other = session.points - entered;
-      localScores[matchId] = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
-      scheduleLiveSave(matchId);
-      numpad = null;
-      numpadStore.close();
-    }
+    // Auto-complement to fixed points target
+    const other = session.points - entered;
+    localScores[matchId] = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
+    scheduleLiveSave(matchId);
+    numpad = null;
+    numpadStore.close();
   }
 
   const scores = $derived.by(() => {
@@ -280,13 +253,6 @@
     return `${m}:${String(s).padStart(2, '0')}`;
   });
 
-  // Phase derivation for Timed Americano
-  const phase = $derived.by(() => {
-    if (!isTimedAmericano) return null;
-    if (allScored) return 'buffer';
-    if (!session.round_started_at || timeExpired) return 'expired';
-    return 'play';
-  }) as 'buffer' | 'play' | 'expired' | null;
 
   function shortPlayerName(name: string) {
     const parts = name.trim().split(' ');
@@ -332,17 +298,15 @@
     {/if}
 
     <!-- Match info row -->
-    <div class="flex items-center justify-between gap-3">
-      <div class="min-w-0">
-        <p class="text-[10px] font-bold uppercase tracking-widest text-text-disabled">
-          {isTimedAmericano ? $_('create_mode_timed_americano') : session.game_mode} tournament
-        </p>
-        <h2 class="text-[28px] font-[800] leading-tight tracking-tight">
-          {session.rounds_total != null
-            ? $_('active_round_of', { values: { current: currentRound.number, total: session.rounds_total } })
-            : $_('active_round_open', { values: { current: currentRound.number } })}
-        </h2>
-      </div>
+    <div class="min-w-0">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-text-disabled">
+        {session.game_mode} tournament
+      </p>
+      <h2 class="text-[28px] font-[800] leading-tight tracking-tight">
+        {session.rounds_total != null
+          ? $_('active_round_of', { values: { current: currentRound.number, total: session.rounds_total } })
+          : $_('active_round_open', { values: { current: currentRound.number } })}
+      </h2>
     </div>
 
     {#if session.game_mode !== 'americano'}
@@ -359,14 +323,6 @@
 
     {#if session.rounds_total != null}
       <RoundIndicator current={currentRound.number} total={session.rounds_total} />
-    {/if}
-
-    {#if isTimedAmericano && session.round_started_at && session.round_duration_seconds}
-      <RoundTimer
-        roundStartedAt={session.round_started_at}
-        roundDurationSeconds={session.round_duration_seconds}
-        bufferSeconds={session.buffer_seconds ?? 120}
-      />
     {/if}
 
     <!-- Court tabs -->
@@ -444,33 +400,6 @@
             </div>
           </button>
 
-        {:else if phase === 'buffer'}
-          <!-- Buffer phase: compact read-only matchup cards -->
-          <div class="w-full rounded-3xl overflow-hidden border border-primary/40">
-            <div class="flex items-center gap-3 px-5 py-4 bg-surface-raised">
-              <div class="flex">
-                <Avatar icon={p1?.avatar_icon} color={p1?.avatar_color} name={p1?.name ?? ''} size="sm" ring="ring-2 ring-primary/30" />
-                <div class="-ml-2">
-                  <Avatar icon={p2?.avatar_icon} color={p2?.avatar_color} name={p2?.name ?? ''} size="sm" ring="ring-2 ring-primary/30" />
-                </div>
-              </div>
-              <p class="flex-1 font-semibold truncate text-text-primary">
-                {teamLabel(match.team_a)}
-              </p>
-            </div>
-            <div class="h-px bg-border"></div>
-            <div class="flex items-center gap-3 px-5 py-4 bg-surface-raised">
-              <div class="flex">
-                <Avatar icon={p3?.avatar_icon} color={p3?.avatar_color} name={p3?.name ?? ''} size="sm" ring="ring-2 ring-primary/30" />
-                <div class="-ml-2">
-                  <Avatar icon={p4?.avatar_icon} color={p4?.avatar_color} name={p4?.name ?? ''} size="sm" ring="ring-2 ring-primary/30" />
-                </div>
-              </div>
-              <p class="flex-1 font-semibold truncate text-text-primary">
-                {teamLabel(match.team_b)}
-              </p>
-            </div>
-          </div>
         {:else}
           <!-- Play/Expired phase: full score increment UI -->
           <!-- Team A card -->
@@ -502,7 +431,7 @@
                 >{s.a}</button>
                 <button
                   onclick={() => adjust(match.id, 'a', 1)}
-                  disabled={isTimedAmericano ? s.a >= 99 : s.a + s.b >= session.points}
+                  disabled={s.a + s.b >= session.points}
                   class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
                 >+</button>
               </div>
@@ -528,7 +457,7 @@
                 >{s.b}</button>
                 <button
                   onclick={() => adjust(match.id, 'b', 1)}
-                  disabled={isTimedAmericano ? s.b >= 99 : s.a + s.b >= session.points}
+                  disabled={s.a + s.b >= session.points}
                   class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
                 >+</button>
               </div>
@@ -549,7 +478,7 @@
           {#if isAdmin}
             <button
               onclick={() => submitScore(match.id)}
-              disabled={isTimedAmericano ? (s.a < 0 || s.b < 0 || submitting[match.id]) : (s.a + s.b !== session.points || submitting[match.id])}
+              disabled={s.a + s.b !== session.points || submitting[match.id]}
               class="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-40"
             >
               <Check size={18} />
@@ -586,41 +515,15 @@
     <!-- Next round / waiting -->
     {#if allScored && isAdmin}
       {@const isFinalRound = session.rounds_total != null && currentRound.number === session.rounds_total}
-      {@const isTimedAmericano = session.game_mode === 'timed_americano'}
 
-      {#if isTimedAmericano && !isFinalRound && session.buffer_seconds && session.buffer_seconds > 0}
-        <!-- Timed Americano: Show buffer countdown + next round preview -->
-        <div class="space-y-4">
-          <BufferTimer
-            bufferSeconds={session.buffer_seconds ?? 120}
-            onComplete={() => bufferComplete = true}
-          />
-          <NextRoundPreview
-            currentRound={currentRound.number}
-            courts={session.courts}
-            {session}
-            sessionId={session.id}
-          />
-          <div class="flex gap-2">
-            <button
-              onclick={advanceRound}
-              disabled={advancing}
-              class="flex-1 rounded-2xl bg-primary px-4 py-3 text-sm font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
-            >
-              {advancing ? '…' : bufferComplete ? $_('active_ready_advance') : $_('active_advance_early')}
-            </button>
-          </div>
-        </div>
-      {:else}
-        <!-- Default: Show advance button immediately -->
-        <button
-          onclick={isFinalRound ? onRefresh : advanceRound}
-          disabled={advancing}
-          class="w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
-        >
-          {advancing ? '…' : isFinalRound ? $_('active_final_results') : $_('active_next_round')}
-        </button>
-      {/if}
+      <!-- Show advance button -->
+      <button
+        onclick={isFinalRound ? onRefresh : advanceRound}
+        disabled={advancing}
+        class="w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
+      >
+        {advancing ? '…' : isFinalRound ? $_('active_final_results') : $_('active_next_round')}
+      </button>
     {:else if someScored && !allScored && isAdmin}
       <button
         disabled
@@ -759,5 +662,3 @@
     </Sheet.Footer>
   </Sheet.Content>
 </Sheet.Root>
-
-

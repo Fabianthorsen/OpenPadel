@@ -11,7 +11,6 @@ import (
 	"github.com/fabianthorsen/openpadel/internal/events"
 	gamericano "github.com/fabianthorsen/openpadel/internal/gamemode/americano"
 	gmexicano "github.com/fabianthorsen/openpadel/internal/gamemode/mexicano"
-	gtimed "github.com/fabianthorsen/openpadel/internal/gamemode/timed"
 	"github.com/fabianthorsen/openpadel/internal/livescores"
 	"github.com/fabianthorsen/openpadel/internal/store"
 	"github.com/fabianthorsen/openpadel/internal/ui"
@@ -27,7 +26,6 @@ type Handler struct {
 	vapidPublic  string
 	americanoSvc *gamericano.Service
 	mexicanoSvc  *gmexicano.Service
-	timedSvc     *gtimed.Service
 }
 
 func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, vapidPublic string) http.Handler {
@@ -42,7 +40,6 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 		vapidPublic:  vapidPublic,
 		americanoSvc: gamericano.New(s),
 		mexicanoSvc:  gmexicano.New(s),
-		timedSvc:     gtimed.New(s, hub),
 	}
 	r := chi.NewRouter()
 

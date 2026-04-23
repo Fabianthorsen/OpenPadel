@@ -86,15 +86,12 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "invalid_request_body")
 		return
 	}
-	// Timed Americano allows free scoring (no points constraint)
-	if sess.GameMode != "timed_americano" {
-		if body.ScoreA+body.ScoreB != sess.Points {
-			respondError(w, http.StatusBadRequest, "scores_invalid_sum")
-			return
-		}
-	}
 	if body.ScoreA < 0 || body.ScoreB < 0 {
 		respondError(w, http.StatusBadRequest, "scores_negative")
+		return
+	}
+	if body.ScoreA+body.ScoreB != sess.Points {
+		respondError(w, http.StatusBadRequest, "scores_invalid_sum")
 		return
 	}
 
@@ -203,11 +200,7 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if sess.GameMode == "timed_americano" {
-		if err := h.timedSvc.AdvanceRound(w, sessionID, sess); err != nil {
-			return
-		}
-	} else if sess.GameMode == "mexicano" {
+	if sess.GameMode == "mexicano" {
 		nextRound := 1
 		if sess.CurrentRound != nil {
 			nextRound = *sess.CurrentRound + 1

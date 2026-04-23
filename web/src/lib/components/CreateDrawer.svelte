@@ -19,25 +19,12 @@
   let { open = $bindable(false) }: { open?: boolean } = $props();
 
   let gameMode = $state<'americano' | 'mexicano'>('americano');
-  let americanoVariant = $state<'points' | 'timed'>('points');
   let mexicanoRounds = $state<number | null>(null); // null = no round limit
   let courtDuration = $state<number | null>(null);  // null = no timer
   let customTimeMode = $state(false);
   let customTimeRaw = $state('');
   let customInputEl = $state<HTMLInputElement | null>(null);
-  let totalDurationMinutes = $state<number>(90);
-  let customTournamentDurationMode = $state(false);
-  let customTournamentDurationRaw = $state('');
-  let tournamentDurationInputEl = $state<HTMLInputElement | null>(null);
-  let intervalBetweenRoundsMin = $state<number>(3);
-  let customIntervalMode = $state(false);
-  let customIntervalRaw = $state('');
-  let intervalInputEl = $state<HTMLInputElement | null>(null);
 
-  // Maps UI selection (gameMode + variant) to backend game_mode
-  const actualGameMode = $derived(gameMode === 'americano'
-    ? (americanoVariant === 'timed' ? 'timed_americano' : 'americano')
-    : gameMode);
   $effect(() => {
     if (customTimeMode && customInputEl) customInputEl.focus();
   });
@@ -45,24 +32,6 @@
     if (customTimeMode) {
       const v = parseInt(customTimeRaw);
       courtDuration = (v >= 15 && v <= 300) ? v : null;
-    }
-  });
-  $effect(() => {
-    if (customTournamentDurationMode && tournamentDurationInputEl) tournamentDurationInputEl.focus();
-  });
-  $effect(() => {
-    if (customTournamentDurationMode) {
-      const v = parseInt(customTournamentDurationRaw);
-      totalDurationMinutes = (v >= 60 && v <= 999) ? v : 90;
-    }
-  });
-  $effect(() => {
-    if (customIntervalMode && intervalInputEl) intervalInputEl.focus();
-  });
-  $effect(() => {
-    if (customIntervalMode) {
-      const v = parseInt(customIntervalRaw);
-      intervalBetweenRoundsMin = (v >= 0 && v <= 10) ? v : 3;
     }
   });
   function pickRounds(n: number) {
@@ -82,24 +51,6 @@
     mexicanoRounds = null;
     courtDuration = null;
     customTimeRaw = '';
-  }
-  function pickTournamentDuration(min: number) {
-    totalDurationMinutes = min;
-    customTournamentDurationMode = false;
-    customTournamentDurationRaw = '';
-  }
-  function pickCustomTournamentDuration() {
-    customTournamentDurationMode = true;
-    customTournamentDurationRaw = '';
-  }
-  function pickInterval(min: number) {
-    intervalBetweenRoundsMin = min;
-    customIntervalMode = false;
-    customIntervalRaw = '';
-  }
-  function pickCustomInterval() {
-    customIntervalMode = true;
-    customIntervalRaw = '';
   }
   let courts = $state(2);
   let points = $state(24);
@@ -165,14 +116,12 @@
       }
       const session = await api.sessions.create({
         courts,
-        points: actualGameMode === 'timed_americano' ? 0 : points,
+        points,
         name: tournamentName.trim(),
-        game_mode: actualGameMode,
+        game_mode: gameMode,
         scheduled_at: iso,
         rounds_total: gameMode === 'mexicano' ? mexicanoRounds ?? undefined : undefined,
         court_duration_minutes: courtDuration ?? undefined,
-        total_duration_minutes: actualGameMode === 'timed_americano' ? totalDurationMinutes : undefined,
-        interval_between_rounds_minutes: actualGameMode === 'timed_americano' ? intervalBetweenRoundsMin : undefined,
       });
       const adminToken = session.admin_token!;
       localStorage.setItem(`admin_token_${session.id}`, adminToken);
@@ -202,6 +151,17 @@
 
       <div class="flex-1 overflow-y-auto px-6 pb-8 space-y-6">
 
+      <!-- Tournament name -->
+      <div class="space-y-2.5">
+        <SectionLabel>{$_('create_tournament_name_label')}</SectionLabel>
+        <Input
+          bind:value={tournamentName}
+          placeholder={$_('create_tournament_name_placeholder')}
+          maxlength={48}
+          class="rounded-2xl border-0 bg-surface-raised px-4 py-3.5 text-sm"
+        />
+      </div>
+
       <!-- Game mode -->
       <div class="space-y-2.5">
         <SectionLabel>{$_('create_game_mode_label')}</SectionLabel>
@@ -213,24 +173,6 @@
           <p class="text-xs text-text-secondary">{$_('create_mexicano_hint')}</p>
         {/if}
       </div>
-
-      <!-- Americano variant selector (Points vs Timed) -->
-      {#if gameMode === 'americano'}
-        <div class="space-y-2.5">
-          <SectionLabel>{$_('create_americano_format_label')}</SectionLabel>
-          <PillToggleGroup bind:value={americanoVariant}>
-            <PillToggleItem value="points">{$_('create_americano_points_variant')}</PillToggleItem>
-            <PillToggleItem value="timed">{$_('create_americano_timed_variant')}</PillToggleItem>
-          </PillToggleGroup>
-          <p class="text-xs text-text-secondary">
-            {#if americanoVariant === 'timed'}
-              {$_('create_americano_timed_hint')}
-            {:else}
-              {$_('create_americano_points_hint')}
-            {/if}
-          </p>
-        </div>
-      {/if}
 
       {#if gameMode === 'mexicano'}
         <!-- Mexicano: rounds or time (mutually exclusive) -->
@@ -319,94 +261,8 @@
           {/if}
         </div>
 
-        {#if gameMode === 'americano' && americanoVariant === 'timed'}
-          <!-- Timed Americano Duration -->
-          <div class="space-y-2.5">
-            <SectionLabel>{$_('create_timed_duration_label')}</SectionLabel>
-            <PillToggleGroup
-              value={!customTournamentDurationMode && [60, 90, 120].includes(totalDurationMinutes) ? totalDurationMinutes.toString() : customTournamentDurationMode ? 'custom' : ''}
-              onValueChange={(val) => {
-                if (val === 'custom') {
-                  pickCustomTournamentDuration();
-                } else if (val) {
-                  pickTournamentDuration(parseInt(val));
-                }
-              }}
-            >
-              {#each [60, 90, 120] as duration}
-                <PillToggleItem value={duration.toString()}>
-                  {duration}m
-                </PillToggleItem>
-              {/each}
-              {#if customTournamentDurationMode}
-                <div class="flex flex-1 items-center justify-center gap-0.5 rounded-full bg-primary px-2 py-2.5 text-sm font-semibold text-white">
-                  <input
-                    bind:this={tournamentDurationInputEl}
-                    type="number"
-                    min="60"
-                    max="999"
-                    bind:value={customTournamentDurationRaw}
-                    placeholder="90"
-                    class="w-12 bg-transparent text-center font-semibold text-white placeholder-white/60 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  />
-                  <span>m</span>
-                </div>
-              {:else}
-                <PillToggleItem value="custom">
-                  {$_('create_duration_custom')}
-                </PillToggleItem>
-              {/if}
-            </PillToggleGroup>
-            <p class="text-xs text-text-secondary">
-              {$_('create_timed_duration_hint', { values: { n: totalDurationMinutes } })}
-            </p>
-          </div>
-
-<!-- Timed Americano Interval Between Rounds -->
-          <div class="space-y-2.5">
-            <SectionLabel>{$_('create_timed_interval_label')}</SectionLabel>
-            <PillToggleGroup
-              value={!customIntervalMode && [1, 2, 3, 4, 5].includes(intervalBetweenRoundsMin) ? intervalBetweenRoundsMin.toString() : customIntervalMode ? 'custom' : ''}
-              onValueChange={(val) => {
-                if (val === 'custom') {
-                  pickCustomInterval();
-                } else if (val) {
-                  pickInterval(parseInt(val));
-                }
-              }}
-            >
-              {#each [1, 2, 3, 4, 5] as interval}
-                <PillToggleItem value={interval.toString()}>
-                  {interval}m
-                </PillToggleItem>
-              {/each}
-              {#if customIntervalMode}
-                <div class="flex flex-1 items-center justify-center gap-0.5 rounded-full bg-primary px-2 py-2.5 text-sm font-semibold text-white">
-                  <input
-                    bind:this={intervalInputEl}
-                    type="number"
-                    min="0"
-                    max="10"
-                    bind:value={customIntervalRaw}
-                    placeholder="3"
-                    class="w-8 bg-transparent text-center font-semibold text-white placeholder-white/60 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  />
-                  <span>m</span>
-                </div>
-              {:else}
-                <PillToggleItem value="custom">
-                  {$_('create_duration_custom')}
-                </PillToggleItem>
-              {/if}
-            </PillToggleGroup>
-            <p class="text-xs text-text-secondary">
-              {$_('create_timed_interval_hint')}
-            </p>
-          </div>
-        {/if}
-
-        <!-- Points (shown for americano points variant and mexicano) -->
-        {#if (gameMode === 'americano' && americanoVariant === 'points') || gameMode === 'mexicano'}
+        <!-- Points (shown for americano and mexicano) -->
+        {#if gameMode === 'americano' || gameMode === 'mexicano'}
           <div class="space-y-2.5">
             <SectionLabel>{$_('create_points_label')}</SectionLabel>
             <PillToggleGroup
@@ -426,16 +282,6 @@
         {/if}
       {/if}
 
-      <!-- Tournament name -->
-      <div class="space-y-2.5">
-        <SectionLabel>{$_('create_tournament_name_label')}</SectionLabel>
-        <Input
-          bind:value={tournamentName}
-          placeholder={$_('create_tournament_name_placeholder')}
-          maxlength={48}
-          class="rounded-2xl border-0 bg-surface-raised px-4 py-3.5 text-sm"
-        />
-      </div>
 
       <!-- Schedule -->
       <div class="space-y-2.5">
