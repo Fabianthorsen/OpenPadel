@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/pairing/mexicano"
 )
 
 // Store is the subset of store.Store methods used by this service.
@@ -39,7 +40,7 @@ func (s *Service) Start(w http.ResponseWriter, sessionID string, sess *domain.Se
 		standings[i].Rank = i + 1
 	}
 
-	round := GenerateMexicanoRound(standings, sess.Courts, 1)
+	round := mexicano.GenerateRound(standings, sess.Courts, 1)
 	round.SessionID = sessionID
 
 	if err := s.store.SaveRounds(sessionID, []domain.Round{round}); err != nil {
@@ -66,7 +67,7 @@ func (s *Service) AdvanceRound(w http.ResponseWriter, sessionID string, nextRoun
 		writeError(w, http.StatusInternalServerError, "could not load session")
 		return err
 	}
-	round := GenerateMexicanoRound(standings, sess.Courts, nextRoundNum)
+	round := mexicano.GenerateRound(standings, sess.Courts, nextRoundNum)
 	round.SessionID = sessionID
 	if err := s.store.AdvanceMexicanoRound(sessionID, round); err != nil {
 		writeError(w, http.StatusInternalServerError, "could not save next round")

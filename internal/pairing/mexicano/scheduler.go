@@ -7,7 +7,7 @@ import (
 	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
-// GenerateMexicanoRound produces the next Mexicano round from the current standings.
+// GenerateRound produces the next Mexicano round from the current standings.
 //
 // Mexicano requires exactly courts*4 players — no bench. Every player plays every round.
 //
@@ -15,7 +15,7 @@ import (
 // This balances each match by ranking (strongest paired with weakest, 2nd with 3rd).
 //
 // For round 1 pass randomly-shuffled standings so the first round is fair.
-func GenerateMexicanoRound(standings []domain.Standing, courts int, roundNum int) domain.Round {
+func GenerateRound(standings []domain.Standing, courts int, roundNum int) domain.Round {
 	// Pair: [0+3 vs 1+2], [4+7 vs 5+6], …
 	matches := make([]domain.Match, courts)
 	for c := 0; c < courts; c++ {
