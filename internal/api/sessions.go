@@ -225,7 +225,7 @@ func (h *Handler) closeSession(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusForbidden, "admin_required")
 		return
 	}
-	if sess.Status == domain.StatusComplete {
+	if sess.Status == domain.StatusDone {
 		respondError(w, http.StatusConflict, "session_already_ended")
 		return
 	}

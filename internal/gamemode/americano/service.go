@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/pairing/americano"
 )
 
 // Store is the subset of store.Store methods used by this service.
@@ -29,8 +30,8 @@ func New(store Store) *Service {
 // Returns a non-nil error only if it has already written an HTTP error response.
 func (s *Service) Start(w http.ResponseWriter, sessionID string, sess *domain.Session, active []domain.Player, endsAt *time.Time) error {
 	rand.Shuffle(len(active), func(i, j int) { active[i], active[j] = active[j], active[i] })
-	totalRounds := TotalRounds(len(active), sess.Courts)
-	rounds := Generate(active, sess.Courts, totalRounds)
+	totalRounds := americano.TotalRounds(len(active), sess.Courts)
+	rounds := americano.GenerateRounds(active, sess.Courts, totalRounds)
 	if err := s.store.SaveRounds(sessionID, rounds); err != nil {
 		writeError(w, http.StatusInternalServerError, "server_error")
 		return err
