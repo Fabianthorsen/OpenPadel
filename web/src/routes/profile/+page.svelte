@@ -591,13 +591,13 @@
             {:else}
               {#each upcoming as t}
                 <a href={sessionHref(t.session_id)} class="flex items-center gap-4 rounded-2xl bg-surface-raised px-4 py-3.5 transition-colors hover:bg-border">
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status === 'active' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-primary-muted text-primary'}">
-                    {#if t.status === 'active'}<Radio size={18} />{:else}<CalendarDays size={18} />{/if}
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status === 'playing' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-primary-muted text-primary'}">
+                    {#if t.status === 'playing'}<Radio size={18} />{:else}<CalendarDays size={18} />{/if}
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
                       <p class="truncate font-semibold text-sm">{t.name}</p>
-                      {#if t.status === 'active'}
+                      {#if t.status === 'playing'}
                         <span class="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-500">Live</span>
                       {/if}
                     </div>

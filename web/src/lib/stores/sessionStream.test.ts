@@ -61,9 +61,9 @@ describe('sessionStream', () => {
     const handler = vi.fn();
     stream.onEvent('session_updated', handler);
 
-    MockEventSource.instances[0].emit('session_updated', { status: 'active' });
+    MockEventSource.instances[0].emit('session_updated', { status: 'playing' });
 
-    expect(handler).toHaveBeenCalledWith({ status: 'active' });
+    expect(handler).toHaveBeenCalledWith({ status: 'playing' });
     stream.close();
   });
 

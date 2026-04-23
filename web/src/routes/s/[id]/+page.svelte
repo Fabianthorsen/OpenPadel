@@ -108,9 +108,9 @@
     </main>
   {:else if session.status === 'lobby'}
       <Lobby {session} {isAdmin} onRefresh={load} onStarted={load} {stream} />
-  {:else if session.status === 'active' && currentRound}
+  {:else if session.status === 'playing' && currentRound}
       <ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} {stream} />
-  {:else if session.status === 'complete'}
+  {:else if session.status === 'done'}
     <Leaderboard sessionId={session.id} sessionName={session.name} complete />
   {:else}
     <main class="flex flex-1 items-center justify-center px-4">
