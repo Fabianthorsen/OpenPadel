@@ -217,3 +217,371 @@ func TestCancelSession_RequiresAdmin(t *testing.T) {
 	}
 	res.Body.Close()
 }
+
+// Integration tests for state machine & validation (Issue #66)
+
+func TestStateFlow_LobbyToPlayingToDone(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken, _ := setupStartedSession(t, srv)
+
+	// Verify session is in playing state
+	res := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, res, &sess)
+	if sess.Status != "playing" {
+		t.Fatalf("expected status 'playing', got %q", sess.Status)
+	}
+
+	// Close the session (manual end)
+	res2 := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
+	if res2.StatusCode != http.StatusNoContent {
+		t.Fatalf("close: expected 204, got %d", res2.StatusCode)
+	}
+	res2.Body.Close()
+
+	// Verify session is now in done state
+	res3 := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	decodeBody(t, res3, &sess)
+	if sess.Status != "done" {
+		t.Fatalf("expected status 'done' after close, got %q", sess.Status)
+	}
+}
+
+func TestStateFlow_DeleteInLobby(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	// Join some players
+	mustJoinSession(t, srv, sessID, "Alice", adminToken)
+	mustJoinSession(t, srv, sessID, "Bob", "")
+
+	// Delete the session in lobby state
+	res := deleteReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	if res.StatusCode != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+
+	// Verify session no longer exists
+	res2 := getReq(t, srv, "/api/sessions/"+sessID, "")
+	if res2.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404 after delete, got %d", res2.StatusCode)
+	}
+	res2.Body.Close()
+}
+
+func TestAmericanoConstraints_StartSucceeds_1Court4Players(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSessionWithParams(t, srv, "", 1, 24, "americano")
+
+	// Join 4 players for 1 court (minimum for Americano)
+	mustJoinSession(t, srv, sessID, "Alice", adminToken)
+	mustJoinSession(t, srv, sessID, "Bob", "")
+	mustJoinSession(t, srv, sessID, "Charlie", "")
+	mustJoinSession(t, srv, sessID, "Diana", "")
+
+	// Should succeed
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+
+	// Verify status changed to playing
+	res2 := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, res2, &sess)
+	if sess.Status != "playing" {
+		t.Fatalf("expected 'playing', got %q", sess.Status)
+	}
+}
+
+func TestAmericanoConstraints_StartFails_1Court3Players(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSessionWithParams(t, srv, "", 1, 24, "americano")
+
+	// Join only 3 players for 1 court (below minimum)
+	mustJoinSession(t, srv, sessID, "Alice", adminToken)
+	mustJoinSession(t, srv, sessID, "Bob", "")
+	mustJoinSession(t, srv, sessID, "Charlie", "")
+
+	// Should fail with 400
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestAmericanoConstraints_StartSucceeds_2Courts8Players(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSessionWithParams(t, srv, "", 2, 24, "americano")
+
+	// Join 8 players for 2 courts
+	for i, name := range []string{"Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry"} {
+		token := ""
+		if i == 0 {
+			token = adminToken
+		}
+		mustJoinSession(t, srv, sessID, name, token)
+	}
+
+	// Should succeed
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+
+	// Verify status changed to playing
+	res2 := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, res2, &sess)
+	if sess.Status != "playing" {
+		t.Fatalf("expected 'playing', got %q", sess.Status)
+	}
+}
+
+func TestMexicanoConstraints_StartSucceeds_2Courts8Players(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSessionWithParams(t, srv, "", 2, 24, "mexicano")
+
+	// Join exactly 8 players for 2 courts in Mexicano
+	for i, name := range []string{"Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry"} {
+		token := ""
+		if i == 0 {
+			token = adminToken
+		}
+		mustJoinSession(t, srv, sessID, name, token)
+	}
+
+	// Should succeed
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+
+	// Verify status changed to playing
+	res2 := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, res2, &sess)
+	if sess.Status != "playing" {
+		t.Fatalf("expected 'playing', got %q", sess.Status)
+	}
+}
+
+func TestMexicanoConstraints_StartFails_2Courts7Players(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSessionWithParams(t, srv, "", 2, 24, "mexicano")
+
+	// Join 7 players (below required 8)
+	for i, name := range []string{"Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace"} {
+		token := ""
+		if i == 0 {
+			token = adminToken
+		}
+		mustJoinSession(t, srv, sessID, name, token)
+	}
+
+	// Should fail with 400
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestMexicanoConstraints_StartFails_2Courts9Players(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSessionWithParams(t, srv, "", 2, 24, "mexicano")
+
+	// Join 9 players (above maximum 8)
+	for i, name := range []string{"Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry", "Ivy"} {
+		token := ""
+		if i == 0 {
+			token = adminToken
+		}
+		mustJoinSession(t, srv, sessID, name, token)
+	}
+
+	// Should fail with 400
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestInvalidTransition_CanCloseInLobby(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	// Verify can close in lobby state
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
+	if res.StatusCode != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+
+	// Verify status is done
+	res2 := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, res2, &sess)
+	if sess.Status != "done" {
+		t.Fatalf("expected 'done', got %q", sess.Status)
+	}
+}
+
+func TestInvalidTransition_CannotCloseInDone(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken, _ := setupStartedSession(t, srv)
+
+	// Close the session
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
+	if res.StatusCode != http.StatusNoContent {
+		t.Fatalf("close: expected 204, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+
+	// Try to close again - should fail with 409 (conflict)
+	res2 := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
+	if res2.StatusCode != http.StatusConflict {
+		t.Fatalf("expected 409, got %d", res2.StatusCode)
+	}
+	res2.Body.Close()
+}
+
+func TestInvalidTransition_CannotStartInPlaying(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken, _ := setupStartedSession(t, srv)
+
+	// Try to start again - should fail with 409 (conflict)
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
+	if res.StatusCode != http.StatusConflict {
+		t.Fatalf("expected 409, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestPlayerJoin_CanJoinInLobby(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _ := mustCreateSession(t, srv, "")
+
+	// Player should be able to join in lobby state
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Alice"}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+	var player struct {
+		ID string `json:"id"`
+	}
+	decodeBody(t, res, &player)
+	if player.ID == "" {
+		t.Error("expected non-empty player ID")
+	}
+}
+
+func TestPlayerJoin_CannotJoinInPlaying(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _, _ := setupStartedSession(t, srv)
+
+	// Player should NOT be able to join once session is playing
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Eve"}, "")
+	if res.StatusCode != http.StatusConflict {
+		t.Fatalf("expected 409, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestPlayerJoin_CannotJoinInDone(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken, _ := setupStartedSession(t, srv)
+
+	// Close the session
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
+	if res.StatusCode != http.StatusNoContent {
+		t.Fatalf("close: expected 204, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+
+	// Player should NOT be able to join in done state
+	res2 := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Eve"}, "")
+	if res2.StatusCode != http.StatusConflict {
+		t.Fatalf("expected 409, got %d", res2.StatusCode)
+	}
+	res2.Body.Close()
+}
+
+func TestSessionConfig_CourtDurationMinutes(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+
+	// Create session with custom court duration
+	duration := 60
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":                   1,
+		"points":                   24,
+		"game_mode":                "americano",
+		"court_duration_minutes":   duration,
+	}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+	var sess struct {
+		ID                   string `json:"id"`
+		CourtDurationMinutes *int   `json:"court_duration_minutes"`
+	}
+	decodeBody(t, res, &sess)
+
+	// Verify duration is stored and returned
+	if sess.CourtDurationMinutes == nil || *sess.CourtDurationMinutes != duration {
+		t.Errorf("expected court_duration_minutes %d, got %v", duration, sess.CourtDurationMinutes)
+	}
+
+	// Verify duration is returned on get
+	res2 := getReq(t, srv, "/api/sessions/"+sess.ID, "")
+	var sess2 struct {
+		CourtDurationMinutes *int `json:"court_duration_minutes"`
+	}
+	decodeBody(t, res2, &sess2)
+	if sess2.CourtDurationMinutes == nil || *sess2.CourtDurationMinutes != duration {
+		t.Errorf("expected court_duration_minutes %d, got %v", duration, sess2.CourtDurationMinutes)
+	}
+}
+
+func TestSessionConfig_InvalidCourtDuration(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+
+	testCases := []struct {
+		name     string
+		duration int
+	}{
+		{"too_small", 10},
+		{"too_large", 400},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := postReq(t, srv, "/api/sessions", map[string]any{
+				"courts":                   1,
+				"points":                   24,
+				"game_mode":                "americano",
+				"court_duration_minutes":   tc.duration,
+			}, "")
+			if res.StatusCode != http.StatusBadRequest {
+				t.Fatalf("expected 400, got %d", res.StatusCode)
+			}
+			res.Body.Close()
+		})
+	}
+}
