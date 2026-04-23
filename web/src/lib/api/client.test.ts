@@ -134,7 +134,6 @@ describe('api.sessions.create - Timed Americano', () => {
       courts: 2,
       name: 'Test Timed',
       total_duration_minutes: 120,
-      buffer_seconds: 120,
       points: 0,
     });
 
@@ -147,7 +146,6 @@ describe('api.sessions.create - Timed Americano', () => {
       courts: 2,
       name: 'Test Timed',
       total_duration_minutes: 120,
-      buffer_seconds: 120,
       points: 0,
     });
   });
@@ -160,7 +158,6 @@ describe('api.sessions.create - Timed Americano', () => {
       courts: 2,
       name: 'Test Timed',
       total_duration_minutes: 120,
-      buffer_seconds: 120,
       points: 0,
       interval_between_rounds_minutes: 4,
     });
@@ -182,7 +179,6 @@ describe('api.sessions.create - Timed Americano', () => {
       courts: 2,
       name: 'Test Timed',
       total_duration_minutes: 120,
-      buffer_seconds: 120,
       points: 0,
     });
 

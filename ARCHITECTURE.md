@@ -342,7 +342,6 @@ Timer sync events (`timer_sync`) are emitted when advancing rounds, containing:
 - `round_duration_seconds` — recalculated duration for the next round
 - `round_started_at` — timestamp when the round started (for client-side countdown sync)
 - `remaining_rounds` — number of rounds still to play
-- `buffer_seconds` — time between rounds for setup/transitions
 
 ---
 

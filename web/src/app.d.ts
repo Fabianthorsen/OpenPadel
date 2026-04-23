@@ -40,7 +40,6 @@ declare global {
       created_at: string;
       updated_at: string;
       total_duration_minutes?: number;
-      buffer_seconds?: number;
       round_duration_seconds?: number;
       round_started_at?: string;
       interval_between_rounds_minutes?: number;

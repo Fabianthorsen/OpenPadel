@@ -10,17 +10,15 @@ import (
 
 func TestSession_TimedAmericanoFields(t *testing.T) {
 	duration := 120
-	buffer := 120
 	roundDuration := 960
 
 	sess := &domain.Session{
-		ID:                     "sess123",
-		Status:                 domain.StatusLobby,
-		GameMode:               "timed_americano",
-		TotalDurationMinutes:   &duration,
-		BufferSeconds:          &buffer,
-		RoundDurationSeconds:   &roundDuration,
-		RoundStartedAt:         nil,
+		ID:                   "sess123",
+		Status:               domain.StatusLobby,
+		GameMode:             "timed_americano",
+		TotalDurationMinutes: &duration,
+		RoundDurationSeconds: &roundDuration,
+		RoundStartedAt:       nil,
 	}
 
 	if sess.TotalDurationMinutes == nil {
@@ -28,13 +26,6 @@ func TestSession_TimedAmericanoFields(t *testing.T) {
 	}
 	if *sess.TotalDurationMinutes != 120 {
 		t.Errorf("expected TotalDurationMinutes=120, got %d", *sess.TotalDurationMinutes)
-	}
-
-	if sess.BufferSeconds == nil {
-		t.Errorf("expected BufferSeconds to be set")
-	}
-	if *sess.BufferSeconds != 120 {
-		t.Errorf("expected BufferSeconds=120, got %d", *sess.BufferSeconds)
 	}
 
 	if sess.RoundDurationSeconds == nil {
@@ -51,20 +42,16 @@ func TestSession_TimedAmericanoFields(t *testing.T) {
 
 func TestSession_TimedAmericanoFieldsOptional(t *testing.T) {
 	sess := &domain.Session{
-		ID:                     "sess456",
-		Status:                 domain.StatusLobby,
-		GameMode:               "americano",
-		TotalDurationMinutes:   nil,
-		BufferSeconds:          nil,
-		RoundDurationSeconds:   nil,
-		RoundStartedAt:         nil,
+		ID:                   "sess456",
+		Status:               domain.StatusLobby,
+		GameMode:             "americano",
+		TotalDurationMinutes: nil,
+		RoundDurationSeconds: nil,
+		RoundStartedAt:       nil,
 	}
 
 	if sess.TotalDurationMinutes != nil {
 		t.Errorf("expected TotalDurationMinutes to be nil")
-	}
-	if sess.BufferSeconds != nil {
-		t.Errorf("expected BufferSeconds to be nil")
 	}
 	if sess.RoundDurationSeconds != nil {
 		t.Errorf("expected RoundDurationSeconds to be nil")
@@ -77,20 +64,18 @@ func TestSession_TimedAmericanoFieldsOptional(t *testing.T) {
 func TestSession_TimedAmericanoJSON_Marshal(t *testing.T) {
 	now := time.Now().UTC()
 	duration := 120
-	buffer := 120
 	roundDuration := 960
 
 	sess := &domain.Session{
-		ID:                     "sess789",
-		Status:                 domain.StatusActive,
-		GameMode:               "timed_americano",
-		TotalDurationMinutes:   &duration,
-		BufferSeconds:          &buffer,
-		RoundDurationSeconds:   &roundDuration,
-		RoundStartedAt:         &now,
-		Players:                []domain.Player{},
-		CreatedAt:              time.Now().UTC(),
-		UpdatedAt:              time.Now().UTC(),
+		ID:                   "sess789",
+		Status:               domain.StatusActive,
+		GameMode:             "timed_americano",
+		TotalDurationMinutes: &duration,
+		RoundDurationSeconds: &roundDuration,
+		RoundStartedAt:       &now,
+		Players:              []domain.Player{},
+		CreatedAt:            time.Now().UTC(),
+		UpdatedAt:            time.Now().UTC(),
 	}
 
 	data, err := json.Marshal(sess)
@@ -106,9 +91,6 @@ func TestSession_TimedAmericanoJSON_Marshal(t *testing.T) {
 	if v, ok := result["total_duration_minutes"]; !ok || v != float64(120) {
 		t.Errorf("expected total_duration_minutes in JSON")
 	}
-	if v, ok := result["buffer_seconds"]; !ok || v != float64(120) {
-		t.Errorf("expected buffer_seconds in JSON")
-	}
 	if v, ok := result["round_duration_seconds"]; !ok || v != float64(960) {
 		t.Errorf("expected round_duration_seconds in JSON")
 	}
@@ -119,16 +101,15 @@ func TestSession_TimedAmericanoJSON_Marshal(t *testing.T) {
 
 func TestSession_TimedAmericanoJSON_MarshalWithNilFields(t *testing.T) {
 	sess := &domain.Session{
-		ID:                     "sess999",
-		Status:                 domain.StatusLobby,
-		GameMode:               "americano",
-		TotalDurationMinutes:   nil,
-		BufferSeconds:          nil,
-		RoundDurationSeconds:   nil,
-		RoundStartedAt:         nil,
-		Players:                []domain.Player{},
-		CreatedAt:              time.Now().UTC(),
-		UpdatedAt:              time.Now().UTC(),
+		ID:                   "sess999",
+		Status:               domain.StatusLobby,
+		GameMode:             "americano",
+		TotalDurationMinutes: nil,
+		RoundDurationSeconds: nil,
+		RoundStartedAt:       nil,
+		Players:              []domain.Player{},
+		CreatedAt:            time.Now().UTC(),
+		UpdatedAt:            time.Now().UTC(),
 	}
 
 	data, err := json.Marshal(sess)

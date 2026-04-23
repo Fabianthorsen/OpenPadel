@@ -8,10 +8,10 @@ import (
 )
 
 func TestCalculateTimedRounds_EvenPlayers_8Players(t *testing.T) {
-	// 8 players, 120 min total, 2 min buffer, 3 min interval
+	// 8 players, 120 min total
 	// R = P - 1 = 7 (even)
-	// T = (120 * 60 - (7-1) * 3 * 60 - 7 * 120) / 7 = (7200 - 1080 - 840) / 7 = 5280 / 7 ≈ 754 seconds
-	rounds, duration, err := timed.CalculateTimedRounds(8, 120, 120, 3)
+	// T = (120 * 60) / 7 ≈ 1028 seconds
+	rounds, duration, err := timed.CalculateTimedRounds(8, 120)
 	if err != nil {
 		t.Fatalf("CalculateTimedRounds: %v", err)
 	}
@@ -20,7 +20,7 @@ func TestCalculateTimedRounds_EvenPlayers_8Players(t *testing.T) {
 		t.Errorf("expected 7 rounds, got %d", rounds)
 	}
 
-	expectedDuration := (120*60 - (7-1)*3*60 - 7*120) / 7
+	expectedDuration := (120 * 60) / 7
 	if duration != expectedDuration {
 		t.Errorf("expected duration %d seconds, got %d", expectedDuration, duration)
 	}
@@ -30,10 +30,10 @@ func TestCalculateTimedRounds_EvenPlayers_8Players(t *testing.T) {
 }
 
 func TestCalculateTimedRounds_OddPlayers_9Players(t *testing.T) {
-	// 9 players, 120 min total, 2 min buffer, 3 min interval
+	// 9 players, 120 min total
 	// R = P = 9 (odd)
-	// T = (120 * 60 - (9-1) * 3 * 60 - 9 * 120) / 9 = (7200 - 1440 - 1080) / 9 = 4680 / 9 ≈ 520 seconds
-	rounds, duration, err := timed.CalculateTimedRounds(9, 120, 120, 3)
+	// T = (120 * 60) / 9 = 800 seconds
+	rounds, duration, err := timed.CalculateTimedRounds(9, 120)
 	if err != nil {
 		t.Fatalf("CalculateTimedRounds: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestCalculateTimedRounds_OddPlayers_9Players(t *testing.T) {
 		t.Errorf("expected 9 rounds, got %d", rounds)
 	}
 
-	expectedDuration := (120*60 - (9-1)*3*60 - 9*120) / 9
+	expectedDuration := (120 * 60) / 9
 	if duration != expectedDuration {
 		t.Errorf("expected duration %d seconds, got %d", expectedDuration, duration)
 	}
@@ -53,19 +53,22 @@ func TestCalculateTimedRounds_OddPlayers_9Players(t *testing.T) {
 
 func TestCalculateTimedRounds_MinimumValidation(t *testing.T) {
 	// Not enough time: would result in T < 120
-	// 4 players, 10 min total, 2 min buffer, 3 min interval
-	// R = 3, T = (600 - (3-1) * 3 * 60 - 360) / 3 = (600 - 360 - 360) / 3 = -120 / 3 = -40 seconds < 120 (invalid)
-	_, _, err := timed.CalculateTimedRounds(4, 10, 120, 3)
-	if err == nil {
-		t.Errorf("expected error for insufficient time, got nil")
+	// 4 players, 10 min total
+	// R = 3, T = 600 / 3 = 200 seconds (should now be valid since formula is simplified)
+	_, duration, err := timed.CalculateTimedRounds(4, 10)
+	if err != nil {
+		t.Fatalf("CalculateTimedRounds: %v", err)
+	}
+	if duration < 120 {
+		t.Errorf("expected duration >= 120 seconds, got %d", duration)
 	}
 }
 
 func TestCalculateTimedRounds_LargeGroup(t *testing.T) {
-	// 16 players, 180 min total, 2 min buffer, 3 min interval
+	// 16 players, 180 min total
 	// R = P - 1 = 15 (even)
-	// T = (180 * 60 - (15-1) * 3 * 60 - 15 * 120) / 15 = (10800 - 2520 - 1800) / 15 = 6480 / 15 = 432 seconds
-	rounds, duration, err := timed.CalculateTimedRounds(16, 180, 120, 3)
+	// T = (180 * 60) / 15 = 720 seconds
+	rounds, duration, err := timed.CalculateTimedRounds(16, 180)
 	if err != nil {
 		t.Fatalf("CalculateTimedRounds: %v", err)
 	}
@@ -74,17 +77,17 @@ func TestCalculateTimedRounds_LargeGroup(t *testing.T) {
 		t.Errorf("expected 15 rounds, got %d", rounds)
 	}
 
-	expectedDuration := (180*60 - (15-1)*3*60 - 15*120) / 15
+	expectedDuration := (180 * 60) / 15
 	if duration != expectedDuration {
 		t.Errorf("expected duration %d seconds, got %d", expectedDuration, duration)
 	}
 }
 
 func TestRecalculateRoundDuration_MidTournamentDrift(t *testing.T) {
-	// 8 rounds remaining, 3600 seconds (60 min) remaining, 120 sec buffer, 3 min interval
-	// T_new = (3600 - (8-1) * 3 * 60 - 8 * 120) / 8 = (3600 - 1260 - 960) / 8 = 1380 / 8 = 172 seconds
-	newDuration := timed.RecalculateRoundDuration(8, 3600, 120, 3)
-	expectedDuration := (3600 - (8-1)*3*60 - 8*120) / 8
+	// 8 rounds remaining, 3600 seconds (60 min) remaining
+	// T_new = 3600 / 8 = 450 seconds
+	newDuration := timed.RecalculateRoundDuration(8, 3600)
+	expectedDuration := 3600 / 8
 	if newDuration != expectedDuration {
 		t.Errorf("expected duration %d seconds, got %d", expectedDuration, newDuration)
 	}
@@ -94,53 +97,44 @@ func TestRecalculateRoundDuration_MidTournamentDrift(t *testing.T) {
 }
 
 func TestRecalculateRoundDuration_EnforcesMinimum(t *testing.T) {
-	// Very tight: 4 rounds, 300 seconds (5 min) total, 120 sec buffer, 3 min interval
-	// T_new = (300 - (4-1) * 3 * 60 - 4 * 120) / 4 = (300 - 540 - 480) / 4 = -720 / 4 = -180 (invalid)
-	// Should enforce minimum of 60 seconds
-	newDuration := timed.RecalculateRoundDuration(4, 300, 120, 3)
+	// Very tight: 4 rounds, 300 seconds (5 min) total
+	// T_new = 300 / 4 = 75 seconds (> 60, so valid)
+	newDuration := timed.RecalculateRoundDuration(4, 300)
 	if newDuration < 60 {
 		t.Errorf("expected duration >= 60 seconds (minimum), got %d", newDuration)
 	}
 }
 
-func TestCalculateTimedRounds_IntervalBoundaries(t *testing.T) {
+func TestCalculateTimedRounds_DurationBoundaries(t *testing.T) {
 	tests := []struct {
 		name      string
 		players   int
 		duration  int
-		buffer    int
-		interval  int
 		wantError bool
 	}{
 		{
-			name:      "interval 1 minute valid",
+			name:      "standard duration valid",
 			players:   8,
 			duration:  120,
-			buffer:    120,
-			interval:  1,
 			wantError: false,
 		},
 		{
-			name:      "interval 5 minutes valid",
+			name:      "short duration valid",
 			players:   8,
-			duration:  120,
-			buffer:    120,
-			interval:  5,
+			duration:  60,
 			wantError: false,
 		},
 		{
-			name:      "interval 5 minutes insufficient time",
-			players:   8,
-			duration:  30,
-			buffer:    120,
-			interval:  5,
+			name:      "extremely short duration invalid",
+			players:   20,
+			duration:  15,
 			wantError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := timed.CalculateTimedRounds(tt.players, tt.duration, tt.buffer, tt.interval)
+			_, _, err := timed.CalculateTimedRounds(tt.players, tt.duration)
 			if (err != nil) != tt.wantError {
 				t.Errorf("CalculateTimedRounds: got error %v, want error %v", err, tt.wantError)
 			}

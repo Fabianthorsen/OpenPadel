@@ -44,14 +44,13 @@ type UserSearchResult struct {
 }
 
 type AmericanoCareerStats struct {
-	GamesPlayed  int `json:"games_played"`
-	Wins         int `json:"wins"`
-	Draws        int `json:"draws"`
-	Losses       int `json:"losses"`
-	TotalPoints  int `json:"total_points"`
-	Tournaments  int `json:"tournaments"`
+	GamesPlayed int `json:"games_played"`
+	Wins        int `json:"wins"`
+	Draws       int `json:"draws"`
+	Losses      int `json:"losses"`
+	TotalPoints int `json:"total_points"`
+	Tournaments int `json:"tournaments"`
 }
-
 
 type TournamentHistoryEntry struct {
 	SessionID   string `json:"session_id"`
@@ -83,29 +82,27 @@ const (
 )
 
 type Session struct {
-	ID              string        `json:"id"`
-	AdminToken      string        `json:"admin_token,omitempty"`
-	Status          SessionStatus `json:"status"`
-	Name            string        `json:"name,omitempty"`
-	GameMode        string        `json:"game_mode"`
-	Courts          int           `json:"courts"`
-	Points          int           `json:"points"`
-	RoundsTotal          *int          `json:"rounds_total,omitempty"`
-	CurrentRound         *int          `json:"current_round,omitempty"`
-	CreatorPlayerID      string        `json:"creator_player_id,omitempty"`
-	CreatorUserID        string        `json:"-"`
-	IsCreator            bool          `json:"is_creator,omitempty"`
-	ScheduledAt          *time.Time    `json:"scheduled_at,omitempty"`
-	CourtDurationMinutes *int          `json:"court_duration_minutes,omitempty"`
-	EndsAt               *time.Time    `json:"ends_at,omitempty"`
-	TotalDurationMinutes      *int          `json:"total_duration_minutes,omitempty"`
-	BufferSeconds             *int          `json:"buffer_seconds,omitempty"`
-	IntervalBetweenRoundsMin  *int          `json:"interval_between_rounds_minutes,omitempty"`
-	RoundDurationSeconds      *int          `json:"round_duration_seconds,omitempty"`
-	RoundStartedAt            *time.Time    `json:"round_started_at,omitempty"`
-	Players         []Player      `json:"players"`
-	CreatedAt       time.Time     `json:"created_at"`
-	UpdatedAt       time.Time     `json:"updated_at"`
+	ID                       string        `json:"id"`
+	AdminToken               string        `json:"admin_token,omitempty"`
+	Status                   SessionStatus `json:"status"`
+	Name                     string        `json:"name,omitempty"`
+	GameMode                 string        `json:"game_mode"`
+	Courts                   int           `json:"courts"`
+	Points                   int           `json:"points"`
+	RoundsTotal              *int          `json:"rounds_total,omitempty"`
+	CurrentRound             *int          `json:"current_round,omitempty"`
+	CreatorPlayerID          string        `json:"creator_player_id,omitempty"`
+	CreatorUserID            string        `json:"-"`
+	IsCreator                bool          `json:"is_creator,omitempty"`
+	ScheduledAt              *time.Time    `json:"scheduled_at,omitempty"`
+	CourtDurationMinutes     *int          `json:"court_duration_minutes,omitempty"`
+	EndsAt                   *time.Time    `json:"ends_at,omitempty"`
+	TotalDurationMinutes     *int          `json:"total_duration_minutes,omitempty"`
+	RoundDurationSeconds     *int          `json:"round_duration_seconds,omitempty"`
+	RoundStartedAt           *time.Time    `json:"round_started_at,omitempty"`
+	Players                  []Player      `json:"players"`
+	CreatedAt                time.Time     `json:"created_at"`
+	UpdatedAt                time.Time     `json:"updated_at"`
 }
 
 type Player struct {
@@ -149,17 +146,17 @@ type LiveScore struct {
 }
 
 type Standing struct {
-	Rank            int     `json:"rank"`
-	PlayerID        string  `json:"player_id"`
-	UserID          *string `json:"user_id,omitempty"`
-	Name            string  `json:"name"`
-	Points          int     `json:"points"`
-	PointsConceded  int     `json:"points_conceded"`
-	GamesPlayed     int     `json:"games_played"`
-	Wins            int     `json:"wins"`
-	Draws           int     `json:"draws"`
-	AvatarIcon      string  `json:"avatar_icon"`
-	AvatarColor     string  `json:"avatar_color"`
+	Rank           int     `json:"rank"`
+	PlayerID       string  `json:"player_id"`
+	UserID         *string `json:"user_id,omitempty"`
+	Name           string  `json:"name"`
+	Points         int     `json:"points"`
+	PointsConceded int     `json:"points_conceded"`
+	GamesPlayed    int     `json:"games_played"`
+	Wins           int     `json:"wins"`
+	Draws          int     `json:"draws"`
+	AvatarIcon     string  `json:"avatar_icon"`
+	AvatarColor    string  `json:"avatar_color"`
 }
 
 type Leaderboard struct {

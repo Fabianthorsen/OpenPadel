@@ -179,10 +179,9 @@ func setupStartedSession(t *testing.T, srv *httptest.Server) (sessID, adminToken
 func mustCreateTimedAmericanoSession(t *testing.T, srv *httptest.Server, token string) (id, adminToken string) {
 	t.Helper()
 	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                   1,
-		"game_mode":                "timed_americano",
-		"total_duration_minutes":   120,
-		"buffer_seconds":           120,
+		"courts":                 1,
+		"game_mode":              "timed_americano",
+		"total_duration_minutes": 120,
 	}, token)
 	if res.StatusCode != http.StatusCreated {
 		t.Fatalf("createTimedAmericanoSession: expected 201, got %d", res.StatusCode)

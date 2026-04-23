@@ -223,10 +223,9 @@ func TestCancelSession_RequiresAdmin(t *testing.T) {
 func TestCreateSession_TimedAmericano(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                   1,
-		"game_mode":                "timed_americano",
-		"total_duration_minutes":   120,
-		"buffer_seconds":           120,
+		"courts":                 1,
+		"game_mode":              "timed_americano",
+		"total_duration_minutes": 120,
 	}, "")
 	if res.StatusCode != http.StatusCreated {
 		t.Fatalf("expected 201, got %d", res.StatusCode)
@@ -235,7 +234,6 @@ func TestCreateSession_TimedAmericano(t *testing.T) {
 		ID                   string `json:"id"`
 		GameMode             string `json:"game_mode"`
 		TotalDurationMinutes *int   `json:"total_duration_minutes"`
-		BufferSeconds        *int   `json:"buffer_seconds"`
 		Points               int    `json:"points"`
 	}
 	decodeBody(t, res, &body)
@@ -245,40 +243,17 @@ func TestCreateSession_TimedAmericano(t *testing.T) {
 	if body.TotalDurationMinutes == nil || *body.TotalDurationMinutes != 120 {
 		t.Errorf("expected TotalDurationMinutes=120, got %v", body.TotalDurationMinutes)
 	}
-	if body.BufferSeconds == nil || *body.BufferSeconds != 120 {
-		t.Errorf("expected BufferSeconds=120, got %v", body.BufferSeconds)
-	}
 	if body.Points != 0 {
 		t.Errorf("expected Points=0 for timed_americano, got %d", body.Points)
-	}
-}
-
-func TestCreateSession_TimedAmericano_DefaultBuffer(t *testing.T) {
-	srv, _ := newAPITestServer(t)
-	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                   1,
-		"game_mode":                "timed_americano",
-		"total_duration_minutes":   120,
-	}, "")
-	if res.StatusCode != http.StatusCreated {
-		t.Fatalf("expected 201, got %d", res.StatusCode)
-	}
-	var body struct {
-		BufferSeconds *int `json:"buffer_seconds"`
-	}
-	decodeBody(t, res, &body)
-	if body.BufferSeconds == nil || *body.BufferSeconds != 120 {
-		t.Errorf("expected BufferSeconds=120 (default), got %v", body.BufferSeconds)
 	}
 }
 
 func TestCreateSession_TimedAmericano_InvalidDuration(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                   1,
-		"game_mode":                "timed_americano",
-		"total_duration_minutes":   5,
-		"buffer_seconds":           120,
+		"courts":                 1,
+		"game_mode":              "timed_americano",
+		"total_duration_minutes": 5,
 	}, "")
 	if res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 for invalid duration, got %d", res.StatusCode)
@@ -286,28 +261,14 @@ func TestCreateSession_TimedAmericano_InvalidDuration(t *testing.T) {
 	res.Body.Close()
 }
 
-func TestCreateSession_TimedAmericano_InvalidBuffer(t *testing.T) {
-	srv, _ := newAPITestServer(t)
-	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                   1,
-		"game_mode":                "timed_americano",
-		"total_duration_minutes":   120,
-		"buffer_seconds":           30,
-	}, "")
-	if res.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 for invalid buffer, got %d", res.StatusCode)
-	}
-	res.Body.Close()
-}
 
 func TestCreateSession_TimedAmericano_PointsRejected(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                   1,
-		"game_mode":                "timed_americano",
-		"total_duration_minutes":   120,
-		"buffer_seconds":           120,
-		"points":                   24,
+		"courts":                 1,
+		"game_mode":              "timed_americano",
+		"total_duration_minutes": 120,
+		"points":                 24,
 	}, "")
 	if res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected 400 when points provided, got %d", res.StatusCode)
@@ -332,11 +293,11 @@ func TestStartSession_TimedAmericano(t *testing.T) {
 		t.Fatalf("expected 200, got %d", res.StatusCode)
 	}
 	var sess struct {
-		Status               string `json:"status"`
-		RoundsTotal          *int   `json:"rounds_total"`
-		RoundDurationSeconds *int   `json:"round_duration_seconds"`
+		Status               string  `json:"status"`
+		RoundsTotal          *int    `json:"rounds_total"`
+		RoundDurationSeconds *int    `json:"round_duration_seconds"`
 		RoundStartedAt       *string `json:"round_started_at"`
-		CurrentRound         *int   `json:"current_round"`
+		CurrentRound         *int    `json:"current_round"`
 	}
 	decodeBody(t, res, &sess)
 	if sess.Status != "active" {
@@ -370,77 +331,6 @@ func TestStartSession_TimedAmericano_NotEnoughPlayers(t *testing.T) {
 	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
 	if res.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("expected 422, got %d", res.StatusCode)
-	}
-	res.Body.Close()
-}
-
-func TestCreateSession_TimedAmericano_DefaultInterval(t *testing.T) {
-	srv, _ := newAPITestServer(t)
-	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                   1,
-		"game_mode":                "timed_americano",
-		"total_duration_minutes":   120,
-		"buffer_seconds":           120,
-	}, "")
-	if res.StatusCode != http.StatusCreated {
-		t.Fatalf("expected 201, got %d", res.StatusCode)
-	}
-	var body struct {
-		IntervalBetweenRoundsMin *int `json:"interval_between_rounds_minutes"`
-	}
-	decodeBody(t, res, &body)
-	if body.IntervalBetweenRoundsMin == nil || *body.IntervalBetweenRoundsMin != 3 {
-		t.Errorf("expected IntervalBetweenRoundsMin=3 (default), got %v", body.IntervalBetweenRoundsMin)
-	}
-}
-
-func TestCreateSession_TimedAmericano_CustomInterval(t *testing.T) {
-	srv, _ := newAPITestServer(t)
-	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                      1,
-		"game_mode":                   "timed_americano",
-		"total_duration_minutes":      120,
-		"buffer_seconds":              120,
-		"interval_between_rounds_minutes": 5,
-	}, "")
-	if res.StatusCode != http.StatusCreated {
-		t.Fatalf("expected 201, got %d", res.StatusCode)
-	}
-	var body struct {
-		IntervalBetweenRoundsMin *int `json:"interval_between_rounds_minutes"`
-	}
-	decodeBody(t, res, &body)
-	if body.IntervalBetweenRoundsMin == nil || *body.IntervalBetweenRoundsMin != 5 {
-		t.Errorf("expected IntervalBetweenRoundsMin=5, got %v", body.IntervalBetweenRoundsMin)
-	}
-}
-
-func TestCreateSession_TimedAmericano_IntervalTooLow(t *testing.T) {
-	srv, _ := newAPITestServer(t)
-	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                      1,
-		"game_mode":                   "timed_americano",
-		"total_duration_minutes":      120,
-		"buffer_seconds":              120,
-		"interval_between_rounds_minutes": 0,
-	}, "")
-	if res.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 for interval < 1, got %d", res.StatusCode)
-	}
-	res.Body.Close()
-}
-
-func TestCreateSession_TimedAmericano_IntervalTooHigh(t *testing.T) {
-	srv, _ := newAPITestServer(t)
-	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                      1,
-		"game_mode":                   "timed_americano",
-		"total_duration_minutes":      120,
-		"buffer_seconds":              120,
-		"interval_between_rounds_minutes": 6,
-	}, "")
-	if res.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 for interval > 5, got %d", res.StatusCode)
 	}
 	res.Body.Close()
 }

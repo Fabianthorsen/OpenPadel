@@ -148,7 +148,6 @@ describe('sessionStream', () => {
       round_duration_seconds: 600,
       round_started_at: '2024-04-18T12:00:00Z',
       remaining_rounds: 5,
-      buffer_seconds: 120,
     };
     MockEventSource.instances[0].emit('timer_sync', payload);
 

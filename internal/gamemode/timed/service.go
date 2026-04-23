@@ -13,7 +13,7 @@ import (
 // Store is the subset of store.Store methods used by this service.
 type Store interface {
 	SaveRounds(sessionID string, rounds []domain.Round) error
-	StartTimedAmericanoSession(id, status string, roundsTotal int, totalDurationMin, bufferSec, intervalBetweenRoundsMin, roundDurationSec *int, endsAt *time.Time) error
+	StartTimedAmericanoSession(id, status string, roundsTotal int, totalDurationMin, roundDurationSec *int, endsAt *time.Time) error
 	SetRoundStartedAt(id string, roundStartedAt *time.Time) error
 	UpdateRoundDuration(id string, roundDurationSec *int) error
 	AdvanceRound(id string) error
@@ -34,12 +34,7 @@ func New(store Store, hub *events.Hub) *Service {
 func (s *Service) Start(w http.ResponseWriter, sessionID string, sess *domain.Session, active []domain.Player) error {
 	rand.Shuffle(len(active), func(i, j int) { active[i], active[j] = active[j], active[i] })
 
-	intervalMin := 3 // default 3 minutes
-	if sess.IntervalBetweenRoundsMin != nil {
-		intervalMin = *sess.IntervalBetweenRoundsMin
-	}
-
-	roundCount, roundDurationSec, err := CalculateTimedRounds(len(active), *sess.TotalDurationMinutes, *sess.BufferSeconds, intervalMin)
+	roundCount, roundDurationSec, err := CalculateTimedRounds(len(active), *sess.TotalDurationMinutes)
 	if err != nil {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return err
@@ -58,7 +53,7 @@ func (s *Service) Start(w http.ResponseWriter, sessionID string, sess *domain.Se
 
 	now := time.Now().UTC()
 	endsAt := now.Add(time.Duration(*sess.TotalDurationMinutes) * time.Minute)
-	if err := s.store.StartTimedAmericanoSession(sessionID, string(domain.StatusActive), roundCount, sess.TotalDurationMinutes, sess.BufferSeconds, sess.IntervalBetweenRoundsMin, &roundDurationSec, &endsAt); err != nil {
+	if err := s.store.StartTimedAmericanoSession(sessionID, string(domain.StatusActive), roundCount, sess.TotalDurationMinutes, &roundDurationSec, &endsAt); err != nil {
 		writeError(w, http.StatusInternalServerError, "server_error")
 		return err
 	}
@@ -80,12 +75,7 @@ func (s *Service) AdvanceRound(w http.ResponseWriter, sessionID string, sess *do
 	}
 	remainingRounds := *sess.RoundsTotal - *sess.CurrentRound
 
-	intervalMin := 3 // default 3 minutes
-	if sess.IntervalBetweenRoundsMin != nil {
-		intervalMin = *sess.IntervalBetweenRoundsMin
-	}
-
-	newDurationSec := RecalculateRoundDuration(remainingRounds, remainingSeconds, *sess.BufferSeconds, intervalMin)
+	newDurationSec := RecalculateRoundDuration(remainingRounds, remainingSeconds)
 
 	if err := s.store.UpdateRoundDuration(sessionID, &newDurationSec); err != nil {
 		writeError(w, http.StatusInternalServerError, "server_error")
@@ -102,7 +92,6 @@ func (s *Service) AdvanceRound(w http.ResponseWriter, sessionID string, sess *do
 			"round_duration_seconds": newDurationSec,
 			"round_started_at":       now.Format(time.RFC3339),
 			"remaining_rounds":       remainingRounds,
-			"buffer_seconds":         *sess.BufferSeconds,
 		},
 	})
 

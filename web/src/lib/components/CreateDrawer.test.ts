@@ -255,28 +255,6 @@ describe('CreateDrawer - Americano Variant Selection', () => {
       });
     });
 
-    it('sends buffer_seconds only when game_mode="timed_americano"', () => {
-      const testCases: Array<{
-        gameMode: 'americano' | 'mexicano';
-        variant: 'points' | 'timed';
-        expectedSendBuffer: boolean;
-      }> = [
-        { gameMode: 'americano', variant: 'timed', expectedSendBuffer: true },
-        { gameMode: 'americano', variant: 'points', expectedSendBuffer: false },
-        { gameMode: 'mexicano', variant: 'points', expectedSendBuffer: false },
-      ];
-
-      testCases.forEach(({ gameMode, variant, expectedSendBuffer }) => {
-        const actualGameMode = gameMode === 'americano'
-          ? (variant === 'timed' ? 'timed_americano' : 'americano')
-          : gameMode;
-
-        const shouldSend = actualGameMode === 'timed_americano';
-        expect(shouldSend).toBe(expectedSendBuffer);
-      });
-    });
-  });
-
   describe('State Persistence - Variant Selection Survives Mode Changes', () => {
     it('preserves variant selection when switching away from americano and back', () => {
       let gameMode: 'americano' | 'mexicano' = 'americano';

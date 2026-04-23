@@ -16,16 +16,14 @@ import (
 
 func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Courts                    int     `json:"courts"`
-		Points                    int     `json:"points"`
-		Name                      string  `json:"name"`
-		GameMode                  string  `json:"game_mode"`
-		ScheduledAt               *string `json:"scheduled_at"`
-		RoundsTotal               *int    `json:"rounds_total"`
-		CourtDurationMinutes      *int    `json:"court_duration_minutes"`
-		TotalDurationMinutes      *int    `json:"total_duration_minutes"`
-		BufferSeconds             *int    `json:"buffer_seconds"`
-		IntervalBetweenRoundsMin  *int    `json:"interval_between_rounds_minutes"`
+		Courts               int     `json:"courts"`
+		Points               int     `json:"points"`
+		Name                 string  `json:"name"`
+		GameMode             string  `json:"game_mode"`
+		ScheduledAt          *string `json:"scheduled_at"`
+		RoundsTotal          *int    `json:"rounds_total"`
+		CourtDurationMinutes *int    `json:"court_duration_minutes"`
+		TotalDurationMinutes *int    `json:"total_duration_minutes"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondError(w, http.StatusBadRequest, "invalid_request_body")
@@ -59,22 +57,6 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 			// total_duration_minutes required
 			if body.TotalDurationMinutes == nil || *body.TotalDurationMinutes < 15 || *body.TotalDurationMinutes > 300 {
 				respondError(w, http.StatusBadRequest, "total_duration_minutes required for timed_americano, must be between 15 and 300")
-				return
-			}
-			// buffer_seconds optional, default 120, must be 60-300 if provided
-			if body.BufferSeconds == nil {
-				defaultBuffer := 120
-				body.BufferSeconds = &defaultBuffer
-			} else if *body.BufferSeconds < 60 || *body.BufferSeconds > 300 {
-				respondError(w, http.StatusBadRequest, "buffer_seconds must be between 60 and 300")
-				return
-			}
-			// interval_between_rounds_minutes optional, default 3, must be 1-5 if provided
-			if body.IntervalBetweenRoundsMin == nil {
-				defaultInterval := 3
-				body.IntervalBetweenRoundsMin = &defaultInterval
-			} else if *body.IntervalBetweenRoundsMin < 1 || *body.IntervalBetweenRoundsMin > 5 {
-				respondError(w, http.StatusBadRequest, "interval_between_rounds_minutes must be between 1 and 5")
 				return
 			}
 		} else {
@@ -114,7 +96,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	if u := userFromContext(r); u != nil {
 		creatorUserID = u.ID
 	}
-	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes, body.TotalDurationMinutes, body.BufferSeconds, body.IntervalBetweenRoundsMin, creatorUserID)
+	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes, body.TotalDurationMinutes, creatorUserID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "could not create session")
 		return
