@@ -24,10 +24,7 @@
   let customTimeMode = $state(false);
   let customTimeRaw = $state('');
   let customInputEl = $state<HTMLInputElement | null>(null);
-<<<<<<< HEAD
 
-=======
->>>>>>> 60ca3d7 (chore(#58): remove Timed Americano entirely)
   $effect(() => {
     if (customTimeMode && customInputEl) customInputEl.focus();
   });
@@ -264,10 +261,6 @@
           {/if}
         </div>
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 60ca3d7 (chore(#58): remove Timed Americano entirely)
         <!-- Points (shown for americano and mexicano) -->
         {#if gameMode === 'americano' || gameMode === 'mexicano'}
           <div class="space-y-2.5">

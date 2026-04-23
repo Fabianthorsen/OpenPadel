@@ -517,7 +517,6 @@
       {@const isFinalRound = session.rounds_total != null && currentRound.number === session.rounds_total}
 
       <!-- Show advance button -->
-<<<<<<< HEAD
       <button
         onclick={isFinalRound ? onRefresh : advanceRound}
         disabled={advancing}
@@ -526,17 +525,6 @@
         {advancing ? '…' : isFinalRound ? $_('active_final_results') : $_('active_next_round')}
       </button>
     {:else if someScored && !allScored && isAdmin}
-=======
-        <button
-          onclick={isFinalRound ? onRefresh : advanceRound}
-          disabled={advancing}
-          class="w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
-        >
-          {advancing ? '…' : isFinalRound ? $_('active_final_results') : $_('active_next_round')}
-        </button>
-      {/if}
-    {if someScored && !allScored && isAdmin}
->>>>>>> 60ca3d7 (chore(#58): remove Timed Americano entirely)
       <button
         disabled
         class="w-full rounded-2xl bg-primary px-4 py-4 text-[15px] font-[700] text-white disabled:opacity-40"

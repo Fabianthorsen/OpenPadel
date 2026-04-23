@@ -76,21 +76,8 @@
         };
       }
     );
-    const cleanupTimer = stream.onEvent<{
-      round_duration_seconds: number;
-      round_started_at: string;
-      remaining_rounds?: number;
-    }>('timer_sync', (payload) => {
-      if (session) {
-        session = {
-          ...session,
-          round_duration_seconds: payload.round_duration_seconds,
-          round_started_at: payload.round_started_at,
-        };
-      }
-    });
     fallbackInterval = setInterval(load, FALLBACK_POLL);
-    return () => { cleanupSession(); cleanupRound(); cleanupLive(); cleanupTimer(); };
+    return () => { cleanupSession(); cleanupRound(); cleanupLive(); };
   });
 
   onDestroy(() => {
