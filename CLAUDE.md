@@ -33,13 +33,14 @@
 - Each commit must leave the app in a working state
 - If a feature feels large, split it into smaller independently-shippable pieces
 - No new packages without discussing the tradeoff — keep dependencies minimal
+- Focus on simplification: prefer removing code and complexity over adding features
 
-## After Every Commit
+## Roadmap & Planning
 
-Update **ROADMAP.md**:
-- Move completed items from Planned → Done (with version or short description)
-- Add new ideas to Planned as they come up
-- Keep In Progress honest — only what's on the current branch
+Roadmap is managed via GitHub Issues. For new ideas:
+1. `/grill-me` — stress-test the concept until it's clear
+2. `/to-prd` — convert to a PRD and file as a GitHub issue
+3. `/to-issues` — break the PRD into implementation tickets
 
 ## Keeping Docs Up To Date
 
