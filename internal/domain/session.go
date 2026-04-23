@@ -97,9 +97,11 @@ type Session struct {
 	ScheduledAt              *time.Time    `json:"scheduled_at,omitempty"`
 	CourtDurationMinutes     *int          `json:"court_duration_minutes,omitempty"`
 	EndsAt                   *time.Time    `json:"ends_at,omitempty"`
-	Players                  []Player      `json:"players"`
-	CreatedAt                time.Time     `json:"created_at"`
-	UpdatedAt                time.Time     `json:"updated_at"`
+	Players                  []Player         `json:"players"`
+	ValidationErrors         []ValidationError `json:"validation_errors,omitempty"`
+	CanStart                 bool             `json:"can_start"`
+	CreatedAt                time.Time        `json:"created_at"`
+	UpdatedAt                time.Time        `json:"updated_at"`
 }
 
 type Player struct {

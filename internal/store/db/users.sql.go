@@ -135,7 +135,7 @@ SELECT
         END
     ), 0) AS INTEGER) AS total_points
 FROM players p
-JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode == 'americano'
+JOIN sessions s ON s.id = p.session_id AND s.status = 'done' AND s.game_mode == 'americano'
 LEFT JOIN rounds r ON r.session_id = p.session_id
 LEFT JOIN matches m ON m.round_id = r.id
     AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
@@ -189,7 +189,7 @@ SELECT
     COALESCE(s.ended_early, 0) AS ended_early
 FROM players p
 JOIN sessions s ON s.id = p.session_id
-WHERE p.user_id = ? AND p.active = 1 AND s.status = 'complete'
+WHERE p.user_id = ? AND p.active = 1 AND s.status = 'done'
 GROUP BY s.id
 ORDER BY s.created_at DESC
 `
@@ -243,7 +243,7 @@ SELECT
 FROM players p
 JOIN sessions s ON s.id = p.session_id
 LEFT JOIN players p2 ON p2.session_id = s.id AND p2.active = 1
-WHERE p.user_id = ? AND p.active = 1 AND s.status IN ('lobby', 'active')
+WHERE p.user_id = ? AND p.active = 1 AND s.status IN ('lobby', 'playing')
 GROUP BY s.id
 ORDER BY s.status DESC, COALESCE(s.scheduled_at, s.created_at) ASC
 `

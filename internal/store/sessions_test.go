@@ -52,7 +52,7 @@ func TestCompleteSession_EndedEarly(t *testing.T) {
 		t.Fatalf("GetSession: %v", err)
 	}
 
-	if loaded.Status != domain.StatusComplete {
+	if loaded.Status != domain.StatusDone {
 		t.Errorf("expected status 'complete', got %q", loaded.Status)
 	}
 }
@@ -70,7 +70,7 @@ func TestCompleteSession_NaturalCompletion(t *testing.T) {
 		t.Fatalf("GetSession: %v", err)
 	}
 
-	if loaded.Status != domain.StatusComplete {
+	if loaded.Status != domain.StatusDone {
 		t.Errorf("expected status 'complete', got %q", loaded.Status)
 	}
 }

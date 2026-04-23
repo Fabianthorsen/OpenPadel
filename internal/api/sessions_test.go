@@ -125,8 +125,8 @@ func TestStartSession(t *testing.T) {
 		Status string `json:"status"`
 	}
 	decodeBody(t, res, &session)
-	if session.Status != "active" {
-		t.Errorf("expected status 'active' after start, got %q", session.Status)
+	if session.Status != "playing" {
+		t.Errorf("expected status 'playing' after start, got %q", session.Status)
 	}
 }
 
@@ -137,8 +137,8 @@ func TestStartSession_NotEnoughPlayers(t *testing.T) {
 	mustJoinSession(t, srv, sessID, "Alice", adminToken)
 
 	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
-	if res.StatusCode != http.StatusUnprocessableEntity {
-		t.Fatalf("expected 422, got %d", res.StatusCode)
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", res.StatusCode)
 	}
 	res.Body.Close()
 }
@@ -174,8 +174,8 @@ func TestCloseSession(t *testing.T) {
 		Status string `json:"status"`
 	}
 	decodeBody(t, res2, &session)
-	if session.Status != "complete" {
-		t.Errorf("expected status 'complete' after close, got %q", session.Status)
+	if session.Status != "done" {
+		t.Errorf("expected status 'done' after close, got %q", session.Status)
 	}
 }
 
