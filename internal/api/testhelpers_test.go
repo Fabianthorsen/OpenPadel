@@ -119,13 +119,19 @@ func mustRegister(t *testing.T, srv *httptest.Server, emailAddr, name, password 
 // mustCreateSession creates an americano session and returns its ID and admin token.
 func mustCreateSession(t *testing.T, srv *httptest.Server, token string) (id, adminToken string) {
 	t.Helper()
+	return mustCreateSessionWithParams(t, srv, token, 1, 24, "americano")
+}
+
+// mustCreateSessionWithParams creates a session with custom parameters and returns its ID and admin token.
+func mustCreateSessionWithParams(t *testing.T, srv *httptest.Server, token string, courts, points int, gameMode string) (id, adminToken string) {
+	t.Helper()
 	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":    1,
-		"points":    24,
-		"game_mode": "americano",
+		"courts":    courts,
+		"points":    points,
+		"game_mode": gameMode,
 	}, token)
 	if res.StatusCode != http.StatusCreated {
-		t.Fatalf("createSession: expected 201, got %d", res.StatusCode)
+		t.Fatalf("createSession: expected 201, got %d, response: %v", res.StatusCode, res.Body)
 	}
 	var body struct {
 		ID         string `json:"id"`
