@@ -19,7 +19,7 @@ declare global {
       tournaments: number;
     }
 
-    type SessionStatus = 'lobby' | 'active' | 'complete';
+    type SessionStatus = 'lobby' | 'playing' | 'done';
 
     interface Session {
       id: string;
@@ -97,7 +97,7 @@ declare global {
     interface UpcomingEntry {
       session_id: string;
       name: string;
-      status: 'lobby' | 'active';
+      status: 'lobby' | 'playing';
       game_mode: 'americano' | 'mexicano';
       courts: number;
       player_count: number;

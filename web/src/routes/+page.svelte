@@ -62,7 +62,7 @@
     try {
       const token = localStorage.getItem(`admin_token_${lastId}`) ?? undefined;
       const s = await api.sessions.get(lastId, token);
-      if (s.status === 'lobby' || s.status === 'active') {
+      if (s.status === 'lobby' || s.status === 'playing') {
         rejoinSession = s;
         rejoinHref = token ? `/s/${lastId}?token=${token}` : `/s/${lastId}`;
       } else {
