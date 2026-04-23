@@ -137,8 +137,8 @@ func TestStartSession_NotEnoughPlayers(t *testing.T) {
 	mustJoinSession(t, srv, sessID, "Alice", adminToken)
 
 	res := postReq(t, srv, "/api/sessions/"+sessID+"/start", nil, adminToken)
-	if res.StatusCode != http.StatusUnprocessableEntity {
-		t.Fatalf("expected 422, got %d", res.StatusCode)
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", res.StatusCode)
 	}
 	res.Body.Close()
 }

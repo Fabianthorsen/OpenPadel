@@ -101,6 +101,17 @@ func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Compute validation errors for the current session state.
+	if sess.Status == domain.StatusLobby {
+		switch sess.GameMode {
+		case "mexicano":
+			sess.ValidationErrors = domain.MexicanoConstraints(sess.Courts, len(activePlayers(sess.Players)))
+		default: // americano
+			sess.ValidationErrors = domain.AmericanoConstraints(sess.Courts, len(activePlayers(sess.Players)))
+		}
+		sess.CanStart = len(sess.ValidationErrors) == 0
+	}
+
 	// Treat the logged-in creator the same as a token-holding admin.
 	u := userFromContext(r)
 	if u != nil && sess.CreatorUserID != "" && u.ID == sess.CreatorUserID {
@@ -134,6 +145,23 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 
 	active := activePlayers(sess.Players)
 
+	// Validate constraints before starting.
+	var validationErrs []domain.ValidationError
+	switch sess.GameMode {
+	case "mexicano":
+		validationErrs = domain.MexicanoConstraints(sess.Courts, len(active))
+	default: // americano
+		validationErrs = domain.AmericanoConstraints(sess.Courts, len(active))
+	}
+	if len(validationErrs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"validation_errors": validationErrs,
+		}) //nolint:errcheck
+		return
+	}
+
 	// Compute ends_at from court_duration_minutes if set.
 	var endsAt *time.Time
 	if sess.CourtDurationMinutes != nil && *sess.CourtDurationMinutes > 0 {
@@ -143,20 +171,10 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 
 	switch sess.GameMode {
 	case "mexicano":
-		required := sess.Courts * 4
-		if len(active) != required {
-			respondError(w, http.StatusUnprocessableEntity, "mexicano_player_count")
-			return
-		}
 		if err := h.mexicanoSvc.Start(w, id, sess, active, endsAt); err != nil {
 			return
 		}
 	default: // americano
-		minPlayers := sess.Courts * 4
-		if len(active) < minPlayers {
-			respondError(w, http.StatusUnprocessableEntity, "not_enough_players")
-			return
-		}
 		if err := h.americanoSvc.Start(w, id, sess, active, endsAt); err != nil {
 			return
 		}
