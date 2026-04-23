@@ -21,7 +21,7 @@ type: reference
 ## Code Structure Decisions
 
 ### Session Interface (app.d.ts)
-- Added to Session: `total_duration_minutes?`, `buffer_seconds?`, `round_duration_seconds?`, `round_started_at?`
+- Added to Session: `total_duration_minutes?`, `round_duration_seconds?`, `round_started_at?`
 - Updated game_mode union to include `'timed_americano'`
 - All timed fields are optional (backward compatible)
 
@@ -56,7 +56,7 @@ type: reference
 
 ### Session Page SSE (s/[id]/+page.svelte)
 - Add event listener for `timer_sync` event type
-- Payload: `{round_duration_seconds, round_started_at, remaining_rounds, buffer_seconds}`
+- Payload: `{round_duration_seconds, round_started_at, remaining_rounds}`
 - Update session state when received to sync timer across clients
 
 ## Testing Checklist

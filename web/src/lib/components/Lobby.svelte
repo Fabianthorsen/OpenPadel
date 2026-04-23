@@ -114,20 +114,17 @@
   );
 
   const isMexicano = $derived(session.game_mode === 'mexicano');
-  const isTimedAmericano = $derived(session.game_mode === 'timed_americano');
   const gameModeName = $derived(
     session.game_mode === 'mexicano'
       ? $_('create_mexicano_soon')
-      : session.game_mode === 'timed_americano'
-        ? 'Americano (Timed)'
-        : 'Americano (Points)'
+      : 'Americano'
   );
   let showRules = $state(false);
   const activePlayers = $derived(session.players.filter((p) => p.active));
 
   const requiredPlayers = $derived(session.courts * 4);
   const maxPlayers = $derived(
-    isTimedAmericano ? session.courts * 8 : isMexicano ? requiredPlayers : undefined
+    isMexicano ? requiredPlayers : undefined
   );
   const isFull = $derived(maxPlayers ? activePlayers.length >= maxPlayers : false);
   const canStart = $derived(
@@ -256,7 +253,7 @@
           <p class="text-text-secondary">{session.name}</p>
         {/if}
         <p class="text-sm text-text-secondary">
-          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
         </p>
       </div>
 
@@ -344,7 +341,7 @@
       </div>
       <div class="flex items-center gap-2">
         <div class="text-right text-xs text-text-secondary">
-          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {isTimedAmericano ? session.total_duration_minutes + ' min' : session.points + ' pts'} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points + ' pts'} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
         </div>
         <button
           onclick={() => (showRules = true)}

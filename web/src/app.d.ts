@@ -26,7 +26,7 @@ declare global {
       admin_token?: string;
       status: SessionStatus;
       name?: string;
-      game_mode: 'americano' | 'mexicano' | 'timed_americano';
+      game_mode: 'americano' | 'mexicano';
       courts: number;
       points: number;
       rounds_total?: number;
@@ -39,10 +39,6 @@ declare global {
       players: Player[];
       created_at: string;
       updated_at: string;
-      total_duration_minutes?: number;
-      round_duration_seconds?: number;
-      round_started_at?: string;
-      interval_between_rounds_minutes?: number;
     }
 
     interface Player {
@@ -102,7 +98,7 @@ declare global {
       session_id: string;
       name: string;
       status: 'lobby' | 'active';
-      game_mode: 'americano' | 'mexicano' | 'timed_americano';
+      game_mode: 'americano' | 'mexicano';
       courts: number;
       player_count: number;
       scheduled_at?: string;

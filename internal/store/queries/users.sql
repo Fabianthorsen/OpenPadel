@@ -53,7 +53,7 @@ SELECT
         END
     ), 0) AS INTEGER) AS total_points
 FROM players p
-JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode IN ('americano', 'timed_americano')
+JOIN sessions s ON s.id = p.session_id AND s.status = 'complete' AND s.game_mode == 'americano'
 LEFT JOIN rounds r ON r.session_id = p.session_id
 LEFT JOIN matches m ON m.round_id = r.id
     AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)

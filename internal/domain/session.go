@@ -97,9 +97,6 @@ type Session struct {
 	ScheduledAt              *time.Time    `json:"scheduled_at,omitempty"`
 	CourtDurationMinutes     *int          `json:"court_duration_minutes,omitempty"`
 	EndsAt                   *time.Time    `json:"ends_at,omitempty"`
-	TotalDurationMinutes     *int          `json:"total_duration_minutes,omitempty"`
-	RoundDurationSeconds     *int          `json:"round_duration_seconds,omitempty"`
-	RoundStartedAt           *time.Time    `json:"round_started_at,omitempty"`
 	Players                  []Player      `json:"players"`
 	CreatedAt                time.Time     `json:"created_at"`
 	UpdatedAt                time.Time     `json:"updated_at"`
