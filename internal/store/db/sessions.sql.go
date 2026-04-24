@@ -323,3 +323,32 @@ func (q *Queries) UpdateRoundDuration(ctx context.Context, arg UpdateRoundDurati
 	_, err := q.db.ExecContext(ctx, updateRoundDuration, arg.RoundDurationSeconds, arg.UpdatedAt, arg.ID)
 	return err
 }
+
+const updateSessionConfig = `-- name: UpdateSessionConfig :exec
+UPDATE sessions SET name = ?, game_mode = ?, courts = ?, points = ?, rounds_total = ?, scheduled_at = ?, updated_at = ? WHERE id = ?
+`
+
+type UpdateSessionConfigParams struct {
+	Name        string
+	GameMode    string
+	Courts      int64
+	Points      int64
+	RoundsTotal sql.NullInt64
+	ScheduledAt sql.NullString
+	UpdatedAt   string
+	ID          string
+}
+
+func (q *Queries) UpdateSessionConfig(ctx context.Context, arg UpdateSessionConfigParams) error {
+	_, err := q.db.ExecContext(ctx, updateSessionConfig,
+		arg.Name,
+		arg.GameMode,
+		arg.Courts,
+		arg.Points,
+		arg.RoundsTotal,
+		arg.ScheduledAt,
+		arg.UpdatedAt,
+		arg.ID,
+	)
+	return err
+}

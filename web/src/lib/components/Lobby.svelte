@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { api } from '$lib/api/client';
+  import { api, ApiError } from '$lib/api/client';
   import { Crown, Share, Check, Search, UserPlus, Clock, Info } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import { sessionName } from '$lib/utils';
@@ -7,15 +7,18 @@
   import { Input } from '$lib/components/ui/input';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
+  import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
+  import { Switch } from '$lib/components/ui/switch';
+  import { Calendar } from '$lib/components/ui/calendar';
+  import Stepper from '$lib/components/ui/stepper/Stepper.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
-  import * as Card from '$lib/components/ui/card';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import { _ } from 'svelte-i18n';
   import { auth } from '$lib/auth.svelte';
   import Footer from '$lib/components/Footer.svelte';
   import { toast } from 'svelte-sonner';
-  import { ApiError } from '$lib/api/client';
   import { translateApiError } from '$lib/i18n/errors';
+  import { type DateValue, today, getLocalTimeZone, parseAbsoluteToLocal } from '@internationalized/date';
   import type { sessionStream } from '$lib/stores/sessionStream.svelte';
   type SessionStream = ReturnType<typeof sessionStream>;
 
@@ -49,6 +52,117 @@
   let playerSearchLoading = $state(false);
   let playerSearchDebounce: ReturnType<typeof setTimeout>;
   let sessionInvites = $state<App.Invite[]>([]);
+
+  // ── Inline config editing state ──
+  let editingName = $state(false);
+  let nameInputEl = $state<HTMLInputElement | null>(null);
+  $effect(() => { if (editingName && nameInputEl) nameInputEl.focus(); });
+  let nameInput = $state('');
+  let configMode = $state<'americano' | 'mexicano'>('americano');
+  let configCourts = $state(2);
+  let configPoints = $state(24);
+  let configRounds = $state(7);
+  let scheduleEnabled = $state(false);
+  let calendarDate = $state<DateValue | undefined>(undefined);
+  let timeSlot = $state(20);
+
+  // Sync config state whenever session prop changes (after refresh).
+  $effect(() => {
+    nameInput = session.name ?? '';
+    configMode = session.game_mode as 'americano' | 'mexicano';
+    configCourts = session.courts;
+    configPoints = session.points;
+    configRounds = session.rounds_total ?? 7;
+    scheduleEnabled = !!session.scheduled_at;
+    if (session.scheduled_at) {
+      try { calendarDate = parseAbsoluteToLocal(session.scheduled_at); } catch { calendarDate = undefined; }
+      const d = new Date(session.scheduled_at);
+      const slot = Math.round((d.getHours() * 60 + d.getMinutes() - 8 * 60) / 30);
+      timeSlot = Math.max(0, Math.min(27, slot));
+    } else {
+      calendarDate = undefined;
+    }
+  });
+
+  function slotToLabel(slot: number) {
+    const totalMins = 8 * 60 + slot * 30;
+    const h = String(Math.floor(totalMins / 60)).padStart(2, '0');
+    const m = String(totalMins % 60).padStart(2, '0');
+    return `${h}:${m}`;
+  }
+  const scheduleTime = $derived(slotToLabel(timeSlot));
+
+  function calculateNextHourSlot(): number {
+    const now = new Date();
+    const nextHour = now.getMinutes() > 0 ? now.getHours() + 1 : now.getHours();
+    const clamped = Math.min(21, Math.max(8, nextHour));
+    return Math.round((clamped * 60 - 8 * 60) / 30);
+  }
+
+
+  async function patchConfig(patch: Parameters<typeof api.sessions.update>[1]) {
+    const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+    try {
+      await api.sessions.update(session.id, patch, adminToken);
+      onRefresh();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error'));
+      // Reset local state to match server
+      configMode = session.game_mode as 'americano' | 'mexicano';
+      configCourts = session.courts;
+      configPoints = session.points;
+      configRounds = session.rounds_total ?? 7;
+    }
+  }
+
+  async function commitName() {
+    editingName = false;
+    if (nameInput === (session.name ?? '')) return;
+    await patchConfig({ name: nameInput });
+  }
+
+  function onModeChange(mode: 'americano' | 'mexicano') {
+    configMode = mode;
+    if (mode === 'mexicano' && configCourts < 2) configCourts = 2;
+    const patch: Parameters<typeof api.sessions.update>[1] = { game_mode: mode, courts: configCourts };
+    if (mode === 'mexicano') patch.rounds_total = configRounds;
+    patchConfig(patch);
+  }
+
+  function onCourtsChange(n: number) {
+    configCourts = n;
+    patchConfig({ courts: n });
+  }
+
+  function onPointsChange(n: number) {
+    configPoints = n;
+    patchConfig({ points: n });
+  }
+
+  function onRoundsChange(n: number) {
+    configRounds = n;
+    patchConfig({ rounds_total: n });
+  }
+
+  async function commitSchedule(enabled: boolean) {
+    scheduleEnabled = enabled;
+    if (!enabled) {
+      calendarDate = undefined;
+      timeSlot = 20;
+      await patchConfig({ scheduled_at: '' });
+      return;
+    }
+    calendarDate = today(getLocalTimeZone());
+    timeSlot = calculateNextHourSlot();
+  }
+
+  async function commitScheduleTime() {
+    if (!scheduleEnabled || !calendarDate) return;
+    const [h, m] = scheduleTime.split(':').map(Number);
+    const d = calendarDate.toDate(getLocalTimeZone());
+    d.setHours(h, m, 0, 0);
+    await patchConfig({ scheduled_at: d.toISOString() });
+  }
 
   onMount(() => {
     if (isAdmin) {
@@ -123,14 +237,16 @@
   const activePlayers = $derived(session.players.filter((p) => p.active));
 
   const requiredPlayers = $derived(session.courts * 4);
-  const maxPlayers = $derived(
-    isMexicano ? requiredPlayers : undefined
-  );
+  const maxPlayers = $derived(isMexicano ? requiredPlayers : undefined);
   const isFull = $derived(maxPlayers ? activePlayers.length >= maxPlayers : false);
+
+  // Use server-computed can_start if available, otherwise fall back to local logic
   const canStart = $derived(
-    isMexicano
-      ? activePlayers.length === requiredPlayers
-      : activePlayers.length >= requiredPlayers
+    session.can_start !== undefined
+      ? session.can_start
+      : (isMexicano
+          ? activePlayers.length === requiredPlayers
+          : activePlayers.length >= requiredPlayers)
   );
 
   const creatorName = $derived(activePlayers.find((p) => p.id === session.creator_player_id)?.name ?? '');
@@ -253,7 +369,7 @@
           <p class="text-text-secondary">{session.name}</p>
         {/if}
         <p class="text-sm text-text-secondary">
-          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{/if}{#if session.scheduled_at} · {new Date(session.scheduled_at).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}{/if}
         </p>
       </div>
 
@@ -337,11 +453,31 @@
             {$_('lobby_waiting')}
           {/if}
         </p>
-        <p class="text-sm font-semibold text-primary">{sessionName(session)}</p>
+        <!-- Click-to-edit name (admin only) -->
+        {#if isAdmin && editingName}
+          <input
+            bind:this={nameInputEl}
+            class="text-sm font-semibold text-primary bg-transparent border-b border-primary focus:outline-none w-full"
+            bind:value={nameInput}
+            maxlength={48}
+            placeholder={$_('lobby_name_placeholder')}
+            onblur={commitName}
+            onkeydown={(e) => e.key === 'Enter' && commitName()}
+          />
+        {:else if isAdmin}
+          <button
+            class="text-sm font-semibold text-primary hover:opacity-70 transition-opacity text-left"
+            onclick={() => { nameInput = session.name ?? ''; editingName = true; }}
+          >
+            {session.name || $_('lobby_name_placeholder')}
+          </button>
+        {:else}
+          <p class="text-sm font-semibold text-primary">{sessionName(session)}</p>
+        {/if}
       </div>
       <div class="flex items-center gap-2">
         <div class="text-right text-xs text-text-secondary">
-          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points + ' pts'} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{:else if session.court_duration_minutes} · {session.court_duration_minutes} min{/if}
+          {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', { values: { n: session.courts } })} · {session.points + ' pts'} · {gameModeName}{#if session.rounds_total} · {session.rounds_total} rds{/if}
         </div>
         <button
           onclick={() => (showRules = true)}
@@ -359,6 +495,98 @@
         {/if}
       </div>
     </nav>
+
+    <!-- Admin config section -->
+    {#if isAdmin}
+      <div class="rounded-2xl bg-surface-raised px-5 py-4 space-y-5">
+        <SectionLabel>{$_('lobby_config_label')}</SectionLabel>
+
+        <!-- Game mode -->
+        <div class="space-y-2">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_game_mode_label')}</p>
+          <PillToggleGroup
+            value={configMode}
+            onValueChange={(v) => v && onModeChange(v as 'americano' | 'mexicano')}
+          >
+            <PillToggleItem value="americano">Americano</PillToggleItem>
+            <PillToggleItem value="mexicano">Mexicano</PillToggleItem>
+          </PillToggleGroup>
+        </div>
+
+        <!-- Courts -->
+        <div class="space-y-2">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_courts_label')}</p>
+          <PillToggleGroup
+            value={configCourts.toString()}
+            onValueChange={(v) => v && onCourtsChange(parseInt(v))}
+          >
+            {#each (configMode === 'mexicano' ? [2, 3, 4] : [1, 2, 3, 4]) as n}
+              <PillToggleItem value={n.toString()}>{n}</PillToggleItem>
+            {/each}
+          </PillToggleGroup>
+        </div>
+
+        <!-- Points -->
+        <div class="space-y-2">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_points_label')}</p>
+          <PillToggleGroup
+            value={configPoints.toString()}
+            onValueChange={(v) => v && onPointsChange(parseInt(v))}
+          >
+            {#each [16, 24, 32] as p}
+              <PillToggleItem value={p.toString()}>{p}</PillToggleItem>
+            {/each}
+          </PillToggleGroup>
+        </div>
+
+        <!-- Mexicano: rounds stepper -->
+        {#if configMode === 'mexicano'}
+          <div class="space-y-2">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('lobby_rounds_label')}</p>
+            <Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
+          </div>
+        {/if}
+
+        <!-- Schedule -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_schedule_label')}</p>
+            <Switch
+              checked={scheduleEnabled}
+              onCheckedChange={commitSchedule}
+            />
+          </div>
+          {#if scheduleEnabled}
+            <div class="rounded-xl bg-surface overflow-hidden">
+              <Calendar
+                bind:value={calendarDate}
+                minValue={today(getLocalTimeZone())}
+                weekStartsOn={1}
+                onValueChange={() => commitScheduleTime()}
+              />
+              <div class="px-4 pb-4 space-y-2">
+                <div class="flex items-center justify-between">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_schedule_time_label')}</p>
+                  <p class="text-sm font-[800] text-primary">{scheduleTime}</p>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="27"
+                  step="1"
+                  bind:value={timeSlot}
+                  onchange={commitScheduleTime}
+                  class="w-full accent-primary"
+                />
+                <div class="flex justify-between text-[10px] text-text-disabled">
+                  <span>08:00</span><span>21:30</span>
+                </div>
+              </div>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
 
     <!-- Join code + share -->
     <div class="rounded-2xl bg-surface-raised px-5 py-4 space-y-3">
@@ -389,7 +617,7 @@
     <!-- Admin: invite or add guest -->
     {#if isAdmin}
       <div class="space-y-2">
-        <SectionLabel>{$_('lobby_add_player_label')}</SectionLabel>
+        <SectionLabel>{$_('lobby_invite_label')}</SectionLabel>
         <div class="relative">
           <div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
             <Search size={15} class="text-text-disabled" />
@@ -516,13 +744,21 @@
           {starting ? $_('lobby_start_loading') : $_('lobby_start_button')}
         </Button>
         {#if !canStart}
-          <p class="text-center text-xs text-text-disabled">
-            {#if isMexicano}
-              {$_('lobby_mexicano_exact_players', { values: { n: requiredPlayers, current: activePlayers.length } })}
-            {:else}
-              {$_('lobby_need_players', { values: { n: requiredPlayers } })}
-            {/if}
-          </p>
+          {#if session.validation_errors && session.validation_errors.length > 0}
+            {#each session.validation_errors as err}
+              <p class="text-center text-xs text-text-disabled">
+                {translateApiError(err.code, err.params)}
+              </p>
+            {/each}
+          {:else}
+            <p class="text-center text-xs text-text-disabled">
+              {#if isMexicano}
+                {$_('lobby_mexicano_exact_players', { values: { n: requiredPlayers, current: activePlayers.length } })}
+              {:else}
+                {$_('lobby_need_players', { values: { n: requiredPlayers } })}
+              {/if}
+            </p>
+          {/if}
         {/if}
         <button
           onclick={() => (showCancelDialog = true)}

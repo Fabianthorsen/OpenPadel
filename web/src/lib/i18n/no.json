@@ -296,5 +296,13 @@
   "api_error_already_in_session": "Allerede i denne turneringen",
   "api_error_invite_not_found": "Invitasjon ikke funnet",
   "api_error_already_contact": "Allerede en kontakt",
-  "api_error_contact_not_found": "Kontakt ikke funnet"
+  "api_error_contact_not_found": "Kontakt ikke funnet",
+
+  "create_americano_hint": "Roter partnere hver runde. Alle spiller hver kamp.",
+  "lobby_config_label": "Turneringsinnstillinger",
+  "lobby_invite_label": "Inviter spillere",
+  "lobby_name_placeholder": "Turneringsnavn",
+  "lobby_rounds_label": "Runder",
+  "api_error_mexicano_player_count_mismatch": "Mexicano trenger {required} spillere — du har {current}",
+  "api_error_americano_insufficient_players": "Trenger {required} spillere for {courts} baner — du har {current}"
 }

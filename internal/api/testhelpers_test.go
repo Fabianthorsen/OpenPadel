@@ -90,6 +90,11 @@ func putReq(t *testing.T, srv *httptest.Server, path string, body any, token str
 	return doRequest(t, srv, http.MethodPut, path, body, token, nil)
 }
 
+func patchReq(t *testing.T, srv *httptest.Server, path string, body any, token string) *http.Response {
+	t.Helper()
+	return doRequest(t, srv, http.MethodPatch, path, body, token, nil)
+}
+
 func decodeBody(t *testing.T, res *http.Response, v any) {
 	t.Helper()
 	defer res.Body.Close()

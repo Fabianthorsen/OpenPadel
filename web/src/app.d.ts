@@ -21,6 +21,11 @@ declare global {
 
     type SessionStatus = 'lobby' | 'playing' | 'done';
 
+    interface ValidationError {
+      code: string;
+      params?: Record<string, string | number | boolean | null | undefined>;
+    }
+
     interface Session {
       id: string;
       admin_token?: string;
@@ -33,6 +38,8 @@ declare global {
       current_round?: number;
       creator_player_id?: string;
       is_creator?: boolean;
+      can_start?: boolean;
+      validation_errors?: ValidationError[];
       scheduled_at?: string;
       court_duration_minutes?: number;
       ends_at?: string;

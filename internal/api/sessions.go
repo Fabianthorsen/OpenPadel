@@ -228,6 +228,118 @@ func activePlayers(players []domain.Player) []domain.Player {
 	return out
 }
 
+func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	sess, err := h.store.GetSession(id)
+	if errors.Is(err, store.ErrNotFound) {
+		respondError(w, http.StatusNotFound, "session_not_found")
+		return
+	}
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "server_error")
+		return
+	}
+	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
+		respondError(w, http.StatusForbidden, "admin_required")
+		return
+	}
+	if sess.Status != domain.StatusLobby {
+		respondError(w, http.StatusConflict, "session_already_started")
+		return
+	}
+
+	var body struct {
+		Name        *string `json:"name"`
+		GameMode    *string `json:"game_mode"`
+		Courts      *int    `json:"courts"`
+		Points      *int    `json:"points"`
+		RoundsTotal *int    `json:"rounds_total"`
+		ScheduledAt *string `json:"scheduled_at"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid_request_body")
+		return
+	}
+
+	// Apply partial update to current values.
+	patch := store.SessionPatch{
+		Name:        sess.Name,
+		GameMode:    sess.GameMode,
+		Courts:      sess.Courts,
+		Points:      sess.Points,
+		RoundsTotal: sess.RoundsTotal,
+		ScheduledAt: sess.ScheduledAt,
+	}
+	if body.Name != nil {
+		patch.Name = *body.Name
+	}
+	if body.GameMode != nil {
+		patch.GameMode = *body.GameMode
+	}
+	if body.Courts != nil {
+		patch.Courts = *body.Courts
+	}
+	if body.Points != nil {
+		patch.Points = *body.Points
+	}
+	if body.RoundsTotal != nil {
+		patch.RoundsTotal = body.RoundsTotal
+	}
+	if body.ScheduledAt != nil {
+		if *body.ScheduledAt == "" {
+			patch.ScheduledAt = nil
+		} else {
+			t, err := time.Parse(time.RFC3339, *body.ScheduledAt)
+			if err != nil {
+				respondError(w, http.StatusBadRequest, "invalid scheduled_at format, use RFC3339")
+				return
+			}
+			patch.ScheduledAt = &t
+		}
+	}
+
+	// Validate resulting state.
+	if patch.GameMode != "americano" && patch.GameMode != "mexicano" {
+		respondError(w, http.StatusBadRequest, "game_mode must be 'americano', 'mexicano'")
+		return
+	}
+	minCourts := 1
+	if patch.GameMode == "mexicano" {
+		minCourts = 2
+	}
+	if patch.Courts < minCourts || patch.Courts > 4 {
+		respondError(w, http.StatusBadRequest, "courts must be between 1 and 4 for Americano, 2 and 4 for Mexicano")
+		return
+	}
+	if patch.Points != 16 && patch.Points != 24 && patch.Points != 32 {
+		respondError(w, http.StatusBadRequest, "points must be 16, 24, or 32")
+		return
+	}
+	if patch.RoundsTotal != nil && (*patch.RoundsTotal < 1 || *patch.RoundsTotal > 20) {
+		respondError(w, http.StatusBadRequest, "rounds_total must be between 1 and 20")
+		return
+	}
+
+	// Auto-default rounds_total when switching to Mexicano.
+	if patch.GameMode == "mexicano" && patch.RoundsTotal == nil {
+		v := 7
+		patch.RoundsTotal = &v
+	}
+
+	if err := h.store.UpdateSessionConfig(id, patch); err != nil {
+		respondError(w, http.StatusInternalServerError, "server_error")
+		return
+	}
+
+	updated, err := h.store.GetSession(id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "server_error")
+		return
+	}
+	h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
+	respond(w, http.StatusOK, updated)
+}
+
 func (h *Handler) closeSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)

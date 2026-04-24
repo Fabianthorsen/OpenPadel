@@ -76,6 +76,15 @@ export const api = {
     },
     get: (id: string, token?: string) =>
       request<App.Session>('GET', `/sessions/${id}`, undefined, token),
+    update: (id: string, patch: {
+      name?: string;
+      game_mode?: string;
+      courts?: number;
+      points?: number;
+      rounds_total?: number | null;
+      scheduled_at?: string;
+    }, adminToken: string) =>
+      request<App.Session>('PATCH', `/sessions/${id}`, patch, adminToken),
     start: (id: string, token: string) =>
       request<App.Session>('POST', `/sessions/${id}/start`, undefined, token),
     cancel: (id: string, token: string) =>

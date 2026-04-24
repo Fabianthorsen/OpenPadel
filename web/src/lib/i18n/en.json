@@ -298,5 +298,13 @@
   "api_error_already_in_session": "Already in this session",
   "api_error_invite_not_found": "Invite not found",
   "api_error_already_contact": "Already a contact",
-  "api_error_contact_not_found": "Contact not found"
+  "api_error_contact_not_found": "Contact not found",
+
+  "create_americano_hint": "Rotate partners every round. Everyone plays every game.",
+  "lobby_config_label": "Tournament settings",
+  "lobby_invite_label": "Invite players",
+  "lobby_name_placeholder": "Tournament name",
+  "lobby_rounds_label": "Rounds",
+  "api_error_mexicano_player_count_mismatch": "Mexicano needs {required} players — you have {current}",
+  "api_error_americano_insufficient_players": "Need {required} players for {courts} courts — you have {current}"
 }

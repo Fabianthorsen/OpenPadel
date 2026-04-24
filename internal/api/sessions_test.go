@@ -585,3 +585,105 @@ func TestSessionConfig_InvalidCourtDuration(t *testing.T) {
 		})
 	}
 }
+
+// PATCH /api/sessions/:id — update session config
+
+func TestUpdateSession_AdminCanEditInLobby(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	newName := "Friday Night Padel"
+	newCourts := 2
+	newPoints := 32
+	res := patchReq(t, srv, "/api/sessions/"+sessID, map[string]any{
+		"name":   newName,
+		"courts": newCourts,
+		"points": newPoints,
+	}, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+	var updated struct {
+		Name   string `json:"name"`
+		Courts int    `json:"courts"`
+		Points int    `json:"points"`
+	}
+	decodeBody(t, res, &updated)
+	if updated.Name != newName {
+		t.Errorf("name: expected %q, got %q", newName, updated.Name)
+	}
+	if updated.Courts != newCourts {
+		t.Errorf("courts: expected %d, got %d", newCourts, updated.Courts)
+	}
+	if updated.Points != newPoints {
+		t.Errorf("points: expected %d, got %d", newPoints, updated.Points)
+	}
+}
+
+func TestUpdateSession_RequiresAdmin(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _ := mustCreateSession(t, srv, "")
+
+	res := patchReq(t, srv, "/api/sessions/"+sessID, map[string]any{"courts": 2}, "")
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestUpdateSession_RequiresLobbyState(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken, _ := setupStartedSession(t, srv)
+
+	res := patchReq(t, srv, "/api/sessions/"+sessID, map[string]any{"courts": 2}, adminToken)
+	if res.StatusCode != http.StatusConflict {
+		t.Fatalf("expected 409, got %d", res.StatusCode)
+	}
+	res.Body.Close()
+}
+
+func TestUpdateSession_ValidatesFields(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	cases := []struct {
+		name string
+		body map[string]any
+	}{
+		{"bad_points", map[string]any{"points": 99}},
+		{"bad_courts_americano", map[string]any{"courts": 5}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := patchReq(t, srv, "/api/sessions/"+sessID, tc.body, adminToken)
+			if res.StatusCode != http.StatusBadRequest {
+				t.Fatalf("%s: expected 400, got %d", tc.name, res.StatusCode)
+			}
+			res.Body.Close()
+		})
+	}
+}
+
+func TestUpdateSession_ModeSwitchAmericanoToMexicano(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	res := patchReq(t, srv, "/api/sessions/"+sessID, map[string]any{
+		"game_mode": "mexicano",
+		"courts":    2,
+	}, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+	var updated struct {
+		GameMode    string `json:"game_mode"`
+		RoundsTotal *int   `json:"rounds_total"`
+	}
+	decodeBody(t, res, &updated)
+	if updated.GameMode != "mexicano" {
+		t.Errorf("game_mode: expected mexicano, got %q", updated.GameMode)
+	}
+	if updated.RoundsTotal == nil || *updated.RoundsTotal != 7 {
+		t.Errorf("rounds_total: expected 7, got %v", updated.RoundsTotal)
+	}
+}

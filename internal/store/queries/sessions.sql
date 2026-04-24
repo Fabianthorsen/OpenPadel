@@ -48,5 +48,8 @@ UPDATE sessions SET status = ?, rounds_total = ?, total_duration_minutes = ?, ro
 -- name: SetRoundStartedAt :exec
 UPDATE sessions SET round_started_at = ?, updated_at = ? WHERE id = ?;
 
+-- name: UpdateSessionConfig :exec
+UPDATE sessions SET name = ?, game_mode = ?, courts = ?, points = ?, rounds_total = ?, scheduled_at = ?, updated_at = ? WHERE id = ?;
+
 -- name: UpdateRoundDuration :exec
 UPDATE sessions SET round_duration_seconds = ?, updated_at = ? WHERE id = ?;

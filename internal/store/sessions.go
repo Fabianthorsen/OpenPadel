@@ -208,6 +208,36 @@ func parseTimePtr(s string) *time.Time {
 	return &t
 }
 
+type SessionPatch struct {
+	Name        string
+	GameMode    string
+	Courts      int
+	Points      int
+	RoundsTotal *int
+	ScheduledAt *time.Time
+}
+
+func (s *Store) UpdateSessionConfig(id string, p SessionPatch) error {
+	var roundsTotalVal sql.NullInt64
+	if p.RoundsTotal != nil {
+		roundsTotalVal = sql.NullInt64{Int64: int64(*p.RoundsTotal), Valid: true}
+	}
+	var scheduledAtStr sql.NullString
+	if p.ScheduledAt != nil {
+		scheduledAtStr = sql.NullString{String: p.ScheduledAt.UTC().Format(time.RFC3339), Valid: true}
+	}
+	return s.queries.UpdateSessionConfig(context.Background(), db.UpdateSessionConfigParams{
+		Name:        p.Name,
+		GameMode:    p.GameMode,
+		Courts:      int64(p.Courts),
+		Points:      int64(p.Points),
+		RoundsTotal: roundsTotalVal,
+		ScheduledAt: scheduledAtStr,
+		UpdatedAt:   time.Now().UTC().Format(time.RFC3339),
+		ID:          id,
+	})
+}
+
 func (s *Store) DeleteSession(id string) error {
 	// Delete in dependency order due to foreign keys.
 	s.queries.DeleteBench(context.Background(), id)
