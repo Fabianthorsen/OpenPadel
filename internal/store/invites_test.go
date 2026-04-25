@@ -3,12 +3,18 @@ package store_test
 import (
 	"testing"
 
+	"github.com/fabianthorsen/openpadel/internal/domain"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
 func createSession(t *testing.T, s *store.Store) string {
 	t.Helper()
-	sess, err := s.CreateSession(2, 24, "", "americano", nil, nil, nil, "")
+	input := domain.SessionInput{
+		Courts:   2,
+		Points:   24,
+		GameMode: domain.ModeAmericano,
+	}
+	sess, err := s.CreateSession(input, "")
 	if err != nil {
 		t.Fatalf("createSession: %v", err)
 	}

@@ -10,7 +10,13 @@ func TestCreateSession_CreatorUserID(t *testing.T) {
 	s := newTestStore(t)
 	alice := createUser(t, s, "alice@example.com", "Alice")
 
-	sess, err := s.CreateSession(2, 24, "Test", "americano", nil, nil, nil, alice)
+	input := domain.SessionInput{
+		Courts:   2,
+		Points:   24,
+		Name:     "Test",
+		GameMode: domain.ModeAmericano,
+	}
+	sess, err := s.CreateSession(input, alice)
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}
@@ -30,7 +36,12 @@ func TestCreateSession_CreatorUserID(t *testing.T) {
 func TestCreateSession_NoCreatorUserID(t *testing.T) {
 	s := newTestStore(t)
 
-	sess, err := s.CreateSession(2, 24, "", "americano", nil, nil, nil, "")
+	input := domain.SessionInput{
+		Courts:   2,
+		Points:   24,
+		GameMode: domain.ModeAmericano,
+	}
+	sess, err := s.CreateSession(input, "")
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}
