@@ -27,6 +27,7 @@ func AmericanoConstraints(courts, playerCount int) []ValidationError {
 			Params: map[string]interface{}{
 				"required": minPlayers,
 				"current":  playerCount,
+				"courts":   courts,
 			},
 		})
 	}
