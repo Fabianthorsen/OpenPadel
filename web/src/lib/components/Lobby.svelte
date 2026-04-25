@@ -18,6 +18,7 @@
   import Footer from '$lib/components/Footer.svelte';
   import { toast } from 'svelte-sonner';
   import { translateApiError } from '$lib/i18n/errors';
+  import { goto } from '$app/navigation';
   import { type DateValue, today, getLocalTimeZone, parseAbsoluteToLocal } from '@internationalized/date';
   import type { sessionStream } from '$lib/stores/sessionStream.svelte';
   type SessionStream = ReturnType<typeof sessionStream>;
@@ -306,7 +307,7 @@
     try {
       const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
       await api.sessions.cancel(session.id, adminToken);
-      location.href = '/';
+      goto('/');
     } catch {
       cancelling = false;
       showCancelDialog = false;
