@@ -17,21 +17,21 @@ func (h *Handler) getRounds(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	if sess.Status == domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session_not_started")
+		respondAPIError(w, ErrSessionNotStarted)
 		return
 	}
 
 	rounds, err := h.store.GetRounds(id)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	respond(w, http.StatusOK, map[string]any{"rounds": rounds})
@@ -41,11 +41,11 @@ func (h *Handler) getCurrentRound(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	round, err := h.store.GetCurrentRound(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "no_active_round")
+		respondAPIError(w, ErrNoActiveRound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	// Overlay in-memory live scores for matches that haven't been finalised yet.
@@ -66,15 +66,15 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 
 	sess, err := h.store.GetSession(sessionID)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	if sess.Status != domain.StatusPlaying {
-		respondError(w, http.StatusConflict, "session_not_active")
+		respondAPIError(w, ErrSessionNotActive)
 		return
 	}
 
@@ -83,25 +83,25 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 		ScoreB int `json:"score_b"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid_request_body")
+		respondAPIError(w, ErrInvalidRequestBody)
 		return
 	}
 	if body.ScoreA < 0 || body.ScoreB < 0 {
-		respondError(w, http.StatusBadRequest, "scores_negative")
+		respondAPIError(w, ErrScoresNegative)
 		return
 	}
 	if body.ScoreA+body.ScoreB != sess.Points {
-		respondError(w, http.StatusBadRequest, "scores_invalid_sum")
+		respondAPIError(w, ErrScoresInvalidSum)
 		return
 	}
 
 	match, err := h.store.UpdateScore(matchID, body.ScoreA, body.ScoreB)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "match_not_found")
+		respondAPIError(w, ErrMatchNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	// Final score is now in the DB — clear any in-memory live score for this match.
@@ -150,11 +150,11 @@ func (h *Handler) updateLiveScore(w http.ResponseWriter, r *http.Request) {
 		Server string `json:"server"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid_request_body")
+		respondAPIError(w, ErrInvalidRequestBody)
 		return
 	}
 	if body.A < 0 || body.B < 0 {
-		respondError(w, http.StatusBadRequest, "scores_negative")
+		respondAPIError(w, ErrScoresNegative)
 		return
 	}
 	sessionID := chi.URLParam(r, "id")
@@ -171,32 +171,32 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 	sessionID := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(sessionID)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin_required")
+		respondAPIError(w, ErrAdminRequired)
 		return
 	}
 	if sess.Status != domain.StatusPlaying {
-		respondError(w, http.StatusConflict, "session_not_active")
+		respondAPIError(w, ErrSessionNotActive)
 		return
 	}
 	if sess.EndsAt != nil && time.Now().UTC().After(*sess.EndsAt) {
-		respondError(w, http.StatusConflict, "tournament_expired")
+		respondAPIError(w, ErrTournamentExpired)
 		return
 	}
 	allScored, err := h.store.CurrentRoundAllScored(sessionID)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	if !allScored {
-		respondError(w, http.StatusConflict, "round_not_complete")
+		respondAPIError(w, ErrRoundNotComplete)
 		return
 	}
 
@@ -206,7 +206,7 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 			nextRound = *sess.CurrentRound + 1
 		}
 		if sess.RoundsTotal != nil && nextRound > *sess.RoundsTotal {
-			respondError(w, http.StatusConflict, "round_limit_reached")
+			respondAPIError(w, ErrRoundLimitReached)
 			return
 		}
 		if err := h.mexicanoSvc.AdvanceRound(w, sessionID, nextRound); err != nil {
@@ -214,7 +214,7 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		if err := h.store.AdvanceRound(sessionID); err != nil {
-			respondError(w, http.StatusInternalServerError, "server_error")
+			respondAPIError(w, ErrServerError)
 			return
 		}
 	}
@@ -226,17 +226,17 @@ func (h *Handler) getLeaderboard(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 
 	standings, err := h.store.GetLeaderboard(id)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 

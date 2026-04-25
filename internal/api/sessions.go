@@ -26,14 +26,14 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		TotalDurationMinutes *int    `json:"total_duration_minutes"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid_request_body")
+		respondAPIError(w, ErrInvalidRequestBody)
 		return
 	}
 	if body.GameMode == "" {
 		body.GameMode = "americano"
 	}
 	if body.GameMode != "americano" && body.GameMode != "mexicano" {
-		respondError(w, http.StatusBadRequest, "game_mode must be 'americano', 'mexicano'")
+		respondAPIError(w, ErrInvalidGameMode)
 		return
 	}
 
@@ -43,12 +43,12 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 			minCourts = 2
 		}
 		if body.Courts < minCourts || body.Courts > 4 {
-			respondError(w, http.StatusBadRequest, "courts must be between 1 and 4 for Americano, 2 and 4 for Mexicano")
+			respondAPIError(w, ErrInvalidCourts)
 			return
 		}
 
 		if body.Points != 16 && body.Points != 24 && body.Points != 32 {
-			respondError(w, http.StatusBadRequest, "points must be 16, 24, or 32")
+			respondAPIError(w, ErrInvalidPoints)
 			return
 		}
 	}
@@ -57,7 +57,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	if body.ScheduledAt != nil && *body.ScheduledAt != "" {
 		t, err := time.Parse(time.RFC3339, *body.ScheduledAt)
 		if err != nil {
-			respondError(w, http.StatusBadRequest, "invalid scheduled_at format, use RFC3339")
+			respondAPIError(w, ErrInvalidScheduledAt)
 			return
 		}
 		scheduledAt = &t
@@ -66,14 +66,14 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	// Validate Mexicano preset rounds.
 	if body.GameMode == "mexicano" && body.RoundsTotal != nil {
 		if *body.RoundsTotal < 1 || *body.RoundsTotal > 20 {
-			respondError(w, http.StatusBadRequest, "rounds_total must be between 1 and 20")
+			respondAPIError(w, ErrInvalidRoundsTotal)
 			return
 		}
 	}
 
 	// Validate court duration.
 	if body.CourtDurationMinutes != nil && (*body.CourtDurationMinutes < 15 || *body.CourtDurationMinutes > 300) {
-		respondError(w, http.StatusBadRequest, "court_duration_minutes must be between 15 and 300")
+		respondAPIError(w, ErrInvalidCourtDuration)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	}
 	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes, creatorUserID)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "could not create session")
+		respondAPIError(w, ErrCouldNotCreateSession)
 		return
 	}
 	respond(w, http.StatusCreated, sess)
@@ -93,11 +93,11 @@ func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 
@@ -127,19 +127,19 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin_required")
+		respondAPIError(w, ErrAdminRequired)
 		return
 	}
 	if sess.Status != domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session_already_started")
+		respondAPIError(w, ErrSessionAlreadyStarted)
 		return
 	}
 
@@ -232,19 +232,19 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin_required")
+		respondAPIError(w, ErrAdminRequired)
 		return
 	}
 	if sess.Status != domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session_already_started")
+		respondAPIError(w, ErrSessionAlreadyStarted)
 		return
 	}
 
@@ -257,14 +257,14 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 		ScheduledAt *string `json:"scheduled_at"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid_request_body")
+		respondAPIError(w, ErrInvalidRequestBody)
 		return
 	}
 
 	// Apply partial update to current values.
 	patch := store.SessionPatch{
 		Name:        sess.Name,
-		GameMode:    sess.GameMode,
+		GameMode:    string(sess.GameMode),
 		Courts:      sess.Courts,
 		Points:      sess.Points,
 		RoundsTotal: sess.RoundsTotal,
@@ -291,7 +291,7 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 		} else {
 			t, err := time.Parse(time.RFC3339, *body.ScheduledAt)
 			if err != nil {
-				respondError(w, http.StatusBadRequest, "invalid scheduled_at format, use RFC3339")
+				respondAPIError(w, ErrInvalidScheduledAt)
 				return
 			}
 			patch.ScheduledAt = &t
@@ -300,7 +300,7 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 
 	// Validate resulting state.
 	if patch.GameMode != "americano" && patch.GameMode != "mexicano" {
-		respondError(w, http.StatusBadRequest, "game_mode must be 'americano', 'mexicano'")
+		respondAPIError(w, ErrInvalidGameMode)
 		return
 	}
 	minCourts := 1
@@ -308,15 +308,15 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 		minCourts = 2
 	}
 	if patch.Courts < minCourts || patch.Courts > 4 {
-		respondError(w, http.StatusBadRequest, "courts must be between 1 and 4 for Americano, 2 and 4 for Mexicano")
+		respondAPIError(w, ErrInvalidCourts)
 		return
 	}
 	if patch.Points != 16 && patch.Points != 24 && patch.Points != 32 {
-		respondError(w, http.StatusBadRequest, "points must be 16, 24, or 32")
+		respondAPIError(w, ErrInvalidPoints)
 		return
 	}
 	if patch.RoundsTotal != nil && (*patch.RoundsTotal < 1 || *patch.RoundsTotal > 20) {
-		respondError(w, http.StatusBadRequest, "rounds_total must be between 1 and 20")
+		respondAPIError(w, ErrInvalidRoundsTotal)
 		return
 	}
 
@@ -327,13 +327,13 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.store.UpdateSessionConfig(id, patch); err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 
 	updated, err := h.store.GetSession(id)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
@@ -344,23 +344,23 @@ func (h *Handler) closeSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin_required")
+		respondAPIError(w, ErrAdminRequired)
 		return
 	}
 	if sess.Status == domain.StatusDone {
-		respondError(w, http.StatusConflict, "session_already_ended")
+		respondAPIError(w, ErrSessionAlreadyEnded)
 		return
 	}
 	if err := h.store.CompleteSession(id, true); err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 
@@ -377,19 +377,19 @@ func (h *Handler) cancelSession(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
-		respondError(w, http.StatusForbidden, "admin_required")
+		respondAPIError(w, ErrAdminRequired)
 		return
 	}
 	if err := h.store.DeleteSession(id); err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
