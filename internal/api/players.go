@@ -20,26 +20,26 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		Name string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid_request_body")
+		respondAPIError(w, ErrInvalidRequestBody)
 		return
 	}
 	body.Name = strings.TrimSpace(body.Name)
 	if body.Name == "" {
-		respondError(w, http.StatusBadRequest, "name_required")
+		respondAPIError(w, ErrNameRequired)
 		return
 	}
 
 	sess, err := h.store.GetSession(id)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	if sess.Status != domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session_already_started")
+		respondAPIError(w, ErrSessionAlreadyStarted)
 		return
 	}
 
@@ -51,10 +51,10 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 	player, err := h.store.CreatePlayer(id, body.Name, userID)
 	if err != nil {
 		if isUniqueConstraintError(err) {
-			respondError(w, http.StatusConflict, "name_taken")
+			respondAPIError(w, ErrNameTaken)
 			return
 		}
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 
@@ -78,30 +78,30 @@ func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 
 	sess, err := h.store.GetSession(sessionID)
 	if errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "session_not_found")
+		respondAPIError(w, ErrSessionNotFound)
 		return
 	}
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 	// Allow admin OR the player removing themselves (via their player token stored in localStorage key).
 	// We identify self-removal by a "Player-Id" header matching the target player ID.
 	selfRemoval := r.Header.Get("X-Player-Id") == playerID && playerID != ""
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) && !selfRemoval {
-		respondError(w, http.StatusForbidden, "admin_required")
+		respondAPIError(w, ErrAdminRequired)
 		return
 	}
 	if sess.Status != domain.StatusLobby {
-		respondError(w, http.StatusConflict, "session_already_started")
+		respondAPIError(w, ErrSessionAlreadyStarted)
 		return
 	}
 
 	if err := h.store.DeactivatePlayer(playerID); errors.Is(err, store.ErrNotFound) {
-		respondError(w, http.StatusNotFound, "player_not_found")
+		respondAPIError(w, ErrPlayerNotFound)
 		return
 	} else if err != nil {
-		respondError(w, http.StatusInternalServerError, "server_error")
+		respondAPIError(w, ErrServerError)
 		return
 	}
 
