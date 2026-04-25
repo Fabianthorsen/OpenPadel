@@ -264,7 +264,7 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 	// Apply partial update to current values.
 	patch := store.SessionPatch{
 		Name:        sess.Name,
-		GameMode:    sess.GameMode,
+		GameMode:    string(sess.GameMode),
 		Courts:      sess.Courts,
 		Points:      sess.Points,
 		RoundsTotal: sess.RoundsTotal,

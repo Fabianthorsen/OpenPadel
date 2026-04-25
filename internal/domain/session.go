@@ -24,15 +24,15 @@ type Contact struct {
 }
 
 type Invite struct {
-	ID              string    `json:"id"`
-	SessionID       string    `json:"session_id"`
-	SessionName     string    `json:"session_name"`
-	FromUserID      string    `json:"from_user_id"`
-	FromDisplayName string    `json:"from_display_name"`
-	ToUserID        string    `json:"to_user_id"`
-	ToDisplayName   string    `json:"to_display_name,omitempty"`
-	Status          string    `json:"status"` // pending | accepted | declined
-	CreatedAt       time.Time `json:"created_at"`
+	ID              string       `json:"id"`
+	SessionID       string       `json:"session_id"`
+	SessionName     string       `json:"session_name"`
+	FromUserID      string       `json:"from_user_id"`
+	FromDisplayName string       `json:"from_display_name"`
+	ToUserID        string       `json:"to_user_id"`
+	ToDisplayName   string       `json:"to_display_name,omitempty"`
+	Status          InviteStatus `json:"status"`
+	CreatedAt       time.Time    `json:"created_at"`
 }
 
 type UserSearchResult struct {
@@ -67,7 +67,7 @@ type UpcomingEntry struct {
 	SessionID   string     `json:"session_id"`
 	Name        string     `json:"name"`
 	Status      string     `json:"status"`
-	GameMode    string     `json:"game_mode"`
+	GameMode    GameMode   `json:"game_mode"`
 	Courts      int        `json:"courts"`
 	PlayerCount int        `json:"player_count"`
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
@@ -81,12 +81,47 @@ const (
 	StatusDone     SessionStatus = "done"
 )
 
+func (s SessionStatus) IsValid() bool {
+	return s == StatusLobby || s == StatusPlaying || s == StatusDone
+}
+
+func (s SessionStatus) Values() []SessionStatus {
+	return []SessionStatus{StatusLobby, StatusPlaying, StatusDone}
+}
+
+type GameMode string
+
+const (
+	ModeAmericano GameMode = "americano"
+	ModeMexicano  GameMode = "mexicano"
+)
+
+func (g GameMode) IsValid() bool {
+	return g == ModeAmericano || g == ModeMexicano
+}
+
+func (g GameMode) Values() []GameMode {
+	return []GameMode{ModeAmericano, ModeMexicano}
+}
+
+type InviteStatus string
+
+const (
+	InvitePending  InviteStatus = "pending"
+	InviteAccepted InviteStatus = "accepted"
+	InviteDeclined InviteStatus = "declined"
+)
+
+func (s InviteStatus) IsValid() bool {
+	return s == InvitePending || s == InviteAccepted || s == InviteDeclined
+}
+
 type Session struct {
 	ID                       string        `json:"id"`
 	AdminToken               string        `json:"admin_token,omitempty"`
 	Status                   SessionStatus `json:"status"`
 	Name                     string        `json:"name,omitempty"`
-	GameMode                 string        `json:"game_mode"`
+	GameMode                 GameMode      `json:"game_mode"`
 	Courts                   int           `json:"courts"`
 	Points                   int           `json:"points"`
 	RoundsTotal              *int          `json:"rounds_total,omitempty"`
