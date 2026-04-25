@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.13.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.12.0...v1.13.0) (2026-04-25)
+
+
+### Features
+
+* **#74,#75:** add typed GameMode and InviteStatus enums ([#78](https://github.com/Fabianthorsen/OpenPadel/issues/78)) ([e5c81fb](https://github.com/Fabianthorsen/OpenPadel/commit/e5c81fbf317b284953fd3493f865d8c39a796ec8))
+* **#76:** add APIError sentinels and respondAPIError helper ([#79](https://github.com/Fabianthorsen/OpenPadel/issues/79)) ([09bddf7](https://github.com/Fabianthorsen/OpenPadel/commit/09bddf74b17bb6e20d0e65cafa970126d4f03121))
+* **#77:** add SessionInput struct with validation ([#81](https://github.com/Fabianthorsen/OpenPadel/issues/81)) ([3413ec6](https://github.com/Fabianthorsen/OpenPadel/commit/3413ec66ad61b84309bd49fce664d23fdb40447f))
+
 ## [1.12.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.11.0...v1.12.0) (2026-04-25)
 
 
