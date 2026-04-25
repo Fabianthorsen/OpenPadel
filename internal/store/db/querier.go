@@ -82,6 +82,7 @@ type Querier interface {
 	UpdateProfile(ctx context.Context, arg UpdateProfileParams) error
 	UpdateProfileAvatarOnPlayers(ctx context.Context, arg UpdateProfileAvatarOnPlayersParams) error
 	UpdateRoundDuration(ctx context.Context, arg UpdateRoundDurationParams) error
+	UpdateSessionConfig(ctx context.Context, arg UpdateSessionConfigParams) error
 	UpdateSessionCurrentRound(ctx context.Context, arg UpdateSessionCurrentRoundParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UserExists(ctx context.Context, id string) (int64, error)

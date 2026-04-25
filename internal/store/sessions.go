@@ -12,38 +12,39 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
-func (s *Store) CreateSession(courts, points int, name, gameMode string, roundsTotal *int, scheduledAt *time.Time, courtDurationMinutes *int, creatorUserID string) (*domain.Session, error) {
+func (s *Store) CreateSession(input domain.SessionInput, creatorUserID string) (*domain.Session, error) {
 	now := time.Now().UTC()
+	gameMode := input.GameMode
 	if gameMode == "" {
-		gameMode = "americano"
+		gameMode = domain.ModeAmericano
 	}
 	sess := &domain.Session{
 		ID:                       newID(),
 		AdminToken:               newAdminToken(),
 		Status:                   domain.StatusLobby,
-		Name:                     name,
-		GameMode:                 domain.GameMode(gameMode),
-		Courts:                   courts,
-		Points:                   points,
-		RoundsTotal:              roundsTotal,
-		ScheduledAt:              scheduledAt,
-		CourtDurationMinutes:     courtDurationMinutes,
+		Name:                     input.Name,
+		GameMode:                 gameMode,
+		Courts:                   input.Courts,
+		Points:                   input.Points,
+		RoundsTotal:              input.RoundsTotal,
+		ScheduledAt:              input.ScheduledAt,
+		CourtDurationMinutes:     input.CourtDurationMinutes,
 		CreatorUserID:            creatorUserID,
 		Players:                  []domain.Player{},
 		CreatedAt:                now,
 		UpdatedAt:                now,
 	}
 	var scheduledAtStr sql.NullString
-	if scheduledAt != nil {
-		scheduledAtStr = sql.NullString{String: scheduledAt.UTC().Format(time.RFC3339), Valid: true}
+	if input.ScheduledAt != nil {
+		scheduledAtStr = sql.NullString{String: input.ScheduledAt.UTC().Format(time.RFC3339), Valid: true}
 	}
 	var courtDurationMinutesVal sql.NullInt64
-	if courtDurationMinutes != nil {
-		courtDurationMinutesVal = sql.NullInt64{Int64: int64(*courtDurationMinutes), Valid: true}
+	if input.CourtDurationMinutes != nil {
+		courtDurationMinutesVal = sql.NullInt64{Int64: int64(*input.CourtDurationMinutes), Valid: true}
 	}
 	var roundsTotalVal sql.NullInt64
-	if roundsTotal != nil {
-		roundsTotalVal = sql.NullInt64{Int64: int64(*roundsTotal), Valid: true}
+	if input.RoundsTotal != nil {
+		roundsTotalVal = sql.NullInt64{Int64: int64(*input.RoundsTotal), Valid: true}
 	}
 	var creatorUserIDVal sql.NullString
 	if creatorUserID != "" {
@@ -208,29 +209,20 @@ func parseTimePtr(s string) *time.Time {
 	return &t
 }
 
-type SessionPatch struct {
-	Name        string
-	GameMode    string
-	Courts      int
-	Points      int
-	RoundsTotal *int
-	ScheduledAt *time.Time
-}
-
-func (s *Store) UpdateSessionConfig(id string, p SessionPatch) error {
+func (s *Store) UpdateSessionConfig(id string, input domain.SessionInput) error {
 	var roundsTotalVal sql.NullInt64
-	if p.RoundsTotal != nil {
-		roundsTotalVal = sql.NullInt64{Int64: int64(*p.RoundsTotal), Valid: true}
+	if input.RoundsTotal != nil {
+		roundsTotalVal = sql.NullInt64{Int64: int64(*input.RoundsTotal), Valid: true}
 	}
 	var scheduledAtStr sql.NullString
-	if p.ScheduledAt != nil {
-		scheduledAtStr = sql.NullString{String: p.ScheduledAt.UTC().Format(time.RFC3339), Valid: true}
+	if input.ScheduledAt != nil {
+		scheduledAtStr = sql.NullString{String: input.ScheduledAt.UTC().Format(time.RFC3339), Valid: true}
 	}
 	return s.queries.UpdateSessionConfig(context.Background(), db.UpdateSessionConfigParams{
-		Name:        p.Name,
-		GameMode:    p.GameMode,
-		Courts:      int64(p.Courts),
-		Points:      int64(p.Points),
+		Name:        input.Name,
+		GameMode:    string(input.GameMode),
+		Courts:      int64(input.Courts),
+		Points:      int64(input.Points),
 		RoundsTotal: roundsTotalVal,
 		ScheduledAt: scheduledAtStr,
 		UpdatedAt:   time.Now().UTC().Format(time.RFC3339),

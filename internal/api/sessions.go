@@ -29,29 +29,6 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrInvalidRequestBody)
 		return
 	}
-	if body.GameMode == "" {
-		body.GameMode = "americano"
-	}
-	if body.GameMode != "americano" && body.GameMode != "mexicano" {
-		respondAPIError(w, ErrInvalidGameMode)
-		return
-	}
-
-	if body.GameMode == "americano" || body.GameMode == "mexicano" {
-		minCourts := 1
-		if body.GameMode == "mexicano" {
-			minCourts = 2
-		}
-		if body.Courts < minCourts || body.Courts > 4 {
-			respondAPIError(w, ErrInvalidCourts)
-			return
-		}
-
-		if body.Points != 16 && body.Points != 24 && body.Points != 32 {
-			respondAPIError(w, ErrInvalidPoints)
-			return
-		}
-	}
 
 	var scheduledAt *time.Time
 	if body.ScheduledAt != nil && *body.ScheduledAt != "" {
@@ -63,17 +40,28 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		scheduledAt = &t
 	}
 
-	// Validate Mexicano preset rounds.
-	if body.GameMode == "mexicano" && body.RoundsTotal != nil {
-		if *body.RoundsTotal < 1 || *body.RoundsTotal > 20 {
-			respondAPIError(w, ErrInvalidRoundsTotal)
-			return
-		}
+	gameMode := domain.GameMode(body.GameMode)
+	if gameMode == "" {
+		gameMode = domain.ModeAmericano
 	}
 
-	// Validate court duration.
-	if body.CourtDurationMinutes != nil && (*body.CourtDurationMinutes < 15 || *body.CourtDurationMinutes > 300) {
-		respondAPIError(w, ErrInvalidCourtDuration)
+	input := domain.SessionInput{
+		Courts:               body.Courts,
+		Points:               body.Points,
+		Name:                 body.Name,
+		GameMode:             gameMode,
+		RoundsTotal:          body.RoundsTotal,
+		ScheduledAt:          scheduledAt,
+		CourtDurationMinutes: body.CourtDurationMinutes,
+	}
+
+	validationErrs := input.Validate()
+	if len(validationErrs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"validation_errors": validationErrs,
+		}) //nolint:errcheck
 		return
 	}
 
@@ -81,7 +69,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 	if u := userFromContext(r); u != nil {
 		creatorUserID = u.ID
 	}
-	sess, err := h.store.CreateSession(body.Courts, body.Points, body.Name, body.GameMode, body.RoundsTotal, scheduledAt, body.CourtDurationMinutes, creatorUserID)
+	sess, err := h.store.CreateSession(input, creatorUserID)
 	if err != nil {
 		respondAPIError(w, ErrCouldNotCreateSession)
 		return
@@ -262,71 +250,60 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Apply partial update to current values.
-	patch := store.SessionPatch{
+	input := domain.SessionInput{
 		Name:        sess.Name,
-		GameMode:    string(sess.GameMode),
+		GameMode:    sess.GameMode,
 		Courts:      sess.Courts,
 		Points:      sess.Points,
 		RoundsTotal: sess.RoundsTotal,
 		ScheduledAt: sess.ScheduledAt,
 	}
 	if body.Name != nil {
-		patch.Name = *body.Name
+		input.Name = *body.Name
 	}
 	if body.GameMode != nil {
-		patch.GameMode = *body.GameMode
+		input.GameMode = domain.GameMode(*body.GameMode)
 	}
 	if body.Courts != nil {
-		patch.Courts = *body.Courts
+		input.Courts = *body.Courts
 	}
 	if body.Points != nil {
-		patch.Points = *body.Points
+		input.Points = *body.Points
 	}
 	if body.RoundsTotal != nil {
-		patch.RoundsTotal = body.RoundsTotal
+		input.RoundsTotal = body.RoundsTotal
 	}
 	if body.ScheduledAt != nil {
 		if *body.ScheduledAt == "" {
-			patch.ScheduledAt = nil
+			input.ScheduledAt = nil
 		} else {
 			t, err := time.Parse(time.RFC3339, *body.ScheduledAt)
 			if err != nil {
 				respondAPIError(w, ErrInvalidScheduledAt)
 				return
 			}
-			patch.ScheduledAt = &t
+			input.ScheduledAt = &t
 		}
 	}
 
 	// Validate resulting state.
-	if patch.GameMode != "americano" && patch.GameMode != "mexicano" {
-		respondAPIError(w, ErrInvalidGameMode)
-		return
-	}
-	minCourts := 1
-	if patch.GameMode == "mexicano" {
-		minCourts = 2
-	}
-	if patch.Courts < minCourts || patch.Courts > 4 {
-		respondAPIError(w, ErrInvalidCourts)
-		return
-	}
-	if patch.Points != 16 && patch.Points != 24 && patch.Points != 32 {
-		respondAPIError(w, ErrInvalidPoints)
-		return
-	}
-	if patch.RoundsTotal != nil && (*patch.RoundsTotal < 1 || *patch.RoundsTotal > 20) {
-		respondAPIError(w, ErrInvalidRoundsTotal)
+	validationErrs := input.Validate()
+	if len(validationErrs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"validation_errors": validationErrs,
+		}) //nolint:errcheck
 		return
 	}
 
 	// Auto-default rounds_total when switching to Mexicano.
-	if patch.GameMode == "mexicano" && patch.RoundsTotal == nil {
+	if input.GameMode == domain.ModeMexicano && input.RoundsTotal == nil {
 		v := 7
-		patch.RoundsTotal = &v
+		input.RoundsTotal = &v
 	}
 
-	if err := h.store.UpdateSessionConfig(id, patch); err != nil {
+	if err := h.store.UpdateSessionConfig(id, input); err != nil {
 		respondAPIError(w, ErrServerError)
 		return
 	}

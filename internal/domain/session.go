@@ -116,6 +116,60 @@ func (s InviteStatus) IsValid() bool {
 	return s == InvitePending || s == InviteAccepted || s == InviteDeclined
 }
 
+type SessionInput struct {
+	Courts               int
+	Points               int
+	Name                 string
+	GameMode             GameMode
+	RoundsTotal          *int
+	ScheduledAt          *time.Time
+	CourtDurationMinutes *int
+}
+
+func (si SessionInput) Validate() []ValidationError {
+	var errs []ValidationError
+
+	if !si.GameMode.IsValid() {
+		errs = append(errs, ValidationError{
+			Code: "invalid_game_mode",
+		})
+	}
+
+	minCourts := 1
+	if si.GameMode == ModeMexicano {
+		minCourts = 2
+	}
+	if si.Courts < minCourts || si.Courts > 4 {
+		errs = append(errs, ValidationError{
+			Code: "invalid_courts",
+		})
+	}
+
+	if si.Points != 16 && si.Points != 24 && si.Points != 32 {
+		errs = append(errs, ValidationError{
+			Code: "invalid_points",
+		})
+	}
+
+	if si.GameMode == ModeMexicano && si.RoundsTotal != nil {
+		if *si.RoundsTotal < 1 || *si.RoundsTotal > 20 {
+			errs = append(errs, ValidationError{
+				Code: "invalid_rounds_total",
+			})
+		}
+	}
+
+	if si.CourtDurationMinutes != nil {
+		if *si.CourtDurationMinutes < 15 || *si.CourtDurationMinutes > 300 {
+			errs = append(errs, ValidationError{
+				Code: "invalid_court_duration",
+			})
+		}
+	}
+
+	return errs
+}
+
 type Session struct {
 	ID                       string        `json:"id"`
 	AdminToken               string        `json:"admin_token,omitempty"`
