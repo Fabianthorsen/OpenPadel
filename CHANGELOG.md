@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.12.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.11.0...v1.12.0) (2026-04-25)
+
+
+### Features
+
+* **#61:** refactor Mexicano service to use scheduler ([#70](https://github.com/Fabianthorsen/OpenPadel/issues/70)) ([4d1d66f](https://github.com/Fabianthorsen/OpenPadel/commit/4d1d66fbc65c14f16f969967949317951fa816b2))
+* **#65:** update ActiveSession for playing/done states ([#71](https://github.com/Fabianthorsen/OpenPadel/issues/71)) ([e5f0b67](https://github.com/Fabianthorsen/OpenPadel/commit/e5f0b67960eb1e19611d33d666d9f22eef59724d))
+* **lobby:** move tournament config into editable lobby ([#64](https://github.com/Fabianthorsen/OpenPadel/issues/64)) ([9803227](https://github.com/Fabianthorsen/OpenPadel/commit/9803227c832fe1548585841633326085823a692a))
+* refactor Americano service and add state validation (closes [#60](https://github.com/Fabianthorsen/OpenPadel/issues/60), [#63](https://github.com/Fabianthorsen/OpenPadel/issues/63)) ([#68](https://github.com/Fabianthorsen/OpenPadel/issues/68)) ([e971b7a](https://github.com/Fabianthorsen/OpenPadel/commit/e971b7a5177bce292994c3e29aeeb26dee30a256))
+* state machine redesign & pairing logic extraction ([#59](https://github.com/Fabianthorsen/OpenPadel/issues/59), [#61](https://github.com/Fabianthorsen/OpenPadel/issues/61), [#62](https://github.com/Fabianthorsen/OpenPadel/issues/62)) ([#67](https://github.com/Fabianthorsen/OpenPadel/issues/67)) ([550b15d](https://github.com/Fabianthorsen/OpenPadel/commit/550b15d139447e03e475f17e8c665562c6d9ad86))
+
+
+### Bug Fixes
+
+* **lobby:** use goto() instead of location.href for instant cancel navigation ([432862e](https://github.com/Fabianthorsen/OpenPadel/commit/432862e7742d9f6d52e2750bf9a19de1a3b89180))
+
 ## [1.11.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.10.0...v1.11.0) (2026-04-21)
 
 
