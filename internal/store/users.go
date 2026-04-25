@@ -274,7 +274,7 @@ func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, e
 			SessionID:   row.ID,
 			Name:        row.Name,
 			Status:      row.Status,
-			GameMode:    row.GameMode,
+			GameMode:    domain.GameMode(row.GameMode),
 			Courts:      int(row.Courts),
 			PlayerCount: int(row.PlayerCount),
 		}

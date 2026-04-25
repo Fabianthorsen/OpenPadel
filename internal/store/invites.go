@@ -63,7 +63,7 @@ func (s *Store) GetPendingInvites(toUserID string) ([]domain.Invite, error) {
 			FromUserID:        row.FromUserID,
 			FromDisplayName:   row.FromDisplayName,
 			ToUserID:          toUserID,
-			Status:            row.Status,
+			Status:            domain.InviteStatus(row.Status),
 			CreatedAt:         parseTime(row.CreatedAt),
 		}
 		invites = append(invites, inv)
@@ -90,7 +90,7 @@ func (s *Store) GetSessionInvites(sessionID string) ([]domain.Invite, error) {
 			FromDisplayName: row.FromDisplayName,
 			ToUserID:        row.ToUserID,
 			ToDisplayName:   row.ToDisplayName,
-			Status:          row.Status,
+			Status:          domain.InviteStatus(row.Status),
 			CreatedAt:       parseTime(row.CreatedAt),
 		}
 		invites = append(invites, inv)
@@ -167,7 +167,7 @@ func (s *Store) getInviteByID(id string) (*domain.Invite, error) {
 		FromUserID:      row.FromUserID,
 		FromDisplayName: row.FromDisplayName,
 		ToUserID:        row.ToUserID,
-		Status:          row.Status,
+		Status:          domain.InviteStatus(row.Status),
 		CreatedAt:       parseTime(row.CreatedAt),
 	}, nil
 }
