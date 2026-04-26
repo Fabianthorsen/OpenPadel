@@ -8,7 +8,7 @@
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import { SectionLabel } from '$lib/components/ui/section-label';
   import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
-  import { Switch } from '$lib/components/ui/switch';
+  const MAX_COURTS = 4;
   import { Calendar } from '$lib/components/ui/calendar';
   import Stepper from '$lib/components/ui/stepper/Stepper.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
@@ -92,6 +92,17 @@
     return `${h}:${m}`;
   }
   const scheduleTime = $derived(slotToLabel(timeSlot));
+  const timeHour = $derived(8 + Math.floor(timeSlot / 2));
+  const timeMinute = $derived((timeSlot % 2) * 30);
+
+  function onHourChange(h: number) {
+    timeSlot = (h - 8) * 2 + (timeSlot % 2);
+    commitScheduleTime();
+  }
+  function onMinuteChange(m: number) {
+    timeSlot = (timeHour - 8) * 2 + Math.round(m / 30);
+    commitScheduleTime();
+  }
 
   function calculateNextHourSlot(): number {
     const now = new Date();
@@ -505,26 +516,35 @@
         <!-- Game mode -->
         <div class="space-y-2">
           <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_game_mode_label')}</p>
-          <PillToggleGroup
-            value={configMode}
-            onValueChange={(v) => v && onModeChange(v as 'americano' | 'mexicano')}
-          >
-            <PillToggleItem value="americano">Americano</PillToggleItem>
-            <PillToggleItem value="mexicano">Mexicano</PillToggleItem>
-          </PillToggleGroup>
+          <div class="grid grid-cols-2 gap-2">
+            {#each (['americano', 'mexicano'] as const) as mode}
+              <button
+                type="button"
+                onclick={() => onModeChange(mode)}
+                class="rounded-xl border-2 px-3 py-3 text-left transition-colors {configMode === mode ? 'border-primary bg-primary/10' : 'border-border bg-surface'}"
+              >
+                <p class="text-sm font-semibold capitalize">{mode}</p>
+                <p class="text-[11px] text-text-secondary mt-0.5">{$_(mode === 'americano' ? 'create_americano_hint' : 'create_mexicano_hint')}</p>
+              </button>
+            {/each}
+          </div>
         </div>
 
         <!-- Courts -->
         <div class="space-y-2">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_courts_label')}</p>
-          <PillToggleGroup
-            value={configCourts.toString()}
-            onValueChange={(v) => v && onCourtsChange(parseInt(v))}
-          >
-            {#each (configMode === 'mexicano' ? [2, 3, 4] : [1, 2, 3, 4]) as n}
-              <PillToggleItem value={n.toString()}>{n}</PillToggleItem>
-            {/each}
-          </PillToggleGroup>
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_courts_label')}</p>
+            <p class="text-lg font-[800] text-primary">{configCourts}</p>
+          </div>
+          <input
+            type="range"
+            min={configMode === 'mexicano' ? 2 : 1}
+            max={MAX_COURTS}
+            step="1"
+            bind:value={configCourts}
+            onchange={() => onCourtsChange(configCourts)}
+            class="w-full accent-primary"
+          />
         </div>
 
         <!-- Points -->
@@ -542,7 +562,7 @@
 
         <!-- Mexicano: rounds stepper -->
         {#if configMode === 'mexicano'}
-          <div class="space-y-2">
+          <div class="flex items-center justify-between gap-4">
             <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('lobby_rounds_label')}</p>
             <Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
           </div>
@@ -550,13 +570,18 @@
 
         <!-- Schedule -->
         <div class="space-y-2">
-          <div class="flex items-center justify-between">
+          <button
+            type="button"
+            onclick={() => commitSchedule(!scheduleEnabled)}
+            class="w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-colors {scheduleEnabled ? 'border-primary bg-primary/10' : 'border-border bg-surface'}"
+          >
             <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_schedule_label')}</p>
-            <Switch
-              checked={scheduleEnabled}
-              onCheckedChange={commitSchedule}
-            />
-          </div>
+            {#if scheduleEnabled && calendarDate}
+              <p class="text-sm font-semibold text-primary">{calendarDate.toDate(getLocalTimeZone()).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+            {:else}
+              <span class="text-xs text-text-disabled">{scheduleEnabled ? '–' : $_('lobby_schedule_tap_to_add')}</span>
+            {/if}
+          </button>
           {#if scheduleEnabled}
             <div class="rounded-xl bg-surface overflow-hidden">
               <Calendar
@@ -565,22 +590,18 @@
                 weekStartsOn={1}
                 onValueChange={() => commitScheduleTime()}
               />
-              <div class="px-4 pb-4 space-y-2">
-                <div class="flex items-center justify-between">
-                  <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_schedule_time_label')}</p>
-                  <p class="text-sm font-[800] text-primary">{scheduleTime}</p>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="27"
-                  step="1"
-                  bind:value={timeSlot}
-                  onchange={commitScheduleTime}
-                  class="w-full accent-primary"
-                />
-                <div class="flex justify-between text-[10px] text-text-disabled">
-                  <span>08:00</span><span>21:30</span>
+              <div class="px-4 pb-4 space-y-3">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_schedule_time_label')}</p>
+                <div class="flex items-center justify-center gap-3">
+                  <div class="flex flex-col items-center gap-1">
+                    <p class="text-[10px] text-text-disabled uppercase tracking-[0.1em]">{$_('schedule_hour_label')}</p>
+                    <Stepper value={timeHour} min={8} max={21} onchange={onHourChange} />
+                  </div>
+                  <p class="text-xl font-[800] text-text-secondary pb-1">:</p>
+                  <div class="flex flex-col items-center gap-1">
+                    <p class="text-[10px] text-text-disabled uppercase tracking-[0.1em]">{$_('schedule_minute_label')}</p>
+                    <Stepper value={timeMinute} min={0} max={30} step={30} onchange={onMinuteChange} />
+                  </div>
                 </div>
               </div>
             </div>
