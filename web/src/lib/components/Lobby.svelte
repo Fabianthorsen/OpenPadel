@@ -532,19 +532,16 @@
 
         <!-- Courts -->
         <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_courts_label')}</p>
-            <p class="text-lg font-[800] text-primary">{configCourts}</p>
-          </div>
-          <input
-            type="range"
-            min={configMode === 'mexicano' ? 2 : 1}
-            max={MAX_COURTS}
-            step="1"
-            bind:value={configCourts}
-            onchange={() => onCourtsChange(configCourts)}
-            class="w-full accent-primary"
-          />
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-disabled">{$_('create_courts_label')}</p>
+          <PillToggleGroup
+            value={configCourts.toString()}
+            onValueChange={(v) => v && onCourtsChange(parseInt(v))}
+          >
+            {#each Array.from({ length: MAX_COURTS }, (_, i) => i + 1) as n}
+              <PillToggleItem value={n.toString()} disabled={configMode === 'mexicano' && n === 1}>{n}</PillToggleItem>
+            {/each}
+          </PillToggleGroup>
+        </div>
         </div>
 
         <!-- Points -->
