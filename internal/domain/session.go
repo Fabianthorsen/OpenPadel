@@ -91,6 +91,8 @@ func (s SessionStatus) Values() []SessionStatus {
 
 type GameMode string
 
+const MaxCourts = 4
+
 const (
 	ModeAmericano GameMode = "americano"
 	ModeMexicano  GameMode = "mexicano"

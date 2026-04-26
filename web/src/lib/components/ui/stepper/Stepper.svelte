@@ -3,24 +3,26 @@
     value = $bindable(7),
     min = 1,
     max = 20,
+    step = 1,
     onchange,
   }: {
     value?: number;
     min?: number;
     max?: number;
+    step?: number;
     onchange?: (v: number) => void;
   } = $props();
 
   function decrement() {
     if (value > min) {
-      value--;
+      value = Math.max(min, value - step);
       onchange?.(value);
     }
   }
 
   function increment() {
     if (value < max) {
-      value++;
+      value = Math.min(max, value + step);
       onchange?.(value);
     }
   }
