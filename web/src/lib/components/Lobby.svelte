@@ -542,7 +542,6 @@
             {/each}
           </PillToggleGroup>
         </div>
-        </div>
 
         <!-- Points -->
         <div class="space-y-2">
