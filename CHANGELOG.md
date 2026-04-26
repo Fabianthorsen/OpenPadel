@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.14.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.13.0...v1.14.0) (2026-04-26)
+
+
+### Features
+
+* **lobby:** redesign config UI with cards, sliders, and steppers ([#89](https://github.com/Fabianthorsen/OpenPadel/issues/89)) ([f2551ff](https://github.com/Fabianthorsen/OpenPadel/commit/f2551ff83697678286158e4371d4b33a36af547d)), closes [#83](https://github.com/Fabianthorsen/OpenPadel/issues/83) [#84](https://github.com/Fabianthorsen/OpenPadel/issues/84) [#85](https://github.com/Fabianthorsen/OpenPadel/issues/85) [#86](https://github.com/Fabianthorsen/OpenPadel/issues/86) [#87](https://github.com/Fabianthorsen/OpenPadel/issues/87) [#88](https://github.com/Fabianthorsen/OpenPadel/issues/88)
+
+
+### Bug Fixes
+
+* **lobby:** revert courts to pill toggles, disable 1-court option in mexicano ([#91](https://github.com/Fabianthorsen/OpenPadel/issues/91)) ([7e59304](https://github.com/Fabianthorsen/OpenPadel/commit/7e59304f31c87f650d37e85b67641fb8975e082d))
+
 ## [1.13.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.12.0...v1.13.0) (2026-04-25)
 
 
