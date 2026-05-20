@@ -24,7 +24,7 @@ func GenerateRounds(players []domain.Player, courts, totalRounds int) []domain.R
 
 	// Full history — not just the previous round.
 	partnerCount := map[[2]string]int{}
-	matchupCount := map[[4]string]int{}
+	courtShareCount := map[[2]string]int{}
 
 	rounds := make([]domain.Round, totalRounds)
 
@@ -72,13 +72,20 @@ func GenerateRounds(players []domain.Player, courts, totalRounds int) []domain.R
 			benchTotal[id]++
 		}
 
-		matches := assignCourts(active, courts, partnerCount, matchupCount)
+		matches := assignCourts(active, courts, partnerCount, courtShareCount)
 		shuffleTeamSides(matches)
+		shuffleCourtNumbers(matches)
 
 		for _, m := range matches {
 			partnerCount[pairKey(m.TeamA[0], m.TeamA[1])]++
 			partnerCount[pairKey(m.TeamB[0], m.TeamB[1])]++
-			matchupCount[matchupKey(m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1])]++
+			// Track all 6 pairwise co-occurrences on this court.
+			players := []string{m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]}
+			for i := 0; i < len(players); i++ {
+				for j := i + 1; j < len(players); j++ {
+					courtShareCount[pairKey(players[i], players[j])]++
+				}
+			}
 		}
 
 		benchIDs := make([]string, len(bench))
@@ -103,16 +110,7 @@ func pairKey(a, b string) [2]string {
 	return [2]string{a, b}
 }
 
-// matchupKey returns a canonical key for a court matchup.
-// {A+B vs C+D} == {C+D vs A+B}, so both teams are sorted.
-func matchupKey(a0, a1, b0, b1 string) [4]string {
-	pa := pairKey(a0, a1)
-	pb := pairKey(b0, b1)
-	if pa[0] > pb[0] || (pa[0] == pb[0] && pa[1] > pb[1]) {
-		pa, pb = pb, pa
-	}
-	return [4]string{pa[0], pa[1], pb[0], pb[1]}
-}
+
 
 // bestPartnerMatching finds the partner pairing of players that minimises total
 // partner-repeat count using backtracking with pruning. For up to 16 players the
@@ -159,8 +157,9 @@ func bestPartnerMatching(players []string, partnerCount map[[2]string]int) [][2]
 }
 
 // bestCourtAssignment groups the given partner pairs into courts, minimising
-// matchup repeats. Number of groupings: for 4 pairs→3, 6 pairs→15, 8 pairs→105.
-func bestCourtAssignment(pairs [][2]string, matchupCount map[[4]string]int) []domain.Match {
+// court co-occurrence (how often any two players have shared the same court).
+// Number of groupings: for 4 pairs→3, 6 pairs→15, 8 pairs→105.
+func bestCourtAssignment(pairs [][2]string, courtShareCount map[[2]string]int) []domain.Match {
 	numPairs := len(pairs)
 	courts := numPairs / 2
 	usedPair := make([]bool, numPairs)
@@ -190,15 +189,21 @@ func bestCourtAssignment(pairs [][2]string, matchupCount map[[4]string]int) []do
 		for second := first + 1; second < numPairs; second++ {
 			if !usedPair[second] {
 				usedPair[second] = true
-				a0, a1 := pairs[first][0], pairs[first][1]
-				b0, b1 := pairs[second][0], pairs[second][1]
+				// Score: sum of pairwise co-occurrences for all 6 pairs on this court.
+				players := []string{pairs[first][0], pairs[first][1], pairs[second][0], pairs[second][1]}
+				courtScore := 0
+				for i := 0; i < 4; i++ {
+					for j := i + 1; j < 4; j++ {
+						courtScore += courtShareCount[pairKey(players[i], players[j])]
+					}
+				}
 				scratch[courtIdx] = domain.Match{
 					ID:    shortID(),
 					Court: courtIdx + 1,
-					TeamA: [2]string{a0, a1},
-					TeamB: [2]string{b0, b1},
+					TeamA: [2]string{pairs[first][0], pairs[first][1]},
+					TeamB: [2]string{pairs[second][0], pairs[second][1]},
 				}
-				bt(courtIdx+1, score+matchupCount[matchupKey(a0, a1, b0, b1)]*10)
+				bt(courtIdx+1, score+courtScore)
 				usedPair[second] = false
 			}
 		}
@@ -211,10 +216,10 @@ func bestCourtAssignment(pairs [][2]string, matchupCount map[[4]string]int) []do
 
 // assignCourts finds the optimal assignment of active players to courts using
 // exact backtracking search: first minimise partner repeats (primary constraint),
-// then minimise matchup repeats (secondary). Guaranteed optimal for up to 16 players.
-func assignCourts(active []string, courts int, partnerCount map[[2]string]int, matchupCount map[[4]string]int) []domain.Match {
+// then minimise court co-occurrence (secondary). Guaranteed optimal for up to 16 players.
+func assignCourts(active []string, courts int, partnerCount map[[2]string]int, courtShareCount map[[2]string]int) []domain.Match {
 	pairs := bestPartnerMatching(active, partnerCount)
-	return bestCourtAssignment(pairs, matchupCount)
+	return bestCourtAssignment(pairs, courtShareCount)
 }
 
 // TotalRounds returns the correct number of rounds for a fair Americano tournament.
@@ -248,6 +253,17 @@ func shuffleTeamSides(matches []domain.Match) {
 		if n.Int64() == 1 {
 			matches[i].TeamA, matches[i].TeamB = matches[i].TeamB, matches[i].TeamA
 		}
+	}
+}
+
+// shuffleCourtNumbers randomly assigns court numbers 1..N to the N matches,
+// breaking the deterministic court-to-group mapping from the backtracking order.
+func shuffleCourtNumbers(matches []domain.Match) {
+	// Fisher-Yates shuffle on court numbers.
+	n := len(matches)
+	for i := n - 1; i > 0; i-- {
+		j, _ := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		matches[i].Court, matches[j.Int64()].Court = matches[j.Int64()].Court, matches[i].Court
 	}
 }
 
