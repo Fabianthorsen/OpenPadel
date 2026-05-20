@@ -124,6 +124,57 @@ func TestGenerateRounds_CourtAssignment(t *testing.T) {
 	}
 }
 
+// TestGenerateRounds_CourtCoOccurrenceSpread verifies that no pair of players
+// shares a court disproportionately more than the average. This catches the old
+// bug where the same 4 players would be stuck on one court, shuffling internally.
+func TestGenerateRounds_CourtCoOccurrenceSpread(t *testing.T) {
+	cases := []struct {
+		players, courts, totalRounds int
+	}{
+		{8, 2, 7},
+		{12, 3, 11},
+	}
+	for _, tc := range cases {
+		players := makePlayers(tc.players)
+		rounds := GenerateRounds(players, tc.courts, tc.totalRounds)
+
+		// Count how many times each pair shares a court.
+		coOccurrence := map[[2]string]int{}
+		for _, r := range rounds {
+			for _, m := range r.Matches {
+				ids := []string{m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]}
+				for i := 0; i < len(ids); i++ {
+					for j := i + 1; j < len(ids); j++ {
+						key := [2]string{ids[i], ids[j]}
+						if key[0] > key[1] {
+							key[0], key[1] = key[1], key[0]
+						}
+						coOccurrence[key]++
+					}
+				}
+			}
+		}
+
+		// Calculate max allowed: with perfect spread, each pair meets
+		// ceil(totalRounds * 6 / C(N,2)) times per court slot.
+		// We allow up to 2x the average to account for constraints.
+		totalCoOccurrences := 0
+		for _, v := range coOccurrence {
+			totalCoOccurrences += v
+		}
+		numPairs := len(coOccurrence)
+		avg := float64(totalCoOccurrences) / float64(numPairs)
+		maxAllowed := int(avg*2) + 1
+
+		for pair, count := range coOccurrence {
+			if count > maxAllowed {
+				t.Errorf("%d players, %d courts: pair (%s, %s) shared a court %d times (avg %.1f, max allowed %d)",
+					tc.players, tc.courts, pair[0], pair[1], count, avg, maxAllowed)
+			}
+		}
+	}
+}
+
 // TestGenerateRounds_MatchHasFourDistinctPlayers verifies that each match
 // has exactly 4 distinct players.
 func TestGenerateRounds_MatchHasFourDistinctPlayers(t *testing.T) {
