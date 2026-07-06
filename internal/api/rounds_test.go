@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 )
@@ -197,4 +198,60 @@ func TestAdvanceRound_RequiresAdmin(t *testing.T) {
 		t.Fatalf("expected 403, got %d", res2.StatusCode)
 	}
 	res2.Body.Close()
+}
+
+// Mexicano session with unlimited rounds (rounds_total = null) preserves null through start
+func TestMexicanoAdvanceRound_UnlimitedRounds(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+
+	// Register user and create Mexicano session
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+
+	// Create Mexicano with fixed rounds first
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":       2,
+		"points":       24,
+		"game_mode":    "mexicano",
+		"rounds_total": 5, // Start with fixed rounds
+	}, userToken)
+	if res.StatusCode != http.StatusCreated {
+		var errBody map[string]any
+		decodeBody(t, res, &errBody)
+		t.Fatalf("POST /api/sessions failed: %d, error: %v", res.StatusCode, errBody)
+	}
+	var createResp struct {
+		ID         string `json:"id"`
+		AdminToken string `json:"admin_token"`
+	}
+	decodeBody(t, res, &createResp)
+	sessID := createResp.ID
+	adminToken := createResp.AdminToken
+
+	// Verify session was created with 5 rounds
+	getRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		RoundsTotal *int `json:"rounds_total"`
+	}
+	decodeBody(t, getRes, &sess)
+	if sess.RoundsTotal == nil || *sess.RoundsTotal != 5 {
+		t.Errorf("expected RoundsTotal=5 after create, got %v", sess.RoundsTotal)
+	}
+
+	// Add players (Mexicano with 2 courts needs exactly 8 players)
+	for i := 1; i <= 8; i++ {
+		mustJoinSession(t, srv, sessID, fmt.Sprintf("Player %d", i), "")
+	}
+
+	// Start session
+	mustStartSession(t, srv, sessID, adminToken)
+
+	// Verify session is now playing
+	getRes2 := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sessFinal struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, getRes2, &sessFinal)
+	if sessFinal.Status != "playing" {
+		t.Errorf("expected Status=playing, got %s", sessFinal.Status)
+	}
 }

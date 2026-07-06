@@ -153,3 +153,167 @@ func TestGetTournamentHistory_NaturalCompletion(t *testing.T) {
 		t.Errorf("expected EndedEarly=false, got true")
 	}
 }
+
+// Tracer bullet: Mexicano with unlimited rounds (rounds_total = nil)
+func TestCreateSession_MexicanoUnlimitedRounds(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	// Create Mexicano session with rounds_total = nil (unlimited)
+	input := domain.SessionInput{
+		Courts:      2,
+		Points:      24,
+		Name:        "Unlimited Mexicano",
+		GameMode:    domain.ModeMexicano,
+		RoundsTotal: nil, // explicitly unlimited
+	}
+	sess, err := s.CreateSession(input, alice)
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	// Verify in-memory session has nil rounds_total
+	if sess.RoundsTotal != nil {
+		t.Errorf("expected RoundsTotal=nil after create, got %v", sess.RoundsTotal)
+	}
+
+	// Verify persisted session has nil rounds_total
+	loaded, err := s.GetSession(sess.ID)
+	if err != nil {
+		t.Fatalf("GetSession: %v", err)
+	}
+	if loaded.RoundsTotal != nil {
+		t.Errorf("expected persisted RoundsTotal=nil, got %v", loaded.RoundsTotal)
+	}
+}
+
+// Update Mexicano from fixed to unlimited rounds
+func TestUpdateSession_MexicanoToUnlimited(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	// Create with fixed rounds
+	input := domain.SessionInput{
+		Courts:      2,
+		Points:      24,
+		Name:        "Start Fixed",
+		GameMode:    domain.ModeMexicano,
+		RoundsTotal: intPtr(5),
+	}
+	sess, err := s.CreateSession(input, alice)
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if sess.RoundsTotal == nil || *sess.RoundsTotal != 5 {
+		t.Errorf("expected RoundsTotal=5 after create, got %v", sess.RoundsTotal)
+	}
+
+	// Update to unlimited
+	updateInput := domain.SessionInput{
+		Courts:      2,
+		Points:      24,
+		Name:        "Now Unlimited",
+		GameMode:    domain.ModeMexicano,
+		RoundsTotal: nil,
+	}
+	if err := s.UpdateSessionConfig(sess.ID, updateInput); err != nil {
+		t.Fatalf("UpdateSessionConfig: %v", err)
+	}
+
+	// Verify updated session has nil rounds_total
+	loaded, err := s.GetSession(sess.ID)
+	if err != nil {
+		t.Fatalf("GetSession: %v", err)
+	}
+	if loaded.RoundsTotal != nil {
+		t.Errorf("expected RoundsTotal=nil after update, got %v", loaded.RoundsTotal)
+	}
+}
+
+func intPtr(n int) *int {
+	return &n
+}
+
+// StartMexicanoSession preserves unlimited (nil rounds_total)
+func TestStartMexicanoSession_PreservesUnlimited(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	// Create unlimited Mexicano session
+	input := domain.SessionInput{
+		Courts:      2,
+		Points:      24,
+		Name:        "Unlimited",
+		GameMode:    domain.ModeMexicano,
+		RoundsTotal: nil,
+	}
+	sess, err := s.CreateSession(input, alice)
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	// Create some players (minimum 4 for 1 court in Mexicano)
+	if _, err := s.CreatePlayer(sess.ID, "Player 1", ""); err != nil {
+		t.Fatalf("CreatePlayer p1: %v", err)
+	}
+	if _, err := s.CreatePlayer(sess.ID, "Player 2", ""); err != nil {
+		t.Fatalf("CreatePlayer p2: %v", err)
+	}
+	if _, err := s.CreatePlayer(sess.ID, "Player 3", ""); err != nil {
+		t.Fatalf("CreatePlayer p3: %v", err)
+	}
+	if _, err := s.CreatePlayer(sess.ID, "Player 4", ""); err != nil {
+		t.Fatalf("CreatePlayer p4: %v", err)
+	}
+
+	// Start the session
+	if err := s.StartMexicanoSession(sess.ID, nil); err != nil {
+		t.Fatalf("StartMexicanoSession: %v", err)
+	}
+
+	// Verify rounds_total is still nil (not overwritten)
+	loaded, err := s.GetSession(sess.ID)
+	if err != nil {
+		t.Fatalf("GetSession: %v", err)
+	}
+	if loaded.RoundsTotal != nil {
+		t.Errorf("expected RoundsTotal=nil after start, got %v", loaded.RoundsTotal)
+	}
+	if loaded.Status != domain.StatusPlaying {
+		t.Errorf("expected Status=playing, got %s", loaded.Status)
+	}
+}
+
+// AdvanceRound works on unlimited sessions (no Store-level cap validation)
+// The API handler cap check is tested at the API level.
+func TestAdvanceRound_UnlimitedSessionPreservesNil(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	// Create unlimited Mexicano
+	input := domain.SessionInput{
+		Courts:      1,
+		Points:      24,
+		Name:        "Test unlimited advance",
+		GameMode:    domain.ModeMexicano,
+		RoundsTotal: nil,
+	}
+	sess, err := s.CreateSession(input, alice)
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	// Start it (Mexicano preserves nil, unlike Americano which takes a roundsTotal param)
+	if err := s.StartMexicanoSession(sess.ID, nil); err != nil {
+		t.Fatalf("StartMexicanoSession: %v", err)
+	}
+
+	// Verify nil is preserved through start
+	loaded, err := s.GetSession(sess.ID)
+	if err != nil {
+		t.Fatalf("GetSession: %v", err)
+	}
+	if loaded.RoundsTotal != nil {
+		t.Errorf("expected RoundsTotal=nil after start, got %v", loaded.RoundsTotal)
+	}
+}

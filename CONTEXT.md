@@ -35,6 +35,10 @@ _Avoid_: Format, variant
 **Round**:
 One cycle of a Session — a set of Matches across all courts, plus the list of Players benched that cycle.
 
+**Unlimited Rounds**:
+A Session config where `rounds_total` is left unset — Rounds keep generating until the Admin ends the Session, instead of stopping at a fixed count. Chosen at setup, or entered mid-Session by tapping "Keep Playing" once a fixed count is reached (one-way: fixed → unlimited, no incremental add-N-rounds).
+_Avoid_: Freeplay, Open-ended, Timed (a different, removed concept — see `docs/adr/0001-remove-timed-americano.md`)
+
 **Bench**:
 Players sitting out a given Round. Rotation guarantees a Player benched in Round N plays in Round N+1.
 
