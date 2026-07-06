@@ -60,8 +60,6 @@ db/migrate/up:
 db/migrate/down:
 	go run ./cmd/migrate down
 
-## Install git hooks (run once after cloning)
+## Install git hooks (run once after cloning; also runs automatically via `bun install`)
 setup:
-	cp scripts/commit-msg .git/hooks/commit-msg
-	chmod +x .git/hooks/commit-msg
-	@echo "Git hooks installed."
+	scripts/install-hooks.sh
