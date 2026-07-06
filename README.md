@@ -6,9 +6,8 @@ A lightweight padel tournament app. Supports Americano (rotating partners, point
 
 - **Americano** — round-robin rotation, configurable points per game, live leaderboard
 - **Mexicano** — dynamic pairings based on standings, no bench players
-- **Timed Americano** — fixed duration tournaments with drift-corrected round timings
 - Join by 4-character session code, no account required
-- Real-time score updates via polling
+- Real-time score updates via SSE (with a polling fallback for buffering proxies)
 - Push notifications when a tournament starts (PWA)
 - User accounts with career stats split by game mode
 
@@ -26,7 +25,7 @@ A lightweight padel tournament app. Supports Americano (rotating partners, point
 ├── internal/
 │   ├── api/             # HTTP handlers and router
 │   ├── domain/          # Shared types
-│   ├── gamemode/        # Game mode services (americano, mexicano, timed)
+│   ├── gamemode/        # Game mode services (americano, mexicano)
 │   ├── store/           # SQLite queries
 │   └── ui/              # Embedded SvelteKit build
 └── web/                 # SvelteKit frontend

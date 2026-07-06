@@ -60,14 +60,10 @@ openpadel/
 │   │   │   ├── rounds.go       greedy round-generation, full bench rotation pre-computed
 │   │   │   ├── rounds_test.go  round generation tests
 │   │   │   └── service.go      Start() orchestration, CanComplete() check
-│   │   ├── mexicano/
-│   │   │   ├── rounds.go       Mexicano variant — pairings adapt based on standings
-│   │   │   ├── rounds_test.go  round generation tests
-│   │   │   └── service.go      Start(), AdvanceRound() orchestration
-│   │   └── timed/
-│   │       ├── rounds.go       Timed Americano — rounds + timer calculation/recalculation
-│   │       ├── rounds_test.go  timer and round calculation tests
-│   │       └── service.go      Start(), AdvanceRound() with drift correction
+│   │   └── mexicano/
+│   │       ├── rounds.go       Mexicano variant — pairings adapt based on standings
+│   │       ├── rounds_test.go  round generation tests
+│   │       └── service.go      Start(), AdvanceRound() orchestration
 │   ├── livescores/store.go     in-memory concurrent map for live/in-progress scores
 │   ├── email/resend.go         Resend API client — password reset only
 │   └── ui/ui.go                embed.FS wrapper — serves SPA, injects OG meta tags
@@ -99,7 +95,6 @@ and stored in the browser's `localStorage`.
 |-----------------|--------|--------------------------------------------------------------|
 | Americano       | Live   | Rotating partners, individual scoring, pre-computed rounds   |
 | Mexicano        | Live   | Like Americano, but pairings adapt each round by standings   |
-| Timed Americano | Live   | Americano with fixed duration, free scoring, drift correction|
 | Round Robin     | Planned| Every pair plays every other pair                            |
 
 ---
@@ -184,12 +179,14 @@ Live updates are pushed via SSE rather than polling. A single in-memory `Hub`
 flowchart LR
     subgraph Browser["Browser (SvelteKit PWA)"]
         P["+page.svelte"]
-        T["TennisMatch.svelte"]
+        A["ActiveSession.svelte"]
+        LO["Lobby.svelte"]
         L["Leaderboard.svelte"]
         S["sessionStream.svelte.ts\n(factory, ref-counted)"]
         ES["EventSource\n/api/sessions/:id/events"]
         P --> S
-        T --> S
+        A --> S
+        LO --> S
         L --> S
         S --> ES
     end
@@ -232,7 +229,6 @@ flowchart LR
 |---|---|---|
 | `session_updated` | _(signal)_ | session starts, closes, cancels; player joins/leaves |
 | `round_updated` | _(signal)_ | score submitted, round advanced |
-| `timer_sync` | `{round_duration_seconds, round_started_at, remaining_rounds, buffer_seconds}` | timed_americano round advanced (drift correction) |
 | `live_score` | `{match_id, a, b, server}` | live score tap (PATCH, in-memory only) |
 
 ### Frontend store (`sessionStream.svelte.ts`)
@@ -323,26 +319,6 @@ No bench — requires exactly `courts × 4` players.
 - `Start(sessionID, sess, active, endsAt)` — generates round 1 from random standings, saves, activates session
 - `AdvanceRound(sessionID, nextRoundNum)` — computes standings, generates next round, saves
 
-### Timed Americano (`internal/gamemode/timed/`)
-
-**Round generation** (`rounds.go`): Timer-based variant of Americano with fixed tournament duration and dynamic round timing.
-
-**Key differences from Americano:**
-- **No points constraint** — scores are free-form (not constrained to sum to a fixed total like 16/24/32)
-- **Fixed tournament duration** — total minutes is configured at creation, rounds auto-play until timer expires
-- **Drift correction** — after each round, remaining time is redistributed across remaining rounds (via `RecalculateRoundDuration`)
-- **Automatic completion** — session ends when the timer expires and current round is fully scored
-- **Pairing** — uses same greedy scheduler as Americano to generate all rounds upfront based on player count
-
-**Service** (`service.go`):
-- `Start(sessionID, sess, active)` — shuffles players, calculates round count/duration, generates all rounds, saves, activates session
-- `AdvanceRound(sessionID, sess)` — recalculates round duration based on remaining time, updates DB, emits timer_sync SSE event
-
-Timer sync events (`timer_sync`) are emitted when advancing rounds, containing:
-- `round_duration_seconds` — recalculated duration for the next round
-- `round_started_at` — timestamp when the round started (for client-side countdown sync)
-- `remaining_rounds` — number of rounds still to play
-
 ---
 
 ## Frontend
@@ -363,23 +339,12 @@ Key patterns:
 
 Key components (components follow reactive Svelte 5 patterns):
 
-- **RoundTimer** — Displays countdown timer with color state machine:
-  - Green (>60s), amber (30-60s), red (1-30s), dark red (buzzer at ≤0s)
-  - Updates every second, recalibrates on timer_sync SSE events
-  - Triggers device vibration on buzzer (if available)
-  - Used in ActiveSession for timed_americano games
-
 - **ActiveSession** — Session gameplay with score entry:
-  - Numpad-based scoring with +/- adjustments
-  - Supports two modes: Fixed sum (Americano/Mexicano) and free-form (timed_americano)
-  - For timed mode: collects team A then team B score separately
-  - Shows RoundTimer when `game_mode === 'timed_americano'` and timer data is available
+  - Numpad-based scoring with +/- adjustments, scores must sum to `session.points`
 
-- **CreateDrawer** — Tournament creation with mode-specific controls:
+- **CreateDrawer** — Session creation with mode-specific controls:
   - Courts picker (universal)
-  - Points picker (Americano/Mexicano only)
-  - Duration/buffer pickers (timed_americano only)
-  - Sets/games pickers (Tennis only)
+  - Points picker (both modes; Mexicano additionally sets `rounds_total`)
 
 ---
 

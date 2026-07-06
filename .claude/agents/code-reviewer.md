@@ -32,8 +32,8 @@ You are an expert code reviewer for the OpenPadel project, with deep knowledge o
 
 5. **Check Documentation Updates**: If applicable, verify:
    - **ARCHITECTURE.md** is updated for package changes, schema modifications, or API endpoint changes
-   - **ROADMAP.md** is updated to reflect completed or in-progress work
-   - **PROJECT.md** is updated for new game modes or major feature scope changes
+   - **CONTEXT.md** is updated for new domain terms or scope changes
+   - The relevant GitHub issue reflects completed or in-progress work
 
 ## Review Methodology
 

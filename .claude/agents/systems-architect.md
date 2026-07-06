@@ -24,7 +24,7 @@ When given a feature request or technical change, you will:
    - Backend API changes (new endpoints, modified handlers, business logic in `internal/`)
    - Frontend changes (new Svelte components, stores, pages)
    - Testing requirements (unit tests, integration tests, regression tests per CLAUDE.md)
-   - Documentation updates (ARCHITECTURE.md, PROJECT.md, ROADMAP.md)
+   - Documentation updates (ARCHITECTURE.md, CONTEXT.md)
 
 3. **Examine Existing Patterns**: Reference established patterns in the codebase:
    - Store functions follow patterns in `internal/store/`
@@ -69,11 +69,10 @@ Example structure:
 ```
 
 **Special Considerations for OpenPadel:**
-- Always check if changes align with the current V-scope in PROJECT.md
 - Consider the testing strategy from CLAUDE.md: regression tests for bug fixes, tests for new business logic
 - Reference existing game modes and features to understand architectural patterns
 - Keep scope focused per CLAUDE.md philosophy: smallest working slice first
-- Update ROADMAP.md implications if this moves items between phases
+- Check GitHub Issues for related in-progress or planned work
 
 **Update your agent memory** as you discover system architecture, file organization patterns, database schema structure, API endpoint conventions, and component relationships in OpenPadel. This builds up institutional knowledge across conversations. Write concise notes about what you found and where.
 
