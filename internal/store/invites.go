@@ -57,14 +57,14 @@ func (s *Store) GetPendingInvites(toUserID string) ([]domain.Invite, error) {
 	var invites []domain.Invite
 	for _, row := range rows {
 		inv := domain.Invite{
-			ID:                row.ID,
-			SessionID:         row.SessionID,
-			SessionName:       row.SessionName,
-			FromUserID:        row.FromUserID,
-			FromDisplayName:   row.FromDisplayName,
-			ToUserID:          toUserID,
-			Status:            domain.InviteStatus(row.Status),
-			CreatedAt:         parseTime(row.CreatedAt),
+			ID:              row.ID,
+			SessionID:       row.SessionID,
+			SessionName:     row.SessionName,
+			FromUserID:      row.FromUserID,
+			FromDisplayName: row.FromDisplayName,
+			ToUserID:        toUserID,
+			Status:          domain.InviteStatus(row.Status),
+			CreatedAt:       parseTime(row.CreatedAt),
 		}
 		invites = append(invites, inv)
 	}

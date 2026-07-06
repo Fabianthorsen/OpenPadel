@@ -269,7 +269,6 @@ func (s *Store) getH2H(sessionID string) (map[string]map[string]int, error) {
 	return h2h, rows.Err()
 }
 
-
 // AdvanceMexicanoRound saves a newly generated round and updates current_round atomically.
 func (s *Store) AdvanceMexicanoRound(sessionID string, round domain.Round) error {
 	tx, err := s.db.Begin()

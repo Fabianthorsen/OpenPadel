@@ -153,4 +153,3 @@ func TestGetTournamentHistory_NaturalCompletion(t *testing.T) {
 		t.Errorf("expected EndedEarly=false, got true")
 	}
 }
-

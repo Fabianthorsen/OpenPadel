@@ -93,5 +93,3 @@ func (s *Store) DeactivatePlayer(playerID string) error {
 	}
 	return nil
 }
-
-

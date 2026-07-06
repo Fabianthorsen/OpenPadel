@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
-
 )
 
 func (h *Handler) vapidPublicKey(w http.ResponseWriter, r *http.Request) {

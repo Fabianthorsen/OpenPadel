@@ -110,8 +110,6 @@ func pairKey(a, b string) [2]string {
 	return [2]string{a, b}
 }
 
-
-
 // bestPartnerMatching finds the partner pairing of players that minimises total
 // partner-repeat count using backtracking with pruning. For up to 16 players the
 // search tree is small enough to be exhaustive (worst case: 10,395 nodes for 12p).
@@ -232,7 +230,7 @@ func TotalRounds(players, courts int) int {
 		return players - 1
 	}
 	cycle := players / gcd(players, benchSize) // rounds per full bench rotation
-	target := players - 1                       // minimum meaningful rounds
+	target := players - 1                      // minimum meaningful rounds
 	// Round up to the nearest full cycle >= target
 	n := (target + cycle - 1) / cycle
 	return n * cycle

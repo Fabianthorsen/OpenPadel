@@ -171,7 +171,7 @@ func TestGenerate_PartnerVariety(t *testing.T) {
 // Bench slots should be distributed fairly — no player sits more than once extra vs others.
 func TestGenerate_BenchFairness(t *testing.T) {
 	cases := []struct {
-		name          string
+		name                    string
 		players, courts, rounds int
 	}{
 		{"9p 2c 1bench/round", 9, 2, 8},
@@ -192,8 +192,12 @@ func TestGenerate_BenchFairness(t *testing.T) {
 
 			min, max := 999, 0
 			for _, c := range benchCount {
-				if c < min { min = c }
-				if c > max { max = c }
+				if c < min {
+					min = c
+				}
+				if c > max {
+					max = c
+				}
 			}
 			if max-min > 1 {
 				t.Errorf("bench distribution unfair: min=%d max=%d (diff should be ≤1)", min, max)
@@ -205,7 +209,7 @@ func TestGenerate_BenchFairness(t *testing.T) {
 // Every player should play the same number of matches, or at most 1 apart.
 func TestGenerate_GamesPlayedEquality(t *testing.T) {
 	cases := []struct {
-		name          string
+		name                    string
 		players, courts, rounds int
 	}{
 		{"4p 1c no bench", 4, 1, 3},
@@ -231,8 +235,12 @@ func TestGenerate_GamesPlayedEquality(t *testing.T) {
 
 			min, max := 999, 0
 			for _, g := range gamesPlayed {
-				if g < min { min = g }
-				if g > max { max = g }
+				if g < min {
+					min = g
+				}
+				if g > max {
+					max = g
+				}
 			}
 			if max-min > 1 {
 				t.Errorf("games played unfair: min=%d max=%d (diff should be ≤1)", min, max)
@@ -293,7 +301,7 @@ func TestGenerate_NoRepeatedPartners(t *testing.T) {
 	}
 
 	cases := []struct {
-		name          string
+		name                    string
 		players, courts, rounds int
 	}{
 		// No-bench cases: N players, N/4 courts, N-1 rounds covers all unique pairs exactly once.
@@ -346,7 +354,7 @@ func TestGenerate_ConsecutiveRoundsNoRepeat(t *testing.T) {
 	}
 
 	cases := []struct {
-		name          string
+		name                    string
 		players, courts, rounds int
 	}{
 		{"8p 2c 7rounds", 8, 2, 7},
@@ -442,7 +450,9 @@ func TestTotalRounds_MinimumRounds(t *testing.T) {
 func TestGenerate_NoRepeatedMatchups(t *testing.T) {
 	type pair struct{ a, b string }
 	makePair := func(a, b string) pair {
-		if a > b { a, b = b, a }
+		if a > b {
+			a, b = b, a
+		}
 		return pair{a, b}
 	}
 	type matchup struct{ p1, p2 pair }
@@ -529,8 +539,12 @@ func TestTotalRounds(t *testing.T) {
 				min, max := got, 0
 				for _, p := range players {
 					c := benchCount[p.ID]
-					if c < min { min = c }
-					if c > max { max = c }
+					if c < min {
+						min = c
+					}
+					if c > max {
+						max = c
+					}
 				}
 				if min == 0 {
 					t.Errorf("player(s) never benched across %d rounds", got)
@@ -543,8 +557,8 @@ func TestTotalRounds(t *testing.T) {
 	}
 }
 
-// 2. Across the full tournament, bench counts are as equal as possible —
-//    the max bench count for any player must not exceed the min by more than 1.
+//  2. Across the full tournament, bench counts are as equal as possible —
+//     the max bench count for any player must not exceed the min by more than 1.
 func TestGenerate_BenchRotation(t *testing.T) {
 	cases := []struct {
 		name                    string
@@ -585,8 +599,12 @@ func TestGenerate_BenchRotation(t *testing.T) {
 			// Invariant 2: bench counts must be spread evenly (max - min <= 1)
 			minB, maxB := 1<<30, 0
 			for _, c := range benchCount {
-				if c < minB { minB = c }
-				if c > maxB { maxB = c }
+				if c < minB {
+					minB = c
+				}
+				if c > maxB {
+					maxB = c
+				}
 			}
 			if maxB-minB > 1 {
 				t.Errorf("bench counts are uneven: min=%d max=%d (spread > 1) — counts: %v", minB, maxB, benchCount)
