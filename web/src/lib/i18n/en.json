@@ -315,6 +315,8 @@
 	"lobby_invite_label": "Invite players",
 	"lobby_name_placeholder": "Tournament name",
 	"lobby_rounds_label": "Rounds",
+	"lobby_rounds_mode_fixed": "Fixed",
+	"lobby_rounds_mode_unlimited": "Unlimited",
 	"api_error_mexicano_player_count_mismatch": "Mexicano needs {required} players — you have {current}",
 	"api_error_americano_insufficient_players": "Need {required} players for {courts} courts — you have {current}"
 }

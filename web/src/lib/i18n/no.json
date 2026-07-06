@@ -315,6 +315,8 @@
 	"lobby_invite_label": "Inviter spillere",
 	"lobby_name_placeholder": "Turneringsnavn",
 	"lobby_rounds_label": "Runder",
+	"lobby_rounds_mode_fixed": "Begrenset",
+	"lobby_rounds_mode_unlimited": "Ubegrenset",
 	"api_error_mexicano_player_count_mismatch": "Mexicano trenger {required} spillere — du har {current}",
 	"api_error_americano_insufficient_players": "Trenger {required} spillere for {courts} baner — du har {current}"
 }

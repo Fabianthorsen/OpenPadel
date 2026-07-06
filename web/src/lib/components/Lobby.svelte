@@ -83,6 +83,7 @@
 	let configCourts = $state(2);
 	let configPoints = $state(24);
 	let configRounds = $state(7);
+	let roundsMode = $state<'fixed' | 'unlimited'>('fixed');
 	let scheduleEnabled = $state(false);
 	let calendarDate = $state<DateValue | undefined>(undefined);
 	let timeSlot = $state(20);
@@ -94,6 +95,7 @@
 		configCourts = session.courts;
 		configPoints = session.points;
 		configRounds = session.rounds_total ?? 7;
+		roundsMode = session.rounds_total === null || session.rounds_total === undefined ? 'unlimited' : 'fixed';
 		scheduleEnabled = !!session.scheduled_at;
 		if (session.scheduled_at) {
 			try {
@@ -182,6 +184,15 @@
 	function onRoundsChange(n: number) {
 		configRounds = n;
 		patchConfig({ rounds_total: n });
+	}
+
+	function onRoundsModeChange(mode: 'fixed' | 'unlimited') {
+		roundsMode = mode;
+		if (mode === 'unlimited') {
+			patchConfig({ rounds_total: null });
+		} else {
+			patchConfig({ rounds_total: configRounds });
+		}
 	}
 
 	async function commitSchedule(enabled: boolean) {
@@ -657,13 +668,24 @@
 					</PillToggleGroup>
 				</div>
 
-				<!-- Mexicano: rounds stepper -->
+				<!-- Mexicano: rounds mode toggle + stepper -->
 				{#if configMode === 'mexicano'}
-					<div class="flex items-center justify-between gap-4">
+					<div class="space-y-2">
 						<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
 							{$_('lobby_rounds_label')}
 						</p>
-						<Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
+						<PillToggleGroup
+							value={roundsMode}
+							onValueChange={(v) => v && onRoundsModeChange(v as 'fixed' | 'unlimited')}
+						>
+							<PillToggleItem value="fixed">{$_('lobby_rounds_mode_fixed')}</PillToggleItem>
+							<PillToggleItem value="unlimited">{$_('lobby_rounds_mode_unlimited')}</PillToggleItem>
+						</PillToggleGroup>
+						{#if roundsMode === 'fixed'}
+							<div class="flex items-center justify-end">
+								<Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
+							</div>
+						{/if}
 					</div>
 				{/if}
 
