@@ -19,20 +19,20 @@ func (s *Store) CreateSession(input domain.SessionInput, creatorUserID string) (
 		gameMode = domain.ModeAmericano
 	}
 	sess := &domain.Session{
-		ID:                       newID(),
-		AdminToken:               newAdminToken(),
-		Status:                   domain.StatusLobby,
-		Name:                     input.Name,
-		GameMode:                 gameMode,
-		Courts:                   input.Courts,
-		Points:                   input.Points,
-		RoundsTotal:              input.RoundsTotal,
-		ScheduledAt:              input.ScheduledAt,
-		CourtDurationMinutes:     input.CourtDurationMinutes,
-		CreatorUserID:            creatorUserID,
-		Players:                  []domain.Player{},
-		CreatedAt:                now,
-		UpdatedAt:                now,
+		ID:                   newID(),
+		AdminToken:           newAdminToken(),
+		Status:               domain.StatusLobby,
+		Name:                 input.Name,
+		GameMode:             gameMode,
+		Courts:               input.Courts,
+		Points:               input.Points,
+		RoundsTotal:          input.RoundsTotal,
+		ScheduledAt:          input.ScheduledAt,
+		CourtDurationMinutes: input.CourtDurationMinutes,
+		CreatorUserID:        creatorUserID,
+		Players:              []domain.Player{},
+		CreatedAt:            now,
+		UpdatedAt:            now,
 	}
 	var scheduledAtStr sql.NullString
 	if input.ScheduledAt != nil {

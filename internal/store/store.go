@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/pressly/goose/v3"
 	"github.com/fabianthorsen/openpadel/internal/store/db"
+	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
 

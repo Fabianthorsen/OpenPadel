@@ -5,18 +5,20 @@ register('en', () => import('./en.json'));
 register('no', () => import('./no.json'));
 
 export function setupI18n() {
-  const savedLocale = browser ? (localStorage.getItem('locale') ?? navigator.language.split('-')[0]) : 'no';
-  const chosen = ['en', 'no'].includes(savedLocale) ? savedLocale : 'no';
+	const savedLocale = browser
+		? (localStorage.getItem('locale') ?? navigator.language.split('-')[0])
+		: 'no';
+	const chosen = ['en', 'no'].includes(savedLocale) ? savedLocale : 'no';
 
-  init({
-    fallbackLocale: 'no',
-    initialLocale: chosen,
-  });
+	init({
+		fallbackLocale: 'no',
+		initialLocale: chosen
+	});
 }
 
 export function setLocale(lang: string) {
-  locale.set(lang);
-  if (browser) localStorage.setItem('locale', lang);
+	locale.set(lang);
+	if (browser) localStorage.setItem('locale', lang);
 }
 
 export { locale };

@@ -53,7 +53,9 @@
 	);
 </script>
 
-<div class="shrink-0 rounded-full {s.circle} {colorClass} {ring} flex items-center justify-center font-semibold">
+<div
+	class="shrink-0 rounded-full {s.circle} {colorClass} {ring} flex items-center justify-center font-semibold"
+>
 	{#if IconComponent}
 		<IconComponent class={s.icon} strokeWidth={2} />
 	{:else}

@@ -107,7 +107,6 @@ func (s *Store) SearchUsers(userID, query string) ([]domain.UserSearchResult, er
 	return results, nil
 }
 
-
 // AddContactPlayer looks up the contact user's display name and creates a player
 // record in the session linked to their user account. Returns ErrNotFound if the
 // user doesn't exist.

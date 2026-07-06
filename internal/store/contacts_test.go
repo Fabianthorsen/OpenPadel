@@ -180,4 +180,3 @@ func TestSearchUsers_MarksContacts(t *testing.T) {
 		t.Errorf("expected Bob to be marked as contact, got %v", results)
 	}
 }
-

@@ -76,9 +76,9 @@ type UpcomingEntry struct {
 type SessionStatus string
 
 const (
-	StatusLobby    SessionStatus = "lobby"
-	StatusPlaying  SessionStatus = "playing"
-	StatusDone     SessionStatus = "done"
+	StatusLobby   SessionStatus = "lobby"
+	StatusPlaying SessionStatus = "playing"
+	StatusDone    SessionStatus = "done"
 )
 
 func (s SessionStatus) IsValid() bool {
@@ -173,26 +173,26 @@ func (si SessionInput) Validate() []ValidationError {
 }
 
 type Session struct {
-	ID                       string        `json:"id"`
-	AdminToken               string        `json:"admin_token,omitempty"`
-	Status                   SessionStatus `json:"status"`
-	Name                     string        `json:"name,omitempty"`
-	GameMode                 GameMode      `json:"game_mode"`
-	Courts                   int           `json:"courts"`
-	Points                   int           `json:"points"`
-	RoundsTotal              *int          `json:"rounds_total,omitempty"`
-	CurrentRound             *int          `json:"current_round,omitempty"`
-	CreatorPlayerID          string        `json:"creator_player_id,omitempty"`
-	CreatorUserID            string        `json:"-"`
-	IsCreator                bool          `json:"is_creator,omitempty"`
-	ScheduledAt              *time.Time    `json:"scheduled_at,omitempty"`
-	CourtDurationMinutes     *int          `json:"court_duration_minutes,omitempty"`
-	EndsAt                   *time.Time    `json:"ends_at,omitempty"`
-	Players                  []Player         `json:"players"`
-	ValidationErrors         []ValidationError `json:"validation_errors,omitempty"`
-	CanStart                 bool             `json:"can_start"`
-	CreatedAt                time.Time        `json:"created_at"`
-	UpdatedAt                time.Time        `json:"updated_at"`
+	ID                   string            `json:"id"`
+	AdminToken           string            `json:"admin_token,omitempty"`
+	Status               SessionStatus     `json:"status"`
+	Name                 string            `json:"name,omitempty"`
+	GameMode             GameMode          `json:"game_mode"`
+	Courts               int               `json:"courts"`
+	Points               int               `json:"points"`
+	RoundsTotal          *int              `json:"rounds_total,omitempty"`
+	CurrentRound         *int              `json:"current_round,omitempty"`
+	CreatorPlayerID      string            `json:"creator_player_id,omitempty"`
+	CreatorUserID        string            `json:"-"`
+	IsCreator            bool              `json:"is_creator,omitempty"`
+	ScheduledAt          *time.Time        `json:"scheduled_at,omitempty"`
+	CourtDurationMinutes *int              `json:"court_duration_minutes,omitempty"`
+	EndsAt               *time.Time        `json:"ends_at,omitempty"`
+	Players              []Player          `json:"players"`
+	ValidationErrors     []ValidationError `json:"validation_errors,omitempty"`
+	CanStart             bool              `json:"can_start"`
+	CreatedAt            time.Time         `json:"created_at"`
+	UpdatedAt            time.Time         `json:"updated_at"`
 }
 
 type Player struct {

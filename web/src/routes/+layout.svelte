@@ -16,6 +16,6 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 {#if !$isLoading}
-  {@render children()}
-  <Toaster position="bottom-center" />
+	{@render children()}
+	<Toaster position="bottom-center" />
 {/if}

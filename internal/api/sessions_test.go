@@ -529,10 +529,10 @@ func TestSessionConfig_CourtDurationMinutes(t *testing.T) {
 	// Create session with custom court duration
 	duration := 60
 	res := postReq(t, srv, "/api/sessions", map[string]any{
-		"courts":                   1,
-		"points":                   24,
-		"game_mode":                "americano",
-		"court_duration_minutes":   duration,
+		"courts":                 1,
+		"points":                 24,
+		"game_mode":              "americano",
+		"court_duration_minutes": duration,
 	}, "")
 	if res.StatusCode != http.StatusCreated {
 		t.Fatalf("expected 201, got %d", res.StatusCode)
@@ -573,10 +573,10 @@ func TestSessionConfig_InvalidCourtDuration(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			res := postReq(t, srv, "/api/sessions", map[string]any{
-				"courts":                   1,
-				"points":                   24,
-				"game_mode":                "americano",
-				"court_duration_minutes":   tc.duration,
+				"courts":                 1,
+				"points":                 24,
+				"game_mode":              "americano",
+				"court_duration_minutes": tc.duration,
 			}, "")
 			if res.StatusCode != http.StatusBadRequest {
 				t.Fatalf("expected 400, got %d", res.StatusCode)

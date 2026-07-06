@@ -11,7 +11,7 @@
 </script>
 
 <Label
-	class="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-secondary {className}"
+	class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase {className}"
 	{...restProps}
 >
 	{@render children?.()}

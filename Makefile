@@ -1,4 +1,4 @@
-.PHONY: dev build fmt lint test setup db/reset db/migrate/status db/migrate/up db/migrate/down
+.PHONY: dev build fmt lint lint/go lint/web test setup db/reset db/migrate/status db/migrate/up db/migrate/down
 
 # Go binary output
 BIN := bin/openpadel
@@ -16,6 +16,19 @@ fmt:
 	gofmt -w .
 	cd web && bun run format
 
+## Check Go formatting, vet, and lint (new/changed code only vs main)
+lint/go:
+	@test -z "$$(gofmt -l .)" || (echo "gofmt needs to be run on:" && gofmt -l . && exit 1)
+	go vet ./...
+	golangci-lint run --new-from-rev=main ./...
+
+## Check frontend formatting
+lint/web:
+	cd web && bun run lint
+
+## Run all lint checks (no writes)
+lint: lint/go lint/web
+
 ## Build production binary (embeds web/build into Go binary)
 build:
 	cd web && bun run build
@@ -32,7 +45,7 @@ tidy:
 
 ## Clear all game data (sessions, rounds, matches, players) — keeps users & auth
 db/reset:
-	sqlite3 openpadel.db "DELETE FROM bench; DELETE FROM matches; DELETE FROM rounds; DELETE FROM tennis_matches; DELETE FROM tennis_teams; DELETE FROM players; DELETE FROM sessions;"
+	sqlite3 openpadel.db "DELETE FROM bench; DELETE FROM matches; DELETE FROM rounds; DELETE FROM players; DELETE FROM sessions;"
 	@echo "Game data cleared."
 
 ## Show migration status
