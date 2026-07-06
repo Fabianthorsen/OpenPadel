@@ -120,14 +120,10 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 			sessionCompleted = true
 		}
 	} else if sess.GameMode == "mexicano" {
-		// Mexicano with preset rounds_total: complete when last round is fully scored.
-		if sess.RoundsTotal != nil && sess.CurrentRound != nil && *sess.CurrentRound == *sess.RoundsTotal {
-			allScored, err := h.store.CurrentRoundAllScored(sessionID)
-			if err == nil && allScored {
-				h.store.CompleteSession(sessionID, false) //nolint:errcheck
-				sessionCompleted = true
-			}
-		}
+		// Mexicano with preset rounds_total: defer completion (show Finish/Keep Playing choice).
+		// Don't auto-complete when at the final round — leave in "playing" status so admin can choose.
+		// The frontend detects this state and shows the choice buttons instead of auto-advancing.
+		// If admin wants to end immediately without seeing the choice, they can use the close endpoint.
 	} else if sess.GameMode == "americano" {
 		// Americano: all pre-generated rounds complete.
 		done, err := h.americanoSvc.CanComplete(sessionID)

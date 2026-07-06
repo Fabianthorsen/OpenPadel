@@ -255,3 +255,72 @@ func TestMexicanoAdvanceRound_UnlimitedRounds(t *testing.T) {
 		t.Errorf("expected Status=playing, got %s", sessFinal.Status)
 	}
 }
+
+// Tracer: Mexicano deferred completion — final round doesn't auto-complete
+func TestMexicanoFinalRoundDeferredCompletion(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+
+	// Create Mexicano with just 1 round (makes it easy to hit the cap)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":       2,
+		"points":       24,
+		"game_mode":    "mexicano",
+		"rounds_total": 1, // Just 1 round to hit cap immediately
+	}, userToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create session: got %d", res.StatusCode)
+	}
+	var createResp struct {
+		ID         string `json:"id"`
+		AdminToken string `json:"admin_token"`
+	}
+	decodeBody(t, res, &createResp)
+	sessID := createResp.ID
+	adminToken := createResp.AdminToken
+
+	// Add 8 players
+	for i := 1; i <= 8; i++ {
+		mustJoinSession(t, srv, sessID, fmt.Sprintf("Player %d", i), "")
+	}
+
+	// Start session
+	mustStartSession(t, srv, sessID, adminToken)
+
+	// Get current round to find match IDs
+	roundRes := getReq(t, srv, "/api/sessions/"+sessID+"/rounds/current", adminToken)
+	var round struct {
+		Matches []struct {
+			ID string `json:"id"`
+		} `json:"matches"`
+	}
+	decodeBody(t, roundRes, &round)
+	if len(round.Matches) == 0 {
+		t.Fatal("no matches in current round")
+	}
+
+	// Score all matches (2 courts = 2 matches)
+	// Scores must add up to points target (24 by default)
+	for _, m := range round.Matches {
+		scoreRes := putReq(t, srv, "/api/sessions/"+sessID+"/matches/"+m.ID+"/score", map[string]any{
+			"score_a": 16,
+			"score_b": 8,
+		}, adminToken)
+		if scoreRes.StatusCode != http.StatusOK {
+			t.Fatalf("submit score: got %d", scoreRes.StatusCode)
+		}
+		scoreRes.Body.Close()
+	}
+
+	// Verify session is STILL playing (not auto-completed)
+	// This is the key behavior: when we hit the final round, we should NOT auto-complete.
+	// Instead, wait for admin choice (Finish vs Keep Playing).
+	sessRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, sessRes, &sess)
+	if sess.Status != "playing" {
+		t.Errorf("expected Status=playing after final round scores (deferred choice), got %q", sess.Status)
+	}
+}
