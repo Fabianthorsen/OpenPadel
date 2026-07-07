@@ -381,3 +381,70 @@ func TestMexicanoFinalRoundDeferredCompletion(t *testing.T) {
 		t.Errorf("expected Status=playing after final round scores (deferred choice), got %q", sess.Status)
 	}
 }
+
+// Americano final round doesn't auto-complete for unlimited sessions (deferred choice)
+func TestAmericanoFinalRoundDeferredCompletion(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+
+	// Create unlimited Americano session (1 court to keep it simple)
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":    1,
+		"points":    24,
+		"game_mode": "americano",
+		// rounds_total omitted = unlimited
+	}, userToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create: got %d", res.StatusCode)
+	}
+	var createResp struct {
+		ID         string `json:"id"`
+		AdminToken string `json:"admin_token"`
+	}
+	decodeBody(t, res, &createResp)
+	sessID := createResp.ID
+	adminToken := createResp.AdminToken
+
+	// Add 4 players (1 court = 4 players, 0 bench)
+	for i := 1; i <= 4; i++ {
+		mustJoinSession(t, srv, sessID, fmt.Sprintf("Player %d", i), "")
+	}
+
+	// Start session - generates round 1 only for unlimited
+	mustStartSession(t, srv, sessID, adminToken)
+
+	// Get current round to find match IDs
+	roundRes := getReq(t, srv, "/api/sessions/"+sessID+"/rounds/current", adminToken)
+	var round struct {
+		Matches []struct {
+			ID string `json:"id"`
+		} `json:"matches"`
+	}
+	decodeBody(t, roundRes, &round)
+	if len(round.Matches) == 0 {
+		t.Fatal("no matches in current round")
+	}
+
+	// Score all matches (1 court = 1 match)
+	for _, m := range round.Matches {
+		scoreRes := putReq(t, srv, "/api/sessions/"+sessID+"/matches/"+m.ID+"/score", map[string]any{
+			"score_a": 16,
+			"score_b": 8,
+		}, adminToken)
+		if scoreRes.StatusCode != http.StatusOK {
+			t.Fatalf("submit score: got %d", scoreRes.StatusCode)
+		}
+		scoreRes.Body.Close()
+	}
+
+	// Verify session is STILL playing (not auto-completed)
+	// This is the key: unlimited Americano should defer completion, not auto-complete
+	sessRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, sessRes, &sess)
+	if sess.Status != "playing" {
+		t.Errorf("expected Status=playing after final round scores (deferred choice), got %q", sess.Status)
+	}
+}

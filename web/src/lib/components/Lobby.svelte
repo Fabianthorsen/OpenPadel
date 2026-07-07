@@ -669,8 +669,8 @@
 					</PillToggleGroup>
 				</div>
 
-				<!-- Mexicano: rounds mode toggle + stepper -->
-				{#if configMode === 'mexicano'}
+				<!-- Rounds mode toggle + stepper (Mexicano & Americano unlimited) -->
+				{#if configMode === 'mexicano' || configMode === 'americano'}
 					<div class="space-y-2">
 						<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
 							{$_('lobby_rounds_label')}
