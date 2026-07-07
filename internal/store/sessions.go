@@ -124,6 +124,21 @@ func (s *Store) StartMexicanoSession(id string, endsAt *time.Time) error {
 	})
 }
 
+// StartAmericanoSession activates the session with current_round=1 for unlimited mode.
+// rounds_total is preserved from creation time (null = open-ended, N = preset).
+func (s *Store) StartAmericanoSession(id string, endsAt *time.Time) error {
+	var endsAtStr sql.NullString
+	if endsAt != nil {
+		endsAtStr = sql.NullString{String: endsAt.UTC().Format(time.RFC3339), Valid: true}
+	}
+	return s.queries.StartMexicanoSession(context.Background(), db.StartMexicanoSessionParams{
+		Status:    string(domain.StatusPlaying),
+		EndsAt:    endsAtStr,
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		ID:        id,
+	})
+}
+
 func (s *Store) AdvanceRound(id string) error {
 	return s.queries.AdvanceRound(context.Background(), db.AdvanceRoundParams{
 		UpdatedAt: time.Now().UTC().Format(time.RFC3339),

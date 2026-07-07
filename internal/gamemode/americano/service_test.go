@@ -49,6 +49,14 @@ func (m *mockStore) GetRounds(sessionID string) ([]domain.Round, error) {
 	return m.savedRounds, nil
 }
 
+func (m *mockStore) StartAmericanoSession(id string, endsAt *time.Time) error {
+	if m.startSessionErr != nil {
+		return m.startSessionErr
+	}
+	m.sessionStarted = true
+	return nil
+}
+
 // TestAdvanceAmericanoRound_Unlimited verifies that AdvanceAmericanoRound generates
 // a new round given previously-played rounds, respecting all constraints.
 func TestAdvanceAmericanoRound_Unlimited(t *testing.T) {

@@ -311,10 +311,13 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Auto-default rounds_total when switching to Mexicano (only if not explicitly set in request).
-	if input.GameMode == domain.ModeMexicano && input.RoundsTotal == nil && !hasExplicitRoundsTotal {
-		v := 7
-		input.RoundsTotal = &v
+	// Auto-default rounds_total when switching to Mexicano or Americano (only if not explicitly set in request).
+	if input.RoundsTotal == nil && !hasExplicitRoundsTotal {
+		if input.GameMode == domain.ModeMexicano {
+			v := 7
+			input.RoundsTotal = &v
+		}
+		// For Americano, rounds_total will be calculated at session start time based on player count
 	}
 
 	if err := h.store.UpdateSessionConfig(id, input); err != nil {
