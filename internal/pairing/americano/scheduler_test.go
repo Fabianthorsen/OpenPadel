@@ -195,3 +195,71 @@ func TestGenerateRounds_MatchHasFourDistinctPlayers(t *testing.T) {
 		}
 	}
 }
+
+// TestGenerateNextRound verifies streaming generation of single rounds.
+// Generates rounds 1..N via batch, then generates round N+1 via streaming and verifies constraints.
+func TestGenerateNextRound(t *testing.T) {
+	players := makePlayers(9) // 1 bench per round
+	courts := 2
+	totalRounds := 9
+
+	// Generate all rounds via batch
+	batchRounds := GenerateRounds(players, courts, totalRounds)
+
+	// Simulate: generate first N-1 rounds via batch, then use streaming for round N
+	for testN := 1; testN < totalRounds; testN++ {
+		previousRounds := batchRounds[:testN]
+		nextRound := GenerateNextRound(previousRounds, players, courts)
+
+		if nextRound == nil {
+			t.Errorf("GenerateNextRound returned nil for round %d", testN+1)
+			continue
+		}
+
+		expectedRound := batchRounds[testN]
+
+		// Check round number
+		if nextRound.Number != expectedRound.Number {
+			t.Errorf("round %d: expected number %d, got %d", testN+1, expectedRound.Number, nextRound.Number)
+		}
+
+		// Check player coverage (all N players accounted for)
+		active := make(map[string]bool)
+		for _, m := range nextRound.Matches {
+			for _, id := range []string{m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]} {
+				if active[id] {
+					t.Errorf("round %d: player %s in multiple matches", nextRound.Number, id)
+				}
+				active[id] = true
+			}
+		}
+		for _, id := range nextRound.Bench {
+			if active[id] {
+				t.Errorf("round %d: bench player %s in a match", nextRound.Number, id)
+			}
+			active[id] = true
+		}
+		if len(active) != len(players) {
+			t.Errorf("round %d: expected %d players, got %d", nextRound.Number, len(players), len(active))
+		}
+
+		// Check no consecutive bench: benched players from previous round must play
+		if testN > 0 {
+			prevBenched := make(map[string]bool)
+			for _, id := range previousRounds[testN-1].Bench {
+				prevBenched[id] = true
+			}
+			for _, id := range nextRound.Bench {
+				if prevBenched[id] {
+					t.Errorf("round %d: player %s benched consecutively", nextRound.Number, id)
+				}
+			}
+		}
+
+		// Check bench size
+		expectedBench := len(players) - courts*4
+		if len(nextRound.Bench) != expectedBench {
+			t.Errorf("round %d: expected %d benched, got %d", nextRound.Number, expectedBench, len(nextRound.Bench))
+		}
+	}
+}
