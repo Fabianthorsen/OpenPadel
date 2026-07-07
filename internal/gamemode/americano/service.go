@@ -15,6 +15,8 @@ type Store interface {
 	SaveRounds(sessionID string, rounds []domain.Round) error
 	StartSession(id string, roundsTotal int, endsAt *time.Time) error
 	AllRoundsComplete(sessionID string) (bool, error)
+	AdvanceAmericanoRound(sessionID string, round domain.Round) error
+	GetRounds(sessionID string) ([]domain.Round, error)
 }
 
 // Service orchestrates Americano session start and round completion checks.
@@ -46,6 +48,17 @@ func (s *Service) Start(w http.ResponseWriter, sessionID string, sess *domain.Se
 // CanComplete returns true when all pre-generated rounds have been fully scored.
 func (s *Service) CanComplete(sessionID string) (bool, error) {
 	return s.store.AllRoundsComplete(sessionID)
+}
+
+// AdvanceAmericanoRound generates the next round for unlimited Americano sessions.
+// Fetches previously-played rounds from DB, generates the next round using streaming
+// generator, and saves it atomically with session state update.
+func (s *Service) AdvanceAmericanoRound(sessionID string, previousRounds []domain.Round, players []domain.Player, courts int) error {
+	// Generate next round from previous rounds using streaming generator
+	nextRound := americano.GenerateNextRound(previousRounds, players, courts)
+
+	// Save atomically with current_round update
+	return s.store.AdvanceAmericanoRound(sessionID, *nextRound)
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {

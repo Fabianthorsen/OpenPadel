@@ -317,6 +317,55 @@ func (s *Store) AdvanceMexicanoRound(sessionID string, round domain.Round) error
 	return tx.Commit()
 }
 
+// AdvanceAmericanoRound saves a newly generated round and updates current_round atomically.
+// Identical to AdvanceMexicanoRound but used for Americano unlimited sessions.
+func (s *Store) AdvanceAmericanoRound(sessionID string, round domain.Round) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	qtx := s.queries.WithTx(tx)
+	if err := qtx.InsertRound(context.Background(), db.InsertRoundParams{
+		ID:        round.ID,
+		SessionID: sessionID,
+		Number:    int64(round.Number),
+	}); err != nil {
+		return err
+	}
+	for _, pid := range round.Bench {
+		if err := qtx.InsertBench(context.Background(), db.InsertBenchParams{
+			RoundID:  round.ID,
+			PlayerID: pid,
+		}); err != nil {
+			return err
+		}
+	}
+	for _, m := range round.Matches {
+		if err := qtx.InsertMatch(context.Background(), db.InsertMatchParams{
+			ID:      m.ID,
+			RoundID: round.ID,
+			Court:   int64(m.Court),
+			P1:      m.TeamA[0],
+			P2:      m.TeamA[1],
+			P3:      m.TeamB[0],
+			P4:      m.TeamB[1],
+		}); err != nil {
+			return err
+		}
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	if err := qtx.UpdateSessionCurrentRound(context.Background(), db.UpdateSessionCurrentRoundParams{
+		CurrentRound: int64(round.Number),
+		UpdatedAt:    now,
+		ID:           sessionID,
+	}); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // AllRoundsComplete returns true when every match in the session has a score.
 func (s *Store) AllRoundsComplete(sessionID string) (bool, error) {
 	count, err := s.queries.AllRoundsComplete(context.Background(), sessionID)
