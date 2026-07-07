@@ -9,12 +9,12 @@ import (
 )
 
 type mockStore struct {
-	savedRounds    []domain.Round
-	sessionStarted bool
-	saveRoundsErr  error
-	startSessionErr error
+	savedRounds             []domain.Round
+	sessionStarted          bool
+	saveRoundsErr           error
+	startSessionErr         error
 	allRoundsCompleteResult bool
-	advanceRoundErr error
+	advanceRoundErr         error
 }
 
 func (m *mockStore) SaveRounds(sessionID string, rounds []domain.Round) error {

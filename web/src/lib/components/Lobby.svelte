@@ -95,7 +95,8 @@
 		configCourts = session.courts;
 		configPoints = session.points;
 		configRounds = session.rounds_total ?? 7;
-		roundsMode = session.rounds_total === null || session.rounds_total === undefined ? 'unlimited' : 'fixed';
+		roundsMode =
+			session.rounds_total === null || session.rounds_total === undefined ? 'unlimited' : 'fixed';
 		scheduleEnabled = !!session.scheduled_at;
 		if (session.scheduled_at) {
 			try {

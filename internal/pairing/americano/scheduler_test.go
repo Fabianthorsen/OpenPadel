@@ -263,4 +263,3 @@ func TestGenerateNextRound(t *testing.T) {
 		}
 	}
 }
-
