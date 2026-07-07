@@ -323,6 +323,17 @@ func (s *Store) AllRoundsComplete(sessionID string) (bool, error) {
 	return count == 0, err
 }
 
+// HasAnyScores returns true if any match in the session has a score submitted.
+func (s *Store) HasAnyScores(sessionID string) (bool, error) {
+	var count int64
+	err := s.db.QueryRow(`
+		SELECT COUNT(*) FROM matches m
+		WHERE m.id IN (SELECT id FROM matches WHERE round_id IN (SELECT id FROM rounds WHERE session_id = ?))
+		AND m.score_a IS NOT NULL
+	`, sessionID).Scan(&count)
+	return count > 0, err
+}
+
 func (s *Store) getBench(roundID string) ([]string, error) {
 	rows, err := s.db.Query(`SELECT player_id FROM bench WHERE round_id = ?`, roundID)
 	if err != nil {

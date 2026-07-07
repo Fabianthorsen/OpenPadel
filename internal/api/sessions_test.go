@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 )
@@ -685,5 +686,58 @@ func TestUpdateSession_ModeSwitchAmericanoToMexicano(t *testing.T) {
 	}
 	if updated.RoundsTotal == nil || *updated.RoundsTotal != 7 {
 		t.Errorf("rounds_total: expected 7, got %v", updated.RoundsTotal)
+	}
+}
+
+// Tracer: Close guard — cannot close unlimited session with 0 rounds played
+func TestCloseSession_UnlimitedRequiresMinRound(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+
+	// Create unlimited Mexicano session
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":    2,
+		"points":    24,
+		"game_mode": "mexicano",
+		// rounds_total omitted = unlimited
+	}, userToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create: got %d", res.StatusCode)
+	}
+	var createResp struct {
+		ID         string `json:"id"`
+		AdminToken string `json:"admin_token"`
+	}
+	decodeBody(t, res, &createResp)
+	sessID := createResp.ID
+	adminToken := createResp.AdminToken
+
+	// Add 8 players
+	for i := 1; i <= 8; i++ {
+		mustJoinSession(t, srv, sessID, fmt.Sprintf("Player %d", i), "")
+	}
+
+	// Start session (no rounds played yet)
+	mustStartSession(t, srv, sessID, adminToken)
+
+	// Try to close without any rounds scored — should fail with min-round error
+	closeRes := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
+	if closeRes.StatusCode == http.StatusNoContent {
+		t.Errorf("expected close to fail for unlimited with 0 rounds, but got 204 (success)")
+	}
+	// Should get 4xx error (conflict or bad request)
+	if closeRes.StatusCode < 400 || closeRes.StatusCode >= 500 {
+		t.Errorf("expected 4xx error, got %d", closeRes.StatusCode)
+	}
+	closeRes.Body.Close()
+
+	// Session should still be playing
+	sessRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, sessRes, &sess)
+	if sess.Status != "playing" {
+		t.Errorf("expected session still playing after failed close, got %q", sess.Status)
 	}
 }

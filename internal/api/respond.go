@@ -54,6 +54,7 @@ var (
 	ErrSessionNotStarted      = APIError{"session_not_started", http.StatusConflict}
 	ErrRoundNotComplete       = APIError{"round_not_complete", http.StatusConflict}
 	ErrRoundLimitReached      = APIError{"round_limit_reached", http.StatusConflict}
+	ErrSessionTooEarlyToClose = APIError{"session_too_early_to_close", http.StatusConflict}
 	ErrTournamentExpired      = APIError{"tournament_expired", http.StatusConflict}
 
 	ErrContactNotFound = APIError{"contact_not_found", http.StatusNotFound}

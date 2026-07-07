@@ -336,6 +336,15 @@ func (h *Handler) closeSession(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrSessionAlreadyEnded)
 		return
 	}
+	// Guard: unlimited sessions (rounds_total = null) require at least 1 round with at least 1 score submitted
+	if sess.RoundsTotal == nil && sess.Status == domain.StatusPlaying {
+		// Check if any matches have scores (at least one round has been scored)
+		hasScores, err := h.store.HasAnyScores(id)
+		if err != nil || !hasScores {
+			respondAPIError(w, ErrSessionTooEarlyToClose)
+			return
+		}
+	}
 	if err := h.store.CompleteSession(id, true); err != nil {
 		respondAPIError(w, ErrServerError)
 		return
