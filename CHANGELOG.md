@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.16.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.15.0...v1.16.0) (2026-07-07)
+
+
+### Features
+
+* **#101:** add close guard for unlimited sessions ([7c9ad7b](https://github.com/Fabianthorsen/OpenPadel/commit/7c9ad7b50a0aa53483f71f879d12fe067b792be8))
+* **#99:** add fixed/unlimited toggle in mexicano lobby ([c25c7b8](https://github.com/Fabianthorsen/OpenPadel/commit/c25c7b8ed27926b274c455dc61b9c9514705c1aa))
+* Americano deferred completion, UI toggle, and UX improvements (Phase 2) ([#112](https://github.com/Fabianthorsen/OpenPadel/issues/112)) ([ecf0c41](https://github.com/Fabianthorsen/OpenPadel/commit/ecf0c411ca3083123d0d8ba0b55a95cce4ca8eca))
+* Americano unlimited rounds (Phase 2) ([#111](https://github.com/Fabianthorsen/OpenPadel/issues/111)) ([0f174b7](https://github.com/Fabianthorsen/OpenPadel/commit/0f174b704881dc1425e284848d089691d9664577))
+
+
+### Bug Fixes
+
+* allow PATCH to set rounds_total to null for unlimited sessions ([c7f87be](https://github.com/Fabianthorsen/OpenPadel/commit/c7f87bef46fc252f2303c84b5350afcf7ad58e51))
+* respect explicit null rounds_total in PATCH endpoint ([f1fdf7f](https://github.com/Fabianthorsen/OpenPadel/commit/f1fdf7f8a2a74b714157dc680b1d897d4594e7c3))
+
+
+### Chores
+
+* harden repo tooling for agentic development ([#94](https://github.com/Fabianthorsen/OpenPadel/issues/94)) ([c1d3010](https://github.com/Fabianthorsen/OpenPadel/commit/c1d3010731fb79ef497cdd60ff5428c5d54f1f05))
+* remove unused assets and stale ignore pattern ([#97](https://github.com/Fabianthorsen/OpenPadel/issues/97)) ([daac535](https://github.com/Fabianthorsen/OpenPadel/commit/daac5351dcce31d1067fd6e6bd6f7c6fb8d2d58a))
+
 ## [1.15.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.14.0...v1.15.0) (2026-05-20)
 
 
