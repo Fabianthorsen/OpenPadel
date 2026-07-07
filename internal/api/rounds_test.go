@@ -434,7 +434,7 @@ func TestAmericanoFinalRoundDeferredCompletion(t *testing.T) {
 		if scoreRes.StatusCode != http.StatusOK {
 			t.Fatalf("submit score: got %d", scoreRes.StatusCode)
 		}
-		scoreRes.Body.Close()
+		scoreRes.Body.Close() //nolint:errcheck
 	}
 
 	// Verify session is STILL playing (not auto-completed)
