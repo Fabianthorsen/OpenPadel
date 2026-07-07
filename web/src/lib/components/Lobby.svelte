@@ -683,8 +683,16 @@
 							<PillToggleItem value="unlimited">{$_('lobby_rounds_mode_unlimited')}</PillToggleItem>
 						</PillToggleGroup>
 						{#if roundsMode === 'fixed'}
-							<div class="flex items-center justify-end">
-								<Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
+							<div class="flex items-center justify-end gap-4">
+								{#if configMode === 'mexicano'}
+									<Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
+								{:else if configMode === 'americano'}
+									<p class="text-text-secondary text-sm">
+										{session.rounds_total
+											? `${session.rounds_total} rounds`
+											: 'Calculated based on players'}
+									</p>
+								{/if}
 							</div>
 						{/if}
 					</div>
