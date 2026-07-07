@@ -138,6 +138,20 @@
 		return Math.round((clamped * 60 - 8 * 60) / 30);
 	}
 
+	function gcd(a: number, b: number): number {
+		return b === 0 ? a : gcd(b, a % b);
+	}
+
+	function calculateAmericanoRounds(players: number, courts: number): number {
+		const benchSize = players - courts * 4;
+		if (benchSize <= 0) {
+			return players - 1;
+		}
+		const cycle = players / gcd(players, benchSize);
+		const target = players - 1;
+		return Math.ceil(target / cycle) * cycle;
+	}
+
 	async function patchConfig(patch: Parameters<typeof api.sessions.update>[1]) {
 		const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
 		try {
@@ -647,9 +661,11 @@
 						onValueChange={(v) => v && onCourtsChange(parseInt(v))}
 					>
 						{#each Array.from({ length: MAX_COURTS }, (_, i) => i + 1) as n}
-							<PillToggleItem value={n.toString()} disabled={configMode === 'mexicano' && n === 1}
-								>{n}</PillToggleItem
-							>
+							{@const activePlayers = session.players.filter((p) => p.active).length}
+							{@const minPlayersNeeded = n * 4}
+							{@const isDisabled =
+								configMode === 'mexicano' && n === 1 ? true : activePlayers < minPlayersNeeded}
+							<PillToggleItem value={n.toString()} disabled={isDisabled}>{n}</PillToggleItem>
 						{/each}
 					</PillToggleGroup>
 				</div>
@@ -669,8 +685,8 @@
 					</PillToggleGroup>
 				</div>
 
-				<!-- Mexicano: rounds mode toggle + stepper -->
-				{#if configMode === 'mexicano'}
+				<!-- Rounds mode toggle + stepper (Mexicano & Americano unlimited) -->
+				{#if configMode === 'mexicano' || configMode === 'americano'}
 					<div class="space-y-2">
 						<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
 							{$_('lobby_rounds_label')}
@@ -683,8 +699,17 @@
 							<PillToggleItem value="unlimited">{$_('lobby_rounds_mode_unlimited')}</PillToggleItem>
 						</PillToggleGroup>
 						{#if roundsMode === 'fixed'}
-							<div class="flex items-center justify-end">
-								<Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
+							<div class="flex items-center justify-end gap-4">
+								{#if configMode === 'mexicano'}
+									<Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
+								{:else if configMode === 'americano'}
+									{@const activePlayers = session.players.filter((p) => p.active).length}
+									{@const calculatedRounds =
+										activePlayers > 0 ? calculateAmericanoRounds(activePlayers, configCourts) : 0}
+									<p class="text-text-secondary text-sm">
+										{activePlayers > 0 ? `${calculatedRounds} rounds` : 'Waiting for players...'}
+									</p>
+								{/if}
 							</div>
 						{/if}
 					</div>
