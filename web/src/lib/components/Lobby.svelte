@@ -661,9 +661,11 @@
 						onValueChange={(v) => v && onCourtsChange(parseInt(v))}
 					>
 						{#each Array.from({ length: MAX_COURTS }, (_, i) => i + 1) as n}
-							<PillToggleItem value={n.toString()} disabled={configMode === 'mexicano' && n === 1}
-								>{n}</PillToggleItem
-							>
+							{@const activePlayers = session.players.filter((p) => p.active).length}
+							{@const minPlayersNeeded = n * 4}
+							{@const isDisabled =
+								configMode === 'mexicano' && n === 1 ? true : activePlayers < minPlayersNeeded}
+							<PillToggleItem value={n.toString()} disabled={isDisabled}>{n}</PillToggleItem>
 						{/each}
 					</PillToggleGroup>
 				</div>
