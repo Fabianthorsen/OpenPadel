@@ -275,7 +275,7 @@ func (s *Store) AdvanceMexicanoRound(sessionID string, round domain.Round) error
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck
 
 	qtx := s.queries.WithTx(tx)
 	if err := qtx.InsertRound(context.Background(), db.InsertRoundParams{
@@ -324,7 +324,7 @@ func (s *Store) AdvanceAmericanoRound(sessionID string, round domain.Round) erro
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback() //nolint:errcheck
 
 	qtx := s.queries.WithTx(tx)
 	if err := qtx.InsertRound(context.Background(), db.InsertRoundParams{
