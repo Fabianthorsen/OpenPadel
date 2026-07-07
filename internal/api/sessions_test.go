@@ -689,6 +689,59 @@ func TestUpdateSession_ModeSwitchAmericanoToMexicano(t *testing.T) {
 	}
 }
 
+// Verify PATCH can set rounds_total to null (toggle to Unlimited)
+func TestPatchSession_SetUnlimited(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+
+	// Create Mexicano with fixed rounds
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":       2,
+		"points":       24,
+		"game_mode":    "mexicano",
+		"rounds_total": 5,
+	}, userToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create: got %d", res.StatusCode)
+	}
+	var createResp struct {
+		ID         string `json:"id"`
+		AdminToken string `json:"admin_token"`
+	}
+	decodeBody(t, res, &createResp)
+	sessID := createResp.ID
+	adminToken := createResp.AdminToken
+
+	// Verify created with 5 rounds
+	getRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sessBefore struct {
+		RoundsTotal *int `json:"rounds_total"`
+	}
+	decodeBody(t, getRes, &sessBefore)
+	if sessBefore.RoundsTotal == nil || *sessBefore.RoundsTotal != 5 {
+		t.Errorf("before PATCH: expected RoundsTotal=5, got %v", sessBefore.RoundsTotal)
+	}
+
+	// PATCH to set rounds_total to null (unlimited)
+	patchRes := patchReq(t, srv, "/api/sessions/"+sessID, map[string]any{
+		"rounds_total": nil,
+	}, adminToken)
+	if patchRes.StatusCode != http.StatusOK {
+		t.Fatalf("PATCH: got %d", patchRes.StatusCode)
+	}
+	patchRes.Body.Close()
+
+	// Verify it's now unlimited (nil)
+	getRes2 := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sessAfter struct {
+		RoundsTotal *int `json:"rounds_total"`
+	}
+	decodeBody(t, getRes2, &sessAfter)
+	if sessAfter.RoundsTotal != nil {
+		t.Errorf("after PATCH: expected RoundsTotal=null, got %v (ptr=%v)", *sessAfter.RoundsTotal, sessAfter.RoundsTotal)
+	}
+}
+
 // Tracer: Close guard — cannot close unlimited session with 0 rounds played
 func TestCloseSession_UnlimitedRequiresMinRound(t *testing.T) {
 	srv, _ := newAPITestServer(t)

@@ -283,7 +283,8 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 		input.Points = *body.Points
 	}
 	// Handle RoundsTotal specially: check if it was in the JSON (even if null)
-	if _, hasRoundsTotal := rawBody["rounds_total"]; hasRoundsTotal {
+	_, hasExplicitRoundsTotal := rawBody["rounds_total"]
+	if hasExplicitRoundsTotal {
 		input.RoundsTotal = body.RoundsTotal // This can be nil (unlimited) or a value (fixed)
 	}
 	if body.ScheduledAt != nil {
@@ -310,8 +311,8 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Auto-default rounds_total when switching to Mexicano.
-	if input.GameMode == domain.ModeMexicano && input.RoundsTotal == nil {
+	// Auto-default rounds_total when switching to Mexicano (only if not explicitly set in request).
+	if input.GameMode == domain.ModeMexicano && input.RoundsTotal == nil && !hasExplicitRoundsTotal {
 		v := 7
 		input.RoundsTotal = &v
 	}

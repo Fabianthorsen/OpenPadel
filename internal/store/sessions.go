@@ -210,7 +210,8 @@ func parseTimePtr(s string) *time.Time {
 }
 
 func (s *Store) UpdateSessionConfig(id string, input domain.SessionInput) error {
-	var roundsTotalVal sql.NullInt64
+	// Always update RoundsTotal: set to NULL if nil, or to the value if not nil
+	roundsTotalVal := sql.NullInt64{Valid: false} // NULL by default
 	if input.RoundsTotal != nil {
 		roundsTotalVal = sql.NullInt64{Int64: int64(*input.RoundsTotal), Valid: true}
 	}
