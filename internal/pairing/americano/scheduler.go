@@ -102,6 +102,98 @@ func GenerateRounds(players []domain.Player, courts, totalRounds int) []domain.R
 	return rounds
 }
 
+// GenerateNextRound produces a single round given the history of previously-played rounds.
+// Rebuilds constraint state from previousRounds to ensure consistent pairing strategy.
+// Stateless: no session-level memoization, history read entirely from rounds slice.
+func GenerateNextRound(previousRounds []domain.Round, players []domain.Player, courts int) *domain.Round {
+	ids := make([]string, len(players))
+	for i, p := range players {
+		ids[i] = p.ID
+	}
+
+	benchSize := len(ids) - courts*4
+
+	// Rebuild state from history
+	lastBenchedRound := make(map[string]int)
+	benchTotal := make(map[string]int)
+	partnerCount := map[[2]string]int{}
+	courtShareCount := map[[2]string]int{}
+
+	for _, prevRound := range previousRounds {
+		// Track bench
+		for _, id := range prevRound.Bench {
+			lastBenchedRound[id] = prevRound.Number
+			benchTotal[id]++
+		}
+
+		// Track partner and court co-occurrence
+		for _, m := range prevRound.Matches {
+			partnerCount[pairKey(m.TeamA[0], m.TeamA[1])]++
+			partnerCount[pairKey(m.TeamB[0], m.TeamB[1])]++
+			// All 6 pairwise co-occurrences on this court
+			matchPlayers := []string{m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]}
+			for i := 0; i < len(matchPlayers); i++ {
+				for j := i + 1; j < len(matchPlayers); j++ {
+					courtShareCount[pairKey(matchPlayers[i], matchPlayers[j])]++
+				}
+			}
+		}
+	}
+
+	// Generate next round
+	roundNum := len(previousRounds) + 1
+
+	// Players who sat out last round must play this round
+	mustPlay := make(map[string]bool)
+	if len(previousRounds) > 0 {
+		for _, id := range ids {
+			if lastBenchedRound[id] == roundNum-1 {
+				mustPlay[id] = true
+			}
+		}
+	}
+
+	var forced, canBench []string
+	for _, id := range ids {
+		if mustPlay[id] {
+			forced = append(forced, id)
+		} else {
+			canBench = append(canBench, id)
+		}
+	}
+
+	// From canBench, those with fewest bench turns are most "due" to sit
+	sort.Slice(canBench, func(i, j int) bool {
+		return benchTotal[canBench[i]] < benchTotal[canBench[j]]
+	})
+
+	var bench, active []string
+	if benchSize > 0 {
+		actualBenchSize := benchSize
+		if actualBenchSize > len(canBench) {
+			actualBenchSize = len(canBench)
+		}
+		bench = canBench[:actualBenchSize]
+		active = append(forced, canBench[actualBenchSize:]...)
+	} else {
+		active = append([]string{}, ids...)
+	}
+
+	matches := assignCourts(active, courts, partnerCount, courtShareCount)
+	shuffleTeamSides(matches)
+	shuffleCourtNumbers(matches)
+
+	benchIDs := make([]string, len(bench))
+	copy(benchIDs, bench)
+
+	return &domain.Round{
+		ID:      shortID(),
+		Number:  roundNum,
+		Bench:   benchIDs,
+		Matches: matches,
+	}
+}
+
 // pairKey returns a canonical (sorted) key for a partnership.
 func pairKey(a, b string) [2]string {
 	if a > b {
