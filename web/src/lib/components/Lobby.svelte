@@ -138,6 +138,20 @@
 		return Math.round((clamped * 60 - 8 * 60) / 30);
 	}
 
+	function gcd(a: number, b: number): number {
+		return b === 0 ? a : gcd(b, a % b);
+	}
+
+	function calculateAmericanoRounds(players: number, courts: number): number {
+		const benchSize = players - courts * 4;
+		if (benchSize <= 0) {
+			return players - 1;
+		}
+		const cycle = players / gcd(players, benchSize);
+		const target = players - 1;
+		return Math.ceil(target / cycle) * cycle;
+	}
+
 	async function patchConfig(patch: Parameters<typeof api.sessions.update>[1]) {
 		const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
 		try {
@@ -687,10 +701,11 @@
 								{#if configMode === 'mexicano'}
 									<Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
 								{:else if configMode === 'americano'}
+									{@const activePlayers = session.players.filter((p) => p.active).length}
+									{@const calculatedRounds =
+										activePlayers > 0 ? calculateAmericanoRounds(activePlayers, configCourts) : 0}
 									<p class="text-text-secondary text-sm">
-										{session.rounds_total
-											? `${session.rounds_total} rounds`
-											: 'Calculated based on players'}
+										{activePlayers > 0 ? `${calculatedRounds} rounds` : 'Waiting for players...'}
 									</p>
 								{/if}
 							</div>
