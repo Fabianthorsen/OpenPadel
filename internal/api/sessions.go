@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -236,6 +237,17 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var rawBody map[string]interface{}
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		respondAPIError(w, ErrInvalidRequestBody)
+		return
+	}
+	if err := json.Unmarshal(bodyBytes, &rawBody); err != nil {
+		respondAPIError(w, ErrInvalidRequestBody)
+		return
+	}
+
 	var body struct {
 		Name        *string `json:"name"`
 		GameMode    *string `json:"game_mode"`
@@ -244,7 +256,7 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 		RoundsTotal *int    `json:"rounds_total"`
 		ScheduledAt *string `json:"scheduled_at"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(bodyBytes, &body); err != nil {
 		respondAPIError(w, ErrInvalidRequestBody)
 		return
 	}
@@ -270,8 +282,9 @@ func (h *Handler) updateSession(w http.ResponseWriter, r *http.Request) {
 	if body.Points != nil {
 		input.Points = *body.Points
 	}
-	if body.RoundsTotal != nil {
-		input.RoundsTotal = body.RoundsTotal
+	// Handle RoundsTotal specially: check if it was in the JSON (even if null)
+	if _, hasRoundsTotal := rawBody["rounds_total"]; hasRoundsTotal {
+		input.RoundsTotal = body.RoundsTotal // This can be nil (unlimited) or a value (fixed)
 	}
 	if body.ScheduledAt != nil {
 		if *body.ScheduledAt == "" {
