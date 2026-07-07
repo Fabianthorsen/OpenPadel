@@ -138,6 +138,63 @@ func TestGetLeaderboard(t *testing.T) {
 	}
 }
 
+// Leaderboard displays correctly for unlimited sessions (total_rounds = null)
+func TestGetLeaderboard_UnlimitedRounds(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+
+	// Create unlimited Mexicano session
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":    2,
+		"points":    24,
+		"game_mode": "mexicano",
+		// rounds_total omitted = unlimited
+	}, userToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create: got %d", res.StatusCode)
+	}
+	var createResp struct {
+		ID         string `json:"id"`
+		AdminToken string `json:"admin_token"`
+	}
+	decodeBody(t, res, &createResp)
+	sessID := createResp.ID
+	adminToken := createResp.AdminToken
+
+	// Add 8 players
+	for i := 1; i <= 8; i++ {
+		mustJoinSession(t, srv, sessID, fmt.Sprintf("Player %d", i), "")
+	}
+
+	// Start session
+	mustStartSession(t, srv, sessID, adminToken)
+
+	// Get leaderboard — should work fine with null total_rounds
+	leaderRes := getReq(t, srv, "/api/sessions/"+sessID+"/leaderboard", adminToken)
+	if leaderRes.StatusCode != http.StatusOK {
+		t.Fatalf("leaderboard: expected 200, got %d", leaderRes.StatusCode)
+	}
+	var leaderboard struct {
+		CurrentRound int  `json:"current_round"`
+		TotalRounds  *int `json:"total_rounds"`
+		Standings    []struct {
+			Name string `json:"name"`
+		} `json:"standings"`
+	}
+	decodeBody(t, leaderRes, &leaderboard)
+
+	// Verify structure is correct for unlimited (null total_rounds)
+	if leaderboard.TotalRounds != nil {
+		t.Errorf("expected TotalRounds=null for unlimited, got %v", leaderboard.TotalRounds)
+	}
+	if leaderboard.CurrentRound != 1 {
+		t.Errorf("expected CurrentRound=1 after start, got %d", leaderboard.CurrentRound)
+	}
+	if len(leaderboard.Standings) != 8 {
+		t.Errorf("expected 8 standings, got %d", len(leaderboard.Standings))
+	}
+}
+
 func TestAdvanceRound(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	sessID, adminToken, _ := setupStartedSession(t, srv)
