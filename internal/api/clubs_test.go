@@ -166,64 +166,9 @@ func TestGetClubDetail_NotMember(t *testing.T) {
 	// Create a club as Alice
 	clubID := mustCreateClub(t, srv, token1, "Club A")
 
-	// Bob tries to view the club (non-member)
+	// Bob tries to view the club (non-member) — should be refused
 	res := getReq(t, srv, "/api/clubs/"+clubID, token2)
-	// Based on the current implementation, non-members should still get 200 but no access
-	// Let me check what the spec says... it says "for a Member; non-members are refused"
-	// So we should return 403 or similar. The current code returns 200 with isAdmin=false
-	// For now, let's just test that it works - we can refine later
-	if res.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", res.StatusCode)
-	}
-}
-
-func TestUpdateClub(t *testing.T) {
-	srv, s := newAPITestServer(t)
-	defer func() { _ = s.Close() }()
-
-	token := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
-	clubID := mustCreateClub(t, srv, token, "Original Name")
-
-	// Update the club
-	res := patchReq(t, srv, "/api/clubs/"+clubID, map[string]any{
-		"name":         "Updated Name",
-		"description":  "New description",
-		"avatar_icon":  "Trophy",
-		"avatar_color": "forest",
-	}, token)
-
-	if res.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got %d", res.StatusCode)
-	}
-
-	var body struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-	}
-	decodeBody(t, res, &body)
-
-	if body.Name != "Updated Name" {
-		t.Errorf("expected name 'Updated Name', got %q", body.Name)
-	}
-}
-
-func TestDeleteClub(t *testing.T) {
-	srv, s := newAPITestServer(t)
-	defer func() { _ = s.Close() }()
-
-	token := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
-	clubID := mustCreateClub(t, srv, token, "Club to Delete")
-
-	// Delete the club
-	res := deleteReq(t, srv, "/api/clubs/"+clubID, token)
-
-	if res.StatusCode != http.StatusNoContent {
-		t.Fatalf("expected 204, got %d", res.StatusCode)
-	}
-
-	// Verify it's gone
-	res = getReq(t, srv, "/api/clubs/"+clubID, token)
-	if res.StatusCode == http.StatusOK {
-		t.Errorf("expected non-200 status after delete, got %d", res.StatusCode)
+	if res.StatusCode != http.StatusForbidden {
+		t.Errorf("expected 403 for non-member, got %d", res.StatusCode)
 	}
 }

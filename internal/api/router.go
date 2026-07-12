@@ -108,11 +108,7 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 		// Clubs
 		r.With(h.requireAuth).Post("/clubs", h.createClub)
 		r.With(h.requireAuth).Get("/clubs", h.getMyClubs)
-		r.Route("/clubs/{id}", func(r chi.Router) {
-			r.With(h.requireAuth).Get("/", h.getClub)
-			r.With(h.requireAuth).Patch("/", h.updateClub)
-			r.With(h.requireAuth).Delete("/", h.deleteClub)
-		})
+		r.With(h.requireAuth).Get("/clubs/{id}", h.getClub)
 
 		r.Get("/push/vapid-public-key", h.vapidPublicKey)
 		r.With(h.requireAuth).Post("/push/subscribe", h.subscribePush)
