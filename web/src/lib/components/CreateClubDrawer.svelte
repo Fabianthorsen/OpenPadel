@@ -8,6 +8,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { SectionLabel } from '$lib/components/ui/section-label';
 	import * as Drawer from '$lib/components/ui/drawer';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
@@ -100,29 +101,20 @@
 				</button>
 			</div>
 
-			{#if showCancelConfirm}
-				<div class="fixed inset-0 bg-black/50 flex items-end z-50">
-					<div class="w-full bg-surface-raised rounded-t-2xl p-6 space-y-4">
-						<div class="space-y-2">
-							<h2 class="font-semibold text-base">Discard changes?</h2>
-							<p class="text-sm text-text-secondary">You'll lose your club details.</p>
-						</div>
-						<div class="flex gap-3">
-							<button
-								onclick={() => (showCancelConfirm = false)}
-								class="flex-1 h-auto rounded-2xl px-4 py-3 text-sm font-semibold text-text-primary bg-surface-raised hover:bg-border transition-colors"
-							>
-								Keep editing
-							</button>
-							<Drawer.Close class="flex-1">
-								<button class="w-full h-auto rounded-2xl px-4 py-3 text-sm font-semibold text-white bg-primary hover:bg-primary-hover transition-colors">
-									Discard
-								</button>
-							</Drawer.Close>
-						</div>
-					</div>
-				</div>
-			{/if}
+			<ConfirmDialog
+				open={showCancelConfirm}
+				title="Discard changes?"
+				description="You'll lose your club details."
+				confirmLabel="Discard"
+				cancelLabel="Keep editing"
+				onconfirm={() => {
+					open = false;
+					name = '';
+					description = '';
+					showCancelConfirm = false;
+				}}
+				oncancel={() => (showCancelConfirm = false)}
+			/>
 		</div>
 	</Drawer.Content>
 </Drawer.Root>
