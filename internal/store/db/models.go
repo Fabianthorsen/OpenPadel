@@ -20,6 +20,24 @@ type Bench struct {
 	PlayerID string
 }
 
+type Club struct {
+	ID          string
+	Name        string
+	Description string
+	AvatarIcon  string
+	AvatarColor string
+	JoinCode    string
+	CreatedBy   string
+	CreatedAt   string
+}
+
+type ClubMember struct {
+	ClubID   string
+	UserID   string
+	Role     string
+	JoinedAt string
+}
+
 type Contact struct {
 	UserID        string
 	ContactUserID string
@@ -110,6 +128,7 @@ type Session struct {
 	RoundDurationSeconds         sql.NullInt64
 	RoundStartedAt               sql.NullString
 	IntervalBetweenRoundsMinutes sql.NullInt64
+	ClubID                       sql.NullString
 }
 
 type User struct {

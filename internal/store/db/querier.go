@@ -18,6 +18,7 @@ type Querier interface {
 	CompleteSession(ctx context.Context, arg CompleteSessionParams) error
 	CountUnscored(ctx context.Context, sessionID string) (int64, error)
 	CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams) error
+	CreateClub(ctx context.Context, arg CreateClubParams) error
 	CreateInvite(ctx context.Context, arg CreateInviteParams) error
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreatePlayer(ctx context.Context, arg CreatePlayerParams) error
@@ -28,6 +29,8 @@ type Querier interface {
 	DeleteAuthToken(ctx context.Context, tokenHash string) error
 	DeleteAuthTokensByUserID(ctx context.Context, userID string) error
 	DeleteBench(ctx context.Context, sessionID string) error
+	DeleteClub(ctx context.Context, id string) error
+	DeleteClubMember(ctx context.Context, arg DeleteClubMemberParams) error
 	DeleteInvite(ctx context.Context, id string) error
 	DeleteMatches(ctx context.Context, sessionID string) error
 	DeletePasswordResetToken(ctx context.Context, tokenHash string) error
@@ -46,6 +49,12 @@ type Querier interface {
 	// regardless of its points target (ADR 0007). Guests fill seats but only the
 	// user's own player rows are aggregated.
 	GetCareerSummary(ctx context.Context, userID sql.NullString) (GetCareerSummaryRow, error)
+	GetClub(ctx context.Context, id string) (Club, error)
+	GetClubAdminCount(ctx context.Context, clubID string) (int64, error)
+	GetClubByJoinCode(ctx context.Context, joinCode string) (Club, error)
+	GetClubMember(ctx context.Context, arg GetClubMemberParams) (GetClubMemberRow, error)
+	GetClubMemberCount(ctx context.Context, clubID string) (int64, error)
+	GetClubMembers(ctx context.Context, clubID string) ([]GetClubMembersRow, error)
 	GetContacts(ctx context.Context, userID string) ([]GetContactsRow, error)
 	GetCreatorName(ctx context.Context, id string) (string, error)
 	GetCurrentRoundBySessionID(ctx context.Context, sessionID string) (GetCurrentRoundBySessionIDRow, error)
@@ -92,9 +101,11 @@ type Querier interface {
 	GetUserAvatarByUserID(ctx context.Context, id string) (GetUserAvatarByUserIDRow, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id string) (GetUserByIDRow, error)
+	GetUserClubs(ctx context.Context, userID string) ([]Club, error)
 	GetUserSessions(ctx context.Context, creatorUserID sql.NullString) ([]GetUserSessionsRow, error)
 	IncrementTournamentWinCount(ctx context.Context, id string) error
 	InsertBench(ctx context.Context, arg InsertBenchParams) error
+	InsertClubMember(ctx context.Context, arg InsertClubMemberParams) error
 	InsertMatch(ctx context.Context, arg InsertMatchParams) error
 	InsertRound(ctx context.Context, arg InsertRoundParams) error
 	RemoveContact(ctx context.Context, arg RemoveContactParams) error
@@ -106,7 +117,10 @@ type Querier interface {
 	StartSession(ctx context.Context, arg StartSessionParams) error
 	StartTimedAmericanoSession(ctx context.Context, arg StartTimedAmericanoSessionParams) error
 	UpdateAuthTokenExpiry(ctx context.Context, arg UpdateAuthTokenExpiryParams) error
+	UpdateClub(ctx context.Context, arg UpdateClubParams) error
+	UpdateClubMemberRole(ctx context.Context, arg UpdateClubMemberRoleParams) error
 	UpdateInviteStatus(ctx context.Context, arg UpdateInviteStatusParams) error
+	UpdateJoinCode(ctx context.Context, arg UpdateJoinCodeParams) error
 	UpdateMatchLiveScore(ctx context.Context, arg UpdateMatchLiveScoreParams) error
 	UpdateMatchScore(ctx context.Context, arg UpdateMatchScoreParams) error
 	UpdatePlayerRating(ctx context.Context, arg UpdatePlayerRatingParams) error
