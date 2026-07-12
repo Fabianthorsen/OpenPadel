@@ -113,10 +113,9 @@
 
 						<div class="space-y-3">
 							<JoinCodeInput onComplete={(code) => goto(`/s/${code}`)} />
-						</div>
-					{/if}
 				</div>
 			{/if}
+		</div>
 		</div>
 	</div>
 	<Footer />

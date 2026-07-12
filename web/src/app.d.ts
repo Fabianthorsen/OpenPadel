@@ -190,6 +190,43 @@ declare global {
 			standings: Standing[];
 			updated_at: string;
 		}
+
+		interface Club {
+			id: string;
+			name: string;
+			description: string;
+			avatar_icon: string;
+			avatar_color: string;
+			join_code: string;
+			created_by: string;
+			created_at: string;
+		}
+
+		interface ClubMember {
+			user_id: string;
+			display_name: string;
+			role: string;
+			avatar_icon: string;
+			avatar_color: string;
+			joined_at: string;
+		}
+
+		interface ClubListItem {
+			id: string;
+			name: string;
+			avatar_icon: string;
+			avatar_color: string;
+			my_role: string;
+			roster_count: number;
+		}
+
+		interface ClubDetail {
+			club: Club;
+			members: ClubMember[];
+			is_admin: boolean;
+			my_role: string;
+			roster_count: number;
+		}
 	}
 }
 
