@@ -1,6 +1,6 @@
 # Component Patterns & Design System Guide
 
-This guide documents how to write reusable, AI-discoverable components for OpenPadel. It covers the tailwind-variants pattern, JSDoc conventions, composition patterns, and the decision framework for extending vs. creating custom components.
+Guide for writing reusable, AI-discoverable components following the tailwind-variants pattern, JSDoc conventions, composition patterns, and extending vs. creating custom components.
 
 ## Quick Start
 
@@ -33,18 +33,12 @@ A reusable component follows this pattern:
   export type ButtonSize = VariantProps<typeof buttonVariants>['size'];
 
   /**
-   * Primary action button for CTAs and main interactions.
-   * 
-   * @example
-   * <Button variant="primary" size="md">Click me</Button>
-   * 
-   * @example
-   * <Button variant="secondary" disabled>Disabled</Button>
+   * Primary action button. See "JSDoc: Documenting Components for AI" section for full documentation pattern.
    */
   export interface ButtonProps extends HTMLButtonAttributes {
-    /** Visual style: primary (default) fills with primary color, secondary is outlined, ghost has no background */
+    /** variant: primary | secondary. */
     variant?: ButtonVariant;
-    /** Size: sm (8px height), md (10px height) */
+    /** size: sm | md. */
     size?: ButtonSize;
   }
 
@@ -62,30 +56,13 @@ A reusable component follows this pattern:
 
 ## The Pattern: tailwind-variants (tv)
 
-### What is tailwind-variants?
-
-`tailwind-variants` (tv) is a library that creates type-safe, composable Tailwind classes. It's the single source of truth for how a component looks.
-
-### When to use tv
-
-✅ **Use tv when:**
-- A component has multiple visual modes (variant, size, state)
-- The same styling logic is used in multiple places
-- You need type safety and IDE autocomplete for variants
-- You want AI to understand available options
-
-❌ **Don't use tv when:**
-- Styling is one-off and unlikely to be reused
-- A component has only one visual form
+`tailwind-variants` (tv) creates type-safe, composable Tailwind classes as the single source of truth for component styling.
 
 ### Structure: base, variants, defaultVariants
 
 ```typescript
 const componentVariants = tv({
-  // Base styles applied to all instances
   base: 'flex items-center justify-center rounded-lg transition-colors',
-  
-  // Conditional styles grouped by category
   variants: {
     variant: {
       primary: 'bg-primary text-white',
@@ -101,8 +78,6 @@ const componentVariants = tv({
       loading: 'cursor-wait',
     },
   },
-  
-  // Default variant selections when not specified
   defaultVariants: {
     variant: 'primary',
     size: 'md',
@@ -244,37 +219,21 @@ Document in JSDoc:
 
 ## Design Tokens in Components
 
-### Reference Tokens in Code
+### Reference Tokens in JSDoc
 
-Use the `design-tokens.ts` module for programmatic access:
+Document available token categories to help AI understand options:
 
 ```typescript
 import { tokens } from '$lib/design-tokens';
 
-// In tailwind-variants
-const buttonVariants = tv({
-  variants: {
-    variant: {
-      primary: `bg-[${tokens.colors.primary}]`,
-    },
-  },
-});
-```
-
-### Reference Tokens in JSDoc
-
-Help AI understand available colors:
-
-```typescript
 /**
- * Button variant. Available: primary, secondary, destructive, ghost.
- * See tokens.colors for full palette.
- * 
- * - primary: uses tokens.colors.primary
- * - destructive: uses tokens.colors.destructive
+ * Button variant: primary, secondary, destructive, ghost.
+ * See tokens.colors for full palette (tokens.colors.primary, tokens.colors.destructive, etc.).
  */
 variant?: ButtonVariant;
 ```
+
+Use Tailwind class names in `tailwind-variants` (e.g., `bg-primary`, `text-destructive`), not token interpolation. Tokens should already be available as CSS variables in your theme.
 
 ---
 
