@@ -3,15 +3,10 @@
 	import { api } from '$lib/api/client';
 	import { auth } from '$lib/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import Footer from '$lib/components/Footer.svelte';
 	import { initials } from '$lib/utils';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
-
-	interface PageData {
-		params: { id: string };
-	}
 
 	let club = $state<App.ClubDetail | null>(null);
 	let loading = $state(true);
@@ -55,37 +50,50 @@
 {:else if error}
 	<div class="flex flex-col items-center justify-center min-h-screen gap-4">
 		<p class="text-red-500">{error}</p>
-		<Button onclick={() => goto('/')}>Back to home</Button>
+		<Button onclick={() => goto('/profile')}>Back to profile</Button>
 	</div>
 {:else if club}
 	<div class="flex flex-col h-screen">
 		<div class="flex-1 overflow-y-auto pb-20">
-			<!-- Club Header -->
-			<div class="bg-gradient-to-b from-slate-100 to-white dark:from-slate-900 dark:to-slate-950 p-6 border-b">
-				<div class="flex items-start gap-4 max-w-2xl mx-auto">
+			<!-- Header with back button and member count -->
+			<div class="pt-safe-page bg-surface-raised sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b">
+				<button
+					onclick={() => goto('/profile')}
+					class="text-text-secondary hover:text-text-primary transition-colors text-lg"
+				>
+					‹
+				</button>
+				<h1 class="flex-1 text-center text-lg font-bold">{club.club.name}</h1>
+				<div class="w-8 text-center">
+					<p class="text-xs font-semibold text-text-secondary">{club.roster_count}</p>
+				</div>
+			</div>
+
+			<!-- Club Details -->
+			<div class="px-6 py-6 border-b">
+				<div class="flex items-start gap-4">
 					<div
-						class="w-16 h-16 rounded-lg flex items-center justify-center text-xl font-bold text-white"
+						class="w-14 h-14 rounded-lg flex items-center justify-center text-lg font-bold text-white flex-shrink-0"
 						style="background-color: var(--avatar-color-{club.club.avatar_color}, #666)"
 					>
 						{initials(club.club.name)}
 					</div>
-					<div class="flex-1">
-						<h1 class="text-2xl font-bold">{club.club.name}</h1>
+					<div class="flex-1 min-w-0">
 						{#if club.club.description}
-							<p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{club.club.description}</p>
+							<p class="text-sm text-text-secondary break-words">{club.club.description}</p>
 						{/if}
-						<p class="text-xs text-slate-500 dark:text-slate-500 mt-2">{club.roster_count} members</p>
+						<p class="text-xs text-text-disabled mt-2">{club.roster_count} members</p>
 					</div>
 				</div>
 			</div>
 
 			<!-- Roster -->
-			<div class="max-w-2xl mx-auto p-6">
-				<h2 class="text-lg font-semibold mb-4">Members ({club.roster_count})</h2>
+			<div class="px-6 py-6">
+				<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase mb-4">Members</p>
 				<div class="space-y-2">
 					{#each club.members as member}
 						<div
-							class="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-slate-50 dark:hover:bg-slate-900"
+							class="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-surface-raised transition-colors"
 						>
 							<div
 								class="w-10 h-10 rounded flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
@@ -95,7 +103,7 @@
 							</div>
 							<div class="flex-1 min-w-0">
 								<p class="font-medium text-sm">{member.display_name}</p>
-								<p class="text-xs text-slate-500 capitalize">{member.role}</p>
+								<p class="text-xs text-text-secondary capitalize">{member.role}</p>
 							</div>
 						</div>
 					{/each}
