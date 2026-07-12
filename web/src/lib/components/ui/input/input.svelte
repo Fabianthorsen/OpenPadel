@@ -91,3 +91,17 @@
 		{...restProps}
 	/>
 {/if}
+
+<style>
+	:global(input[data-slot='input'][type='number']::-webkit-outer-spin-button),
+	:global(input[data-slot='input'][type='number']::-webkit-inner-spin-button) {
+		-webkit-appearance: none;
+		appearance: none;
+		margin: 0;
+	}
+
+	:global(input[data-slot='input'][type='number']) {
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
+</style>

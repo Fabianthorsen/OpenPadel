@@ -6,6 +6,7 @@
 	import { translateApiError } from '$lib/i18n/errors';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Textarea } from '$lib/components/ui/textarea';
 	import { SectionLabel } from '$lib/components/ui/section-label';
 	import * as Drawer from '$lib/components/ui/drawer';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -78,13 +79,13 @@
 				<!-- Description -->
 				<div class="space-y-2.5">
 					<SectionLabel>Description</SectionLabel>
-					<textarea
+					<Textarea
 						bind:value={description}
 						placeholder="Optional description"
-						class="bg-surface-raised w-full rounded-2xl border-0 px-4 py-3.5 text-sm placeholder:text-text-disabled focus:outline-none focus:ring-1 focus:ring-primary"
 						rows="3"
 						disabled={creating}
-					></textarea>
+						class="bg-surface-raised"
+					/>
 				</div>
 			</div>
 
