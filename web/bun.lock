@@ -9,6 +9,7 @@
         "bits-ui": "^2.16.3",
         "clsx": "^2.1.1",
         "lucide-svelte": "^1.0.1",
+        "skeleton-ui": "^0.0.8",
         "svelte-i18n": "^4.0.1",
         "svelte-sonner": "^1.1.0",
         "tailwind-merge": "^3.5.0",
@@ -1162,6 +1163,8 @@
     "signal-exit": ["signal-exit@4.1.0", "", {}, "sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw=="],
 
     "sirv": ["sirv@3.0.2", "", { "dependencies": { "@polka/url": "^1.0.0-next.24", "mrmime": "^2.0.0", "totalist": "^3.0.0" } }, "sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g=="],
+
+    "skeleton-ui": ["skeleton-ui@0.0.8", "", {}, "sha512-A86U1GeaqpBr1V/JyLIpnPxfAZrGlzR16Z3xIcAMxBXFgvY+Os+3ipS5UTr9GX540VWtRFaWdSO7ax0+RqSE/A=="],
 
     "smob": ["smob@1.6.1", "", {}, "sha512-KAkBqZl3c2GvNgNhcoyJae1aKldDW0LO279wF9bk1PnluRTETKBq0WyzRXxEhoQLk56yHaOY4JCBEKDuJIET5g=="],
 
