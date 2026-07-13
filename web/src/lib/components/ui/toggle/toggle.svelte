@@ -1,6 +1,23 @@
 <script lang="ts" module>
 	import { type VariantProps, tv } from 'tailwind-variants';
+	import type { HTMLButtonAttributes } from 'svelte/elements';
+	import { type WithElementRef } from '$lib/utils.js';
 
+	/**
+	 * Toggle component for state switching and form validation.
+	 * A button that tracks pressed state; commonly used for filters, display modes, or binary choices.
+	 *
+	 * @example
+	 * <Toggle bind:pressed={isActive}>Bold</Toggle>
+	 *
+	 * @example
+	 * <Toggle variant="outline" onPressedChange={(p) => (enabled = p)}>
+	 *   <BellIcon />
+	 * </Toggle>
+	 *
+	 * @example
+	 * <Toggle disabled ariaInvalid={hasError}>Error state</Toggle>
+	 */
 	export const toggleVariants = tv({
 		base: "hover:text-foreground aria-pressed:bg-muted focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive data-[state=on]:bg-muted gap-1 rounded-lg text-sm font-medium transition-all [&_svg:not([class*='size-'])]:size-4 group/toggle hover:bg-muted inline-flex items-center justify-center whitespace-nowrap outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 		variants: {
@@ -23,7 +40,30 @@
 
 	export type ToggleVariant = VariantProps<typeof toggleVariants>['variant'];
 	export type ToggleSize = VariantProps<typeof toggleVariants>['size'];
-	export type ToggleVariants = VariantProps<typeof toggleVariants>;
+
+	/**
+	 * Toggle component props. Extends Bits UI Toggle.RootProps with size and variant options.
+	 *
+	 * Use variants for visual context:
+	 * - default: no background, active state shows muted background
+	 * - outline: bordered, similar to default outline button
+	 */
+	export interface ToggleProps extends WithElementRef<HTMLButtonAttributes> {
+		/** variant: default | outline. See component JSDoc for semantic use. */
+		variant?: ToggleVariant;
+
+		/** size: sm | default | lg. sm for compact, default for standard, lg for prominent. */
+		size?: ToggleSize;
+
+		/** Pressed: true when toggle is active/toggled on. */
+		pressed?: boolean;
+
+		/** Disabled: toggle cannot be interacted with, appears inactive. */
+		disabled?: boolean;
+
+		/** Invalid: true if toggle state is invalid; indicates error state for screen readers. */
+		ariaInvalid?: boolean;
+	}
 </script>
 
 <script lang="ts">
@@ -37,10 +77,7 @@
 		size = 'default',
 		variant = 'default',
 		...restProps
-	}: TogglePrimitive.RootProps & {
-		variant?: ToggleVariant;
-		size?: ToggleSize;
-	} = $props();
+	}: TogglePrimitive.RootProps & ToggleProps = $props();
 </script>
 
 <TogglePrimitive.Root

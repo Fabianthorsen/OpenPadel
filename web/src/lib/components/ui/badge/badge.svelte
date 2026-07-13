@@ -1,6 +1,17 @@
 <script lang="ts" module>
 	import { type VariantProps, tv } from 'tailwind-variants';
+	import type { HTMLAnchorAttributes } from 'svelte/elements';
+	import { type WithElementRef } from '$lib/utils.js';
 
+	/**
+	 * Badge component for status indicators, category tags, and semantic pills.
+	 * Renders as `<span>` by default or `<a>` when href is provided.
+	 *
+	 * @example
+	 * <Badge variant="default">Online</Badge>
+	 * <Badge variant="secondary">Category</Badge>
+	 * <Badge variant="destructive">Error</Badge>
+	 */
 	export const badgeVariants = tv({
 		base: 'h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium transition-all has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&>svg]:size-3! focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive group/badge inline-flex w-fit shrink-0 items-center justify-center overflow-hidden whitespace-nowrap transition-colors focus-visible:ring-[3px] [&>svg]:pointer-events-none',
 		variants: {
@@ -20,11 +31,26 @@
 	});
 
 	export type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
+
+	/**
+	 * Badge component props. Renders as `<span>` or `<a>` (if href provided).
+	 *
+	 * Use variants for semantic context:
+	 * - default: status indicator (online, active, success)
+	 * - secondary: category tag (feature, type, group)
+	 * - destructive: warning or error state
+	 * - outline: neutral badge with border
+	 * - ghost: minimal emphasis badge
+	 * - link: clickable badge with underline
+	 */
+	export interface BadgeProps extends WithElementRef<HTMLAnchorAttributes> {
+		/** variant: see component JSDoc for semantic use cases. */
+		variant?: BadgeVariant;
+	}
 </script>
 
 <script lang="ts">
-	import type { HTMLAnchorAttributes } from 'svelte/elements';
-	import { cn, type WithElementRef } from '$lib/utils.js';
+	import { cn } from '$lib/utils.js';
 
 	let {
 		ref = $bindable(null),
@@ -33,9 +59,7 @@
 		variant = 'default',
 		children,
 		...restProps
-	}: WithElementRef<HTMLAnchorAttributes> & {
-		variant?: BadgeVariant;
-	} = $props();
+	}: BadgeProps = $props();
 </script>
 
 <svelte:element

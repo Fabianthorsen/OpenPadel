@@ -1,22 +1,32 @@
-<script lang="ts">
+<script lang="ts" module>
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { cn, type WithElementRef } from '$lib/utils.js';
+	import type { Snippet } from 'svelte';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
+	/**
+	 * Drawer header section with title and close button.
+	 * Typically contains DrawerTitle and DrawerClose.
+	 *
+	 * @example
+	 * <DrawerHeader>
+	 *   <DrawerTitle>Settings</DrawerTitle>
+	 *   <DrawerClose>×</DrawerClose>
+	 * </DrawerHeader>
+	 */
+	export interface DrawerHeaderProps extends HTMLAttributes<HTMLDivElement> {
+		/** Child content (typically DrawerTitle + DrawerClose). */
+		children?: Snippet;
+	}
+</script>
+
+<script lang="ts">
+	import { cn } from '$lib/utils.js';
+
+	let { class: className, children, ...restProps }: DrawerHeaderProps = $props();
 </script>
 
 <div
-	bind:this={ref}
 	data-slot="drawer-header"
-	class={cn(
-		'flex flex-col gap-0.5 p-4 group-data-[vaul-drawer-direction=bottom]/drawer-content:text-center group-data-[vaul-drawer-direction=top]/drawer-content:text-center md:gap-0.5 md:text-left',
-		className
-	)}
+	class={cn('border-border flex flex-col gap-2 border-b px-4 py-3', className)}
 	{...restProps}
 >
 	{@render children?.()}
