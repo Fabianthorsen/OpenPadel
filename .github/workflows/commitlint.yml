@@ -1,0 +1,37 @@
+name: Commitlint
+
+# Enforces Conventional Commits on the PR *title*. Squash merges build the
+# commit from the PR title (repo setting: squash_merge_commit_title =
+# COMMIT_OR_PR_TITLE), and that squashed commit is what release-please reads to
+# decide the next version and CHANGELOG entry. A non-conventional title (e.g.
+# "Design System Phase 1") is silently ignored by release-please — no release,
+# no changelog — so we gate it here. Per-commit hygiene is handled locally by
+# the commit-msg hook (scripts/commit-msg), which CI cannot run for squashes.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-title:
+    name: PR title (Conventional Commits)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint PR title
+        env:
+          # Passed via env (not inlined) so an arbitrary PR title can't inject shell.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$PR_TITLE" | bun run commitlint --verbose
