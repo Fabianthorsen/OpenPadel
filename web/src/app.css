@@ -100,29 +100,5 @@ body {
 	height: calc(100dvh - env(safe-area-inset-bottom, 0px));
 }
 
-/* Drawer animations */
-@keyframes slide-in-from-bottom {
-	from {
-		transform: translateY(100%);
-	}
-	to {
-		transform: translateY(0);
-	}
-}
-
-@keyframes fade-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
-@utility animate-slide-in-from-bottom {
-	animation: slide-in-from-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@utility animate-fade-in {
-	animation: fade-in 0.2s ease-out;
-}
+/* Drawer uses CSS transitions for smooth bidirectional animation (open/close) */
+/* See drawer-content.svelte for transform logic */
