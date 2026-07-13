@@ -4,16 +4,12 @@
 	import { type WithElementRef } from '$lib/utils.js';
 
 	/**
-	 * Badge component for status, tags, and pills.
+	 * Badge component for status indicators, category tags, and semantic pills.
 	 * Renders as `<span>` by default or `<a>` when href is provided.
 	 *
 	 * @example
-	 * <Badge>Default</Badge>
-	 *
-	 * @example
-	 * <Badge variant="secondary">Secondary</Badge>
-	 *
-	 * @example
+	 * <Badge variant="default">Online</Badge>
+	 * <Badge variant="secondary">Category</Badge>
 	 * <Badge variant="destructive">Error</Badge>
 	 */
 	export const badgeVariants = tv({
@@ -38,12 +34,17 @@
 
 	/**
 	 * Badge component props. Renders as `<span>` or `<a>` (if href provided).
+	 *
+	 * Use variants for semantic context:
+	 * - default: status indicator (online, active, success)
+	 * - secondary: category tag (feature, type, group)
+	 * - destructive: warning or error state
+	 * - outline: neutral badge with border
+	 * - ghost: minimal emphasis badge
+	 * - link: clickable badge with underline
 	 */
 	export interface BadgeProps extends WithElementRef<HTMLAnchorAttributes> {
-		/**
-		 * variant: default | secondary | destructive | outline | ghost | link.
-		 * See tokens.colors for palette. Each conveys different emphasis.
-		 */
+		/** variant: see component JSDoc for semantic use cases. */
 		variant?: BadgeVariant;
 	}
 </script>
