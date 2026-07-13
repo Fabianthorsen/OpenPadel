@@ -2,7 +2,17 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import type { Snippet } from 'svelte';
 
+	/**
+	 * Drawer footer section. Action buttons area at bottom.
+	 *
+	 * @example
+	 * <DrawerFooter>
+	 *   <DrawerClose>Cancel</DrawerClose>
+	 *   <Button>Save</Button>
+	 * </DrawerFooter>
+	 */
 	export interface DrawerFooterProps extends HTMLAttributes<HTMLDivElement> {
+		/** Child content (typically action buttons). */
 		children?: Snippet;
 	}
 </script>

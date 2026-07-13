@@ -12,12 +12,19 @@ import Portal from './drawer-portal.svelte';
 
 export {
 	drawerContentVariants,
-	type DrawerPosition,
 	type DrawerSize,
 	type DrawerContentProps
 } from './drawer-content.svelte';
 export { type DrawerProps } from './drawer.svelte';
 export { type DrawerTriggerProps } from './drawer-trigger.svelte';
+export { type DrawerHeaderProps } from './drawer-header.svelte';
+export { type DrawerBodyProps } from './drawer-body.svelte';
+export { type DrawerFooterProps } from './drawer-footer.svelte';
+export { type DrawerTitleProps } from './drawer-title.svelte';
+export { type DrawerDescriptionProps } from './drawer-description.svelte';
+export { type DrawerCloseProps } from './drawer-close.svelte';
+export { type DrawerOverlayProps } from './drawer-overlay.svelte';
+export { type DrawerPortalProps } from './drawer-portal.svelte';
 
 export {
 	Root,

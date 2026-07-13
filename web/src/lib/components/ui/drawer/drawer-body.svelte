@@ -2,7 +2,14 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import type { Snippet } from 'svelte';
 
+	/**
+	 * Drawer body section. Scrollable main content area.
+	 *
+	 * @example
+	 * <DrawerBody>Form fields and content here</DrawerBody>
+	 */
 	export interface DrawerBodyProps extends HTMLAttributes<HTMLDivElement> {
+		/** Child content (form fields, text, etc.). */
 		children?: Snippet;
 	}
 </script>

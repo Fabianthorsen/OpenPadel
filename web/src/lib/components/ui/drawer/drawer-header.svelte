@@ -2,7 +2,18 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import type { Snippet } from 'svelte';
 
+	/**
+	 * Drawer header section with title and close button.
+	 * Typically contains DrawerTitle and DrawerClose.
+	 *
+	 * @example
+	 * <DrawerHeader>
+	 *   <DrawerTitle>Settings</DrawerTitle>
+	 *   <DrawerClose>×</DrawerClose>
+	 * </DrawerHeader>
+	 */
 	export interface DrawerHeaderProps extends HTMLAttributes<HTMLDivElement> {
+		/** Child content (typically DrawerTitle + DrawerClose). */
 		children?: Snippet;
 	}
 </script>
