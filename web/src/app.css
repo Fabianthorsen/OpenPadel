@@ -161,3 +161,43 @@ textarea,
 @utility h-screen-safe {
 	height: calc(100dvh - env(safe-area-inset-bottom, 0px));
 }
+
+/* Drawer animations */
+@keyframes slide-in-from-left {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+
+@keyframes slide-in-from-right {
+	from {
+		transform: translateX(100%);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@utility animate-slide-in-from-left {
+	animation: slide-in-from-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@utility animate-slide-in-from-right {
+	animation: slide-in-from-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@utility animate-fade-in {
+	animation: fade-in 0.2s ease-out;
+}

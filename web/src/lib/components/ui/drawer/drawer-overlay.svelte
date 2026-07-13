@@ -1,20 +1,13 @@
 <script lang="ts">
-	import { Drawer as DrawerPrimitive } from 'vaul-svelte';
+	import { Dialog as DialogPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils.js';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		...restProps
-	}: DrawerPrimitive.OverlayProps = $props();
+	let { ref = $bindable(null), class: className, ...restProps }: any = $props();
 </script>
 
-<DrawerPrimitive.Overlay
+<DialogPrimitive.Overlay
 	bind:ref
 	data-slot="drawer-overlay"
-	class={cn(
-		'data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 fixed inset-0 z-50 bg-black/40',
-		className
-	)}
+	class={cn('animate-fade-in fixed inset-0 z-40 bg-black/40', className)}
 	{...restProps}
 />

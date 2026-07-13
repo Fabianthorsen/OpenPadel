@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { Drawer as DrawerPrimitive } from 'vaul-svelte';
+	import { Dialog as DialogPrimitive } from 'bits-ui';
 
-	let { ...restProps }: DrawerPrimitive.PortalProps = $props();
+	let { children }: any = $props();
 </script>
 
-<DrawerPrimitive.Portal {...restProps} />
+<DialogPrimitive.Portal>
+	{@render children?.()}
+</DialogPrimitive.Portal>

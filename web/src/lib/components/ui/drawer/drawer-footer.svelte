@@ -1,19 +1,21 @@
-<script lang="ts">
-	import { cn, type WithElementRef } from '$lib/utils.js';
+<script lang="ts" module>
 	import type { HTMLAttributes } from 'svelte/elements';
+	import type { Snippet } from 'svelte';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
+	export interface DrawerFooterProps extends HTMLAttributes<HTMLDivElement> {
+		children?: Snippet;
+	}
+</script>
+
+<script lang="ts">
+	import { cn } from '$lib/utils.js';
+
+	let { class: className, children, ...restProps }: DrawerFooterProps = $props();
 </script>
 
 <div
-	bind:this={ref}
 	data-slot="drawer-footer"
-	class={cn('mt-auto flex flex-col gap-2 p-4', className)}
+	class={cn('border-border flex gap-3 border-t px-4 py-3', className)}
 	{...restProps}
 >
 	{@render children?.()}
