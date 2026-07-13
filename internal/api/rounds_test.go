@@ -382,6 +382,166 @@ func TestMexicanoFinalRoundDeferredCompletion(t *testing.T) {
 	}
 }
 
+// Regression: unlimited Americano (rounds_total omitted) must preserve null through
+// Start — not silently convert to a fixed calculated round count. Reproduces the
+// reported bug: 5 players / 1 court selected "unlimited" but got "Round 1 of 5".
+func TestAmericanoUnlimited_PreservesNullThroughStart(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":    1,
+		"points":    24,
+		"game_mode": "americano",
+		// rounds_total omitted = unlimited
+	}, userToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create: got %d", res.StatusCode)
+	}
+	var createResp struct {
+		ID         string `json:"id"`
+		AdminToken string `json:"admin_token"`
+	}
+	decodeBody(t, res, &createResp)
+	sessID := createResp.ID
+	adminToken := createResp.AdminToken
+
+	// 5 players on 1 court = 1 bench each round (the user's exact setup).
+	for i := 1; i <= 5; i++ {
+		mustJoinSession(t, srv, sessID, fmt.Sprintf("Player %d", i), "")
+	}
+
+	mustStartSession(t, srv, sessID, adminToken)
+
+	// The core symptom: after start the session must still be unlimited (null),
+	// not pinned to a calculated fixed total (which surfaced as "Round 1 of 5").
+	assertRoundsTotalNil := func(when string) {
+		t.Helper()
+		getRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+		var sess struct {
+			RoundsTotal *int `json:"rounds_total"`
+		}
+		decodeBody(t, getRes, &sess)
+		if sess.RoundsTotal != nil {
+			t.Fatalf("unlimited Americano (%s): expected rounds_total=null, got %d", when, *sess.RoundsTotal)
+		}
+	}
+	assertRoundsTotalNil("after start")
+
+	// Play well past the 5-round natural rotation the fixed calculation would cap at,
+	// scoring each round and advancing. It must keep generating rounds and never
+	// auto-complete on its own — that's what "play indefinitely" means.
+	for round := 1; round <= 8; round++ {
+		roundRes := getReq(t, srv, "/api/sessions/"+sessID+"/rounds/current", adminToken)
+		var cur struct {
+			Number  int `json:"number"`
+			Matches []struct {
+				ID string `json:"id"`
+			} `json:"matches"`
+		}
+		decodeBody(t, roundRes, &cur)
+		if cur.Number != round {
+			t.Fatalf("expected to be on round %d, got %d", round, cur.Number)
+		}
+		if len(cur.Matches) != 1 {
+			t.Fatalf("round %d: expected 1 match (1 court), got %d", round, len(cur.Matches))
+		}
+		for _, m := range cur.Matches {
+			putReq(t, srv, "/api/sessions/"+sessID+"/matches/"+m.ID+"/score", map[string]any{
+				"score_a": 16,
+				"score_b": 8,
+			}, adminToken).Body.Close() //nolint:errcheck
+		}
+
+		// Scoring the round must not auto-complete an unlimited session.
+		statusRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+		var st struct {
+			Status string `json:"status"`
+		}
+		decodeBody(t, statusRes, &st)
+		if st.Status != "playing" {
+			t.Fatalf("round %d: unlimited session auto-completed (status=%q); should keep playing", round, st.Status)
+		}
+
+		advRes := postReq(t, srv, "/api/sessions/"+sessID+"/rounds/advance", nil, adminToken)
+		if advRes.StatusCode != http.StatusNoContent {
+			t.Fatalf("round %d: advance expected 204, got %d", round, advRes.StatusCode)
+		}
+		advRes.Body.Close() //nolint:errcheck
+	}
+
+	assertRoundsTotalNil("after advancing past the natural rotation")
+}
+
+// Fixed Americano (rounds_total set) still pre-generates the full rotation and
+// auto-completes once the final round is scored — the counterpart to the unlimited
+// path, guarding against a regression from making null mean unlimited.
+func TestAmericanoFixed_AutoCompletesAtCap(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+
+	res := postReq(t, srv, "/api/sessions", map[string]any{
+		"courts":       1,
+		"points":       24,
+		"game_mode":    "americano",
+		"rounds_total": 3, // explicit fixed count (as the Lobby's "Fixed" toggle sends)
+	}, userToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create: got %d", res.StatusCode)
+	}
+	var createResp struct {
+		ID         string `json:"id"`
+		AdminToken string `json:"admin_token"`
+	}
+	decodeBody(t, res, &createResp)
+	sessID := createResp.ID
+	adminToken := createResp.AdminToken
+
+	for i := 1; i <= 4; i++ {
+		mustJoinSession(t, srv, sessID, fmt.Sprintf("Player %d", i), "")
+	}
+	mustStartSession(t, srv, sessID, adminToken)
+
+	// Fixed count is preserved through start.
+	getRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		RoundsTotal *int `json:"rounds_total"`
+	}
+	decodeBody(t, getRes, &sess)
+	if sess.RoundsTotal == nil || *sess.RoundsTotal != 3 {
+		t.Fatalf("fixed Americano: expected rounds_total=3 after start, got %v", sess.RoundsTotal)
+	}
+
+	// Score the first two rounds, advancing after each. The session stays playing.
+	for round := 1; round <= 2; round++ {
+		mustScoreCurrentRound(t, srv, sessID, adminToken)
+		statusRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+		var st struct {
+			Status string `json:"status"`
+		}
+		decodeBody(t, statusRes, &st)
+		if st.Status != "playing" {
+			t.Fatalf("round %d: expected still playing, got %q", round, st.Status)
+		}
+		advRes := postReq(t, srv, "/api/sessions/"+sessID+"/rounds/advance", nil, adminToken)
+		if advRes.StatusCode != http.StatusNoContent {
+			t.Fatalf("round %d: advance expected 204, got %d", round, advRes.StatusCode)
+		}
+		advRes.Body.Close() //nolint:errcheck
+	}
+
+	// Scoring the final (3rd) round auto-completes the session.
+	mustScoreCurrentRound(t, srv, sessID, adminToken)
+	finalRes := getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var final struct {
+		Status string `json:"status"`
+	}
+	decodeBody(t, finalRes, &final)
+	if final.Status != "done" {
+		t.Fatalf("fixed Americano: expected auto-complete to 'done' after final round, got %q", final.Status)
+	}
+}
+
 // Americano final round doesn't auto-complete for unlimited sessions (deferred choice)
 func TestAmericanoFinalRoundDeferredCompletion(t *testing.T) {
 	srv, _ := newAPITestServer(t)

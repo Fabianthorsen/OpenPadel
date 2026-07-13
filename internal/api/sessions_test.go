@@ -164,6 +164,9 @@ func TestCloseSession(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	sessID, adminToken, _ := setupStartedSession(t, srv)
 
+	// Unlimited sessions require a fully-scored round before they can be closed.
+	mustScoreCurrentRound(t, srv, sessID, adminToken)
+
 	res := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
 	if res.StatusCode != http.StatusNoContent {
 		t.Fatalf("expected 204, got %d", res.StatusCode)
@@ -234,6 +237,9 @@ func TestStateFlow_LobbyToPlayingToDone(t *testing.T) {
 	if sess.Status != "playing" {
 		t.Fatalf("expected status 'playing', got %q", sess.Status)
 	}
+
+	// Unlimited sessions require a fully-scored round before they can be closed.
+	mustScoreCurrentRound(t, srv, sessID, adminToken)
 
 	// Close the session (manual end)
 	res2 := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
@@ -448,6 +454,9 @@ func TestInvalidTransition_CannotCloseInDone(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	sessID, adminToken, _ := setupStartedSession(t, srv)
 
+	// Unlimited sessions require a fully-scored round before they can be closed.
+	mustScoreCurrentRound(t, srv, sessID, adminToken)
+
 	// Close the session
 	res := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)
 	if res.StatusCode != http.StatusNoContent {
@@ -508,6 +517,9 @@ func TestPlayerJoin_CannotJoinInPlaying(t *testing.T) {
 func TestPlayerJoin_CannotJoinInDone(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	sessID, adminToken, _ := setupStartedSession(t, srv)
+
+	// Unlimited sessions require a fully-scored round before they can be closed.
+	mustScoreCurrentRound(t, srv, sessID, adminToken)
 
 	// Close the session
 	res := postReq(t, srv, "/api/sessions/"+sessID+"/close", nil, adminToken)

@@ -170,6 +170,34 @@ func mustStartSession(t *testing.T, srv *httptest.Server, sessionID, adminToken 
 	res.Body.Close()
 }
 
+// mustScoreCurrentRound scores every match in the session's current round.
+// Sessions created via mustCreateSession use points=24, so 16+8 is a valid sum.
+// Unlimited sessions can only be closed after at least one fully-scored round
+// (ADR 0004), so tests that close a started session must score a round first.
+func mustScoreCurrentRound(t *testing.T, srv *httptest.Server, sessionID, adminToken string) {
+	t.Helper()
+	res := getReq(t, srv, "/api/sessions/"+sessionID+"/rounds/current", adminToken)
+	var round struct {
+		Matches []struct {
+			ID string `json:"id"`
+		} `json:"matches"`
+	}
+	decodeBody(t, res, &round)
+	if len(round.Matches) == 0 {
+		t.Fatal("mustScoreCurrentRound: current round has no matches")
+	}
+	for _, m := range round.Matches {
+		scoreRes := putReq(t, srv, "/api/sessions/"+sessionID+"/matches/"+m.ID+"/score", map[string]any{
+			"score_a": 16,
+			"score_b": 8,
+		}, adminToken)
+		if scoreRes.StatusCode != http.StatusOK {
+			t.Fatalf("mustScoreCurrentRound: submit score got %d", scoreRes.StatusCode)
+		}
+		scoreRes.Body.Close() //nolint:errcheck
+	}
+}
+
 // setupStartedSession creates a session, joins 4 players, and starts it.
 // Returns the session ID, admin token, and 4 player IDs.
 func setupStartedSession(t *testing.T, srv *httptest.Server) (sessID, adminToken string, playerIDs [4]string) {

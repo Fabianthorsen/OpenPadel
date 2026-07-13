@@ -30,23 +30,17 @@ func New(store Store) *Service {
 }
 
 // Start shuffles active players and generates rounds based on session mode.
-// Fixed mode: generates all N rounds upfront, saves them, activates with N.
-// Unlimited mode: generates only round 1, saves it, activates while preserving null rounds_total.
-// If RoundsTotal is nil (not explicitly set during PATCH), calculates default from player count.
+// Fixed mode (rounds_total = N): generates all N rounds upfront, saves them, activates with N.
+// Unlimited mode (rounds_total = null): generates only round 1, saves it, and activates while
+// preserving the null rounds_total so the session plays on until the admin closes it. Subsequent
+// rounds are generated on demand at advance time (see AdvanceAmericanoRound).
 // Returns a non-nil error only if it has already written an HTTP error response.
 func (s *Service) Start(w http.ResponseWriter, sessionID string, sess *domain.Session, active []domain.Player, endsAt *time.Time) error {
 	rand.Shuffle(len(active), func(i, j int) { active[i], active[j] = active[j], active[i] })
 
-	// If RoundsTotal is nil, calculate it from player count (treats as fixed mode by default)
-	roundsTotal := sess.RoundsTotal
-	if roundsTotal == nil {
-		calculated := americano.TotalRounds(len(active), sess.Courts)
-		roundsTotal = &calculated
-	}
-
-	// Fixed mode: generate all rounds upfront
-	if roundsTotal != nil {
-		totalRounds := *roundsTotal
+	// Fixed mode: generate the full bench rotation upfront.
+	if sess.RoundsTotal != nil {
+		totalRounds := *sess.RoundsTotal
 		rounds := americano.GenerateRounds(active, sess.Courts, totalRounds)
 		if err := s.store.SaveRounds(sessionID, rounds); err != nil {
 			writeError(w, http.StatusInternalServerError, "server_error")
@@ -59,8 +53,7 @@ func (s *Service) Start(w http.ResponseWriter, sessionID string, sess *domain.Se
 		return nil
 	}
 
-	// Unlimited mode: generate only round 1, preserve null rounds_total
-	// (This branch shouldn't be reached now, but keeping for clarity)
+	// Unlimited mode: generate only round 1, preserve null rounds_total.
 	rounds := americano.GenerateRounds(active, sess.Courts, 1)
 	if err := s.store.SaveRounds(sessionID, rounds); err != nil {
 		writeError(w, http.StatusInternalServerError, "server_error")
