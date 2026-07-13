@@ -165,6 +165,158 @@ ariaInvalid?: boolean;
 ariaExpanded?: boolean;
 ```
 
+### JSDoc Template: Copy-Paste Reference
+
+Use this template for every component. Customize the variant/size options and examples:
+
+```typescript
+/**
+ * Component name and brief purpose.
+ * 
+ * @example
+ * <ComponentName>Default</ComponentName>
+ * 
+ * @example
+ * <ComponentName variant="secondary" disabled>Disabled</ComponentName>
+ */
+export interface ComponentNameProps {
+  /** variant: primary | secondary | tertiary. See tokens.colors for palette. */
+  variant?: ComponentVariant;
+  
+  /** size: sm | md | lg. sm for compact, md for default, lg for prominent. */
+  size?: ComponentSize;
+  
+  /** Disabled: component inactive, cannot interact. */
+  disabled?: boolean;
+  
+  /** Aria-expanded: true when associated content is visible (accordion, drawer). */
+  ariaExpanded?: boolean;
+}
+```
+
+### Snippet: Variant Documentation
+
+For each variant prop:
+
+```typescript
+/**
+ * variant: [option1 | option2 | option3]. See tokens.colors for palette.
+ * - option1: use when [context/purpose]
+ * - option2: use when [context/purpose]
+ * - option3: use when [context/purpose]
+ */
+variant?: ComponentVariant;
+```
+
+Example (Button):
+```typescript
+/**
+ * variant: primary | secondary | ghost | destructive. See tokens.colors for palette.
+ * - primary: main CTA, preferred action
+ * - secondary: supporting action, alternative flow
+ * - ghost: low-emphasis action, deemphasized
+ * - destructive: destructive action, requires confirmation
+ */
+variant?: ButtonVariant;
+```
+
+### Snippet: State Documentation
+
+For accessibility states:
+
+```typescript
+/** disabled: component inactive, cannot interact. */
+disabled?: boolean;
+
+/** ariaInvalid: true if input data is invalid; indicates error state. */
+ariaInvalid?: boolean;
+
+/** ariaExpanded: true when associated content is visible. */
+ariaExpanded?: boolean;
+
+/** ariaPressed: true when toggle is pressed/active. */
+ariaPressed?: boolean;
+```
+
+### Snippet: Slot/Children Documentation
+
+For components accepting children:
+
+```typescript
+/** Children content rendered inside component. Supports text, elements, icons. */
+children?: Snippet;
+```
+
+### Full Example: Alert Component
+
+Complete, production-ready JSDoc for a hypothetical Alert component:
+
+```typescript
+import type { Snippet } from 'svelte';
+import type { HTMLDivAttributes } from 'svelte/elements';
+
+export const alertVariants = tv({
+  base: 'rounded-lg border px-4 py-3 flex gap-3',
+  variants: {
+    variant: {
+      info: 'border-blue-200 bg-blue-50 text-blue-900',
+      success: 'border-green-200 bg-green-50 text-green-900',
+      warning: 'border-yellow-200 bg-yellow-50 text-yellow-900',
+      error: 'border-red-200 bg-red-50 text-red-900',
+    },
+  },
+  defaultVariants: { variant: 'info' },
+});
+
+export type AlertVariant = VariantProps<typeof alertVariants>['variant'];
+
+/**
+ * Alert message container for notifications and status updates.
+ * 
+ * @example
+ * <Alert variant="success">Operation completed successfully.</Alert>
+ * 
+ * @example
+ * <Alert variant="error">
+ *   <Icon name="alert-circle" />
+ *   <span>An error occurred. Please try again.</span>
+ * </Alert>
+ */
+export interface AlertProps extends HTMLDivAttributes {
+  /**
+   * variant: info | success | warning | error. See tokens.colors for palette.
+   * - info: neutral information
+   * - success: positive outcome
+   * - warning: caution or attention needed
+   * - error: problem or failure state
+   */
+  variant?: AlertVariant;
+  
+  /** Children content: text, icons, or other elements. Typically text + icon. */
+  children?: Snippet;
+  
+  /** role: aria-live="polite" for dynamic updates (recommended for alerts). */
+  role?: 'status' | 'alert';
+  
+  /** ariaLive: 'polite' for non-urgent, 'assertive' for urgent notifications. */
+  ariaLive?: 'polite' | 'assertive';
+}
+
+/**
+ * Component implementation:
+ */
+// <script lang="ts">
+//   let { variant, children, role = 'status', ariaLive = 'polite', ...rest }:
+//     AlertProps = $props();
+// </script>
+//
+// <div class={alertVariants({ variant })} {role} aria-live={ariaLive} {...rest}>
+//   {#if children}
+//     {@render children()}
+//   {/if}
+// </div>
+```
+
 ---
 
 ## Composition Patterns
