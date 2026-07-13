@@ -2,6 +2,23 @@
 	import { Label as LabelPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils.js';
 
+	/**
+	 * Label component for form inputs.
+	 * Always pair with an Input or form control using htmlFor binding.
+	 * htmlFor connects label to input by id for accessibility.
+	 *
+	 * @example
+	 * <Label htmlFor="name">Name</Label>
+	 * <Input id="name" />
+	 *
+	 * @example
+	 * <Label htmlFor="email">Email <span class="text-destructive">*</span></Label>
+	 * <Input id="email" type="email" ariaInvalid={hasError} />
+	 *
+	 * @example
+	 * <Label htmlFor="password">Password</Label>
+	 * <Input id="password" type="password" />
+	 */
 	let {
 		ref = $bindable(null),
 		class: className,
