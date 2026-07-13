@@ -4,20 +4,17 @@
 
 	/**
 	 * Label component for form inputs.
-	 * Always pair with an Input or form control using htmlFor binding.
-	 * htmlFor connects label to input by id for accessibility.
+	 * Always pair with Input using htmlFor to connect by id for accessibility.
 	 *
 	 * @example
-	 * <Label htmlFor="name">Name</Label>
-	 * <Input id="name" />
+	 * <Label htmlFor="email">Email</Label>
+	 * <Input id="email" type="email" />
 	 *
 	 * @example
-	 * <Label htmlFor="email">Email <span class="text-destructive">*</span></Label>
+	 * <Label htmlFor="email">
+	 *   Email <span class="text-destructive">*</span>
+	 * </Label>
 	 * <Input id="email" type="email" ariaInvalid={hasError} />
-	 *
-	 * @example
-	 * <Label htmlFor="password">Password</Label>
-	 * <Input id="password" type="password" />
 	 */
 	let {
 		ref = $bindable(null),
