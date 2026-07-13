@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.16.0...v1.16.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* make unlimited Americano actually play indefinitely ([#164](https://github.com/Fabianthorsen/OpenPadel/issues/164)) ([cca3bfe](https://github.com/Fabianthorsen/OpenPadel/commit/cca3bfe00b26f7d1b639c7fae79d1fc8dbc17b24))
+
 ## [1.16.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.15.0...v1.16.0) (2026-07-07)
 
 
