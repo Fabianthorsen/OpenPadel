@@ -1,12 +1,10 @@
 <script lang="ts" module>
 	import { type VariantProps, tv } from 'tailwind-variants';
-	import type { HTMLAttributes } from 'svelte/elements';
 	import type { Snippet } from 'svelte';
-	import { type WithElementRef } from '$lib/utils.js';
+	import type { DrawerPrimitiveProps } from './types.js';
 
 	/**
-	 * Drawer content container. Slides in from bottom of screen.
-	 * Positioned absolutely over page content with backdrop overlay.
+	 * Drawer content container. Slides up from the bottom of the screen over a backdrop overlay.
 	 *
 	 * @example
 	 * <Drawer>
@@ -20,12 +18,10 @@
 	 * </Drawer>
 	 *
 	 * @example
-	 * <DrawerContent size="lg">
-	 *   Large bottom drawer for complex forms
-	 * </DrawerContent>
+	 * <DrawerContent size="lg">Large bottom drawer for complex forms</DrawerContent>
 	 */
 	export const drawerContentVariants = tv({
-		base: 'fixed inset-x-0 bottom-0 z-50 flex flex-col gap-4 border-input bg-background p-4 shadow-lg',
+		base: 'border-input bg-background fixed inset-x-0 bottom-0 z-50 flex flex-col gap-4 p-4 shadow-lg',
 		variants: {
 			size: {
 				sm: 'max-h-[40vh] md:max-h-[300px]',
@@ -48,7 +44,7 @@
 	 * - md: 60vh on mobile, 480px on desktop (standard)
 	 * - lg: 80vh on mobile, 640px on desktop (tall)
 	 */
-	export interface DrawerContentProps extends WithElementRef<HTMLAttributes<HTMLDivElement>> {
+	export interface DrawerContentProps extends DrawerPrimitiveProps<HTMLDivElement> {
 		/** size: sm | md | lg. Controls drawer max-height. */
 		size?: DrawerSize;
 
@@ -66,9 +62,8 @@
 		class: className,
 		size = 'md',
 		children,
-		id,
 		...restProps
-	}: DrawerContentProps & { id?: string } = $props();
+	}: DrawerContentProps = $props();
 </script>
 
 <DialogPrimitive.Portal>
@@ -80,7 +75,6 @@
 	<DialogPrimitive.Content
 		bind:ref
 		data-slot="drawer-content"
-		{id}
 		aria-modal="true"
 		class={cn(drawerContentVariants({ size }), className)}
 		{...restProps}
@@ -90,12 +84,12 @@
 </DialogPrimitive.Portal>
 
 <style>
-	/* Open state: slide-up animation */
+	/* Slide up when opening, slide down when closing. Keyframes are scoped to this
+	   component; Bits UI keeps the element mounted for the duration of each state. */
 	:global([data-slot='drawer-content'][data-state='open']) {
 		animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 	}
 
-	/* Closed state: slide-down transition */
 	:global([data-slot='drawer-content'][data-state='closed']) {
 		animation: slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 	}

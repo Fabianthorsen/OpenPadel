@@ -8,8 +8,8 @@
 	 * Renders a toggle switch with checked state; use in forms instead of toggles for on/off semantics.
 	 *
 	 * @example
-	 * <Label htmlFor="notifications">Notifications</Label>
-	 * <Switch id="notifications" checked={enabled} on:change={(e) => enabled = e.detail} />
+	 * <Label for="notifications">Notifications</Label>
+	 * <Switch id="notifications" bind:checked={enabled} />
 	 *
 	 * @example
 	 * <Switch size="sm" ariaInvalid={hasError} />
@@ -52,7 +52,7 @@
 	/**
 	 * Switch component props. Extends Bits UI Switch.RootProps with size option.
 	 *
-	 * Use with Label for accessibility (label with htmlFor).
+	 * Use with Label for accessibility (pair the Label's `for` with the Switch `id`).
 	 * Represents binary on/off state; use for toggles, feature flags, or form boolean fields.
 	 *
 	 * Size variants:

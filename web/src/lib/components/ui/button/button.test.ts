@@ -10,20 +10,36 @@ describe('Button Component', () => {
 			expect(classes).toContain('justify-center');
 		});
 
-		it('all variants produce non-empty output', () => {
-			const variants = ['primary', 'outline', 'secondary', 'ghost', 'destructive', 'link'] as const;
-			variants.forEach((v) => {
-				const classes = buttonVariants({ variant: v });
-				expect(classes.length).toBeGreaterThan(0);
-			});
+		it('gives each variant its signature class', () => {
+			expect(buttonVariants({ variant: 'default' })).toContain('bg-primary');
+			expect(buttonVariants({ variant: 'outline' })).toContain('bg-background');
+			expect(buttonVariants({ variant: 'secondary' })).toContain('bg-secondary');
+			expect(buttonVariants({ variant: 'ghost' })).toContain('hover:bg-muted');
+			expect(buttonVariants({ variant: 'destructive' })).toContain('text-destructive');
+			expect(buttonVariants({ variant: 'link' })).toContain('underline');
 		});
 
-		it('all sizes produce non-empty output', () => {
+		it('produces a distinct class string for each of the 6 variants', () => {
+			const variants = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link'] as const;
+			const outputs = variants.map((v) => buttonVariants({ variant: v }));
+			expect(new Set(outputs).size).toBe(variants.length);
+		});
+
+		it('gives each size its signature dimension', () => {
+			expect(buttonVariants({ size: 'xs' })).toContain('h-6');
+			expect(buttonVariants({ size: 'sm' })).toContain('h-7');
+			expect(buttonVariants({ size: 'default' })).toContain('h-8');
+			expect(buttonVariants({ size: 'lg' })).toContain('h-9');
+			expect(buttonVariants({ size: 'icon' })).toContain('size-8');
+			expect(buttonVariants({ size: 'icon-xs' })).toContain('size-6');
+			expect(buttonVariants({ size: 'icon-sm' })).toContain('size-7');
+			expect(buttonVariants({ size: 'icon-lg' })).toContain('size-9');
+		});
+
+		it('produces a distinct class string for each of the 8 sizes', () => {
 			const sizes = ['xs', 'sm', 'default', 'lg', 'icon', 'icon-xs', 'icon-sm', 'icon-lg'] as const;
-			sizes.forEach((s) => {
-				const classes = buttonVariants({ size: s });
-				expect(classes.length).toBeGreaterThan(0);
-			});
+			const outputs = sizes.map((s) => buttonVariants({ size: s }));
+			expect(new Set(outputs).size).toBe(sizes.length);
 		});
 
 		it('applies disabled state styles', () => {

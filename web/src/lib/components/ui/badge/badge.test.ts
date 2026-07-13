@@ -10,13 +10,10 @@ describe('Badge Component', () => {
 			expect(classes).toContain('gap-1');
 		});
 
-		it('applies all 6 variants', () => {
+		it('produces a distinct class string for each of the 6 variants', () => {
 			const variants = ['default', 'secondary', 'destructive', 'outline', 'ghost', 'link'] as const;
-			variants.forEach((v) => {
-				const classes = badgeVariants({ variant: v });
-				expect(classes).toBeTruthy();
-				expect(classes.length).toBeGreaterThan(0);
-			});
+			const outputs = variants.map((v) => badgeVariants({ variant: v }));
+			expect(new Set(outputs).size).toBe(variants.length);
 		});
 
 		it('applies default variant (status)', () => {

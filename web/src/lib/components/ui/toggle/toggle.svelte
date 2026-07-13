@@ -8,13 +8,11 @@
 	 * A button that tracks pressed state; commonly used for filters, display modes, or binary choices.
 	 *
 	 * @example
-	 * <Toggle pressed={isActive} on:change={() => isActive = !isActive}>
-	 *   Bold
-	 * </Toggle>
+	 * <Toggle bind:pressed={isActive}>Bold</Toggle>
 	 *
 	 * @example
-	 * <Toggle variant="outline" ariaPressed={enabled}>
-	 *   <Icon name="bell" />
+	 * <Toggle variant="outline" onPressedChange={(p) => (enabled = p)}>
+	 *   <BellIcon />
 	 * </Toggle>
 	 *
 	 * @example

@@ -1,15 +1,14 @@
 <script lang="ts" module>
-	import type { HTMLAttributes } from 'svelte/elements';
 	import type { Snippet } from 'svelte';
-	import { type WithElementRef } from '$lib/utils.js';
+	import type { DrawerPrimitiveProps } from './types.js';
 
 	/**
-	 * Drawer title. Semantic heading for accessibility.
+	 * Drawer title. Semantic heading announced to screen readers when the drawer opens.
 	 *
 	 * @example
 	 * <DrawerTitle>Create Session</DrawerTitle>
 	 */
-	export interface DrawerTitleProps extends WithElementRef<HTMLAttributes<HTMLHeadingElement>> {
+	export interface DrawerTitleProps extends DrawerPrimitiveProps<HTMLHeadingElement> {
 		/** Title text or content. */
 		children?: Snippet;
 	}
@@ -23,14 +22,12 @@
 		ref = $bindable(null),
 		class: className,
 		children,
-		id,
 		...restProps
-	}: DrawerTitleProps & { id?: string } = $props();
+	}: DrawerTitleProps = $props();
 </script>
 
 <DialogPrimitive.Title
 	bind:ref
-	{id}
 	data-slot="drawer-title"
 	class={cn('text-lg leading-none font-semibold', className)}
 	{...restProps}

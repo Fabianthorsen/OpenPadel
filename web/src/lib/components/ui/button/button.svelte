@@ -68,7 +68,7 @@
 	export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 		WithElementRef<HTMLAnchorAttributes> & {
 			/**
-			 * variant: primary | outline | secondary | ghost | destructive | link.
+			 * variant: default | outline | secondary | ghost | destructive | link.
 			 * See tokens.colors for palette. Each conveys different emphasis and use case.
 			 */
 			variant?: ButtonVariant;

@@ -1,7 +1,6 @@
 <script lang="ts" module>
-	import type { HTMLAttributes } from 'svelte/elements';
 	import type { Snippet } from 'svelte';
-	import { type WithElementRef } from '$lib/utils.js';
+	import type { DrawerPrimitiveProps } from './types.js';
 
 	/**
 	 * Drawer description. Optional subtitle or additional context.
@@ -9,9 +8,7 @@
 	 * @example
 	 * <DrawerDescription>Select date and time for your session</DrawerDescription>
 	 */
-	export interface DrawerDescriptionProps extends WithElementRef<
-		HTMLAttributes<HTMLParagraphElement>
-	> {
+	export interface DrawerDescriptionProps extends DrawerPrimitiveProps<HTMLParagraphElement> {
 		/** Description text or content. */
 		children?: Snippet;
 	}
@@ -25,14 +22,12 @@
 		ref = $bindable(null),
 		class: className,
 		children,
-		id,
 		...restProps
-	}: DrawerDescriptionProps & { id?: string } = $props();
+	}: DrawerDescriptionProps = $props();
 </script>
 
 <DialogPrimitive.Description
 	bind:ref
-	{id}
 	data-slot="drawer-description"
 	class={cn('text-muted-foreground text-sm', className)}
 	{...restProps}

@@ -37,11 +37,17 @@ export const tokens = {
 	},
 
 	spacing: {
-		// TODO: add spacing tokens to app.css @theme when defined
+		0: 'var(--spacing-0)',
+		1: 'var(--spacing-1)',
+		2: 'var(--spacing-2)',
+		3: 'var(--spacing-3)',
+		4: 'var(--spacing-4)'
 	},
 
 	radius: {
-		md: 'var(--radius)'
+		base: 'var(--radius)',
+		md: 'var(--radius-md)',
+		sm: 'var(--radius-sm)'
 	},
 
 	fonts: {
@@ -49,7 +55,9 @@ export const tokens = {
 	},
 
 	shadows: {
-		// TODO: add shadow tokens to app.css @theme when defined
+		sm: 'var(--shadow-sm)',
+		md: 'var(--shadow-md)',
+		lg: 'var(--shadow-lg)'
 	},
 
 	animations: {

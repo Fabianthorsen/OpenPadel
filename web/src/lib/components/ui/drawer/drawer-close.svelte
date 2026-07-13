@@ -1,18 +1,22 @@
 <script lang="ts" module>
-	import type { HTMLAttributes } from 'svelte/elements';
+	import { tv } from 'tailwind-variants';
 	import type { Snippet } from 'svelte';
-	import { type WithElementRef } from '$lib/utils.js';
+	import type { DrawerPrimitiveProps } from './types.js';
 
 	/**
-	 * Drawer close button. Closes drawer on click.
+	 * Drawer close button. Closes the drawer on click.
 	 *
 	 * @example
 	 * <DrawerClose>Cancel</DrawerClose>
 	 *
 	 * @example
-	 * <DrawerClose class="absolute right-4 top-4">×</DrawerClose>
+	 * <DrawerClose class="absolute top-4 right-4">×</DrawerClose>
 	 */
-	export interface DrawerCloseProps extends WithElementRef<HTMLAttributes<HTMLButtonElement>> {
+	export const drawerCloseVariants = tv({
+		base: 'ring-offset-background hover:bg-muted focus-visible:ring-ring inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50'
+	});
+
+	export interface DrawerCloseProps extends DrawerPrimitiveProps<HTMLButtonElement> {
 		/** Button label or content. */
 		children?: Snippet;
 	}
@@ -26,19 +30,14 @@
 		ref = $bindable(null),
 		class: className,
 		children,
-		id,
 		...restProps
-	}: DrawerCloseProps & { id?: string } = $props();
+	}: DrawerCloseProps = $props();
 </script>
 
 <DialogPrimitive.Close
 	bind:ref
-	{id}
 	data-slot="drawer-close"
-	class={cn(
-		'ring-offset-background hover:bg-muted focus-visible:ring-ring inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
-		className
-	)}
+	class={cn(drawerCloseVariants(), className)}
 	{...restProps}
 >
 	{@render children?.()}

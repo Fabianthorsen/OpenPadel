@@ -15,20 +15,16 @@ describe('Toggle Component', () => {
 			expect(classes).toContain('aria-pressed:bg-muted');
 		});
 
-		it('applies all variants', () => {
+		it('produces a distinct class string for each variant', () => {
 			const variants = ['default', 'outline'] as const;
-			variants.forEach((v) => {
-				const classes = toggleVariants({ variant: v });
-				expect(classes).toBeTruthy();
-			});
+			const outputs = variants.map((v) => toggleVariants({ variant: v }));
+			expect(new Set(outputs).size).toBe(variants.length);
 		});
 
-		it('applies all sizes', () => {
+		it('produces a distinct class string for each size', () => {
 			const sizes = ['sm', 'default', 'lg'] as const;
-			sizes.forEach((s) => {
-				const classes = toggleVariants({ size: s });
-				expect(classes).toBeTruthy();
-			});
+			const outputs = sizes.map((s) => toggleVariants({ size: s }));
+			expect(new Set(outputs).size).toBe(sizes.length);
 		});
 
 		it('applies disabled state styles', () => {

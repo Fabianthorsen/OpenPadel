@@ -10,13 +10,10 @@ describe('Drawer Component', () => {
 			expect(classes).toContain('bottom-0');
 		});
 
-		it('applies all sizes', () => {
+		it('produces a distinct class string for each size', () => {
 			const sizes = ['sm', 'md', 'lg'] as const;
-			sizes.forEach((s) => {
-				const classes = drawerContentVariants({ size: s });
-				expect(classes).toBeTruthy();
-				expect(classes.length).toBeGreaterThan(0);
-			});
+			const outputs = sizes.map((s) => drawerContentVariants({ size: s }));
+			expect(new Set(outputs).size).toBe(sizes.length);
 		});
 
 		it('applies sm size constraints', () => {

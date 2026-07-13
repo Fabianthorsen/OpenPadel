@@ -7,8 +7,6 @@ import Description from './drawer-description.svelte';
 import Body from './drawer-body.svelte';
 import Footer from './drawer-footer.svelte';
 import Close from './drawer-close.svelte';
-import Overlay from './drawer-overlay.svelte';
-import Portal from './drawer-portal.svelte';
 
 export {
 	drawerContentVariants,
@@ -22,9 +20,7 @@ export { type DrawerBodyProps } from './drawer-body.svelte';
 export { type DrawerFooterProps } from './drawer-footer.svelte';
 export { type DrawerTitleProps } from './drawer-title.svelte';
 export { type DrawerDescriptionProps } from './drawer-description.svelte';
-export { type DrawerCloseProps } from './drawer-close.svelte';
-export { type DrawerOverlayProps } from './drawer-overlay.svelte';
-export { type DrawerPortalProps } from './drawer-portal.svelte';
+export { drawerCloseVariants, type DrawerCloseProps } from './drawer-close.svelte';
 
 export {
 	Root,
@@ -36,8 +32,6 @@ export {
 	Body,
 	Footer,
 	Close,
-	Overlay,
-	Portal,
 	//
 	Root as Drawer,
 	Trigger as DrawerTrigger,
@@ -47,7 +41,5 @@ export {
 	Description as DrawerDescription,
 	Body as DrawerBody,
 	Footer as DrawerFooter,
-	Close as DrawerClose,
-	Overlay as DrawerOverlay,
-	Portal as DrawerPortal
+	Close as DrawerClose
 };

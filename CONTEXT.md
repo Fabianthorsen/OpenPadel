@@ -65,7 +65,7 @@ A request from one User to another to join a specific Session, with a `pending |
 
 | Component | Variants / Options | Use Case |
 |-----------|-------------------|----------|
-| **Button** | `variant`: primary, outline, secondary, ghost, destructive, link `size`: xs, sm, default, lg, icon, icon-xs, icon-sm, icon-lg | Primary CTAs, secondary actions, destructive actions, icon-only actions. Pass `href` to render as link. |
+| **Button** | `variant`: default, outline, secondary, ghost, destructive, link `size`: xs, sm, default, lg, icon, icon-xs, icon-sm, icon-lg | Primary CTAs, secondary actions, destructive actions, icon-only actions. Pass `href` to render as link. |
 | **Input** | `type`: text, password, email, number, search, tel, url, date, time, file | Text-based form inputs. Pair with Label for accessibility. Two-way binding: `value` for text-based, `files` for file inputs. |
 | **Label** | — | Form label for inputs. Always pair with Input using `htmlFor` attribute. Supports required indicator via child `<span>`. |
 | **Switch** | `size`: sm, default | Binary on/off state. Use in forms for boolean fields (vs. Toggle for state switching). Accessible: bound to Label via `htmlFor`. |

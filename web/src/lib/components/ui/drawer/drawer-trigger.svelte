@@ -1,21 +1,20 @@
 <script lang="ts" module>
-	import type { HTMLAttributes } from 'svelte/elements';
 	import type { Snippet } from 'svelte';
-	import { type WithElementRef } from '$lib/utils.js';
+	import type { DrawerPrimitiveProps } from './types.js';
 
 	/**
 	 * Drawer trigger button. Opens the drawer when clicked.
-	 * Renders as a standard button; typically styled with Button component.
+	 * Renders a native `<button>`; pass utility classes via `class` to style it.
 	 *
 	 * @example
 	 * <DrawerTrigger>Open Drawer</DrawerTrigger>
 	 *
 	 * @example
-	 * <DrawerTrigger as={Button} variant="ghost" size="icon">
-	 *   <Icon name="menu" />
+	 * <DrawerTrigger class="rounded-full p-2" aria-label="Open menu">
+	 *   <MenuIcon />
 	 * </DrawerTrigger>
 	 */
-	export interface DrawerTriggerProps extends WithElementRef<HTMLAttributes<HTMLButtonElement>> {
+	export interface DrawerTriggerProps extends DrawerPrimitiveProps<HTMLButtonElement> {
 		/** If true, trigger button is disabled. */
 		disabled?: boolean;
 
@@ -32,14 +31,12 @@
 		disabled,
 		class: className,
 		children,
-		id,
 		...restProps
-	}: DrawerTriggerProps & { id?: string } = $props();
+	}: DrawerTriggerProps = $props();
 </script>
 
 <DialogPrimitive.Trigger
 	bind:ref
-	{id}
 	data-slot="drawer-trigger"
 	class={className}
 	{disabled}

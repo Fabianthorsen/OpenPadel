@@ -2,11 +2,7 @@
 	import { ToggleGroup as ToggleGroupPrimitive } from 'bits-ui';
 	import { getToggleGroupCtx } from './toggle-group.svelte';
 	import { cn } from '$lib/utils.js';
-	import {
-		toggleVariants,
-		type ToggleSize,
-		type ToggleVariant
-	} from '$lib/components/ui/toggle/index.js';
+	import { toggleVariants, type ToggleProps } from '$lib/components/ui/toggle/index.js';
 
 	let {
 		ref = $bindable(null),
@@ -15,10 +11,7 @@
 		size,
 		variant,
 		...restProps
-	}: ToggleGroupPrimitive.ItemProps & {
-		variant?: ToggleVariant;
-		size?: ToggleSize;
-	} = $props();
+	}: ToggleGroupPrimitive.ItemProps & Pick<ToggleProps, 'variant' | 'size'> = $props();
 
 	const ctx = getToggleGroupCtx();
 </script>
