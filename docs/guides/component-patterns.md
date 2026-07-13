@@ -100,74 +100,17 @@ export type ButtonSize = VariantProps<typeof buttonVariants>['size'];
 
 Good JSDoc lets Claude understand your component without reading implementation.
 
-### Template
-
-```typescript
-/**
- * Component name — short purpose statement.
- * Longer explanation of when and why to use this component.
- * 
- * @example
- * <ComponentName variant="primary">Label</ComponentName>
- * 
- * @example
- * <ComponentName variant="secondary" disabled>Disabled</ComponentName>
- */
-export interface ComponentProps {
-  /** Category of variants. Explain each:
-   * - variant1: use when...
-   * - variant2: use when...
-   */
-  variant?: ComponentVariant;
-  
-  /** Size options:
-   * - sm: compact contexts
-   * - md: default, most use cases
-   * - lg: prominent actions
-   */
-  size?: ComponentSize;
-  
-  /** Disabled state: component cannot interact. */
-  disabled?: boolean;
-}
-```
-
 ### Key JSDoc Rules
 
 1. **One line before examples**: Brief component purpose
-2. **@example blocks**: Show common usage patterns (2-3 examples)
+2. **@example blocks**: Show basic usage, common variants, accessible usage
 3. **Variant descriptions**: Explain *when* to use each, not just names
-4. **State documentation**: disabled, aria-invalid, aria-expanded, aria-pressed — explain what each means
-5. **Reference design tokens**: `See tokens.colors for available colors` (import `{ tokens } from '$lib/design-tokens'`)
-
-### States: Accessibility Attributes
-
-Always document these states in your Props interface:
-
-| State | When Used | Example |
-|-------|-----------|---------|
-| `disabled` | Component cannot interact | Button form submission disabled, input readonly |
-| `aria-invalid` | Invalid input/data | Form field with validation error |
-| `aria-expanded` | Content is expanded/collapsed | Accordion, drawer, menu |
-| `aria-pressed` | Toggle is on/off | Toggle button, switch |
-| `aria-busy` | Operation in progress | Loading state, async operation |
-
-Document like this:
-
-```typescript
-/** Disabled state: component is inactive and cannot be interacted with. */
-disabled?: boolean;
-
-/** Invalid state: indicates aria-invalid for screen readers and error styling. */
-ariaInvalid?: boolean;
-
-/** Expanded state: true when associated content is visible. */
-ariaExpanded?: boolean;
-```
+4. **State documentation**: Document only states your component uses
+5. **Reference design tokens**: `See tokens.colors for palette` (import `{ tokens } from '$lib/design-tokens'`)
 
 ### JSDoc Template: Copy-Paste Reference
 
-Use this template for every component. Customize the variant/size options and examples:
+Use this template for every component. Customize variant/size options, remove unused states, and update examples:
 
 ```typescript
 /**
@@ -177,10 +120,13 @@ Use this template for every component. Customize the variant/size options and ex
  * <ComponentName>Default</ComponentName>
  * 
  * @example
- * <ComponentName variant="secondary" disabled>Disabled</ComponentName>
+ * <ComponentName variant="secondary">Secondary</ComponentName>
+ * 
+ * @example
+ * <ComponentName disabled ariaInvalid>Invalid</ComponentName>
  */
 export interface ComponentNameProps {
-  /** variant: primary | secondary | tertiary. See tokens.colors for palette. */
+  /** variant: primary | secondary. See tokens.colors for palette. */
   variant?: ComponentVariant;
   
   /** size: sm | md | lg. sm for compact, md for default, lg for prominent. */
@@ -189,10 +135,25 @@ export interface ComponentNameProps {
   /** Disabled: component inactive, cannot interact. */
   disabled?: boolean;
   
-  /** Aria-expanded: true when associated content is visible (accordion, drawer). */
+  /** Invalid: true if data is invalid; indicates error state. */
+  ariaInvalid?: boolean;
+  
+  /** Expanded: true when associated content is visible (accordion, drawer). */
   ariaExpanded?: boolean;
+  
+  /** Pressed: true when toggle is active/pressed (toggle button, switch). */
+  ariaPressed?: boolean;
 }
 ```
+
+### Common Accessibility States (Reference)
+
+Not all components need all states. Include only what applies to your component:
+
+- **disabled**: Component cannot interact (all interactive components)
+- **ariaInvalid**: Input data is invalid; indicates error state (form inputs)
+- **ariaExpanded**: Content is expanded/collapsed (accordion, drawer, menu)
+- **ariaPressed**: Toggle is pressed/active (toggle button, switch)
 
 ### Snippet: Variant Documentation
 
@@ -218,24 +179,6 @@ Example (Button):
  * - destructive: destructive action, requires confirmation
  */
 variant?: ButtonVariant;
-```
-
-### Snippet: State Documentation
-
-For accessibility states:
-
-```typescript
-/** disabled: component inactive, cannot interact. */
-disabled?: boolean;
-
-/** ariaInvalid: true if input data is invalid; indicates error state. */
-ariaInvalid?: boolean;
-
-/** ariaExpanded: true when associated content is visible. */
-ariaExpanded?: boolean;
-
-/** ariaPressed: true when toggle is pressed/active. */
-ariaPressed?: boolean;
 ```
 
 ### Snippet: Slot/Children Documentation
