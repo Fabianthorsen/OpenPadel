@@ -3,6 +3,24 @@
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
 	import { type VariantProps, tv } from 'tailwind-variants';
 
+	/**
+	 * Button component for user interactions.
+	 * Renders as `<button>` by default or `<a>` when `href` is provided.
+	 *
+	 * @example
+	 * <Button>Click me</Button>
+	 *
+	 * @example
+	 * <Button variant="destructive" disabled>Disabled</Button>
+	 *
+	 * @example
+	 * <Button href="/path">Link button</Button>
+	 *
+	 * @example
+	 * <Button variant="ghost" size="icon">
+	 *   <Icon name="menu" />
+	 * </Button>
+	 */
 	export const buttonVariants = tv({
 		base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-lg border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 active:not-aria-[haspopup]:translate-y-px aria-invalid:ring-3 [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 		variants: {
@@ -41,10 +59,53 @@
 	export type ButtonVariant = VariantProps<typeof buttonVariants>['variant'];
 	export type ButtonSize = VariantProps<typeof buttonVariants>['size'];
 
+	/**
+	 * Button component props.
+	 *
+	 * Pass `href` to render as `<a>` (link button), omit for `<button>` element.
+	 * When `href` is set and `disabled=true`, the link is removed (aria-disabled applied instead).
+	 */
 	export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 		WithElementRef<HTMLAnchorAttributes> & {
+			/**
+			 * Visual style: primary | outline | secondary | ghost | destructive | link.
+			 * See tokens.colors for palette.
+			 * - primary: main CTA, preferred action (default)
+			 * - outline: secondary action with border (desktop-friendly, less prominent)
+			 * - secondary: supporting action, alternative flow
+			 * - ghost: low-emphasis action, deemphasized (works on any background)
+			 * - destructive: destructive action, demands attention
+			 * - link: text-only link style, underline on hover
+			 */
 			variant?: ButtonVariant;
+
+			/**
+			 * Size: xs | sm | default | lg | icon | icon-xs | icon-sm | icon-lg.
+			 * - xs: 6px height, extra small (compact UI)
+			 * - sm: 7px height, small (tight spacing)
+			 * - default: 8px height, standard (most use cases)
+			 * - lg: 9px height, large (prominent)
+			 * - icon: 8px icon button (rounded, no padding)
+			 * - icon-xs: 6px icon button
+			 * - icon-sm: 7px icon button
+			 * - icon-lg: 9px icon button
+			 */
 			size?: ButtonSize;
+
+			/** Disabled state: button/link cannot interact, appears inactive. */
+			disabled?: boolean;
+
+			/** Expanded state: true when associated content is visible (dropdown, menu). */
+			ariaExpanded?: boolean;
+
+			/** Invalid state: indicates aria-invalid for error styling. */
+			ariaInvalid?: boolean;
+
+			/** Pressed state: true when toggle button is active. */
+			ariaPressed?: boolean;
+
+			/** href: render as link (`<a>`). Omit for button element (`<button>`). */
+			href?: string;
 		};
 </script>
 
