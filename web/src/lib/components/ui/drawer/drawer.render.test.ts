@@ -37,7 +37,6 @@ describe('Drawer (render)', () => {
 		await user.click(screen.getByRole('button', { name: 'Open drawer' }));
 
 		const dialog = await screen.findByRole('dialog');
-		expect(dialog).toBeInTheDocument();
 		expect(within(dialog).getByText('Settings')).toBeInTheDocument();
 		expect(within(dialog).getByText('Body content')).toBeInTheDocument();
 	});
@@ -50,8 +49,8 @@ describe('Drawer (render)', () => {
 		const dialog = await screen.findByRole('dialog');
 		expect(dialog).toHaveAttribute('aria-modal', 'true');
 
+		expect(dialog).toHaveAttribute('aria-labelledby');
 		const labelledBy = dialog.getAttribute('aria-labelledby');
-		expect(labelledBy).toBeTruthy();
 		expect(document.getElementById(labelledBy!)).toHaveTextContent('Settings');
 	});
 
@@ -66,6 +65,11 @@ describe('Drawer (render)', () => {
 		await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
 	});
 
+	// Overlay-click dismissal is intentionally asserted as presence only. Closing on
+	// an overlay click is Bits UI "interact-outside" behaviour, which keys off trusted
+	// pointer events that jsdom does not synthesize (a simulated click never fires the
+	// dismiss). The close *contract* is covered by the DrawerClose and Escape tests
+	// below; here we just assert our internally-rendered backdrop is present.
 	it('renders the backdrop overlay while open', async () => {
 		const { baseElement } = render(DrawerFixture, { open: true });
 		await screen.findByRole('dialog');
