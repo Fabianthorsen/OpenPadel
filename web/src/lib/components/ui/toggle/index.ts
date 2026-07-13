@@ -3,7 +3,7 @@ export {
 	toggleVariants,
 	type ToggleSize,
 	type ToggleVariant,
-	type ToggleVariants
+	type ToggleProps
 } from './toggle.svelte';
 
 export {
