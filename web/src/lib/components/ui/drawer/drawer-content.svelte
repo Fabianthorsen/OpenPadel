@@ -25,7 +25,7 @@
 	 * </DrawerContent>
 	 */
 	export const drawerContentVariants = tv({
-		base: 'fixed inset-x-0 bottom-0 z-50 flex flex-col gap-4 border-input bg-background p-4 shadow-lg transition-transform duration-300 ease-out',
+		base: 'fixed inset-x-0 bottom-0 z-50 flex flex-col gap-4 border-input bg-background p-4 shadow-lg',
 		variants: {
 			size: {
 				sm: 'max-h-[40vh] md:max-h-[300px]',
@@ -83,7 +83,6 @@
 		{id}
 		aria-modal="true"
 		class={cn(drawerContentVariants({ size }), className)}
-		style="transform: translateY(100%); data-[state=open]:[transform: translateY(0)];"
 		{...restProps}
 	>
 		{@render children?.()}
@@ -91,13 +90,31 @@
 </DialogPrimitive.Portal>
 
 <style>
-	/* Open state: drawer slides up */
+	/* Open state: slide-up animation */
 	:global([data-slot='drawer-content'][data-state='open']) {
-		transform: translateY(0);
+		animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 	}
 
-	/* Closed state: drawer slides down */
+	/* Closed state: slide-down transition */
 	:global([data-slot='drawer-content'][data-state='closed']) {
-		transform: translateY(100%);
+		animation: slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+	}
+
+	@keyframes slide-up {
+		from {
+			transform: translateY(100%);
+		}
+		to {
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes slide-down {
+		from {
+			transform: translateY(0);
+		}
+		to {
+			transform: translateY(100%);
+		}
 	}
 </style>

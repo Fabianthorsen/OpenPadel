@@ -100,5 +100,4 @@ body {
 	height: calc(100dvh - env(safe-area-inset-bottom, 0px));
 }
 
-/* Drawer uses CSS transitions for smooth bidirectional animation (open/close) */
-/* See drawer-content.svelte for transform logic */
+/* Drawer animations defined in drawer-content.svelte styles block */
