@@ -24,3 +24,4 @@ internal/ui/build/*
 # OS
 .DS_Store
 server
+.scratch/
