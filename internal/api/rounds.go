@@ -124,8 +124,10 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 		// Don't auto-complete when at the final round — leave in "playing" status so admin can choose.
 		// The frontend detects this state and shows the choice buttons instead of auto-advancing.
 		// If admin wants to end immediately without seeing the choice, they can use the close endpoint.
-	} else if sess.GameMode == "americano" {
-		// Americano: all pre-generated rounds complete.
+	} else if sess.GameMode == "americano" && sess.RoundsTotal != nil {
+		// Fixed Americano: auto-complete once every pre-generated round is scored.
+		// Unlimited Americano (rounds_total = null) never auto-completes — the admin
+		// keeps advancing on demand and ends the session via the close endpoint.
 		done, err := h.americanoSvc.CanComplete(sessionID)
 		if err == nil && done {
 			h.store.CompleteSession(sessionID, false) //nolint:errcheck
@@ -208,7 +210,21 @@ func (h *Handler) advanceRound(w http.ResponseWriter, r *http.Request) {
 		if err := h.mexicanoSvc.AdvanceRound(w, sessionID, nextRound); err != nil {
 			return
 		}
+	} else if sess.RoundsTotal == nil {
+		// Unlimited Americano: rounds aren't pre-generated, so build the next one on
+		// demand from the history of rounds played so far.
+		previousRounds, err := h.store.GetRounds(sessionID)
+		if err != nil {
+			respondAPIError(w, ErrServerError)
+			return
+		}
+		if err := h.americanoSvc.AdvanceAmericanoRound(sessionID, previousRounds, activePlayers(sess.Players), sess.Courts); err != nil {
+			respondAPIError(w, ErrServerError)
+			return
+		}
 	} else {
+		// Fixed Americano: the full rotation was pre-generated at start, so just
+		// advance the current-round pointer.
 		if err := h.store.AdvanceRound(sessionID); err != nil {
 			respondAPIError(w, ErrServerError)
 			return
