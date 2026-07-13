@@ -68,27 +68,13 @@
 	export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 		WithElementRef<HTMLAnchorAttributes> & {
 			/**
-			 * Visual style: primary | outline | secondary | ghost | destructive | link.
-			 * See tokens.colors for palette.
-			 * - primary: main CTA, preferred action (default)
-			 * - outline: secondary action with border (desktop-friendly, less prominent)
-			 * - secondary: supporting action, alternative flow
-			 * - ghost: low-emphasis action, deemphasized (works on any background)
-			 * - destructive: destructive action, demands attention
-			 * - link: text-only link style, underline on hover
+			 * variant: primary | outline | secondary | ghost | destructive | link.
+			 * See tokens.colors for palette. Each conveys different emphasis and use case.
 			 */
 			variant?: ButtonVariant;
 
 			/**
-			 * Size: xs | sm | default | lg | icon | icon-xs | icon-sm | icon-lg.
-			 * - xs: 6px height, extra small (compact UI)
-			 * - sm: 7px height, small (tight spacing)
-			 * - default: 8px height, standard (most use cases)
-			 * - lg: 9px height, large (prominent)
-			 * - icon: 8px icon button (rounded, no padding)
-			 * - icon-xs: 6px icon button
-			 * - icon-sm: 7px icon button
-			 * - icon-lg: 9px icon button
+			 * size: xs | sm | default | lg (text buttons) or icon | icon-xs | icon-sm | icon-lg (icon-only buttons).
 			 */
 			size?: ButtonSize;
 
