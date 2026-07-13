@@ -54,3 +54,80 @@ A saved connection between two Users (added via search), used to streamline send
 
 **Invite**:
 A request from one User to another to join a specific Session, with a `pending | accepted | declined` status. Distinct from the public join link — Invites target a known User, not an anonymous link.
+
+---
+
+## Components & Design System
+
+**Phase 1** components follow a consistent pattern: `tailwind-variants` (tv) for styling, comprehensive JSDoc, TypeScript Props interfaces, and Bits UI primitives for accessibility.
+
+### Core Form Components
+
+| Component | Variants / Options | Use Case |
+|-----------|-------------------|----------|
+| **Button** | `variant`: primary, outline, secondary, ghost, destructive, link `size`: xs, sm, default, lg, icon, icon-xs, icon-sm, icon-lg | Primary CTAs, secondary actions, destructive actions, icon-only actions. Pass `href` to render as link. |
+| **Input** | `type`: text, password, email, number, search, tel, url, date, time, file | Text-based form inputs. Pair with Label for accessibility. Two-way binding: `value` for text-based, `files` for file inputs. |
+| **Label** | — | Form label for inputs. Always pair with Input using `htmlFor` attribute. Supports required indicator via child `<span>`. |
+| **Switch** | `size`: sm, default | Binary on/off state. Use in forms for boolean fields (vs. Toggle for state switching). Accessible: bound to Label via `htmlFor`. |
+| **Toggle** | `variant`: default, outline `size`: sm, default, lg | State switching (e.g., filters, display modes). Renders as button with `aria-pressed`. Supports icon content. |
+
+### Semantic Components
+
+| Component | Variants / Options | Use Case |
+|-----------|-------------------|----------|
+| **Badge** | `variant`: default (status), secondary (tags), destructive (errors), outline (neutral), ghost (minimal), link (clickable) | Status indicators (online, active, success), category tags (feature, type), error states. Renders as `<span>` by default, `<a>` if `href` provided. |
+| **Drawer** | `size`: sm (40vh mobile, 300px desktop), md (60vh mobile, 480px), lg (80vh mobile, 640px) | Bottom drawer for side panels, settings, filters. Slides up from bottom. Use as compound component: `<Drawer>`, `<DrawerTrigger>`, `<DrawerContent>`, `<DrawerHeader>`, `<DrawerBody>`, `<DrawerFooter>`, `<DrawerClose>`. |
+
+### Design Tokens
+
+All components reference design tokens defined in `src/lib/design-tokens.ts` and `src/app.css` via `@theme` directive:
+
+- **Colors**: primary, destructive, secondary, muted, accent, with foreground variants
+- **Spacing**: 0–4 (0, 0.25rem, 0.5rem, 0.75rem, 1rem)
+- **Radius**: sm (0.25rem), md (0.5rem), default (0.75rem)
+- **Shadows**: sm, md, lg
+- **Fonts**: sans (Inter)
+- **Animations**: spin, pulse
+
+### Accessibility
+
+All Phase 1 components:
+- ✓ Built on Bits UI primitives (Dialog, Label, etc.) for focus management and keyboard interaction
+- ✓ Support ARIA attributes: `aria-invalid`, `aria-pressed`, `aria-expanded`, `aria-modal`
+- ✓ Require explicit pairing: Label with Input, proper semantic elements (heading for titles, paragraph for descriptions)
+- ✓ Keyboard: Tab navigates, Escape closes (Drawer), Enter activates (Button)
+
+### Patterns
+
+**Form Field with Validation:**
+```svelte
+<Label htmlFor="email">Email <span class="text-destructive">*</span></Label>
+<Input id="email" type="email" ariaInvalid={hasError} />
+```
+
+**Drawer with Actions:**
+```svelte
+<Drawer>
+  <DrawerTrigger>Open Settings</DrawerTrigger>
+  <DrawerContent size="md">
+    <DrawerHeader>
+      <DrawerTitle>Settings</DrawerTitle>
+    </DrawerHeader>
+    <DrawerBody>{/* form fields */}</DrawerBody>
+    <DrawerFooter>
+      <DrawerClose>Cancel</DrawerClose>
+      <Button>Save</Button>
+    </DrawerFooter>
+  </DrawerContent>
+</Drawer>
+```
+
+### Extending Components
+
+Before creating a new component, ask: **Can I extend an existing one?**
+
+- **New visual variant** (color, size, state) → Add to `tv()` variants
+- **Different props** → Consider composition with existing components
+- **Fundamentally different behavior** → Create custom component (e.g., Drawer required custom implementation; Dialog is for centered modals)
+
+See `docs/guides/component-patterns.md` for the full decision tree.
