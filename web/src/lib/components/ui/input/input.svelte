@@ -5,7 +5,6 @@
 
 	/**
 	 * Input component for form data collection.
-	 * Supports all HTML input types. Text-based inputs on mobile use 16px (text-base) to prevent iOS auto-zoom.
 	 *
 	 * @example
 	 * <Input type="text" placeholder="Name" />
@@ -15,6 +14,12 @@
 	 *
 	 * @example
 	 * <Input type="password" disabled />
+	 *
+	 * Pair with Label for accessibility:
+	 * ```svelte
+	 * <Label for="email">Email</Label>
+	 * <Input id="email" type="email" />
+	 * ```
 	 */
 	export const inputVariants = tv({
 		base: 'dark:bg-input/30 border-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 disabled:bg-input/50 dark:disabled:bg-input/80 file:text-foreground placeholder:text-muted-foreground h-8 w-full min-w-0 rounded-lg border bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-3 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-3 md:text-sm',
@@ -23,9 +28,8 @@
 	type InputType = Exclude<HTMLInputTypeAttribute, 'file'>;
 
 	/**
-	 * Input component props. Supports all HTML input types.
+	 * Input component props. Supports all HTML input types: text, password, email, number, search, tel, url, date, time, file, etc.
 	 *
-	 * Renders as `<input>` with dynamic type attribute.
 	 * File inputs bind to `files` prop; other types bind to `value`.
 	 */
 	export type InputProps = WithElementRef<
@@ -33,10 +37,7 @@
 			(
 				| { type: 'file'; files?: FileList }
 				| {
-						/**
-						 * type: text | password | email | number | search | tel | url | date | time | etc.
-						 * Determines input behavior and validation. Default: text.
-						 */
+						/** type: text | password | email | number | search | tel | url | date | time | etc. */
 						type?: InputType;
 						files?: undefined;
 				  }
@@ -48,10 +49,10 @@
 		/** files: two-way binding for file inputs (type='file' only). */
 		files?: FileList;
 
-		/** Disabled state: input cannot be interacted with, appears inactive. */
+		/** Disabled: input cannot be interacted with, appears inactive. */
 		disabled?: boolean;
 
-		/** Invalid state: indicates aria-invalid for screen readers and error styling. */
+		/** Invalid: true if input data is invalid; indicates error state for screen readers. */
 		ariaInvalid?: boolean;
 	};
 </script>
