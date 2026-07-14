@@ -14,6 +14,8 @@
 	import * as Sheet from '$lib/components/ui/sheet';
 	import RoundIndicator from './RoundIndicator.svelte';
 	import Leaderboard from './Leaderboard.svelte';
+	import ScoreBoard from './ScoreBoard.svelte';
+	import TeamScore from './TeamScore.svelte';
 	import { numpad as numpadStore } from '$lib/stores/numpad';
 	import { auth } from '$lib/auth.svelte';
 	import type { SessionStream } from '$lib/stores/sessionStream.svelte';
@@ -48,14 +50,22 @@
 	let showEndMenu = $state(false);
 	let showStandingsSheet = $state(false);
 
-	// Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite)
-	type NumpadState = { matchId: string; team: 'a' | 'b'; value: string; fresh: boolean };
+	// Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite).
+	// mode 'adjust' (single court) just tracks the score; 'final' (multi court)
+	// submits the result on confirm, since there is no separate finalize button.
+	type NumpadState = {
+		matchId: string;
+		team: 'a' | 'b';
+		value: string;
+		fresh: boolean;
+		mode: 'adjust' | 'final';
+	};
 	let numpad = $state<NumpadState | null>(null);
 
-	function openNumpad(matchId: string, team: 'a' | 'b') {
+	function openNumpad(matchId: string, team: 'a' | 'b', mode: 'adjust' | 'final' = 'adjust') {
 		const current = scores[matchId]?.[team] ?? 0;
 		const value = current > 0 ? String(current) : '';
-		numpad = { matchId, team, value, fresh: true };
+		numpad = { matchId, team, value, fresh: true, mode };
 		numpadStore.open({
 			value,
 			fresh: true,
@@ -101,13 +111,18 @@
 			}, 400);
 			return;
 		}
-		const { matchId, team } = numpad;
+		const { matchId, team, mode } = numpad;
 
 		const other = session.points - entered;
-		localScores[matchId] = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
-		scheduleLiveSave(matchId);
+		const next = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
+		localScores[matchId] = next;
 		numpad = null;
 		numpadStore.close();
+		if (mode === 'final') {
+			submitScore(matchId, next.a, next.b);
+		} else {
+			scheduleLiveSave(matchId);
+		}
 	}
 
 	const scores = $derived.by(() => {
@@ -162,10 +177,11 @@
 		scheduleLiveSave(matchId);
 	}
 
-	async function submitScore(matchId: string) {
+	async function submitScore(matchId: string, scoreA?: number, scoreB?: number) {
 		clearTimeout(saveTimeout[matchId]);
 		submitting[matchId] = true;
-		const s = scores[matchId];
+		const s =
+			scoreA !== undefined && scoreB !== undefined ? { a: scoreA, b: scoreB } : scores[matchId];
 		try {
 			await api.scores.submit(session.id, matchId, s.a, s.b, '');
 			editing[matchId] = false;
@@ -350,116 +366,31 @@
 
 				<!-- Courts: Adaptive layout -->
 				{#if isSingleCourt}
-					<!-- Single court: Hero card layout -->
+					<!-- Single court: ScoreBoard with inline steppers + tap-to-numpad -->
 					{@const match = currentRound.matches[0]}
 					{@const s = scores[match.id] ?? { a: 0, b: 0 }}
 					{@const scored = match.score !== null && !editing[match.id]}
-					{@const p1 = playerById[match.team_a[0]]}
-					{@const p2 = playerById[match.team_a[1]]}
-					{@const p3 = playerById[match.team_b[0]]}
-					{@const p4 = playerById[match.team_b[1]]}
 
-					<Card class="border-border bg-surface rounded-3xl p-6">
-						<!-- Status chip -->
-						<div class="mb-4 flex justify-center">
-							{#if match.score !== null}
-								<span
-									class="bg-surface-raised text-text-primary inline-block rounded-full px-3 py-1 text-xs font-semibold"
-								>
-									{$_('court_status_final')}
-								</span>
-							{:else if match.live}
-								<span
-									class="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
-								>
-									<span class="bg-primary inline-block h-2 w-2 animate-pulse rounded-full"></span>
-									{$_('court_status_live')}
-								</span>
-							{:else}
-								<span
-									class="bg-surface-raised text-text-secondary inline-block rounded-full px-3 py-1 text-xs font-semibold"
-								>
-									{$_('court_status_upcoming')}
-								</span>
-							{/if}
-						</div>
-
-						<!-- Team A -->
-						<div class="flex flex-col items-center gap-2 text-center">
-							<div class="flex justify-center">
-								<Avatar
-									icon={p1?.avatar_icon}
-									color={p1?.avatar_color}
-									name={p1?.name ?? ''}
-									size="md"
-								/>
-								<div class="-ml-3">
-									<Avatar
-										icon={p2?.avatar_icon}
-										color={p2?.avatar_color}
-										name={p2?.name ?? ''}
-										size="md"
-									/>
-								</div>
-							</div>
-							<p class="text-[15px] font-semibold">{teamLabel(match.team_a)}</p>
-							<p
-								class="text-5xl font-[800] tabular-nums {scored && s.a > s.b
-									? 'text-primary font-bold'
-									: scored && s.a < s.b
-										? 'text-text-disabled'
-										: 'text-text-primary'}"
-							>
-								{s.a}
-							</p>
-						</div>
-
-						<div class="bg-border my-4 h-px"></div>
-
-						<!-- Team B -->
-						<div class="flex flex-col items-center gap-2 text-center">
-							<p
-								class="text-5xl font-[800] tabular-nums {scored && s.b > s.a
-									? 'text-primary font-bold'
-									: scored && s.b < s.a
-										? 'text-text-disabled'
-										: 'text-text-primary'}"
-							>
-								{s.b}
-							</p>
-							<p class="text-[15px] font-semibold">{teamLabel(match.team_b)}</p>
-							<div class="flex justify-center">
-								<Avatar
-									icon={p3?.avatar_icon}
-									color={p3?.avatar_color}
-									name={p3?.name ?? ''}
-									size="md"
-								/>
-								<div class="-ml-3">
-									<Avatar
-										icon={p4?.avatar_icon}
-										color={p4?.avatar_color}
-										name={p4?.name ?? ''}
-										size="md"
-									/>
-								</div>
-							</div>
-						</div>
-
-						<!-- Score entry button (admin only) -->
-						{#if isAdmin && !scored}
-							<div class="mt-6">
-								<Button
-									variant="default"
-									size="cta"
-									disabled={s.a + s.b !== session.points || submitting[match.id]}
-									onclick={() => submitScore(match.id)}
-								>
-									{submitting[match.id] ? '…' : $_('active_finalize_result')}
-								</Button>
-							</div>
-						{/if}
-					</Card>
+					<ScoreBoard
+						teamA={{
+							players: [playerById[match.team_a[0]], playerById[match.team_a[1]]].filter(Boolean),
+							name: teamLabel(match.team_a),
+							score: s.a
+						}}
+						teamB={{
+							players: [playerById[match.team_b[0]], playerById[match.team_b[1]]].filter(Boolean),
+							name: teamLabel(match.team_b),
+							score: s.b
+						}}
+						{scored}
+						live={!!match.live}
+						pointsTarget={maxScore}
+						{isAdmin}
+						submitting={!!submitting[match.id]}
+						onAdjust={(team, delta) => adjust(match.id, team, delta)}
+						onScoreTap={(team) => openNumpad(match.id, team)}
+						onFinalize={() => submitScore(match.id)}
+					/>
 				{:else}
 					<!-- Multiple courts: Glanceable list layout -->
 					<div class="space-y-3">
@@ -525,15 +456,15 @@
 										</div>
 									</div>
 									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
-									<span
-										class="text-2xl font-[800] tabular-nums {scored && s.a > s.b
-											? 'text-primary font-bold'
-											: scored && s.a < s.b
-												? 'text-text-disabled'
-												: 'text-text-primary'}"
-									>
-										{s.a}
-									</span>
+									<TeamScore
+										score={s.a}
+										opponentScore={s.b}
+										{scored}
+										interactive={isAdmin}
+										underline
+										label="{scored ? 'Edit' : 'Set'} Team A score"
+										onTap={() => openNumpad(match.id, 'a', 'final')}
+									/>
 								</div>
 
 								<div class="bg-border mx-4 h-px"></div>
@@ -561,30 +492,16 @@
 										</div>
 									</div>
 									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_b)}</p>
-									<span
-										class="text-2xl font-[800] tabular-nums {scored && s.b > s.a
-											? 'text-primary font-bold'
-											: scored && s.b < s.a
-												? 'text-text-disabled'
-												: 'text-text-primary'}"
-									>
-										{s.b}
-									</span>
+									<TeamScore
+										score={s.b}
+										opponentScore={s.a}
+										{scored}
+										interactive={isAdmin}
+										underline
+										label="{scored ? 'Edit' : 'Set'} Team B score"
+										onTap={() => openNumpad(match.id, 'b', 'final')}
+									/>
 								</div>
-
-								<!-- Admin: Score entry button -->
-								{#if isAdmin && !scored}
-									<div class="border-border border-t px-4 py-3">
-										<Button
-											variant="default"
-											size="cta"
-											disabled={s.a + s.b !== session.points || submitting[match.id]}
-											onclick={() => submitScore(match.id)}
-										>
-											{submitting[match.id] ? '…' : $_('active_enter_score')}
-										</Button>
-									</div>
-								{/if}
 							</Card>
 						{/each}
 					</div>

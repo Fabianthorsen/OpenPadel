@@ -275,6 +275,7 @@
 	"end_menu_discard": "End and discard",
 	"active_finalize_result": "Finalize Result",
 	"active_scores_synced": "Scores are synced live to all player devices",
+	"numpad_target": "Target: {points}",
 	"active_official": "Active Scorekeeper",
 	"active_round_label": "Round",
 	"active_round_open_label": "Round",
