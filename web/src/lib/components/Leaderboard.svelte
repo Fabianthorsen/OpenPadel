@@ -5,6 +5,7 @@
 	import { Trophy, UserPlus, Check } from 'lucide-svelte';
 	import { shortName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import { auth } from '$lib/auth.svelte';
 	import type { SessionStream } from '$lib/stores/sessionStream.svelte';
 
@@ -12,12 +13,14 @@
 		sessionId,
 		sessionName = '',
 		complete = false,
-		stream = null
+		stream = null,
+		inSheet = false
 	}: {
 		sessionId: string;
 		sessionName?: string;
 		complete?: boolean;
 		stream?: SessionStream | null;
+		inSheet?: boolean;
 	} = $props();
 
 	let leaderboard = $state<App.Leaderboard | null>(null);
@@ -69,9 +72,12 @@
 	);
 </script>
 
-<main class="pt-safe-page mx-auto max-w-[480px] space-y-6 px-4 pb-24">
+<main class="mx-auto max-w-[480px] space-y-6 px-4 {inSheet ? 'pb-6' : 'pt-safe-page pb-24'}">
 	{#if !leaderboard}
-		<p class="text-text-secondary text-sm">Loading…</p>
+		<div class="flex flex-col items-center justify-center gap-3 py-12">
+			<Spinner />
+			<p class="text-text-secondary text-sm">{$_('loading')}</p>
+		</div>
 	{:else if complete}
 		<!-- ── Final Results ── -->
 
@@ -115,10 +121,14 @@
 						/>
 					</div>
 
-					<!-- Rank badge -->
+					<!-- Rank badge: gold/silver/bronze medal colors -->
 					<div
 						class="mt-2 flex h-6 w-6 items-center justify-center rounded-full text-xs font-[800] text-white
-            {isFirst ? 'bg-primary' : 'bg-[#4a7856]'}"
+            {isFirst
+							? 'bg-[var(--color-medal-gold)]'
+							: s.rank === 2
+								? 'bg-[var(--color-medal-silver)]'
+								: 'bg-[var(--color-medal-bronze)]'}"
 					>
 						{s.rank}
 					</div>
@@ -143,7 +153,7 @@
 						<span class="text-text-disabled">·</span>
 						<span class="text-text-disabled">{s.draws ?? 0}D</span>
 						<span class="text-text-disabled">·</span>
-						<span class="text-[#c0392b]"
+						<span class="text-destructive"
 							>{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}L</span
 						>
 					</div>
@@ -155,21 +165,21 @@
 							class="mt-2 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors
                 {isContact
 								? 'bg-border text-text-disabled cursor-default'
-								: 'bg-primary-muted text-primary hover:bg-primary hover:text-white'}"
+								: 'bg-primary-muted text-primary hover:bg-primary hover:text-primary-foreground'}"
 						>
 							{#if isContact}<Check size={10} />{:else}<UserPlus size={10} />{/if}
 							{isContact ? 'Added' : 'Add'}
 						</button>
 					{/if}
 
-					<!-- Podium bar -->
+					<!-- Podium bar: gold/silver/bronze medal colors -->
 					<div
 						class="mt-3 w-full rounded-t-xl
             {isFirst
-							? 'bg-primary h-12'
+							? 'h-12 bg-[var(--color-medal-gold)]'
 							: s.rank === 2
-								? 'h-8 bg-[#4a7856]/60'
-								: 'h-5 bg-[#a8c5b0]/60'}"
+								? 'h-8 bg-[var(--color-medal-silver)]'
+								: 'h-5 bg-[var(--color-medal-bronze)]'}"
 					></div>
 				</div>
 			{/each}
@@ -198,7 +208,7 @@
 							<span class="text-text-disabled">·</span>
 							<span class="text-text-disabled">{s.draws ?? 0}D</span>
 							<span class="text-text-disabled">·</span>
-							<span class="text-[#c0392b]"
+							<span class="text-destructive"
 								>{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}L</span
 							>
 						</div>
@@ -213,7 +223,7 @@
 								class="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors
                   {isContact
 									? 'bg-border text-text-disabled cursor-default'
-									: 'bg-primary-muted text-primary hover:bg-primary hover:text-white'}"
+									: 'bg-primary-muted text-primary hover:bg-primary hover:text-primary-foreground'}"
 							>
 								{#if isContact}<Check size={10} />{:else}<UserPlus size={10} />{/if}
 							</button>
@@ -232,150 +242,76 @@
 			</a>
 		</div>
 	{:else}
-		<!-- ── Live Standings ── -->
-
-		<!-- Leader hero card -->
-		{#if leader}
-			<div class="bg-primary relative overflow-hidden rounded-2xl px-6 py-6">
-				<svg
-					class="absolute inset-0 h-full w-full opacity-10"
-					preserveAspectRatio="none"
-					viewBox="0 0 100 100"
-				>
-					<line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5" />
-					<line x1="0" y1="50" x2="100" y2="50" stroke="white" stroke-width="0.5" />
-					<rect
-						x="20"
-						y="20"
-						width="60"
-						height="60"
-						fill="none"
-						stroke="white"
-						stroke-width="0.5"
-					/>
-				</svg>
-				<div class="relative z-10 flex items-center gap-5">
-					<Avatar
-						icon={leader.avatar_icon}
-						color={leader.avatar_color}
-						name={leader.name}
-						size="lg"
-						ring="ring-2 ring-white/30"
-					/>
-					<div class="min-w-0 flex-1">
-						<div class="mb-0.5">
-							<span
-								class="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-white uppercase"
-							>
-								{$_('leaderboard_leader')}
+		<!-- ── Live Standings (calm & lean) ── -->
+		<div class="space-y-4">
+			<!-- Header: title + round/live info -->
+			<div>
+				<div class="flex items-center justify-between px-1 pb-2">
+					<h2 class="text-text-secondary text-[13px] font-bold tracking-[0.1em] uppercase">
+						{sessionName || $_('leaderboard_current')}
+					</h2>
+					{#if leaderboard.current_round}
+						<div class="text-text-secondary flex items-center gap-2 text-xs">
+							<span>
+								{leaderboard.total_rounds
+									? $_('leaderboard_round_of', {
+											values: {
+												current: leaderboard.current_round,
+												total: leaderboard.total_rounds
+											}
+										})
+									: $_('active_round_open', { values: { current: leaderboard.current_round } })}
+							</span>
+							<span class="flex items-center gap-1">
+								<span class="bg-primary inline-block h-1.5 w-1.5 animate-pulse rounded-full"></span>
+								{$_('leaderboard_live')}
 							</span>
 						</div>
-						<p class="truncate text-2xl font-[800] text-white">{leader.name}</p>
-						<div class="mt-2 flex items-center gap-4">
-							<div>
-								<span class="text-xl font-[800] text-white">{leader.points}</span>
-								<span class="ml-1 text-[10px] font-bold tracking-wider text-white/60 uppercase"
-									>{$_('leaderboard_pts')}</span
-								>
-							</div>
-							{#if (leader.games_played ?? 0) > 0}
-								<div class="h-6 w-px bg-white/20"></div>
-								<div>
-									<span class="text-xl font-[800] text-white"
-										>{leader.wins ?? 0}/{leader.draws ?? 0}/{(leader.games_played ?? 0) -
-											(leader.wins ?? 0) -
-											(leader.draws ?? 0)}</span
-									>
-									<span class="ml-1 text-[10px] font-bold tracking-wider text-white/60 uppercase"
-										>{$_('leaderboard_wl')}</span
-									>
-								</div>
-							{/if}
-						</div>
-					</div>
+					{/if}
 				</div>
 			</div>
-		{/if}
 
-		<!-- Standings -->
-		<div class="space-y-1">
-			<div class="flex items-center justify-between px-1 pb-1">
-				<h3 class="text-text-secondary text-[13px] font-bold tracking-[0.1em] uppercase">
-					{$_('leaderboard_current')}
-				</h3>
-				{#if leaderboard.current_round}
-					<span class="text-text-disabled text-xs">
-						{leaderboard.total_rounds
-							? $_('leaderboard_round_of', {
-									values: { current: leaderboard.current_round, total: leaderboard.total_rounds }
-								})
-							: $_('active_round_open', { values: { current: leaderboard.current_round } })}
-					</span>
-				{/if}
-			</div>
-
-			<div class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] gap-2 px-4 pb-1">
-				<span class="text-text-disabled text-[10px] font-bold tracking-widest uppercase">#</span>
-				<span class="text-text-disabled text-[10px] font-bold tracking-widest uppercase"
-					>{$_('leaderboard_player')}</span
-				>
-				<span class="text-text-disabled text-center text-[10px] font-bold tracking-widest uppercase"
-					>{$_('leaderboard_games')}</span
-				>
-				<span class="text-text-disabled text-center text-[10px] font-bold tracking-widest uppercase"
-					>{$_('leaderboard_wl')}</span
-				>
-				<span class="text-text-disabled text-right text-[10px] font-bold tracking-widest uppercase"
-					>{$_('leaderboard_pts')}</span
-				>
-			</div>
-
-			{#each leaderboard.standings as s, i (s.player_id)}
-				{@const podiumBg =
-					s.rank === 1
-						? 'bg-primary'
-						: s.rank === 2
-							? 'bg-[#4a7856]'
-							: s.rank === 3
-								? 'bg-[#a8c5b0]'
-								: i % 2 === 0
-									? 'bg-surface-raised'
-									: 'bg-transparent'}
-				{@const isPodium = s.rank <= 3}
-				<div
-					class="grid grid-cols-[2rem_1fr_3rem_3.5rem_3rem] items-center gap-2 rounded-2xl px-4 py-3.5 {podiumBg}"
-				>
-					<span
-						class="text-sm font-[800] tabular-nums {isPodium ? 'text-white' : 'text-text-disabled'}"
-						>{s.rank}</span
+			<!-- Standings rows: rank · avatar+name · points (calm, no colors) -->
+			<div class="space-y-0.5">
+				{#each leaderboard.standings as s (s.player_id)}
+					{@const isRank1 = s.rank === 1}
+					<div
+						class="bg-surface flex items-center gap-3 rounded-2xl px-4 py-3.5"
+						aria-live="polite"
+						aria-label="{s.rank}. {s.name}: {s.points} points"
 					>
-					<div class="flex min-w-0 items-center gap-2.5">
-						<Avatar
-							icon={s.avatar_icon}
-							color={isPodium ? 'white' : s.avatar_color}
-							name={s.name}
-							size="sm"
-							ring={isPodium ? 'ring-2 ring-white/30' : 'ring-2 ring-primary/30'}
-						/>
-						<span class="truncate text-sm font-semibold {isPodium ? 'text-white' : ''}"
-							>{shortName(s.name)}</span
+						<!-- Rank number: rank 1 in primary, others disabled -->
+						<span
+							class="w-6 text-sm font-[800] tabular-nums {isRank1
+								? 'text-primary'
+								: 'text-text-disabled'}"
 						>
+							{s.rank}
+						</span>
+
+						<!-- Avatar + name: rank 1 emphasised, others neutral -->
+						<div class="flex min-w-0 flex-1 items-center gap-2.5">
+							<Avatar
+								icon={s.avatar_icon}
+								color={s.avatar_color}
+								name={s.name}
+								size="sm"
+								ring="ring-2 ring-primary/30"
+							/>
+							<span
+								class="truncate text-sm {isRank1
+									? 'text-primary font-bold'
+									: 'text-text-primary font-semibold'}"
+							>
+								{shortName(s.name)}
+							</span>
+						</div>
+
+						<!-- Points: right-aligned, the ranking metric -->
+						<span class="text-text-primary text-base font-[800] tabular-nums">{s.points}</span>
 					</div>
-					<span class="text-center text-sm {isPodium ? 'text-white/70' : 'text-text-secondary'}"
-						>{s.games_played ?? 0}</span
-					>
-					<span
-						class="text-center text-sm font-semibold {isPodium
-							? 'text-white/70'
-							: 'text-text-secondary'}"
-					>
-						{s.wins ?? 0}/{s.draws ?? 0}/{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}
-					</span>
-					<span class="text-right text-base font-[800] tabular-nums {isPodium ? 'text-white' : ''}"
-						>{s.points}</span
-					>
-				</div>
-			{/each}
+				{/each}
+			</div>
 		</div>
 	{/if}
 </main>
