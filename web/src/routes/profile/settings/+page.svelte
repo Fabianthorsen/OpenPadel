@@ -43,11 +43,8 @@
 		'Footprints'
 	];
 
-	const AVATAR_COLORS = ['forest', 'ocean', 'sunset', 'grape', 'peach'] as const;
-
 	let displayName = $state(auth.user?.display_name ?? '');
 	let pickerIcon = $state(auth.user?.avatar_icon ?? '');
-	let pickerColor = $state((auth.user?.avatar_color ?? 'forest') as (typeof AVATAR_COLORS)[number]);
 	let savingProfile = $state(false);
 	let profileError = $state('');
 
@@ -107,7 +104,7 @@
 				auth.token,
 				displayName.trim(),
 				pickerIcon,
-				pickerColor
+				auth.user.avatar_color
 			);
 			auth.updateUser(updated);
 			toast.success($_('settings_profile_saved'));
@@ -185,75 +182,49 @@
 	<Section title={$_('settings_profile_section')} collapsible={false}>
 		{#snippet children()}
 			<div class="space-y-4">
-				<!-- Avatar picker -->
-				<div class="space-y-2">
-					<p class="text-sm font-semibold">{$_('settings_avatar')}</p>
-					<div class="flex gap-4">
-						<Avatar icon={pickerIcon} color={pickerColor} name={displayName} size="lg" />
-						<div class="flex-1 space-y-3">
-							<!-- Icon grid -->
-							<div class="space-y-2">
-								<p class="text-text-secondary text-xs font-semibold">
-									{$_('settings_avatar_icon')}
-								</p>
-								<div class="grid grid-cols-4 gap-1.5">
-									<!-- Initials option -->
-									<button
-										onclick={() => (pickerIcon = '')}
-										class="flex items-center justify-center rounded-lg p-1.5 transition-colors {pickerIcon ===
-										''
-											? 'bg-primary/15 ring-primary ring-2'
-											: 'bg-surface-raised hover:bg-border'}"
-										aria-label="Use initials"
-										title="Initials"
-									>
-										<Avatar icon="" color={pickerColor} name={displayName} size="sm" />
-									</button>
-									{#each AVATAR_ICONS.slice(0, 7) as icon}
-										<button
-											onclick={() => (pickerIcon = icon)}
-											class="flex items-center justify-center rounded-lg p-1.5 transition-colors {pickerIcon ===
-											icon
-												? 'bg-primary/15 ring-primary ring-2'
-												: 'bg-surface-raised hover:bg-border'}"
-											aria-label={icon}
-											title={icon}
-										>
-											<Avatar {icon} color={pickerColor} name="" size="sm" />
-										</button>
-									{/each}
-								</div>
-								<button
-									class="text-primary hover:text-primary/80 w-full text-left text-xs font-semibold transition-colors"
-									onclick={() => {
-										/* TODO: expand to show all icons */
-									}}
-								>
-									{$_('settings_avatar_more')}
-								</button>
-							</div>
+				<!-- Avatar preview -->
+				<div class="flex justify-center pb-2">
+					<Avatar
+						icon={pickerIcon}
+						color={auth.user?.avatar_color ?? 'forest'}
+						name={displayName}
+						size="lg"
+					/>
+				</div>
 
-							<!-- Color swatches -->
-							<div class="space-y-2">
-								<p class="text-text-secondary text-xs font-semibold">
-									{$_('settings_avatar_color')}
-								</p>
-								<div class="flex gap-2">
-									{#each AVATAR_COLORS as color}
-										<button
-											onclick={() => (pickerColor = color)}
-											class="h-8 w-8 rounded-full ring-offset-2 transition-all {pickerColor ===
-											color
-												? 'ring-text-secondary ring-2'
-												: 'hover:opacity-80'}"
-											style="background-color: var(--color-{color})"
-											aria-label={color}
-											title={color}
-										></button>
-									{/each}
-								</div>
-							</div>
-						</div>
+				<!-- Icon picker -->
+				<div class="space-y-2">
+					<p class="text-text-secondary text-xs font-semibold">{$_('settings_avatar_icon')}</p>
+					<div class="grid grid-cols-6 gap-2">
+						<button
+							onclick={() => (pickerIcon = '')}
+							class="flex items-center justify-center rounded-lg p-2 transition-colors {pickerIcon ===
+							''
+								? 'bg-primary/15 ring-primary ring-2'
+								: 'bg-surface-raised hover:bg-border'}"
+							aria-label="Use initials"
+							title="Initials"
+						>
+							<Avatar
+								icon=""
+								color={auth.user?.avatar_color ?? 'forest'}
+								name={displayName}
+								size="sm"
+							/>
+						</button>
+						{#each AVATAR_ICONS.slice(0, 11) as icon}
+							<button
+								onclick={() => (pickerIcon = icon)}
+								class="flex items-center justify-center rounded-lg p-2 transition-colors {pickerIcon ===
+								icon
+									? 'bg-primary/15 ring-primary ring-2'
+									: 'bg-surface-raised hover:bg-border'}"
+								aria-label={icon}
+								title={icon}
+							>
+								<Avatar {icon} color={auth.user?.avatar_color ?? 'forest'} name="" size="sm" />
+							</button>
+						{/each}
 					</div>
 				</div>
 
@@ -289,15 +260,17 @@
 		{#snippet children()}
 			<div class="space-y-3">
 				<!-- Notifications -->
-				{#if pushSupported}
-					<div class="flex items-center justify-between gap-4">
-						<div class="flex-1">
-							<p class="text-sm font-semibold">{$_('pref_notifications_title')}</p>
-							<p class="text-text-secondary text-xs">{$_('pref_notifications_desc')}</p>
-						</div>
-						<Switch bind:checked={pushEnabled} onchange={togglePush} disabled={pushToggling} />
+				<div class="flex items-center justify-between gap-4">
+					<div class="flex-1">
+						<p class="text-sm font-semibold">{$_('pref_notifications_title')}</p>
+						<p class="text-text-secondary text-xs">{$_('pref_notifications_desc')}</p>
 					</div>
-				{/if}
+					<Switch
+						bind:checked={pushEnabled}
+						onchange={togglePush}
+						disabled={pushToggling || !pushSupported}
+					/>
+				</div>
 
 				<!-- Install prompt -->
 				{#if !isStandalone && !installDismissed && (isIOS || deferredInstallPrompt)}
