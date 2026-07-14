@@ -455,11 +455,17 @@
 										</div>
 									</div>
 									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
-									{#if isAdmin && !scored}
+									{#if isAdmin}
 										<button
 											onclick={() => openNumpad(match.id, 'a', 'final')}
-											class="text-primary text-2xl font-[800] tabular-nums underline decoration-2 underline-offset-4 transition-transform active:scale-95"
-											aria-label="Set Team A score"
+											class="text-2xl font-[800] tabular-nums transition-transform active:scale-95 {scored
+												? s.a > s.b
+													? 'text-primary font-bold'
+													: s.a < s.b
+														? 'text-text-disabled'
+														: 'text-text-primary'
+												: 'text-primary underline decoration-2 underline-offset-4'}"
+											aria-label="{scored ? 'Edit' : 'Set'} Team A score"
 										>
 											{s.a}
 										</button>
@@ -501,11 +507,17 @@
 										</div>
 									</div>
 									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_b)}</p>
-									{#if isAdmin && !scored}
+									{#if isAdmin}
 										<button
 											onclick={() => openNumpad(match.id, 'b', 'final')}
-											class="text-primary text-2xl font-[800] tabular-nums underline decoration-2 underline-offset-4 transition-transform active:scale-95"
-											aria-label="Set Team B score"
+											class="text-2xl font-[800] tabular-nums transition-transform active:scale-95 {scored
+												? s.b > s.a
+													? 'text-primary font-bold'
+													: s.b < s.a
+														? 'text-text-disabled'
+														: 'text-text-primary'
+												: 'text-primary underline decoration-2 underline-offset-4'}"
+											aria-label="{scored ? 'Edit' : 'Set'} Team B score"
 										>
 											{s.b}
 										</button>
