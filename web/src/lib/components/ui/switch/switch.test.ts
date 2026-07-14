@@ -12,12 +12,12 @@ describe('Switch Component', () => {
 
 		it('applies checked state background', () => {
 			const classes = switchVariants();
-			expect(classes).toContain('data-checked:bg-primary');
+			expect(classes).toContain('data-[state=checked]:bg-primary');
 		});
 
 		it('applies unchecked state background', () => {
 			const classes = switchVariants();
-			expect(classes).toContain('data-unchecked:bg-input');
+			expect(classes).toContain('data-[state=unchecked]:bg-input');
 		});
 
 		it('applies focus styles', () => {

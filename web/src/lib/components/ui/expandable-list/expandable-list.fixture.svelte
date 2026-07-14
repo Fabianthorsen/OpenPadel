@@ -6,6 +6,6 @@
 
 <ExpandableList {items} {showCount}>
 	{#snippet itemContent(item)}
-		<button>{item}</button>
+		<button>Item {item}</button>
 	{/snippet}
 </ExpandableList>
