@@ -176,10 +176,10 @@
 					<div
 						class="mt-3 w-full rounded-t-xl
             {isFirst
-							? 'bg-[var(--color-medal-gold)] h-12'
+							? 'h-12 bg-[var(--color-medal-gold)]'
 							: s.rank === 2
-								? 'bg-[var(--color-medal-silver)] h-8'
-								: 'bg-[var(--color-medal-bronze)] h-5'}"
+								? 'h-8 bg-[var(--color-medal-silver)]'
+								: 'h-5 bg-[var(--color-medal-bronze)]'}"
 					></div>
 				</div>
 			{/each}
