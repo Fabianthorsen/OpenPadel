@@ -34,6 +34,8 @@
 					'hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground',
 				destructive:
 					'bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30',
+				'destructive-solid':
+					'bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/30',
 				link: 'text-primary underline-offset-4 hover:underline'
 			},
 			size: {
@@ -47,7 +49,8 @@
 					"size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
 				'icon-sm':
 					'size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg',
-				'icon-lg': 'size-9'
+				'icon-lg': 'size-9',
+				cta: 'h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-bold'
 			}
 		},
 		defaultVariants: {
@@ -68,13 +71,15 @@
 	export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 		WithElementRef<HTMLAnchorAttributes> & {
 			/**
-			 * variant: default | outline | secondary | ghost | destructive | link.
+			 * variant: default | outline | secondary | ghost | destructive | destructive-solid | link.
+			 * `destructive` is a soft tint; `destructive-solid` is a filled danger button.
 			 * See tokens.colors for palette. Each conveys different emphasis and use case.
 			 */
 			variant?: ButtonVariant;
 
 			/**
-			 * size: xs | sm | default | lg (text buttons) or icon | icon-xs | icon-sm | icon-lg (icon-only buttons).
+			 * size: xs | sm | default | lg | cta (full-width primary CTA) for text buttons,
+			 * or icon | icon-xs | icon-sm | icon-lg for icon-only buttons.
 			 */
 			size?: ButtonSize;
 

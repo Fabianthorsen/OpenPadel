@@ -65,7 +65,7 @@ A request from one User to another to join a specific Session, with a `pending |
 
 | Component | Variants / Options | Use Case |
 |-----------|-------------------|----------|
-| **Button** | `variant`: default, outline, secondary, ghost, destructive, link `size`: xs, sm, default, lg, icon, icon-xs, icon-sm, icon-lg | Primary CTAs, secondary actions, destructive actions, icon-only actions. Pass `href` to render as link. |
+| **Button** | `variant`: default, outline, secondary, ghost, destructive, destructive-solid, link `size`: xs, sm, default, lg, cta, icon, icon-xs, icon-sm, icon-lg | Primary CTAs, secondary actions, destructive actions, icon-only actions. `size="cta"` = full-width primary CTA; `destructive-solid` = filled danger. Pass `href` to render as link. |
 | **Input** | `type`: text, password, email, number, search, tel, url, date, time, file | Text-based form inputs. Pair with Label for accessibility. Two-way binding: `value` for text-based, `files` for file inputs. |
 | **Label** | — | Form label for inputs. Always pair with Input using `htmlFor` attribute. Supports required indicator via child `<span>`. |
 | **Switch** | `size`: sm, default | Binary on/off state. Use in forms for boolean fields (vs. Toggle for state switching). Accessible: bound to Label via `htmlFor`. |
@@ -78,16 +78,30 @@ A request from one User to another to join a specific Session, with a `pending |
 | **Badge** | `variant`: default (status), secondary (tags), destructive (errors), outline (neutral), ghost (minimal), link (clickable) | Status indicators (online, active, success), category tags (feature, type), error states. Renders as `<span>` by default, `<a>` if `href` provided. |
 | **Drawer** | `size`: sm (40vh mobile, 300px desktop), md (60vh mobile, 480px), lg (80vh mobile, 640px) | Bottom drawer for side panels, settings, filters. Slides up from bottom. Use as compound component: `<Drawer>`, `<DrawerTrigger>`, `<DrawerContent>`, `<DrawerHeader>`, `<DrawerBody>`, `<DrawerFooter>`, `<DrawerClose>`. |
 
+### Foundation Components (shared)
+
+Built by the design-system foundation pass (#189); compose these rather than hand-rolling.
+
+| Component | Variants / Options | Use Case |
+|-----------|-------------------|----------|
+| **Spinner** | `size`: sm, md, lg | Loading / in-progress states (`role="status"` + `label`). Replaces hand-rolled `animate-spin` divs and bare "Loading…". |
+| **Section** | `collapsible` (default true), `open` (bindable), `maxHeight` (internal scroll), `trailing` snippet | Titled, optionally-collapsible/scrollable section block. Replaces hand-rolled Collapsible + label + chevron. |
+| **PasswordInput** | — (wraps Input) | Password field with a show/hide toggle. |
+| **AvatarGroup** | `max` | Stacked overlapping avatars + "+N" overflow (player previews). |
+| **JoinCodeInput** | `onComplete(code)` | 4-char session join code (OTP boxes, auto-advance, paste). Shared by Home + Profile. |
+
+`Avatar` also accepts an optional `badge` snippet (corner action, e.g. add-contact — see #174).
+
 ### Design Tokens
 
 All components reference design tokens defined in `src/lib/design-tokens.ts` and `src/app.css` via `@theme` directive:
 
-- **Colors**: primary, destructive, secondary, muted, accent, with foreground variants
+- **Colors**: primary, destructive, positive, warning (+ muted), secondary, muted, accent, with foreground variants; medal gold/silver/bronze (celebratory / Session complete only)
 - **Spacing**: 0–4 (0, 0.25rem, 0.5rem, 0.75rem, 1rem)
 - **Radius**: sm (0.25rem), md (0.5rem), default (0.75rem)
 - **Shadows**: sm, md, lg
 - **Fonts**: sans (Inter)
-- **Animations**: spin, pulse
+- **Animations**: shake, ptr-fade
 
 ### Accessibility
 

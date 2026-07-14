@@ -30,6 +30,16 @@
 	--color-destructive: #c0392b;
 	--color-destructive-foreground: #ffffff;
 
+	/* Warning — "time expired" and similar; use instead of raw amber-* (#170) */
+	--color-warning: #b45309;
+	--color-warning-muted: #f7e6d2;
+
+	/* Celebratory medal palette — Session complete finale only (#174).
+	   Accents only (rings/bars/badges), not body text. */
+	--color-medal-gold: #d4a72c;
+	--color-medal-silver: #a7abb0;
+	--color-medal-bronze: #b67a44;
+
 	/* shadcn-svelte tokens (resolved hex values) */
 	--color-foreground: #1a1a16;
 	--color-card: #f4f4f0;
