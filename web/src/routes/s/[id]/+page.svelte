@@ -8,7 +8,7 @@
 	import Leaderboard from '$lib/components/Leaderboard.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
-	import * as Drawer from '$lib/components/ui/drawer';
+	import ScoreNumpad from '$lib/components/ScoreNumpad.svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 	import { translateApiError } from '$lib/i18n/errors';
@@ -155,46 +155,4 @@
 {/if}
 
 <!-- Numpad drawer -->
-<Drawer.Root open={!!$numpadStore} onOpenChange={(open) => !open && $numpadStore?.onClose()}>
-	<Drawer.Content class="mx-auto flex max-h-[80vh] w-full max-w-[480px] flex-col gap-3">
-		<div class="px-6 pt-6">
-			<p
-				class="text-text-disabled mb-3 text-center text-[10px] font-bold tracking-widest uppercase"
-			>
-				Target: {$numpadStore?.targetPoints}
-			</p>
-			<p
-				class="mb-6 text-center text-[64px] leading-none font-[800] tabular-nums transition-transform
-        {$numpadStore?.shaking ? 'animate-[shake_0.4s_ease-in-out]' : ''}"
-			>
-				{$numpadStore?.value || '0'}
-			</p>
-		</div>
-		<div class="flex-1 px-6 pb-[env(safe-area-inset-bottom)]">
-			<div class="mx-auto grid max-w-sm grid-cols-3 gap-3">
-				{#each ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as d}
-					<button
-						onclick={() => $numpadStore?.onDigit(d)}
-						class="bg-surface-raised rounded-2xl py-4 text-xl font-[800] transition-all select-none active:scale-95"
-						>{d}</button
-					>
-				{/each}
-				<button
-					onclick={() => $numpadStore?.onDelete()}
-					class="bg-surface-raised rounded-2xl py-4 text-xl font-[800] transition-all select-none active:scale-95"
-					>⌫</button
-				>
-				<button
-					onclick={() => $numpadStore?.onDigit('0')}
-					class="bg-surface-raised rounded-2xl py-4 text-xl font-[800] transition-all select-none active:scale-95"
-					>0</button
-				>
-				<button
-					onclick={() => $numpadStore?.onConfirm()}
-					class="bg-primary rounded-2xl py-4 text-xl font-[800] text-white transition-all select-none active:scale-95"
-					>✓</button
-				>
-			</div>
-		</div>
-	</Drawer.Content>
-</Drawer.Root>
+<ScoreNumpad />
