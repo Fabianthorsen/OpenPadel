@@ -275,6 +275,7 @@
 	"end_menu_discard": "Avslutt og forkast",
 	"active_finalize_result": "Bekreft resultat",
 	"active_scores_synced": "Poengsum synkroniseres direkte til alle spillere",
+	"numpad_target": "Mål: {points}",
 	"active_official": "Aktiv dommer",
 	"active_round_label": "Runde",
 	"active_round_open_label": "Runde",

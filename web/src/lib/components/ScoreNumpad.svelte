@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { _ } from 'svelte-i18n';
 	import * as Drawer from '$lib/components/ui/drawer';
 	import { numpad } from '$lib/stores/numpad';
 </script>
@@ -14,7 +15,7 @@
 			<p
 				class="text-text-disabled mb-3 text-center text-[10px] font-bold tracking-widest uppercase"
 			>
-				Target: {$numpad?.targetPoints}
+				{$_('numpad_target', { values: { points: $numpad?.targetPoints ?? 0 } })}
 			</p>
 			<p
 				class="mb-6 text-center text-[64px] leading-none font-[800] tabular-nums transition-transform

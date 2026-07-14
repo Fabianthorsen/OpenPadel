@@ -1,8 +1,15 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
+import { init, register, waitLocale } from 'svelte-i18n';
 import ScoreNumpad from './ScoreNumpad.svelte';
 import { numpad } from '$lib/stores/numpad';
+
+beforeAll(async () => {
+	register('en', () => import('../i18n/en.json'));
+	init({ fallbackLocale: 'en', initialLocale: 'en' });
+	await waitLocale('en');
+});
 
 /**
  * Render/interaction tests for the store-driven numpad drawer. The component
