@@ -5,16 +5,15 @@
 	import { auth } from '$lib/auth.svelte';
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
-	import { CalendarDays, Radio, ChevronDown, UserPlus, X, Search, Check } from 'lucide-svelte';
+	import { CalendarDays, Radio, UserPlus, X, Search, Check, Settings } from 'lucide-svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import CreateDrawer from '$lib/components/CreateDrawer.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import * as Collapsible from '$lib/components/ui/collapsible';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import Section from '$lib/components/ui/section/section.svelte';
+	import JoinCodeInput from '$lib/components/ui/join-code-input/join-code-input.svelte';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
-	import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
 	import { userStream, type UserStream } from '$lib/stores/userStream.svelte';
 
 	const stream: UserStream = userStream(() => auth.token);
@@ -27,62 +26,18 @@
 		};
 	});
 
-	const AVATAR_ICONS = [
-		'Zap',
-		'Star',
-		'Flame',
-		'Shield',
-		'Crown',
-		'Trophy',
-		'Target',
-		'Rocket',
-		'Ghost',
-		'Cat',
-		'Dog',
-		'Bird',
-		'Leaf',
-		'Sun',
-		'Moon',
-		'Snowflake',
-		'Mountain',
-		'Waves',
-		'Music',
-		'Heart',
-		'Smile',
-		'Fish',
-		'Swords',
-		'Dumbbell',
-		'Bike',
-		'Footprints'
-	];
-
-	let pickerIcon = $state(auth.user?.avatar_icon ?? '');
-	let savingAvatar = $state(false);
-	let showAvatarPicker = $state(false);
-
-	$effect(() => {
-		document.body.style.overflow = showAvatarPicker ? 'hidden' : '';
-		return () => {
-			document.body.style.overflow = '';
-		};
-	});
-
 	let showCreateDrawer = $state(false);
 
 	let stats = $state<App.AmericanoCareerStats | null>(null);
 	let tournaments = $state<App.TournamentEntry[]>([]);
 	let upcoming = $state<App.UpcomingEntry[]>([]);
 	let loading = $state(true);
-	let showDeleteConfirm = $state(false);
-	let deleting = $state(false);
-	let joinChars = $state(['', '', '', '']);
-	let joinInputs = $state<HTMLInputElement[]>([]);
+	let joinCode = $state('');
 
 	let showStats = $state(true);
 	let showContacts = $state(false);
 	let showUpcoming = $state(false);
 	let showHistory = $state(false);
-	let showPreferences = $state(true);
 
 	let invites = $state<App.Invite[]>([]);
 	let contacts = $state<App.Contact[]>([]);
@@ -148,53 +103,14 @@
 		}
 	}
 
-	let pushSupported = $state(false);
-	let pushEnabled = $state(false);
-	let pushToggling = $state(false);
-
-	// Install prompt
-	let isStandalone = $state(false);
-	let isIOS = $state(false);
-	let deferredInstallPrompt = $state<any>(null);
-	let installDismissed = $state(false);
-
 	function sessionHref(sessionId: string) {
 		if (typeof localStorage === 'undefined') return `/s/${sessionId}`;
 		const token = localStorage.getItem(`admin_token_${sessionId}`);
 		return token ? `/s/${sessionId}?token=${token}` : `/s/${sessionId}`;
 	}
 
-	function joinByCode() {
-		const code = joinChars.join('').trim();
-		if (code.length === 4) goto(`/s/${code}`);
-	}
-
-	function onJoinInput(i: number, e: Event) {
-		const val = (e.currentTarget as HTMLInputElement).value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-		joinChars[i] = val.slice(-1);
-		if (val && i < 3) joinInputs[i + 1]?.focus();
-		if (joinChars.every((c) => c)) joinByCode();
-	}
-
-	function onJoinKeydown(i: number, e: KeyboardEvent) {
-		if (e.key === 'Backspace' && !joinChars[i] && i > 0) {
-			joinChars[i - 1] = '';
-			joinInputs[i - 1]?.focus();
-		}
-	}
-
-	function onJoinPaste(e: ClipboardEvent) {
-		const text =
-			e.clipboardData
-				?.getData('text')
-				?.toUpperCase()
-				.replace(/[^A-Z0-9]/g, '') ?? '';
-		if (text.length >= 4) {
-			e.preventDefault();
-			joinChars = text.slice(0, 4).split('');
-			joinInputs[3]?.focus();
-			joinByCode();
-		}
+	function joinByCode(code: string) {
+		goto(`/s/${code}`);
 	}
 
 	async function load() {
@@ -245,35 +161,6 @@
 			}
 		});
 		stream.start();
-
-		// Install detection — runs immediately, no SW needed
-		isStandalone =
-			window.matchMedia('(display-mode: standalone)').matches ||
-			(navigator as any).standalone === true;
-		isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-		const isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent);
-		installDismissed = !isMobile || localStorage.getItem('install_dismissed') === '1';
-
-		window.addEventListener('beforeinstallprompt', (e: any) => {
-			e.preventDefault();
-			deferredInstallPrompt = e;
-		});
-
-		// Push subscription check — requires active SW, may hang in dev
-		if ('serviceWorker' in navigator && 'PushManager' in window) {
-			pushSupported = true;
-			try {
-				const swReady = Promise.race([
-					navigator.serviceWorker.ready,
-					new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-				]);
-				const reg = (await swReady) as ServiceWorkerRegistration;
-				const sub = await reg.pushManager.getSubscription();
-				pushEnabled = !!sub && Notification.permission === 'granted';
-			} catch {
-				// SW not ready (dev mode or not yet installed) — push state unknown
-			}
-		}
 	});
 
 	const winRate = $derived(
@@ -288,64 +175,6 @@
 				})
 			: ''
 	);
-
-	async function checkPushState() {
-		const reg = await navigator.serviceWorker.ready;
-		const sub = await reg.pushManager.getSubscription();
-		pushEnabled = !!sub && Notification.permission === 'granted';
-	}
-
-	async function togglePush() {
-		if (!auth.token) return;
-		pushToggling = true;
-		try {
-			if (pushEnabled) {
-				await unsubscribeFromPush(auth.token);
-			} else {
-				await subscribeToPush(auth.token);
-			}
-			await checkPushState();
-		} catch (e) {
-			const msg = e instanceof Error ? e.message : 'unknown';
-			const label =
-				msg === 'notifications_blocked'
-					? $_('pref_notifications_blocked', { values: { app: 'OpenPadel' } })
-					: msg === 'sw_timeout'
-						? $_('pref_notifications_sw_timeout')
-						: msg;
-			toast.error(label);
-		} finally {
-			pushToggling = false;
-		}
-	}
-
-	async function saveAvatar() {
-		if (!auth.token || !auth.user) return;
-		savingAvatar = true;
-		try {
-			const updated = await api.auth.updateProfile(
-				auth.token,
-				auth.user.display_name,
-				pickerIcon,
-				'forest'
-			);
-			auth.updateUser(updated);
-		} finally {
-			savingAvatar = false;
-		}
-	}
-
-	async function deleteAccount() {
-		if (!auth.token) return;
-		deleting = true;
-		try {
-			await api.auth.deleteAccount(auth.token);
-			await auth.logout();
-			goto('/?deleted=1');
-		} finally {
-			deleting = false;
-		}
-	}
 
 	function formatDate(iso: string) {
 		return new Date(iso).toLocaleDateString(undefined, {
@@ -364,29 +193,28 @@
 
 <main class="pt-safe-page mx-auto max-w-[480px] space-y-8 px-6 pb-10">
 	<!-- Header -->
-	<div class="flex items-center gap-4">
-		<button
-			onclick={() => (showAvatarPicker = true)}
-			class="group relative shrink-0"
-			aria-label="Edit avatar"
-		>
+	<div class="flex items-center justify-between gap-4">
+		<div class="flex min-w-0 items-center gap-4">
 			<Avatar
 				icon={auth.user?.avatar_icon ?? ''}
 				color={auth.user?.avatar_color ?? 'forest'}
 				name={auth.user?.display_name ?? ''}
 				size="lg"
 			/>
-			<span
-				class="absolute inset-0 flex items-center justify-center rounded-full bg-black/30 text-xs font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100"
-				>Edit</span
-			>
-		</button>
-		<div class="min-w-0">
-			<h1 class="truncate text-2xl font-[800]">{auth.user?.display_name}</h1>
-			{#if memberSince}
-				<p class="text-text-secondary text-sm">Member since {memberSince}</p>
-			{/if}
+			<div class="min-w-0">
+				<h1 class="truncate text-2xl font-[800]">{auth.user?.display_name}</h1>
+				{#if memberSince}
+					<p class="text-text-secondary text-sm">Member since {memberSince}</p>
+				{/if}
+			</div>
 		</div>
+		<a
+			href="/profile/settings"
+			class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
+			aria-label="Settings"
+		>
+			<Settings size={24} />
+		</a>
 	</div>
 
 	<!-- Pending invites -->
@@ -430,124 +258,21 @@
 			<span class="text-text-disabled text-xs">{$_('home_join_code_divider')}</span>
 			<div class="bg-border h-px flex-1"></div>
 		</div>
-		<div class="flex justify-center gap-2" onpaste={onJoinPaste}>
-			{#each joinChars as _, i}
-				<input
-					bind:this={joinInputs[i]}
-					value={joinChars[i]}
-					oninput={(e) => onJoinInput(i, e)}
-					onkeydown={(e) => onJoinKeydown(i, e)}
-					maxlength={1}
-					autocomplete="off"
-					autocorrect="off"
-					autocapitalize="characters"
-					spellcheck={false}
-					class="bg-surface-raised text-text-primary focus:ring-primary w-12 rounded-xl py-2.5 text-center font-mono text-lg font-[700] transition-shadow outline-none focus:ring-2"
-				/>
-			{/each}
-		</div>
+		<JoinCodeInput bind:value={joinCode} onComplete={joinByCode} />
 	</div>
 
 	{#if loading}
 		<div class="flex justify-center py-12">
 			<div class="border-border border-t-primary h-7 w-7 animate-spin rounded-full border-2"></div>
 		</div>
-	{:else}
-		<!-- Preferences -->
-		<Collapsible.Root bind:open={showPreferences} class="space-y-3">
-			<Collapsible.Trigger class="flex w-full items-center justify-between">
-				<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase">
-					{$_('pref_section')}
-				</p>
-				<ChevronDown
-					size={14}
-					class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180"
-				/>
-			</Collapsible.Trigger>
-
-			<Collapsible.Content class="space-y-2">
-				{#if pushSupported}
-					<div class="bg-surface-raised flex items-center gap-4 rounded-2xl px-4 py-3.5">
-						<div class="flex-1">
-							<p class="text-sm font-semibold">{$_('pref_notifications_title')}</p>
-							<p class="text-text-secondary text-xs">{$_('pref_notifications_desc')}</p>
-						</div>
-						<button
-							onclick={togglePush}
-							disabled={pushToggling}
-							class="relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 disabled:opacity-50
-                  {pushEnabled ? 'bg-primary' : 'bg-border-strong'}"
-							aria-label="Toggle notifications"
-						>
-							<span
-								class="absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform duration-200
-                  {pushEnabled ? 'translate-x-5' : 'translate-x-0'}"
-							></span>
-						</button>
-					</div>
-				{/if}
-
-				<!-- Install prompt — shown regardless of pushSupported -->
-				{#if !isStandalone && !installDismissed && (isIOS || deferredInstallPrompt)}
-					<div class="bg-primary-muted flex items-start gap-3 rounded-2xl px-4 py-3.5">
-						<div class="flex-1 space-y-0.5">
-							{#if isIOS}
-								<p class="text-primary text-sm font-semibold">{$_('pwa_ios_title')}</p>
-								<p class="text-text-secondary text-xs">
-									{$_('pwa_ios_tap')} <span class="font-semibold">{$_('pwa_ios_share')}</span>
-									{$_('pwa_ios_then')} <span class="font-semibold">{$_('pwa_ios_add')}</span>
-									{$_('pwa_ios_suffix')}
-								</p>
-							{:else if deferredInstallPrompt}
-								<p class="text-primary text-sm font-semibold">{$_('pwa_android_title')}</p>
-								<p class="text-text-secondary text-xs">{$_('pwa_android_desc')}</p>
-							{/if}
-						</div>
-						<div class="flex shrink-0 items-center gap-2">
-							{#if deferredInstallPrompt && !isIOS}
-								<button
-									onclick={async () => {
-										deferredInstallPrompt.prompt();
-										const { outcome } = await deferredInstallPrompt.userChoice;
-										if (outcome === 'accepted') {
-											deferredInstallPrompt = null;
-											isStandalone = true;
-										}
-									}}
-									class="bg-primary rounded-full px-3 py-1 text-xs font-semibold text-white"
-									>{$_('pwa_install_btn')}</button
-								>
-							{/if}
-							<button
-								onclick={() => {
-									installDismissed = true;
-									localStorage.setItem('install_dismissed', '1');
-								}}
-								class="text-text-disabled hover:text-text-secondary text-lg leading-none"
-								aria-label="Dismiss">✕</button
-							>
-						</div>
-					</div>
-				{/if}
-			</Collapsible.Content>
-		</Collapsible.Root>
-
-		{#if stats}
-			<!-- Americano stats -->
-			<Collapsible.Root bind:open={showStats} class="space-y-3">
-				<Collapsible.Trigger class="flex w-full items-center justify-between">
-					<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase">
-						Americano
-					</p>
-					<ChevronDown
-						size={14}
-						class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180"
-					/>
-				</Collapsible.Trigger>
-
-				<Collapsible.Content class="grid grid-cols-2 gap-3">
+	{:else if stats}
+		<!-- Americano stats -->
+		{@const s = stats}
+		<Section title="Americano" bind:open={showStats}>
+			{#snippet children()}
+				<div class="grid grid-cols-2 gap-3">
 					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-5 py-5">
-						<p class="text-3xl leading-none font-[800]">{stats.tournaments}</p>
+						<p class="text-3xl leading-none font-[800]">{s.tournaments}</p>
 						<p class="text-text-disabled text-[11px] font-bold tracking-[0.1em] uppercase">
 							{$_('profile_tournaments')}
 						</p>
@@ -559,39 +284,31 @@
 						</p>
 					</div>
 					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-5 py-5">
-						<p class="text-3xl leading-none font-[800]">{stats.games_played}</p>
+						<p class="text-3xl leading-none font-[800]">{s.games_played}</p>
 						<p class="text-text-disabled text-[11px] font-bold tracking-[0.1em] uppercase">
 							{$_('profile_games')}
 						</p>
 					</div>
 					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-5 py-5">
 						<div class="flex items-baseline gap-1 leading-none font-[800] tabular-nums">
-							<span class="text-primary text-2xl">{stats.wins}V</span>
+							<span class="text-primary text-2xl">{s.wins}V</span>
 							<span class="text-text-disabled text-base">·</span>
-							<span class="text-text-disabled text-2xl">{stats.draws}U</span>
+							<span class="text-text-disabled text-2xl">{s.draws}U</span>
 							<span class="text-text-disabled text-base">·</span>
-							<span class="text-2xl text-[#c0392b]">{stats.losses}T</span>
+							<span class="text-destructive text-2xl">{s.losses}T</span>
 						</div>
 						<p class="text-text-disabled text-[11px] font-bold tracking-[0.1em] uppercase">
 							{$_('leaderboard_wl')}
 						</p>
 					</div>
-				</Collapsible.Content>
-			</Collapsible.Root>
+				</div>
+			{/snippet}
+		</Section>
 
-			<!-- Contacts -->
-			<Collapsible.Root bind:open={showContacts} class="space-y-3">
-				<Collapsible.Trigger class="flex w-full items-center justify-between">
-					<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase">
-						{$_('profile_contacts_title')}
-					</p>
-					<ChevronDown
-						size={14}
-						class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180"
-					/>
-				</Collapsible.Trigger>
-
-				<Collapsible.Content class="space-y-3">
+		<!-- Contacts -->
+		<Section title={$_('profile_contacts_title')} bind:open={showContacts}>
+			{#snippet children()}
+				<div class="space-y-3">
 					<!-- Search -->
 					<div class="relative">
 						<div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
@@ -681,35 +398,27 @@
 							</div>
 						</div>
 					{/if}
-				</Collapsible.Content>
-			</Collapsible.Root>
+				</div>
+			{/snippet}
+		</Section>
 
-			<!-- Delete contact confirmation -->
-			<ConfirmDialog
-				open={showContactDeleteConfirm}
-				title="Delete Contact?"
-				description="Remove {contactToDelete?.display_name ||
-					'this contact'} from your contacts. This action cannot be undone."
-				confirmLabel="Delete"
-				cancelLabel="Cancel"
-				destructive={true}
-				onconfirm={confirmDeleteContact}
-				oncancel={() => (showContactDeleteConfirm = false)}
-			/>
+		<!-- Delete contact confirmation -->
+		<ConfirmDialog
+			open={showContactDeleteConfirm}
+			title="Delete Contact?"
+			description="Remove {contactToDelete?.display_name ||
+				'this contact'} from your contacts. This action cannot be undone."
+			confirmLabel="Delete"
+			cancelLabel="Cancel"
+			destructive={true}
+			onconfirm={confirmDeleteContact}
+			oncancel={() => (showContactDeleteConfirm = false)}
+		/>
 
-			<!-- Upcoming -->
-			<Collapsible.Root bind:open={showUpcoming} class="space-y-3">
-				<Collapsible.Trigger class="flex w-full items-center justify-between">
-					<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase">
-						{$_('profile_upcoming_label')}
-					</p>
-					<ChevronDown
-						size={14}
-						class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180"
-					/>
-				</Collapsible.Trigger>
-
-				<Collapsible.Content class="space-y-2">
+		<!-- Upcoming -->
+		<Section title={$_('profile_upcoming_label')} bind:open={showUpcoming}>
+			{#snippet children()}
+				<div class="space-y-2">
 					{#if upcoming.length === 0}
 						<p class="text-text-disabled py-1 text-sm">{$_('profile_upcoming_empty')}</p>
 					{:else}
@@ -721,7 +430,7 @@
 								<div
 									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status ===
 									'playing'
-										? 'bg-emerald-500/15 text-emerald-500'
+										? 'bg-primary/15 text-primary'
 										: 'bg-primary-muted text-primary'}"
 								>
 									{#if t.status === 'playing'}<Radio size={18} />{:else}<CalendarDays
@@ -733,7 +442,7 @@
 										<p class="truncate text-sm font-semibold">{t.name}</p>
 										{#if t.status === 'playing'}
 											<span
-												class="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-500 uppercase"
+												class="bg-primary/15 text-primary shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase"
 												>Live</span
 											>
 										{/if}
@@ -747,22 +456,14 @@
 							</a>
 						{/each}
 					{/if}
-				</Collapsible.Content>
-			</Collapsible.Root>
+				</div>
+			{/snippet}
+		</Section>
 
-			<!-- Tournament history -->
-			<Collapsible.Root bind:open={showHistory} class="space-y-3">
-				<Collapsible.Trigger class="flex w-full items-center justify-between">
-					<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase">
-						{$_('profile_history_label')}
-					</p>
-					<ChevronDown
-						size={14}
-						class="text-text-disabled transition-transform duration-200 data-[state=open]:rotate-180"
-					/>
-				</Collapsible.Trigger>
-
-				<Collapsible.Content class="space-y-2">
+		<!-- Tournament history -->
+		<Section title={$_('profile_history_label')} bind:open={showHistory}>
+			{#snippet children()}
+				<div class="space-y-2">
 					{#if tournaments.length === 0}
 						<p class="text-text-disabled py-2 text-sm">{$_('profile_history_empty')}</p>
 					{:else}
@@ -790,104 +491,12 @@
 							</a>
 						{/each}
 					{/if}
-				</Collapsible.Content>
-			</Collapsible.Root>
-		{/if}
-
-		<!-- Actions -->
-		<div class="space-y-3">
-			<div class="space-y-2 pt-2">
-				<button
-					onclick={() => auth.logout().then(() => goto('/'))}
-					class="border-border text-text-secondary hover:border-destructive hover:text-destructive w-full rounded-2xl border px-4 py-3.5 text-sm font-semibold transition-colors"
-				>
-					{$_('auth_sign_out')}
-				</button>
-				<button
-					onclick={() => (showDeleteConfirm = true)}
-					class="text-text-disabled hover:text-destructive w-full px-4 py-2 text-sm transition-colors"
-				>
-					{$_('profile_delete_account')}
-				</button>
-			</div>
-		</div>
+				</div>
+			{/snippet}
+		</Section>
 	{/if}
 
 	<Footer />
 </main>
 
 <CreateDrawer bind:open={showCreateDrawer} />
-
-<Dialog.Root bind:open={showAvatarPicker}>
-	<Dialog.Content class="w-full max-w-sm">
-		<Dialog.Header>
-			<div class="flex items-center gap-3">
-				<Avatar icon={pickerIcon} color="forest" name={auth.user?.display_name ?? ''} size="md" />
-				<Dialog.Title>Choose avatar</Dialog.Title>
-			</div>
-		</Dialog.Header>
-		<div class="grid grid-cols-8 gap-1.5">
-			<!-- "Use initials" option -->
-			<button
-				onclick={() => (pickerIcon = '')}
-				class="flex items-center justify-center rounded-xl p-1 transition-colors
-          {pickerIcon === ''
-					? 'bg-primary-muted ring-primary ring-2'
-					: 'bg-surface-raised hover:bg-border'}"
-				aria-label="Use initials"
-			>
-				<Avatar icon="" color="forest" name={auth.user?.display_name ?? ''} size="sm" />
-			</button>
-			{#each AVATAR_ICONS as icon}
-				<button
-					onclick={() => (pickerIcon = icon)}
-					class="flex items-center justify-center rounded-xl p-1 transition-colors
-            {pickerIcon === icon
-						? 'bg-primary-muted ring-primary ring-2'
-						: 'bg-surface-raised hover:bg-border'}"
-					aria-label={icon}
-				>
-					<Avatar {icon} color="forest" name="" size="sm" />
-				</button>
-			{/each}
-		</div>
-		<Dialog.Footer>
-			<button
-				onclick={async () => {
-					await saveAvatar();
-					showAvatarPicker = false;
-				}}
-				disabled={savingAvatar}
-				class="bg-primary w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
-			>
-				{savingAvatar ? 'Saving…' : 'Save'}
-			</button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
-
-{#if showDeleteConfirm}
-	<div class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-		<div class="bg-surface w-full max-w-sm space-y-4 rounded-3xl p-6 shadow-xl">
-			<div class="space-y-1">
-				<h2 class="text-lg font-[800]">{$_('profile_delete_title')}</h2>
-				<p class="text-text-secondary text-sm">{$_('profile_delete_desc')}</p>
-			</div>
-			<div class="space-y-2 pt-1">
-				<button
-					onclick={deleteAccount}
-					disabled={deleting}
-					class="bg-destructive w-full rounded-2xl px-4 py-3.5 text-sm font-semibold text-white disabled:opacity-60"
-				>
-					{deleting ? $_('profile_delete_loading') : $_('profile_delete_confirm')}
-				</button>
-				<button
-					onclick={() => (showDeleteConfirm = false)}
-					class="border-border text-text-secondary w-full rounded-2xl border px-4 py-3.5 text-sm font-semibold"
-				>
-					{$_('profile_delete_cancel')}
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}
