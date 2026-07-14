@@ -6,17 +6,19 @@
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
 	import { sessionDialog } from '$lib/stores/sessionDialog';
-	import { Activity, ChartBar, Users, Pencil, Shield, Check } from 'lucide-svelte';
+	import { Pencil, Shield, Clock, Trophy } from 'lucide-svelte';
 	import { sessionName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { SectionLabel } from '$lib/components/ui/section-label';
-	import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import RoundIndicator from './RoundIndicator.svelte';
 	import Leaderboard from './Leaderboard.svelte';
 	import { numpad as numpadStore } from '$lib/stores/numpad';
 	import { auth } from '$lib/auth.svelte';
 	import type { SessionStream } from '$lib/stores/sessionStream.svelte';
+	import { Card } from '$lib/components/ui/card';
+	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 
 	let {
 		session,
@@ -32,11 +34,6 @@
 		stream: SessionStream;
 	} = $props();
 
-	type Tab = 'scoring' | 'standings' | 'players';
-	let tab = $state<Tab>(
-		untrack(() => currentRound.matches.every((m) => m.score !== null)) ? 'standings' : 'scoring'
-	);
-
 	const playerName = $derived(Object.fromEntries(session.players.map((p) => [p.id, p.name])));
 	const playerById = $derived(Object.fromEntries(session.players.map((p) => [p.id, p])));
 	const maxScore = $derived(session.points);
@@ -45,18 +42,11 @@
 	let submitting = $state<Record<string, boolean>>({});
 	let editing = $state<Record<string, boolean>>({});
 	let initialServer = $state<Record<string, 'a' | 'b'>>({});
-	const saveTimeout: Record<string, ReturnType<typeof setTimeout>> = {};
 	let advancing = $state(false);
 	let cancelling = $state(false);
 	let closing = $state(false);
 	let showEndMenu = $state(false);
-
-	// Court tabs
-	let activeCourt = $state(0);
-	$effect(() => {
-		const max = currentRound.matches.length - 1;
-		if (activeCourt > max) activeCourt = 0;
-	});
+	let showStandingsSheet = $state(false);
 
 	// Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite)
 	type NumpadState = { matchId: string; team: 'a' | 'b'; value: string; fresh: boolean };
@@ -83,15 +73,14 @@
 
 	function numpadDigit(d: string) {
 		if (!numpad) return;
-		// Overwrite on first digit after opening/confirming, then append normally
 		let next: string;
 		if (numpad.fresh && numpad.value && numpad.value !== '0') {
-			next = d; // Replace value on first digit
+			next = d;
 		} else {
 			next = (numpad.value + d).replace(/^0+(\d)/, '$1');
 		}
 		if (parseInt(next || '0') > maxScore) return;
-		numpad = { ...numpad, value: next, fresh: false }; // After first digit, normal append mode
+		numpad = { ...numpad, value: next, fresh: false };
 		numpadStore.update({ value: next, fresh: false });
 	}
 
@@ -114,7 +103,6 @@
 		}
 		const { matchId, team } = numpad;
 
-		// Auto-complement to fixed points target
 		const other = session.points - entered;
 		localScores[matchId] = team === 'a' ? { a: entered, b: other } : { a: other, b: entered };
 		scheduleLiveSave(matchId);
@@ -272,103 +260,210 @@
 	function teamLabel(ids: readonly [string, string]) {
 		return `${shortPlayerName(playerName[ids[0]] ?? '?')} & ${shortPlayerName(playerName[ids[1]] ?? '?')}`;
 	}
+
+	const saveTimeout: Record<string, ReturnType<typeof setTimeout>> = {};
+
+	// Determine if layout is single-court or multi-court
+	const isSingleCourt = $derived(currentRound.matches.length === 1);
 </script>
 
 {#if cancelling}
 	<main class="flex min-h-svh flex-col items-center justify-center gap-3 px-6">
-		<div class="border-border border-t-primary h-8 w-8 animate-spin rounded-full border-2"></div>
+		<Spinner label={$_('lobby_cancelling')} />
 		<p class="text-text-secondary text-sm">{$_('lobby_cancelling')}</p>
 	</main>
 {:else}
 	<div class="flex h-full flex-col">
 		<div class="min-h-0 flex-1 overflow-y-auto">
-			<!-- ── SCORING TAB ── -->
-			{#if tab === 'scoring'}
-				<main class="pt-safe-page mx-auto w-full max-w-[480px] space-y-4 px-4 pb-6">
-					<!-- Nav -->
-					<div class="flex items-center justify-between">
-						<p class="text-primary text-sm font-semibold">{sessionName(session)}</p>
-						<a
-							href="/"
-							class="text-text-disabled hover:bg-surface-raised hover:text-text-secondary flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
-							aria-label="Back to home">×</a
+			<main class="pt-safe-page mx-auto w-full max-w-[480px] space-y-4 px-4 pb-6">
+				<!-- Top bar: Session name + Standings pill + Back button -->
+				<div
+					class="bg-background/95 sticky top-0 z-40 flex items-center justify-between gap-2 pb-4 backdrop-blur-sm"
+				>
+					<p class="text-primary text-sm font-semibold">{sessionName(session)}</p>
+					<button
+						onclick={() => (showStandingsSheet = true)}
+						class="bg-surface-raised hover:bg-surface-raised/80 flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-colors"
+						aria-haspopup="dialog"
+						aria-label="View standings"
+					>
+						<Trophy size={14} />
+						<span>{$_('standings_label')}</span>
+					</button>
+					<a
+						href="/"
+						class="text-text-disabled hover:bg-surface-raised flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors"
+						aria-label="Back to home">×</a
+					>
+				</div>
+
+				<!-- Admin role badge -->
+				{#if isAdmin}
+					<div class="bg-surface-raised flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5">
+						<Pencil size={11} class="text-primary" />
+						<span class="text-primary text-[10px] font-bold tracking-widest uppercase"
+							>{$_('active_official')}</span
 						>
 					</div>
+				{/if}
 
-					<!-- Admin role badge -->
-					{#if isAdmin}
-						<div class="bg-surface-raised flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5">
-							<Pencil size={11} class="text-primary" />
-							<span class="text-primary text-[10px] font-bold tracking-widest uppercase"
-								>Active Scorekeeper</span
-							>
-						</div>
-					{/if}
+				<!-- Round header -->
+				<div>
+					<SectionLabel class="mb-3">
+						{session.game_mode} · {session.rounds_total != null
+							? $_('active_round_label')
+							: $_('active_round_open_label')}
+					</SectionLabel>
+					<h2 class="text-[28px] leading-tight font-[800] tracking-tight">
+						{session.rounds_total != null
+							? $_('active_round_of', {
+									values: { current: currentRound.number, total: session.rounds_total }
+								})
+							: $_('active_round_open', { values: { current: currentRound.number } })}
+					</h2>
 
-					<!-- Match info row -->
-					<div class="min-w-0">
-						<p class="text-text-disabled text-[10px] font-bold tracking-widest uppercase">
-							{session.game_mode} tournament
-						</p>
-						<h2 class="text-[28px] leading-tight font-[800] tracking-tight">
-							{session.rounds_total != null
-								? $_('active_round_of', {
-										values: { current: currentRound.number, total: session.rounds_total }
-									})
-								: $_('active_round_open', { values: { current: currentRound.number } })}
-						</h2>
-					</div>
-
-					{#if session.game_mode !== 'americano'}
-						{#if timeLeft !== null}
-							<p class="text-text-secondary font-mono text-xs font-semibold">⏱ {timeLeft}</p>
+					<!-- Round indicator + timer row -->
+					<div class="mt-4 flex items-center justify-between gap-4">
+						{#if session.rounds_total != null}
+							<RoundIndicator current={currentRound.number} total={session.rounds_total} />
+						{:else}
+							<div></div>
 						{/if}
 
-						{#if timeExpired}
-							<div
-								class="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-center"
-							>
-								<p class="text-sm font-bold text-amber-600 dark:text-amber-400">
-									{$_('active_time_expired')}
-								</p>
+						{#if session.game_mode !== 'americano' && timeLeft !== null}
+							<div class="text-text-secondary flex items-center gap-2 font-mono text-xs">
+								<Clock size={14} />
+								<span>{timeLeft}</span>
 							</div>
 						{/if}
-					{/if}
+					</div>
+				</div>
 
-					{#if session.rounds_total != null}
-						<RoundIndicator current={currentRound.number} total={session.rounds_total} />
-					{/if}
+				<!-- Time expired notice -->
+				{#if session.game_mode !== 'americano' && timeExpired}
+					<div class="border-warning/30 bg-warning/10 rounded-2xl border px-5 py-4 text-center">
+						<p class="text-warning text-sm font-bold">
+							{$_('active_time_expired')}
+						</p>
+					</div>
+				{/if}
 
-					<!-- Court tabs -->
-					{#if currentRound.matches.length > 1}
-						<ToggleGroup
-							type="single"
-							value={activeCourt.toString()}
-							onValueChange={(val) => (activeCourt = parseInt(val))}
-							class="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 pb-1"
-						>
-							{#each currentRound.matches as match, i}
-								{@const isFinalized = match.score !== null && !editing[match.id]}
-								<ToggleGroupItem
-									value={i.toString()}
-									class="bg-surface-raised text-text-secondary data-[state=on]:bg-primary flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold tracking-widest uppercase transition-colors data-[state=on]:text-white"
+				<!-- Courts: Adaptive layout -->
+				{#if isSingleCourt}
+					<!-- Single court: Hero card layout -->
+					{@const match = currentRound.matches[0]}
+					{@const s = scores[match.id] ?? { a: 0, b: 0 }}
+					{@const scored = match.score !== null && !editing[match.id]}
+					{@const p1 = playerById[match.team_a[0]]}
+					{@const p2 = playerById[match.team_a[1]]}
+					{@const p3 = playerById[match.team_b[0]]}
+					{@const p4 = playerById[match.team_b[1]]}
+
+					<Card class="border-border bg-surface rounded-3xl p-6">
+						<!-- Status chip -->
+						<div class="mb-4 flex justify-center">
+							{#if match.score !== null}
+								<span
+									class="bg-surface-raised text-text-primary inline-block rounded-full px-3 py-1 text-xs font-semibold"
 								>
-									🎾 Court {match.court}
-									{#if isFinalized}
-										<span
-											class="h-1.5 w-1.5 rounded-full {activeCourt === i
-												? 'bg-white/60'
-												: 'bg-primary'}"
-										></span>
-									{/if}
-								</ToggleGroupItem>
-							{/each}
-						</ToggleGroup>
-					{/if}
+									{$_('court_status_final')}
+								</span>
+							{:else if match.live}
+								<span
+									class="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+								>
+									<span class="bg-primary inline-block h-2 w-2 animate-pulse rounded-full"></span>
+									{$_('court_status_live')}
+								</span>
+							{:else}
+								<span
+									class="bg-surface-raised text-text-secondary inline-block rounded-full px-3 py-1 text-xs font-semibold"
+								>
+									{$_('court_status_upcoming')}
+								</span>
+							{/if}
+						</div>
 
-					<!-- Score cards (one per court, only active shown) -->
-					{#each currentRound.matches as match, i (match.id)}
-						{#if i === activeCourt}
+						<!-- Team A -->
+						<div class="flex flex-col items-center gap-2 text-center">
+							<div class="flex justify-center">
+								<Avatar
+									icon={p1?.avatar_icon}
+									color={p1?.avatar_color}
+									name={p1?.name ?? ''}
+									size="md"
+								/>
+								<div class="-ml-3">
+									<Avatar
+										icon={p2?.avatar_icon}
+										color={p2?.avatar_color}
+										name={p2?.name ?? ''}
+										size="md"
+									/>
+								</div>
+							</div>
+							<p class="text-[15px] font-semibold">{teamLabel(match.team_a)}</p>
+							<p
+								class="text-5xl font-[800] tabular-nums {scored && s.a > s.b
+									? 'text-primary font-bold'
+									: scored && s.a < s.b
+										? 'text-text-disabled'
+										: 'text-text-primary'}"
+							>
+								{s.a}
+							</p>
+						</div>
+
+						<div class="bg-border my-4 h-px"></div>
+
+						<!-- Team B -->
+						<div class="flex flex-col items-center gap-2 text-center">
+							<p
+								class="text-5xl font-[800] tabular-nums {scored && s.b > s.a
+									? 'text-primary font-bold'
+									: scored && s.b < s.a
+										? 'text-text-disabled'
+										: 'text-text-primary'}"
+							>
+								{s.b}
+							</p>
+							<p class="text-[15px] font-semibold">{teamLabel(match.team_b)}</p>
+							<div class="flex justify-center">
+								<Avatar
+									icon={p3?.avatar_icon}
+									color={p3?.avatar_color}
+									name={p3?.name ?? ''}
+									size="md"
+								/>
+								<div class="-ml-3">
+									<Avatar
+										icon={p4?.avatar_icon}
+										color={p4?.avatar_color}
+										name={p4?.name ?? ''}
+										size="md"
+									/>
+								</div>
+							</div>
+						</div>
+
+						<!-- Score entry button (admin only) -->
+						{#if isAdmin && !scored}
+							<div class="mt-6">
+								<Button
+									variant="default"
+									size="cta"
+									disabled={s.a + s.b !== session.points || submitting[match.id]}
+									onclick={() => submitScore(match.id)}
+								>
+									{submitting[match.id] ? '…' : $_('active_finalize_result')}
+								</Button>
+							</div>
+						{/if}
+					</Card>
+				{:else}
+					<!-- Multiple courts: Glanceable list layout -->
+					<div class="space-y-3">
+						{#each currentRound.matches as match}
 							{@const s = scores[match.id] ?? { a: 0, b: 0 }}
 							{@const scored = match.score !== null && !editing[match.id]}
 							{@const p1 = playerById[match.team_a[0]]}
@@ -376,475 +471,258 @@
 							{@const p3 = playerById[match.team_b[0]]}
 							{@const p4 = playerById[match.team_b[1]]}
 
-							{#if scored}
-								<!-- Finalized compact result card (tap to re-enter) -->
-								{@const sa = match.score!.a}
-								{@const sb = match.score!.b}
-								{@const isDraw = sa === sb}
-								<button
-									onclick={() => {
-										localScores[match.id] = { a: sa, b: sb };
-										editing[match.id] = true;
-									}}
-									class="border-primary/40 w-full overflow-hidden rounded-3xl border text-left"
-								>
-									<div
-										class="flex items-center gap-3 px-5 py-4
-              {isDraw ? 'bg-surface-raised' : sa > sb ? 'bg-primary' : 'bg-surface-raised'}"
-									>
-										<div class="flex">
-											<Avatar
-												icon={p1?.avatar_icon}
-												color={p1?.avatar_color}
-												name={p1?.name ?? ''}
-												size="sm"
-												ring={!isDraw && sa > sb
-													? 'ring-2 ring-white/30'
-													: 'ring-2 ring-primary/30'}
-											/>
-											<div class="-ml-2">
-												<Avatar
-													icon={p2?.avatar_icon}
-													color={p2?.avatar_color}
-													name={p2?.name ?? ''}
-													size="sm"
-													ring={!isDraw && sa > sb
-														? 'ring-2 ring-white/30'
-														: 'ring-2 ring-primary/30'}
-												/>
-											</div>
-										</div>
-										<p
-											class="flex-1 truncate font-semibold
-                {isDraw ? 'text-text-primary' : sa > sb ? 'text-white' : 'text-text-disabled'}"
-										>
-											{teamLabel(match.team_a)}
-										</p>
-										<span
-											class="text-2xl font-[800] tabular-nums
-                {isDraw ? 'text-text-primary' : sa > sb ? 'text-white' : 'text-text-disabled'}"
-											>{sa}</span
-										>
-									</div>
-									<div class="bg-border h-px"></div>
-									<div
-										class="flex items-center gap-3 px-5 py-4
-              {isDraw ? 'bg-surface-raised' : sb > sa ? 'bg-primary' : 'bg-surface-raised'}"
-									>
-										<div class="flex">
-											<Avatar
-												icon={p3?.avatar_icon}
-												color={p3?.avatar_color}
-												name={p3?.name ?? ''}
-												size="sm"
-												ring={!isDraw && sb > sa
-													? 'ring-2 ring-white/30'
-													: 'ring-2 ring-primary/30'}
-											/>
-											<div class="-ml-2">
-												<Avatar
-													icon={p4?.avatar_icon}
-													color={p4?.avatar_color}
-													name={p4?.name ?? ''}
-													size="sm"
-													ring={!isDraw && sb > sa
-														? 'ring-2 ring-white/30'
-														: 'ring-2 ring-primary/30'}
-												/>
-											</div>
-										</div>
-										<p
-											class="flex-1 truncate font-semibold
-                {isDraw ? 'text-text-primary' : sb > sa ? 'text-white' : 'text-text-disabled'}"
-										>
-											{teamLabel(match.team_b)}
-										</p>
-										<span
-											class="text-2xl font-[800] tabular-nums
-                {isDraw ? 'text-text-primary' : sb > sa ? 'text-white' : 'text-text-disabled'}"
-											>{sb}</span
-										>
-									</div>
-								</button>
-							{:else}
-								<!-- Play/Expired phase: full score increment UI -->
-								<!-- Team A card -->
-								<div
-									class="relative overflow-hidden rounded-3xl border border-white/25 bg-[#3d7a24] px-5 pt-6 pb-5"
-								>
-									<svg
-										class="pointer-events-none absolute inset-0 h-full w-full opacity-10"
-										preserveAspectRatio="none"
-										viewBox="0 0 100 100"
-									>
-										<line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5" />
-										<rect
-											x="10"
-											y="10"
-											width="80"
-											height="80"
-											fill="none"
-											stroke="white"
-											stroke-width="0.5"
-										/>
-									</svg>
-									<div class="relative z-10 space-y-3">
-										<div class="flex flex-col items-center gap-2">
-											<div class="flex justify-center">
-												<Avatar
-													icon={p1?.avatar_icon}
-													color={p1?.avatar_color}
-													name={p1?.name ?? ''}
-													size="md"
-													ring="ring-2 ring-white/30"
-												/>
-												<div class="-ml-3">
-													<Avatar
-														icon={p2?.avatar_icon}
-														color={p2?.avatar_color}
-														name={p2?.name ?? ''}
-														size="md"
-														ring="ring-2 ring-white/30"
-													/>
-												</div>
-											</div>
-											<p class="text-base font-bold text-white">{teamLabel(match.team_a)}</p>
-											<p class="text-[10px] font-bold tracking-widest text-white/50 uppercase">
-												Team A
-											</p>
-										</div>
-										<div class="flex items-center justify-between gap-2">
-											<button
-												onclick={() => adjust(match.id, 'a', -1)}
-												disabled={s.a === 0}
-												class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
-												>−</button
-											>
-											<button
-												onclick={() => openNumpad(match.id, 'a')}
-												class="flex-1 text-center text-[80px] leading-none font-[800] text-white tabular-nums"
-												>{s.a}</button
-											>
-											<button
-												onclick={() => adjust(match.id, 'a', 1)}
-												disabled={s.a + s.b >= session.points}
-												class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
-												>+</button
-											>
-										</div>
-									</div>
-								</div>
-
-								<!-- Team B card -->
-								<div class="relative overflow-hidden rounded-3xl bg-[#3d7a24] px-5 pt-5 pb-6">
-									<svg
-										class="pointer-events-none absolute inset-0 h-full w-full opacity-10"
-										preserveAspectRatio="none"
-										viewBox="0 0 100 100"
-									>
-										<line x1="50" y1="0" x2="50" y2="100" stroke="white" stroke-width="0.5" />
-										<rect
-											x="10"
-											y="10"
-											width="80"
-											height="80"
-											fill="none"
-											stroke="white"
-											stroke-width="0.5"
-										/>
-									</svg>
-									<div class="relative z-10 space-y-3">
-										<div class="flex items-center justify-between gap-2">
-											<button
-												onclick={() => adjust(match.id, 'b', -1)}
-												disabled={s.b === 0}
-												class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
-												>−</button
-											>
-											<button
-												onclick={() => openNumpad(match.id, 'b')}
-												class="flex-1 text-center text-[80px] leading-none font-[800] text-white tabular-nums"
-												>{s.b}</button
-											>
-											<button
-												onclick={() => adjust(match.id, 'b', 1)}
-												disabled={s.a + s.b >= session.points}
-												class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#3d7a24] shadow-sm transition-all active:scale-95 disabled:opacity-40"
-												>+</button
-											>
-										</div>
-										<div class="flex flex-col items-center gap-2">
-											<p class="text-[10px] font-bold tracking-widest text-white/50 uppercase">
-												Team B
-											</p>
-											<p class="text-base font-bold text-white">{teamLabel(match.team_b)}</p>
-											<div class="flex justify-center">
-												<Avatar
-													icon={p3?.avatar_icon}
-													color={p3?.avatar_color}
-													name={p3?.name ?? ''}
-													size="md"
-													ring="ring-2 ring-white/30"
-												/>
-												<div class="-ml-3">
-													<Avatar
-														icon={p4?.avatar_icon}
-														color={p4?.avatar_color}
-														name={p4?.name ?? ''}
-														size="md"
-														ring="ring-2 ring-white/30"
-													/>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-
-								<!-- Finalize button + helper text -->
-								{#if isAdmin}
-									<button
-										onclick={() => submitScore(match.id)}
-										disabled={s.a + s.b !== session.points || submitting[match.id]}
-										class="bg-primary flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-40"
-									>
-										<Check size={18} />
-										{submitting[match.id] ? '…' : $_('active_finalize_result')}
-									</button>
-									<p class="text-text-disabled text-center text-xs">{$_('active_scores_synced')}</p>
-								{/if}
-							{/if}
-						{/if}
-					{/each}
-
-					<!-- Official card -->
-					{#if adminPlayer}
-						<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
-							<Avatar
-								icon={adminPlayer.avatar_icon}
-								color={adminPlayer.avatar_color}
-								name={adminPlayer.name}
-								size="sm"
-								ring="ring-2 ring-primary/30"
-							/>
-							<p class="text-text-secondary flex-1 text-sm">
-								Official: <span class="text-text-primary font-semibold">{adminPlayer.name}</span>
-							</p>
-							<Shield size={14} class="text-primary" />
-						</div>
-					{/if}
-
-					<!-- Bench -->
-					{#if benchNames.length > 0}
-						{@const benchPlayer = playerById[currentRound.bench[0]]}
-						<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
-							<Avatar
-								icon={benchPlayer?.avatar_icon}
-								color={benchPlayer?.avatar_color}
-								name={benchNames[0]}
-								size="sm"
-								ring="ring-2 ring-primary/30"
-							/>
-							<p class="text-text-secondary text-sm">
-								{$_('active_bench')}:
-								<span class="text-text-primary font-semibold">{benchNames.join(', ')}</span>
-							</p>
-						</div>
-					{/if}
-
-					<!-- Next round / waiting -->
-					{#if allScored && isAdmin}
-						{@const isFinalRound =
-							session.rounds_total != null && currentRound.number === session.rounds_total}
-
-						<!-- Show advance button -->
-						<button
-							onclick={isFinalRound ? onRefresh : advanceRound}
-							disabled={advancing}
-							class="bg-primary w-full rounded-2xl px-4 py-4 text-[15px] font-[700] text-white transition-all active:scale-[0.98] disabled:opacity-60"
-						>
-							{advancing
-								? '…'
-								: isFinalRound
-									? $_('active_final_results')
-									: $_('active_next_round')}
-						</button>
-					{:else if someScored && !allScored && isAdmin}
-						<button
-							disabled
-							class="bg-primary w-full rounded-2xl px-4 py-4 text-[15px] font-[700] text-white disabled:opacity-40"
-						>
-							{$_('active_next_round')}
-						</button>
-						<p class="text-text-disabled text-center text-xs">{$_('active_courts_pending')}</p>
-					{:else if allScored}
-						<div
-							class="bg-surface-raised text-text-secondary rounded-2xl px-4 py-3 text-center text-sm"
-						>
-							{$_('active_round_complete')}
-						</div>
-					{/if}
-
-					<!-- Admin: end tournament -->
-					{#if isAdmin}
-						<div class="flex flex-col items-center gap-1 pb-2">
-							<button
-								onclick={() => (showEndMenu = true)}
-								disabled={closing || cancelling}
-								class="bg-destructive rounded-full px-5 py-2 text-xs font-semibold text-white transition-all active:scale-95 disabled:opacity-40"
-								>{$_('active_close')}</button
+							<Card
+								class={`overflow-hidden rounded-2xl border shadow-sm transition-colors ${match.live ? 'border-primary/50 bg-primary-muted/30' : 'border-border bg-surface'}`}
 							>
-						</div>
-					{/if}
-				</main>
+								<!-- Header row: Court label + Status -->
+								<div class="border-border flex items-center justify-between border-b px-4 py-3">
+									<span class="text-text-secondary text-[11px] font-bold tracking-widest uppercase">
+										{$_('active_court_label', { values: { number: match.court } })}
+									</span>
+									{#if match.score !== null}
+										<span
+											class="bg-surface-raised text-text-primary inline-block rounded-full px-3 py-1 text-xs font-semibold"
+										>
+											{$_('court_status_final')}
+										</span>
+									{:else if match.live}
+										<span
+											class="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+										>
+											<span class="bg-primary inline-block h-2 w-2 animate-pulse rounded-full"
+											></span>
+											{$_('court_status_live')}
+										</span>
+									{:else}
+										<span
+											class="bg-surface-raised text-text-secondary inline-block rounded-full px-3 py-1 text-xs font-semibold"
+										>
+											{$_('court_status_upcoming')}
+										</span>
+									{/if}
+								</div>
 
-				<!-- ── STANDINGS TAB ── -->
-			{:else if tab === 'standings'}
-				<main class="pt-safe-page mx-auto w-full max-w-[480px] px-4 pb-6">
-					<div class="mb-4 flex items-center justify-between">
-						<p class="text-primary text-sm font-semibold">{sessionName(session)}</p>
-						<a
-							href="/"
-							class="text-text-disabled hover:bg-surface-raised flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
-							aria-label="Back to home">×</a
-						>
-					</div>
-					<Leaderboard sessionId={session.id} sessionName={sessionName(session)} {stream} />
-				</main>
-
-				<!-- ── PLAYERS TAB ── -->
-			{:else if tab === 'players'}
-				<main class="pt-safe-page mx-auto w-full max-w-[480px] space-y-4 px-4 pb-6">
-					<div class="flex items-center justify-between">
-						<p class="text-primary text-sm font-semibold">{sessionName(session)}</p>
-						<a
-							href="/"
-							class="text-text-disabled hover:bg-surface-raised flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
-							aria-label="Back to home">×</a
-						>
-					</div>
-
-					<!-- On court -->
-					{#each [session.players.filter((p) => p.active && !benchIds.has(p.id))] as onCourt}
-						<div>
-							<SectionLabel class="mb-2">
-								On court ({onCourt.length})
-							</SectionLabel>
-							<div class="divide-border bg-surface-raised divide-y rounded-2xl">
-								{#each onCourt as player (player.id)}
-									<div class="flex items-center gap-3 px-4 py-3">
+								<!-- Team A row -->
+								<div
+									class="flex items-center gap-3 px-4 py-3 {scored && s.a > s.b
+										? 'bg-primary-muted'
+										: ''}"
+								>
+									<div class="flex">
 										<Avatar
-											icon={player.avatar_icon}
-											color={player.avatar_color}
-											name={player.name}
+											icon={p1?.avatar_icon}
+											color={p1?.avatar_color}
+											name={p1?.name ?? ''}
 											size="sm"
-											ring="ring-2 ring-primary/30"
 										/>
-										<span class="flex-1 text-sm font-medium">{player.name}</span>
-										{#if player.id === session.creator_player_id}
-											<span class="text-primary text-[10px] font-bold">Admin</span>
-										{/if}
+										<div class="-ml-2">
+											<Avatar
+												icon={p2?.avatar_icon}
+												color={p2?.avatar_color}
+												name={p2?.name ?? ''}
+												size="sm"
+											/>
+										</div>
 									</div>
-								{/each}
-							</div>
-						</div>
-					{/each}
+									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
+									<span
+										class="text-2xl font-[800] tabular-nums {scored && s.a > s.b
+											? 'text-primary font-bold'
+											: scored && s.a < s.b
+												? 'text-text-disabled'
+												: 'text-text-primary'}"
+									>
+										{s.a}
+									</span>
+								</div>
 
-					<!-- Bench -->
-					{#if currentRound.bench.length > 0}
-						<div>
-							<SectionLabel class="mb-2">
-								Bench ({currentRound.bench.length})
-							</SectionLabel>
-							<div class="divide-border bg-surface-raised divide-y rounded-2xl">
+								<div class="bg-border mx-4 h-px"></div>
+
+								<!-- Team B row -->
+								<div
+									class="flex items-center gap-3 px-4 py-3 {scored && s.b > s.a
+										? 'bg-primary-muted'
+										: ''}"
+								>
+									<div class="flex">
+										<Avatar
+											icon={p3?.avatar_icon}
+											color={p3?.avatar_color}
+											name={p3?.name ?? ''}
+											size="sm"
+										/>
+										<div class="-ml-2">
+											<Avatar
+												icon={p4?.avatar_icon}
+												color={p4?.avatar_color}
+												name={p4?.name ?? ''}
+												size="sm"
+											/>
+										</div>
+									</div>
+									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_b)}</p>
+									<span
+										class="text-2xl font-[800] tabular-nums {scored && s.b > s.a
+											? 'text-primary font-bold'
+											: scored && s.b < s.a
+												? 'text-text-disabled'
+												: 'text-text-primary'}"
+									>
+										{s.b}
+									</span>
+								</div>
+
+								<!-- Admin: Score entry button -->
+								{#if isAdmin && !scored}
+									<div class="border-border border-t px-4 py-3">
+										<Button
+											variant="default"
+											size="cta"
+											disabled={s.a + s.b !== session.points || submitting[match.id]}
+											onclick={() => submitScore(match.id)}
+										>
+											{submitting[match.id] ? '…' : $_('active_enter_score')}
+										</Button>
+									</div>
+								{/if}
+							</Card>
+						{/each}
+					</div>
+				{/if}
+
+				<!-- Bench -->
+				{#if benchNames.length > 0}
+					<div>
+						<SectionLabel class="mb-3">{$_('active_bench')}</SectionLabel>
+						<div class="bg-surface-raised rounded-2xl px-4 py-3">
+							<div class="flex flex-wrap gap-2">
 								{#each currentRound.bench as id}
 									{@const p = playerById[id]}
-									<div class="flex items-center gap-3 px-4 py-3">
+									<div class="flex items-center gap-2">
 										<Avatar
 											icon={p?.avatar_icon}
 											color={p?.avatar_color}
 											name={p?.name ?? ''}
 											size="sm"
-											ring="ring-2 ring-primary/30"
 										/>
-										<span class="flex-1 text-sm font-medium">{p?.name ?? id}</span>
+										<span class="text-sm font-medium">{p?.name ?? id}</span>
 									</div>
 								{/each}
 							</div>
 						</div>
-					{/if}
-				</main>
-			{/if}
-		</div>
-		<!-- end scroll wrapper -->
+					</div>
+				{/if}
 
-		<!-- Bottom nav: plain flex child, always at bottom -->
-		<div
-			class="border-border bg-background flex shrink-0 border-t shadow-lg backdrop-blur-sm"
-			style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom));"
-		>
-			<button
-				onclick={() => (tab = 'scoring')}
-				class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'scoring'
-					? 'text-primary'
-					: 'text-text-secondary'}"
-			>
-				<Activity size={20} />
-				<span class="text-[10px] font-semibold tracking-wide uppercase">Scoring</span>
-			</button>
-			<button
-				onclick={() => (tab = 'standings')}
-				class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'standings'
-					? 'text-primary'
-					: 'text-text-secondary'}"
-			>
-				<ChartBar size={20} />
-				<span class="text-[10px] font-semibold tracking-wide uppercase"
-					>{$_('active_tab_standings')}</span
-				>
-			</button>
-			<button
-				onclick={() => (tab = 'players')}
-				class="flex flex-1 flex-col items-center gap-1 py-3 transition-colors {tab === 'players'
-					? 'text-primary'
-					: 'text-text-secondary'}"
-			>
-				<Users size={20} />
-				<span class="text-[10px] font-semibold tracking-wide uppercase">Players</span>
-			</button>
+				<!-- Admin: Official card -->
+				{#if adminPlayer}
+					<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
+						<Avatar
+							icon={adminPlayer.avatar_icon}
+							color={adminPlayer.avatar_color}
+							name={adminPlayer.name}
+							size="sm"
+						/>
+						<p class="text-text-secondary flex-1 text-sm">
+							{$_('active_official_label')}:
+							<span class="text-text-primary font-semibold">{adminPlayer.name}</span>
+						</p>
+						<Shield size={14} class="text-primary" />
+					</div>
+				{/if}
+
+				<!-- Round actions (admin only) -->
+				{#if isAdmin}
+					{#if allScored}
+						{@const isFinalRound =
+							session.rounds_total != null && currentRound.number === session.rounds_total}
+						<Button
+							variant="default"
+							size="cta"
+							disabled={advancing}
+							onclick={isFinalRound ? onRefresh : advanceRound}
+						>
+							{advancing
+								? isFinalRound
+									? $_('active_final_results_loading')
+									: $_('active_next_round_loading')
+								: isFinalRound
+									? $_('active_final_results')
+									: $_('active_next_round')}
+						</Button>
+					{:else if someScored}
+						<Button variant="default" size="cta" disabled>
+							{$_('active_next_round')}
+						</Button>
+						<p class="text-text-disabled text-center text-xs">{$_('active_courts_pending')}</p>
+					{/if}
+
+					<!-- End session button -->
+					<Button
+						variant="destructive-solid"
+						size="cta"
+						disabled={closing || cancelling}
+						onclick={() => (showEndMenu = true)}
+					>
+						{$_('active_close')}
+					</Button>
+				{:else if allScored}
+					<div
+						class="bg-surface-raised text-text-secondary rounded-2xl px-4 py-3 text-center text-sm"
+					>
+						{$_('active_round_complete')}
+					</div>
+				{/if}
+			</main>
 		</div>
 	</div>
-	<!-- end flex col h-full -->
-{/if}
 
-<!-- ── END TOURNAMENT BOTTOM SHEET ── -->
-<Sheet.Root bind:open={showEndMenu}>
-	<Sheet.Content side="bottom" class="w-full">
-		<Sheet.Header>
-			<Sheet.Title>{$_('active_close')}</Sheet.Title>
-		</Sheet.Header>
-		<Sheet.Footer>
-			<button
-				onclick={() => {
-					showEndMenu = false;
-					closeSession();
-				}}
-				disabled={closing || cancelling}
-				class="bg-primary h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-40"
-				>{closing ? '…' : $_('end_menu_save')}</button
-			>
-			<button
-				onclick={() => {
-					showEndMenu = false;
-					cancelSession();
-				}}
-				disabled={closing || cancelling}
-				class="bg-destructive h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-40"
-				>{cancelling ? '…' : $_('end_menu_discard')}</button
-			>
-			<Sheet.Close
-				class="border-border text-text-secondary hover:bg-surface-raised h-auto w-full rounded-2xl border px-4 py-3.5 text-sm font-semibold transition-colors"
-				>{$_('end_menu_keep')}</Sheet.Close
-			>
-		</Sheet.Footer>
-	</Sheet.Content>
-</Sheet.Root>
+	<!-- Standings bottom sheet -->
+	<Sheet.Root bind:open={showStandingsSheet}>
+		<Sheet.Content side="bottom" class="mx-auto w-full max-w-[480px]">
+			<Sheet.Header>
+				<Sheet.Title>{$_('standings_label')}</Sheet.Title>
+			</Sheet.Header>
+			<div class="max-h-[70vh] overflow-y-auto">
+				<Leaderboard sessionId={session.id} sessionName={sessionName(session)} {stream} />
+			</div>
+		</Sheet.Content>
+	</Sheet.Root>
+
+	<!-- End tournament bottom sheet -->
+	<Sheet.Root bind:open={showEndMenu}>
+		<Sheet.Content side="bottom" class="mx-auto w-full max-w-[480px]">
+			<Sheet.Header>
+				<Sheet.Title>{$_('active_close')}</Sheet.Title>
+			</Sheet.Header>
+			<Sheet.Footer>
+				<Button
+					variant="default"
+					size="cta"
+					disabled={closing || cancelling}
+					onclick={() => {
+						showEndMenu = false;
+						closeSession();
+					}}
+				>
+					{closing ? '…' : $_('end_menu_save')}
+				</Button>
+				<Button
+					variant="destructive-solid"
+					size="cta"
+					disabled={closing || cancelling}
+					onclick={() => {
+						showEndMenu = false;
+						cancelSession();
+					}}
+				>
+					{cancelling ? '…' : $_('end_menu_discard')}
+				</Button>
+				<Sheet.Close
+					class="border-border text-text-secondary hover:bg-surface-raised h-auto w-full rounded-2xl border px-4 py-3.5 text-sm font-semibold transition-colors"
+				>
+					{$_('end_menu_keep')}
+				</Sheet.Close>
+			</Sheet.Footer>
+		</Sheet.Content>
+	</Sheet.Root>
+{/if}
