@@ -1,141 +1,102 @@
-# Spec: Score Screen Redesign
+# Score entry — redesign spec
 
-## Goal
+**Ticket:** [Redesign spec: Score entry](https://github.com/Fabianthorsen/OpenPadel/issues/171) (#171)
+**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [DESIGN.md](../../DESIGN.md) §5 · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
+**Surfaces:** score flow in `web/src/lib/components/ActiveSession.svelte`, the numpad in `web/src/routes/s/[id]/+page.svelte`, `web/src/lib/stores/numpad.ts`
 
-Redesign the active match score entry screen to feel more immersive and court-like.
-Single unified dark match card, player avatars, cleaner role/server indicators.
-
-## Reference
-
-Screenshot: dark green unified score card with avatars, SERVICE/RECEIVE badges,
-NET divider, role badge, official card, and Finalize button outside the card.
+> Register: **working screen → calm.** Reached from the Active round view (#170): admin taps a court → this entry surface. Big scores are *functional* emphasis (kept prominent), not decoration. Auto-complement is canonical (#169). The old immersive dark-green unified card + court tabs + NET divider + service/receive + 4-tab nav from the previous draft of this file are **superseded** by the north-star and #170.
 
 ---
 
-## Screen Layout (top to bottom)
+## The decisions (from grilling; entry model chosen from concrete previews)
 
-```
-[Header]
-  [session avatar]  Session name              [settings icon]
-
-[Role badge]
-  ✏ ACTIVE SCOREKEEPER            ← only shown to the scorekeeper
-
-[Match info row]
-  AMERICANO TOURNAMENT            (small caps, muted)
-  Match 4 of 15                   [Courts Overview ▦]
-  (large, bold)
-
-[Court tabs]  ← horizontal scroll
-  [🎾 COURT 1 •]  [🎾 COURT 2]  [🎾 COURT 3]
-  active tab has dot indicator + filled background
-
-[Score card]  ← single dark green card, one per active court tab
-  [avatar][avatar]                ← overlapping circles, centered top
-  Marcus & Sofia                  ← first names joined with &, centered
-  TEAM A                          ← small caps, muted, centered
-
-  [−]        21        [+]
-
-  ── NET ──                       ← bold italic pill, VERSUS styling
-
-  [−]        17        [+]
-
-  Anders & Elena                  ← centered
-  TEAM B                          ← small caps, muted, centered
-  [avatar][avatar]                ← overlapping circles, centered bottom
-
-[Finalize Result ✓]  ← full-width, dark green, with checkmark icon
-"Scores are synced live to all player devices"  ← muted helper text
-
-[Official card]
-  [avatar]  Official: Lukas H.    [✓ shield]
-```
+1. **Surface: a bottom sheet over the round.** Tapping a court's "Enter score" (admin) opens a per-court entry **sheet** over the round view; Finalize (or dismiss) returns to the round. Consistent for 1-court and multi-court sessions; composes with the existing `Drawer`/`Sheet` primitives.
+2. **Entry model: steppers + numpad, both (calmed).** Two team rows, each `− [score] +`, tap the number to type. `+/−` supports live point-by-point tracking; the keypad is the fast path. **Auto-complement**: entering one team's score fills the other to the points target.
+3. **Keypad is integrated into the entry sheet** (not a second stacked drawer over it) — tapping a team's score focuses it and reveals the keypad within the same sheet, avoiding nested-modal jank.
 
 ---
 
-## Component Changes
+## Layout & hierarchy (the entry sheet)
 
-### Court tabs
-- Horizontal scrollable tab row between match header and score card
-- Each tab: racket icon + "COURT N" label
-- Active tab: filled/highlighted background + dot indicator
-- Tapping switches the score card to that court
-- Replaces current stacked multi-card layout entirely
+Bottom sheet, `max-w-[480px]`, safe-area aware:
 
-### Courts Overview
-- Chip/button next to "Match X of Y" header
-- Opens a summary view of all courts at a glance (scores, status)
-- Useful for admins managing multiple courts simultaneously
-- Can be a bottom sheet or full-screen overlay
+1. **Header** — `Court {n} · Round {x}` + close (`×`).
+2. **Team A block** — overlapping avatars + team name (`text-[15px] font-semibold`), then the entry row: circular `−` · **big score** (`text-[64px] font-[800] tabular-nums`, tappable) · `+`.
+3. **Validity readout** (center) — `{a} + {b} = {target}` with a check when the sum matches; `text-text-secondary`, turns `text-primary` when valid. Optional thin split bar visualising a/b of the target.
+4. **Team B block** — mirror of A (score row, name, avatars).
+5. **Keypad** (revealed when a score is focused) — `1–9`, `0`, `⌫`, done; types into the focused team, auto-completes the other. `bg-surface-raised` keys, `--radius` tokens, `active:scale-95`. Over-target entry → `animate-shake` (the **token**, not `animate-[shake_0.4s_ease-in-out]`).
+6. **Finalize** — full-width `Button` `cta` variant (the shared size from #170), gated until `a + b === target`. Helper below: "Scores synced live to all devices" (`text-text-disabled`).
 
-### Score card
-- **Background**: dark forest green, single rounded card
-- **Team layout**: centered, names at top and bottom (not left-aligned)
-- **Player names**: "First & First" format joined with ampersand
-- **Avatars**: two overlapping circles (36px), centered above Team A name and below Team B name
-- **NET divider**: centered pill badge, bold italic styling (prominent like VERSUS, label stays "NET")
-- **Score numbers**: white, very large (~80px), centered
-- **+/− buttons**: translucent dark circles, flanking the score
-
-### Score entry interaction
-Two input modes, always available:
-
-**Incremental** — tap +/− to adjust by 1 (good for live tracking during play)
-
-**Direct entry** — tap the score number itself → numpad appears → type score → confirm
-- On confirm: if scores don't sum to target, the *other* team auto-adjusts to `target − entered`
-- Example: target 24, enter 23 for Team A → Team B auto-fills to 1
-- If entered score exceeds target: reject with brief shake animation
-- Numpad shows target as a hint: "Target: 24"
-
-**Finalize** stays disabled until both scores sum to target.
-Auto-fill means in practice you only ever need to enter one number.
-
-### Role badge
-- Small pill above match title: "ACTIVE SCOREKEEPER" with pencil icon
-- Only visible to the scorekeeper / admin
-- Hidden for spectators
-
-### Match header
-- "AMERICANO TOURNAMENT" small caps label above
-- "Match X of Y" large bold
-- "Courts Overview" chip on the right
-
-### Finalize button + helper text
-- Full width, dark green, "Finalize Result" + checkmark icon
-- Below: "Scores are synced live to all player devices" in muted small text
-- Disabled + muted until scores sum to session.points
-
-### Official card
-- Below the finalize button
-- Scorekeeper avatar + "Official: [name]" + verified shield
-
-### Bottom nav
-- 4 tabs: **SCORING** / **STANDINGS** / **PLAYERS** / **SCHEDULE**
-- SCORING replaces current "LIVE" label
-- SCHEDULE tab: shows round schedule / upcoming matchups
+Calm surfaces throughout — **no** `#3d7a24`, **no** court-pattern SVG. Scores are large and `tabular-nums` (functional), on neutral surface.
 
 ---
 
-## Open Questions
+## Interaction & flow
 
-- [x] Courts Overview: bottom sheet, shows court number + team names + live score + status icon (not started / in progress / finalized)
-- [x] SERVICE/RECEIVE indicators — removed from Americano, kept in Tennis only
-- [x] No SCHEDULE tab — "Match X of Y" header is tappable, opens a bottom sheet with the full round list
-- [x] "Official" = always admin for now, delegation is a future roadmap item
-- [x] PLAYERS tab: bench players prominently at top, then full active player list below
+- **`+/−`** adjust by 1, clamped `[0, target]`; each change live-saves via `api.scores.updateLive` (SSE broadcasts to other devices — keep this, per CLAUDE.md live-updates invariant).
+- **Tap a score** → focus it + reveal keypad. First digit overwrites; further digits append; entry `> target` is rejected with a shake. On done/auto-complete, the *other* team fills to `target − entered`.
+- **Auto-complement made visible** (audit flagged it was silent): the derived team's number updates with a subtle transition, and the `a + b = target` readout confirms the relationship.
+- **Finalize** → `api.scores.submit`; success toast; sheet dismisses to the round; the court card shows the final result.
+- **Re-edit** — tapping a finalized court reopens the sheet in editing mode with current scores (matches today's `editing[]` behaviour).
+- **Non-admins** never see this surface (read-only scores on the round view).
 
 ---
 
-## Out of Scope
+## States to implement
 
-- Score entry flow changes (still +/− tapping, still finalise on sum match)
-- Mexicano / Tennis modes — spec Americano first, extend after
+- **Untouched** (0–0) — Finalize disabled.
+- **Editing / focused** — keypad visible, a team focused.
+- **Valid** (`a + b === target`) — readout `primary` + check; Finalize enabled.
+- **Invalid** (sum ≠ target) — Finalize disabled; readout neutral.
+- **Over-target entry** — shake, entry rejected.
+- **Submitting** — Finalize shows progress; inputs locked.
+- **Finalized (re-editable)** — court shows final; reopening returns to Editing.
 
+---
+
+## Components & tokens
+
+- **Reuse** `Button` (`cta` variant from #170), `Avatar`, `Sheet`/`Drawer`, `Toaster`.
+- **Shared addition (anti-divergence rule):** the numpad is currently a store (`numpad.ts`) plus inline markup in the route. Extract the entry surface into a shared component (e.g. `ScoreEntrySheet` in `web/src/lib/components/`) that owns the two-team + integrated-keypad UI, so it isn't hand-rolled inline. Keep the store or fold it in.
+- **Token fixes:** `animate-shake` (not the arbitrary value), `text-primary-foreground` (not `text-white`), radius tokens, drop `#3d7a24`.
+
+---
+
+## A11y & responsiveness
+
+- Steppers, keypad keys, close, Finalize: min 48×48px; `focus-visible` rings.
+- `aria-label`s on `+/−` ("Increase Team A score") and keypad keys.
+- Validity + auto-complement announced via `aria-live="polite"`.
+- Sheet focus-trapped; Esc/backdrop/swipe-down dismisses; focus returns to the court card.
+- Safe-area insets on the sheet bottom; single column ≤480px.
+- All copy via `$_()`.
+
+---
+
+## Before → after
+
+| Before (shipped) | After (this spec) |
+|---|---|
+| Two immersive `#3d7a24` cards inline in the scoring tab | Calm per-court entry **sheet** over the round |
+| Global numpad **drawer** triggered separately (nested-drawer risk) | Keypad **integrated** into the entry sheet |
+| Auto-complement silent | Visible `a + b = target` readout + transition |
+| `animate-[shake_…]`, `text-white`, `#3d7a24` | `animate-shake`, `text-primary-foreground`, tokens |
+| Numpad markup inline in the route | Shared `ScoreEntrySheet` component |
+
+---
+
+## Out of scope
+
+- Round/court **display** and the affordance into scoring → Active round (#170).
+- Leaderboard content → Live leaderboard (#172).
+- Changing the auto-complement rule itself (ratified in #169); new modes; dark mode.
+
+---
 ---
 
 # Spec: Avatar Icon System
+
+> _(Separate pre-existing spec kept in this file for history; not part of the #171 score-entry redesign.)_
 
 ## Goal
 

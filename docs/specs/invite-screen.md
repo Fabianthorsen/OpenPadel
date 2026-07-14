@@ -1,3 +1,7 @@
+> **Superseded — merged into [`lobby.md`](lobby.md) (#173).** The pre-join invitation is now
+> "State A" of the Lobby & join spec, in the calm token palette. Kept here for history; `lobby.md`
+> is canonical.
+
 # Spec: Invite / Join Screen Redesign
 
 ## Goal
