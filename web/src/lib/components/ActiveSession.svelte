@@ -14,6 +14,7 @@
 	import * as Sheet from '$lib/components/ui/sheet';
 	import RoundIndicator from './RoundIndicator.svelte';
 	import Leaderboard from './Leaderboard.svelte';
+	import ScoreEntrySheet from './ScoreEntrySheet.svelte';
 	import { numpad as numpadStore } from '$lib/stores/numpad';
 	import { auth } from '$lib/auth.svelte';
 	import type { SessionStream } from '$lib/stores/sessionStream.svelte';
@@ -47,6 +48,7 @@
 	let closing = $state(false);
 	let showEndMenu = $state(false);
 	let showStandingsSheet = $state(false);
+	let selectedMatchId = $state<string | null>(null);
 
 	// Numpad (mobile-optimized: drag-to-close, keyboard input, overwrite)
 	type NumpadState = { matchId: string; team: 'a' | 'b'; value: string; fresh: boolean };
@@ -162,10 +164,11 @@
 		scheduleLiveSave(matchId);
 	}
 
-	async function submitScore(matchId: string) {
+	async function submitScore(matchId: string, scoreA?: number, scoreB?: number) {
 		clearTimeout(saveTimeout[matchId]);
 		submitting[matchId] = true;
-		const s = scores[matchId];
+		const s =
+			scoreA !== undefined && scoreB !== undefined ? { a: scoreA, b: scoreB } : scores[matchId];
 		try {
 			await api.scores.submit(session.id, matchId, s.a, s.b, '');
 			editing[matchId] = false;
@@ -221,6 +224,25 @@
 		} finally {
 			advancing = false;
 		}
+	}
+
+	function openScoreEntry(matchId: string) {
+		selectedMatchId = matchId;
+	}
+
+	function closeScoreEntry() {
+		selectedMatchId = null;
+	}
+
+	async function handleScoreSubmit(scoreA: number, scoreB: number) {
+		if (!selectedMatchId) return;
+		await submitScore(selectedMatchId, scoreA, scoreB);
+	}
+
+	function handleLiveSave(scoreA: number, scoreB: number) {
+		if (!selectedMatchId) return;
+		localScores[selectedMatchId] = { a: scoreA, b: scoreB };
+		scheduleLiveSave(selectedMatchId);
 	}
 
 	const benchNames = $derived(currentRound.bench.map((id) => playerName[id] ?? id));
@@ -452,10 +474,10 @@
 								<Button
 									variant="default"
 									size="cta"
-									disabled={s.a + s.b !== session.points || submitting[match.id]}
-									onclick={() => submitScore(match.id)}
+									disabled={!isAdmin}
+									onclick={() => openScoreEntry(match.id)}
 								>
-									{submitting[match.id] ? '…' : $_('active_finalize_result')}
+									{$_('active_enter_score')}
 								</Button>
 							</div>
 						{/if}
@@ -578,10 +600,10 @@
 										<Button
 											variant="default"
 											size="cta"
-											disabled={s.a + s.b !== session.points || submitting[match.id]}
-											onclick={() => submitScore(match.id)}
+											disabled={!isAdmin}
+											onclick={() => openScoreEntry(match.id)}
 										>
-											{submitting[match.id] ? '…' : $_('active_enter_score')}
+											{$_('active_enter_score')}
 										</Button>
 									</div>
 								{/if}
@@ -675,6 +697,28 @@
 			</main>
 		</div>
 	</div>
+
+	<!-- Score entry sheet -->
+	{#if selectedMatchId}
+		{@const match = currentRound.matches.find((m) => m.id === selectedMatchId)}
+		{#if match}
+			<ScoreEntrySheet
+				matchId={match.id}
+				courtNumber={match.court}
+				roundNumber={currentRound.number}
+				pointsTarget={maxScore}
+				teamAName={teamLabel(match.team_a)}
+				teamBName={teamLabel(match.team_b)}
+				teamAPlayers={[playerById[match.team_a[0]], playerById[match.team_a[1]]].filter(Boolean)}
+				teamBPlayers={[playerById[match.team_b[0]], playerById[match.team_b[1]]].filter(Boolean)}
+				initialScoreA={scores[match.id]?.a ?? 0}
+				initialScoreB={scores[match.id]?.b ?? 0}
+				onSubmit={handleScoreSubmit}
+				onClose={closeScoreEntry}
+				onLiveSave={(a, b) => handleLiveSave(a, b)}
+			/>
+		{/if}
+	{/if}
 
 	<!-- Standings bottom sheet -->
 	<Sheet.Root bind:open={showStandingsSheet}>
