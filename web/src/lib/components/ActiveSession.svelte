@@ -678,7 +678,7 @@
 
 	<!-- Standings bottom sheet -->
 	<Sheet.Root bind:open={showStandingsSheet}>
-		<Sheet.Content side="bottom" class="w-full">
+		<Sheet.Content side="bottom" class="mx-auto w-full max-w-[480px]">
 			<Sheet.Header>
 				<Sheet.Title>{$_('standings_label')}</Sheet.Title>
 			</Sheet.Header>
@@ -690,7 +690,7 @@
 
 	<!-- End tournament bottom sheet -->
 	<Sheet.Root bind:open={showEndMenu}>
-		<Sheet.Content side="bottom" class="w-full">
+		<Sheet.Content side="bottom" class="mx-auto w-full max-w-[480px]">
 			<Sheet.Header>
 				<Sheet.Title>{$_('active_close')}</Sheet.Title>
 			</Sheet.Header>
