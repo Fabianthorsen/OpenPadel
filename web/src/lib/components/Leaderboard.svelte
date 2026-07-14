@@ -121,10 +121,14 @@
 						/>
 					</div>
 
-					<!-- Rank badge -->
+					<!-- Rank badge: gold/silver/bronze medal colors -->
 					<div
-						class="text-primary-foreground mt-2 flex h-6 w-6 items-center justify-center rounded-full text-xs font-[800]
-            {isFirst ? 'bg-primary' : 'bg-surface-raised'}"
+						class="mt-2 flex h-6 w-6 items-center justify-center rounded-full text-xs font-[800] text-white
+            {isFirst
+							? 'bg-[var(--color-medal-gold)]'
+							: s.rank === 2
+								? 'bg-[var(--color-medal-silver)]'
+								: 'bg-[var(--color-medal-bronze)]'}"
 					>
 						{s.rank}
 					</div>
@@ -168,14 +172,14 @@
 						</button>
 					{/if}
 
-					<!-- Podium bar -->
+					<!-- Podium bar: gold/silver/bronze medal colors -->
 					<div
 						class="mt-3 w-full rounded-t-xl
             {isFirst
-							? 'bg-primary h-12'
+							? 'bg-[var(--color-medal-gold)] h-12'
 							: s.rank === 2
-								? 'bg-surface-raised h-8'
-								: 'bg-border h-5'}"
+								? 'bg-[var(--color-medal-silver)] h-8'
+								: 'bg-[var(--color-medal-bronze)] h-5'}"
 					></div>
 				</div>
 			{/each}
