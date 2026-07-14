@@ -16,11 +16,22 @@ describe('Button Component', () => {
 			expect(buttonVariants({ variant: 'secondary' })).toContain('bg-secondary');
 			expect(buttonVariants({ variant: 'ghost' })).toContain('hover:bg-muted');
 			expect(buttonVariants({ variant: 'destructive' })).toContain('text-destructive');
+			expect(buttonVariants({ variant: 'destructive-solid' })).toContain(
+				'text-destructive-foreground'
+			);
 			expect(buttonVariants({ variant: 'link' })).toContain('underline');
 		});
 
-		it('produces a distinct class string for each of the 6 variants', () => {
-			const variants = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link'] as const;
+		it('produces a distinct class string for each of the 7 variants', () => {
+			const variants = [
+				'default',
+				'outline',
+				'secondary',
+				'ghost',
+				'destructive',
+				'destructive-solid',
+				'link'
+			] as const;
 			const outputs = variants.map((v) => buttonVariants({ variant: v }));
 			expect(new Set(outputs).size).toBe(variants.length);
 		});
@@ -34,10 +45,21 @@ describe('Button Component', () => {
 			expect(buttonVariants({ size: 'icon-xs' })).toContain('size-6');
 			expect(buttonVariants({ size: 'icon-sm' })).toContain('size-7');
 			expect(buttonVariants({ size: 'icon-lg' })).toContain('size-9');
+			expect(buttonVariants({ size: 'cta' })).toContain('w-full');
 		});
 
-		it('produces a distinct class string for each of the 8 sizes', () => {
-			const sizes = ['xs', 'sm', 'default', 'lg', 'icon', 'icon-xs', 'icon-sm', 'icon-lg'] as const;
+		it('produces a distinct class string for each of the 9 sizes', () => {
+			const sizes = [
+				'xs',
+				'sm',
+				'default',
+				'lg',
+				'cta',
+				'icon',
+				'icon-xs',
+				'icon-sm',
+				'icon-lg'
+			] as const;
 			const outputs = sizes.map((s) => buttonVariants({ size: s }));
 			expect(new Set(outputs).size).toBe(sizes.length);
 		});

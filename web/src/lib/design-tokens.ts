@@ -21,6 +21,13 @@ export const tokens = {
 		destructive: 'var(--color-destructive)',
 		destructiveForeground: 'var(--color-destructive-foreground)',
 
+		warning: 'var(--color-warning)',
+		warningMuted: 'var(--color-warning-muted)',
+
+		medalGold: 'var(--color-medal-gold)',
+		medalSilver: 'var(--color-medal-silver)',
+		medalBronze: 'var(--color-medal-bronze)',
+
 		foreground: 'var(--color-foreground)',
 		card: 'var(--color-card)',
 		cardForeground: 'var(--color-card-foreground)',

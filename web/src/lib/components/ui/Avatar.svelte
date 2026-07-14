@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import * as icons from 'lucide-svelte';
 
 	type Size = 'sm' | 'md' | 'lg' | 'xl';
@@ -8,13 +9,16 @@
 		color = '',
 		name = '',
 		size = 'md' as Size,
-		ring = ''
+		ring = '',
+		badge
 	}: {
 		icon?: string;
 		color?: string;
 		name?: string;
 		size?: 'sm' | 'md' | 'lg' | 'xl';
 		ring?: string;
+		/** Optional corner badge (e.g. an add-contact action), rendered bottom-right over the avatar. */
+		badge?: Snippet;
 	} = $props();
 
 	const colorMap: Record<string, string> = {
@@ -53,12 +57,23 @@
 	);
 </script>
 
-<div
-	class="shrink-0 rounded-full {s.circle} {colorClass} {ring} flex items-center justify-center font-semibold"
->
-	{#if IconComponent}
-		<IconComponent class={s.icon} strokeWidth={2} />
-	{:else}
-		<span class={s.text}>{initials || '?'}</span>
-	{/if}
-</div>
+{#snippet circle()}
+	<div
+		class="shrink-0 rounded-full {s.circle} {colorClass} {ring} flex items-center justify-center font-semibold"
+	>
+		{#if IconComponent}
+			<IconComponent class={s.icon} strokeWidth={2} />
+		{:else}
+			<span class={s.text}>{initials || '?'}</span>
+		{/if}
+	</div>
+{/snippet}
+
+{#if badge}
+	<div class="relative inline-flex shrink-0">
+		{@render circle()}
+		<div class="absolute -right-0.5 -bottom-0.5">{@render badge()}</div>
+	</div>
+{:else}
+	{@render circle()}
+{/if}
