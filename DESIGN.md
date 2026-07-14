@@ -66,16 +66,16 @@ Destructive fg   #ffffff   text on destructive                  --color-destruct
 found — `#3d7a24` (score cards), `#4A7856` (`app.html` `theme-color` meta) — **fold into
 `--color-primary`.** Update `app.html`'s `theme-color` to `#2d5a1a`.
 
-**Celebratory palette (leaderboard/complete only).** The podium tints are *sanctioned* here and get
-promoted to named tokens (add to `@theme` + `design-tokens.ts` when a celebratory screen first needs
-them): `--color-podium-silver` (≈`#4a7856`), `--color-podium-bronze` (≈`#a8c5b0`). Rank #1 uses
-`--color-primary`. No other greens exist.
+**Celebratory palette (Session complete finale only).** The podium uses real **medal colours**
+(decided #174): `--color-medal-gold` / `--color-medal-silver` / `--color-medal-bronze` for 1st / 2nd /
+3rd — as ring / bar / rank-badge accents, not body text (ensure contrast). Added to `@theme` +
+`design-tokens.ts` when the finale first needs them. This is the *only* non-primary palette, and only
+on the finale.
 
-**Semantic states still missing tokens.** The audit found warning ("time expired") using raw
-`amber-*` and a "live/playing" indicator using raw `emerald-*`/`amber-*`. These need semantic tokens
-(`--color-warning`, and a decision on "live") — add them when a page first requires the state rather
-than reaching for a raw Tailwind palette color. Losses/negatives use `--color-destructive` (never
-`text-[#c0392b]`).
+**Semantic states.** Warning ("time expired") uses `--color-warning` (added #170) — not raw `amber-*`.
+The **"live/playing" indicator uses `--color-primary`** — a pulsing dot / `primary-muted` tint,
+consistent across the active round (#170), the leaderboard (#172) and profile (#178) — not raw
+`emerald-*`. Losses/negatives use `--color-destructive` (never `text-[#c0392b]`).
 
 **shadcn-compat tokens.** `app.css` also defines `--color-{card,popover,secondary,muted,accent,input,ring,foreground}`
 (+ `*-foreground`) for the vendored bits-ui components. These are plumbing — don't reach for them in
