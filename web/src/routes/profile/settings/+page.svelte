@@ -60,6 +60,14 @@
 
 	let showDeleteConfirm = $state(false);
 	let deleting = $state(false);
+	let prevPushEnabled = $state(false);
+
+	$effect(() => {
+		if (pushEnabled !== prevPushEnabled && pushSupported) {
+			prevPushEnabled = pushEnabled;
+			togglePush();
+		}
+	});
 
 	async function checkPushState() {
 		const reg = await navigator.serviceWorker.ready;
@@ -265,11 +273,7 @@
 						<p class="text-sm font-semibold">{$_('pref_notifications_title')}</p>
 						<p class="text-text-secondary text-xs">{$_('pref_notifications_desc')}</p>
 					</div>
-					<Switch
-						bind:checked={pushEnabled}
-						onchange={togglePush}
-						disabled={pushToggling || !pushSupported}
-					/>
+					<Switch bind:checked={pushEnabled} disabled={pushToggling || !pushSupported} />
 				</div>
 
 				<!-- Install prompt -->

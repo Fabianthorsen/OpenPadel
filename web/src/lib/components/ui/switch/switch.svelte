@@ -18,7 +18,7 @@
 	 * <Switch disabled />
 	 */
 	export const switchVariants = tv({
-		base: 'data-checked:bg-primary data-unchecked:bg-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 dark:data-unchecked:bg-input/80 peer group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:ring-3 aria-invalid:ring-3 data-disabled:cursor-not-allowed data-disabled:opacity-50',
+		base: 'data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 dark:data-[state=unchecked]:bg-input/80 peer group/switch relative inline-flex shrink-0 items-center rounded-full border border-transparent transition-all outline-none after:absolute after:-inset-x-3 after:-inset-y-2 focus-visible:ring-3 aria-invalid:ring-3 data-disabled:cursor-not-allowed data-disabled:opacity-50',
 		variants: {
 			size: {
 				default: 'data-[size=default]:h-[18.4px] data-[size=default]:w-[32px]',
@@ -37,7 +37,7 @@
 	 * Handles thumb sizing and translation animations based on parent size variant.
 	 */
 	export const switchThumbVariants = tv({
-		base: 'bg-background dark:data-unchecked:bg-foreground dark:data-checked:bg-primary-foreground pointer-events-none block rounded-full ring-0 transition-transform group-data-[size=default]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=sm]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=default]/switch:data-unchecked:translate-x-0 group-data-[size=sm]/switch:data-unchecked:translate-x-0 rtl:data-[state=checked]:translate-x-[calc(-100%)]',
+		base: 'bg-background dark:group-data-[state=unchecked]/switch:bg-foreground dark:group-data-[state=checked]/switch:bg-primary-foreground pointer-events-none block rounded-full ring-0 transition-transform group-data-[size=default]/switch:group-data-[state=checked]/switch:translate-x-[calc(100%-2px)] group-data-[size=sm]/switch:group-data-[state=checked]/switch:translate-x-[calc(100%-2px)] group-data-[size=default]/switch:group-data-[state=unchecked]/switch:translate-x-0 group-data-[size=sm]/switch:group-data-[state=unchecked]/switch:translate-x-0 rtl:group-data-[state=checked]/switch:translate-x-[calc(-100%)]',
 		variants: {
 			size: {
 				default: 'group-data-[size=default]/switch:size-4',
