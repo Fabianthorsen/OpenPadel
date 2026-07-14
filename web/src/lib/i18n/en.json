@@ -153,6 +153,7 @@
 	"leaderboard_games": "Games",
 	"leaderboard_close": "Close",
 	"leaderboard_ranking": "Ranking",
+	"leaderboard_live": "Live",
 
 	"auth_login_subtitle": "Sign in to track your stats.",
 	"auth_register_subtitle": "Create an account to track your stats.",

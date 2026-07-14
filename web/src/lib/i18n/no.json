@@ -153,6 +153,7 @@
 	"leaderboard_games": "Kamper",
 	"leaderboard_close": "Lukk",
 	"leaderboard_ranking": "Rangering",
+	"leaderboard_live": "Direkte",
 
 	"auth_login_subtitle": "Logg inn for å spore statistikken din.",
 	"auth_register_subtitle": "Opprett konto for å spore statistikken din.",
