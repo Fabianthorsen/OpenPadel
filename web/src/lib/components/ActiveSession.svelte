@@ -277,7 +277,9 @@
 		<div class="min-h-0 flex-1 overflow-y-auto">
 			<main class="pt-safe-page mx-auto w-full max-w-[480px] space-y-4 px-4 pb-6">
 				<!-- Top bar: Session name + Standings pill + Back button -->
-				<div class="flex items-center justify-between gap-2">
+				<div
+					class="bg-background/95 sticky top-0 z-40 flex items-center justify-between gap-2 pb-4 backdrop-blur-sm"
+				>
 					<p class="text-primary text-sm font-semibold">{sessionName(session)}</p>
 					<button
 						onclick={() => (showStandingsSheet = true)}
@@ -306,12 +308,12 @@
 				{/if}
 
 				<!-- Round header -->
-				<div class="min-w-0">
-					<p class="text-text-disabled text-[10px] font-bold tracking-widest uppercase">
+				<div>
+					<SectionLabel class="mb-3">
 						{session.game_mode} · {session.rounds_total != null
 							? $_('active_round_label')
 							: $_('active_round_open_label')}
-					</p>
+					</SectionLabel>
 					<h2 class="text-[28px] leading-tight font-[800] tracking-tight">
 						{session.rounds_total != null
 							? $_('active_round_of', {
@@ -319,29 +321,31 @@
 								})
 							: $_('active_round_open', { values: { current: currentRound.number } })}
 					</h2>
+
+					<!-- Round indicator + timer row -->
+					<div class="mt-4 flex items-center justify-between gap-4">
+						{#if session.rounds_total != null}
+							<RoundIndicator current={currentRound.number} total={session.rounds_total} />
+						{:else}
+							<div></div>
+						{/if}
+
+						{#if session.game_mode !== 'americano' && timeLeft !== null}
+							<div class="text-text-secondary flex items-center gap-2 font-mono text-xs">
+								<Clock size={14} />
+								<span>{timeLeft}</span>
+							</div>
+						{/if}
+					</div>
 				</div>
 
-				<!-- Timer (non-americano only) -->
-				{#if session.game_mode !== 'americano'}
-					{#if timeLeft !== null}
-						<div class="text-text-secondary flex items-center gap-2 font-mono text-xs">
-							<Clock size={14} />
-							<span>{timeLeft}</span>
-						</div>
-					{/if}
-
-					{#if timeExpired}
-						<div class="border-warning/30 bg-warning/10 rounded-2xl border px-5 py-4 text-center">
-							<p class="text-warning text-sm font-bold">
-								{$_('active_time_expired')}
-							</p>
-						</div>
-					{/if}
-				{/if}
-
-				<!-- Round indicator -->
-				{#if session.rounds_total != null}
-					<RoundIndicator current={currentRound.number} total={session.rounds_total} />
+				<!-- Time expired notice -->
+				{#if session.game_mode !== 'americano' && timeExpired}
+					<div class="border-warning/30 bg-warning/10 rounded-2xl border px-5 py-4 text-center">
+						<p class="text-warning text-sm font-bold">
+							{$_('active_time_expired')}
+						</p>
+					</div>
 				{/if}
 
 				<!-- Courts: Adaptive layout -->
@@ -401,8 +405,10 @@
 							<p class="text-[15px] font-semibold">{teamLabel(match.team_a)}</p>
 							<p
 								class="text-5xl font-[800] tabular-nums {scored && s.a > s.b
-									? 'text-primary'
-									: 'text-text-primary'}"
+									? 'text-primary font-bold'
+									: scored && s.a < s.b
+										? 'text-text-disabled'
+										: 'text-text-primary'}"
 							>
 								{s.a}
 							</p>
@@ -414,8 +420,10 @@
 						<div class="flex flex-col items-center gap-2 text-center">
 							<p
 								class="text-5xl font-[800] tabular-nums {scored && s.b > s.a
-									? 'text-primary'
-									: 'text-text-primary'}"
+									? 'text-primary font-bold'
+									: scored && s.b < s.a
+										? 'text-text-disabled'
+										: 'text-text-primary'}"
 							>
 								{s.b}
 							</p>
@@ -464,7 +472,7 @@
 							{@const p4 = playerById[match.team_b[1]]}
 
 							<Card
-								class={`overflow-hidden border transition-colors ${match.live ? 'border-primary/50 bg-primary-muted/30' : 'border-border bg-surface'}`}
+								class={`overflow-hidden rounded-2xl border shadow-sm transition-colors ${match.live ? 'border-primary/50 bg-primary-muted/30' : 'border-border bg-surface'}`}
 							>
 								<!-- Header row: Court label + Status -->
 								<div class="border-border flex items-center justify-between border-b px-4 py-3">
@@ -495,7 +503,11 @@
 								</div>
 
 								<!-- Team A row -->
-								<div class="flex items-center gap-3 px-4 py-3">
+								<div
+									class="flex items-center gap-3 px-4 py-3 {scored && s.a > s.b
+										? 'bg-primary-muted'
+										: ''}"
+								>
 									<div class="flex">
 										<Avatar
 											icon={p1?.avatar_icon}
@@ -515,8 +527,10 @@
 									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
 									<span
 										class="text-2xl font-[800] tabular-nums {scored && s.a > s.b
-											? 'text-primary'
-											: 'text-text-primary'}"
+											? 'text-primary font-bold'
+											: scored && s.a < s.b
+												? 'text-text-disabled'
+												: 'text-text-primary'}"
 									>
 										{s.a}
 									</span>
@@ -525,7 +539,11 @@
 								<div class="bg-border mx-4 h-px"></div>
 
 								<!-- Team B row -->
-								<div class="flex items-center gap-3 px-4 py-3">
+								<div
+									class="flex items-center gap-3 px-4 py-3 {scored && s.b > s.a
+										? 'bg-primary-muted'
+										: ''}"
+								>
 									<div class="flex">
 										<Avatar
 											icon={p3?.avatar_icon}
@@ -545,8 +563,10 @@
 									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_b)}</p>
 									<span
 										class="text-2xl font-[800] tabular-nums {scored && s.b > s.a
-											? 'text-primary'
-											: 'text-text-primary'}"
+											? 'text-primary font-bold'
+											: scored && s.b < s.a
+												? 'text-text-disabled'
+												: 'text-text-primary'}"
 									>
 										{s.b}
 									</span>

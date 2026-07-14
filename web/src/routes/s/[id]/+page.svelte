@@ -117,7 +117,7 @@
 	{#if !session}
 		<main class="flex flex-1 flex-col items-center justify-center gap-3 px-4">
 			<Spinner />
-			<p class="text-text-secondary text-sm">Loading…</p>
+			<p class="text-text-secondary text-sm">{$_('loading')}</p>
 		</main>
 	{:else if session.status === 'lobby'}
 		<Lobby {session} {isAdmin} onRefresh={load} onStarted={load} {stream} />
