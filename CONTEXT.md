@@ -68,7 +68,7 @@ A request from one User to another to join a specific Session, with a `pending |
 | **Button** | `variant`: default, outline, secondary, ghost, destructive, destructive-solid, link `size`: xs, sm, default, lg, cta, icon, icon-xs, icon-sm, icon-lg | Primary CTAs, secondary actions, destructive actions, icon-only actions. `size="cta"` = full-width primary CTA; `destructive-solid` = filled danger. Pass `href` to render as link. |
 | **Input** | `type`: text, password, email, number, search, tel, url, date, time, file | Text-based form inputs. Pair with Label for accessibility. Two-way binding: `value` for text-based, `files` for file inputs. |
 | **Label** | — | Form label for inputs. Always pair with Input using `htmlFor` attribute. Supports required indicator via child `<span>`. |
-| **Switch** | `size`: sm, default | Binary on/off state. Use in forms for boolean fields (vs. Toggle for state switching). Accessible: bound to Label via `htmlFor`. |
+| **Switch** | `size`: sm, default | Binary on/off state. Use in forms for boolean fields (vs. Toggle for state switching). Accessible: bound to Label via `htmlFor`. **Important**: Styling uses `data-[state=checked]` and `data-[state=unchecked]` Tailwind selectors (not `data-checked:`/`data-unchecked:`); bind to the `checked` prop and the component will handle state attributes automatically. |
 | **Toggle** | `variant`: default, outline `size`: sm, default, lg | State switching (e.g., filters, display modes). Renders as button with `aria-pressed`. Supports icon content. |
 
 ### Semantic Components
