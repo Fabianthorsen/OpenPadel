@@ -24,7 +24,7 @@
 			<div
 				class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors
           {item === current
-					? 'bg-primary text-white'
+					? 'bg-primary text-primary-foreground'
 					: item < current
 						? 'bg-primary-muted text-primary'
 						: 'bg-surface-raised text-text-disabled'}"

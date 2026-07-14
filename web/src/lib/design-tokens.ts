@@ -54,7 +54,9 @@ export const tokens = {
 	radius: {
 		base: 'var(--radius)',
 		md: 'var(--radius-md)',
-		sm: 'var(--radius-sm)'
+		sm: 'var(--radius-sm)',
+		lg: 'var(--radius-lg)',
+		xl: 'var(--radius-xl)'
 	},
 
 	fonts: {

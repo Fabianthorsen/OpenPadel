@@ -7,6 +7,7 @@
 	import ActiveSession from '$lib/components/ActiveSession.svelte';
 	import Leaderboard from '$lib/components/Leaderboard.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import * as Drawer from '$lib/components/ui/drawer';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
@@ -114,7 +115,8 @@
 
 <div class="flex h-screen w-full flex-col overflow-y-auto">
 	{#if !session}
-		<main class="flex flex-1 items-center justify-center px-4">
+		<main class="flex flex-1 flex-col items-center justify-center gap-3 px-4">
+			<Spinner />
 			<p class="text-text-secondary text-sm">Loading…</p>
 		</main>
 	{:else if session.status === 'lobby'}
@@ -124,7 +126,8 @@
 	{:else if session.status === 'done'}
 		<Leaderboard sessionId={session.id} sessionName={session.name} complete />
 	{:else}
-		<main class="flex flex-1 items-center justify-center px-4">
+		<main class="flex flex-1 flex-col items-center justify-center gap-3 px-4">
+			<Spinner />
 			<p class="text-text-secondary text-sm">Loading…</p>
 		</main>
 	{/if}
