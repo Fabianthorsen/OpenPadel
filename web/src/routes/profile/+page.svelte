@@ -10,8 +10,8 @@
 	import CreateDrawer from '$lib/components/CreateDrawer.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import Section from '$lib/components/ui/section/section.svelte';
-	import JoinCodeInput from '$lib/components/ui/join-code-input/join-code-input.svelte';
+	import { Section } from '$lib/components/ui/section';
+	import { JoinCodeInput } from '$lib/components/ui/join-code-input';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { userStream, type UserStream } from '$lib/stores/userStream.svelte';

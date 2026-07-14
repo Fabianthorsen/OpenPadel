@@ -8,9 +8,9 @@
 	import Footer from '$lib/components/Footer.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import Switch from '$lib/components/ui/switch/switch.svelte';
+	import { Switch } from '$lib/components/ui/switch';
 	import LocaleSwitcher from '$lib/components/LocaleSwitcher.svelte';
-	import Section from '$lib/components/ui/section/section.svelte';
+	import { Section } from '$lib/components/ui/section';
 	import { toast } from 'svelte-sonner';
 	import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
 
