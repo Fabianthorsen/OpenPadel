@@ -15,6 +15,7 @@
 	import RoundIndicator from './RoundIndicator.svelte';
 	import Leaderboard from './Leaderboard.svelte';
 	import ScoreBoard from './ScoreBoard.svelte';
+	import TeamScore from './TeamScore.svelte';
 	import { numpad as numpadStore } from '$lib/stores/numpad';
 	import { auth } from '$lib/auth.svelte';
 	import type { SessionStream } from '$lib/stores/sessionStream.svelte';
@@ -455,31 +456,15 @@
 										</div>
 									</div>
 									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
-									{#if isAdmin}
-										<button
-											onclick={() => openNumpad(match.id, 'a', 'final')}
-											class="text-2xl font-[800] tabular-nums transition-transform active:scale-95 {scored
-												? s.a > s.b
-													? 'text-primary font-bold'
-													: s.a < s.b
-														? 'text-text-disabled'
-														: 'text-text-primary'
-												: 'text-primary underline decoration-2 underline-offset-4'}"
-											aria-label="{scored ? 'Edit' : 'Set'} Team A score"
-										>
-											{s.a}
-										</button>
-									{:else}
-										<span
-											class="text-2xl font-[800] tabular-nums {scored && s.a > s.b
-												? 'text-primary font-bold'
-												: scored && s.a < s.b
-													? 'text-text-disabled'
-													: 'text-text-primary'}"
-										>
-											{s.a}
-										</span>
-									{/if}
+									<TeamScore
+										score={s.a}
+										opponentScore={s.b}
+										{scored}
+										interactive={isAdmin}
+										underline
+										label="{scored ? 'Edit' : 'Set'} Team A score"
+										onTap={() => openNumpad(match.id, 'a', 'final')}
+									/>
 								</div>
 
 								<div class="bg-border mx-4 h-px"></div>
@@ -507,31 +492,15 @@
 										</div>
 									</div>
 									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_b)}</p>
-									{#if isAdmin}
-										<button
-											onclick={() => openNumpad(match.id, 'b', 'final')}
-											class="text-2xl font-[800] tabular-nums transition-transform active:scale-95 {scored
-												? s.b > s.a
-													? 'text-primary font-bold'
-													: s.b < s.a
-														? 'text-text-disabled'
-														: 'text-text-primary'
-												: 'text-primary underline decoration-2 underline-offset-4'}"
-											aria-label="{scored ? 'Edit' : 'Set'} Team B score"
-										>
-											{s.b}
-										</button>
-									{:else}
-										<span
-											class="text-2xl font-[800] tabular-nums {scored && s.b > s.a
-												? 'text-primary font-bold'
-												: scored && s.b < s.a
-													? 'text-text-disabled'
-													: 'text-text-primary'}"
-										>
-											{s.b}
-										</span>
-									{/if}
+									<TeamScore
+										score={s.b}
+										opponentScore={s.a}
+										{scored}
+										interactive={isAdmin}
+										underline
+										label="{scored ? 'Edit' : 'Set'} Team B score"
+										onTap={() => openNumpad(match.id, 'b', 'final')}
+									/>
 								</div>
 							</Card>
 						{/each}

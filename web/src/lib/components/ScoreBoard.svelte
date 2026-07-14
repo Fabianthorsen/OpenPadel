@@ -3,6 +3,8 @@
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import StepButton from './StepButton.svelte';
+	import TeamScore from './TeamScore.svelte';
 
 	interface Team {
 		players: Array<{ avatar_icon: string; avatar_color: string; name: string }>;
@@ -36,13 +38,7 @@
 
 	const editable = $derived(isAdmin && !scored);
 	const canFinalize = $derived(teamA.score + teamB.score === pointsTarget);
-
-	function scoreColor(mine: number, other: number) {
-		if (!scored) return 'text-text-primary';
-		if (mine > other) return 'text-primary font-bold';
-		if (mine < other) return 'text-text-disabled';
-		return 'text-text-primary';
-	}
+	const atTarget = $derived(teamA.score + teamB.score >= pointsTarget);
 </script>
 
 <Card class="border-border bg-surface rounded-3xl p-6">
@@ -87,28 +83,30 @@
 		<p class="text-[15px] font-semibold">{teamA.name}</p>
 		{#if editable}
 			<div class="flex items-center gap-5">
-				<button
-					onclick={() => onAdjust('a', -1)}
+				<StepButton
+					direction="decrease"
+					label="Decrease Team A score"
 					disabled={teamA.score === 0}
-					class="bg-surface-raised flex h-11 w-11 items-center justify-center rounded-full text-2xl font-bold transition-all active:scale-95 disabled:opacity-40"
-					aria-label="Decrease Team A score">−</button
-				>
-				<button
-					onclick={() => onScoreTap('a')}
-					class="text-text-primary text-5xl font-[800] tabular-nums transition-transform active:scale-95"
-					aria-label="Set Team A score">{teamA.score}</button
-				>
-				<button
+					onclick={() => onAdjust('a', -1)}
+				/>
+				<TeamScore
+					score={teamA.score}
+					opponentScore={teamB.score}
+					scored={false}
+					size="lg"
+					interactive
+					label="Set Team A score"
+					onTap={() => onScoreTap('a')}
+				/>
+				<StepButton
+					direction="increase"
+					label="Increase Team A score"
+					disabled={atTarget}
 					onclick={() => onAdjust('a', 1)}
-					disabled={teamA.score + teamB.score >= pointsTarget}
-					class="bg-surface-raised flex h-11 w-11 items-center justify-center rounded-full text-2xl font-bold transition-all active:scale-95 disabled:opacity-40"
-					aria-label="Increase Team A score">+</button
-				>
+				/>
 			</div>
 		{:else}
-			<p class="text-5xl font-[800] tabular-nums {scoreColor(teamA.score, teamB.score)}">
-				{teamA.score}
-			</p>
+			<TeamScore score={teamA.score} opponentScore={teamB.score} {scored} size="lg" />
 		{/if}
 	</div>
 
@@ -118,28 +116,30 @@
 	<div class="flex flex-col items-center gap-3 text-center">
 		{#if editable}
 			<div class="flex items-center gap-5">
-				<button
-					onclick={() => onAdjust('b', -1)}
+				<StepButton
+					direction="decrease"
+					label="Decrease Team B score"
 					disabled={teamB.score === 0}
-					class="bg-surface-raised flex h-11 w-11 items-center justify-center rounded-full text-2xl font-bold transition-all active:scale-95 disabled:opacity-40"
-					aria-label="Decrease Team B score">−</button
-				>
-				<button
-					onclick={() => onScoreTap('b')}
-					class="text-text-primary text-5xl font-[800] tabular-nums transition-transform active:scale-95"
-					aria-label="Set Team B score">{teamB.score}</button
-				>
-				<button
+					onclick={() => onAdjust('b', -1)}
+				/>
+				<TeamScore
+					score={teamB.score}
+					opponentScore={teamA.score}
+					scored={false}
+					size="lg"
+					interactive
+					label="Set Team B score"
+					onTap={() => onScoreTap('b')}
+				/>
+				<StepButton
+					direction="increase"
+					label="Increase Team B score"
+					disabled={atTarget}
 					onclick={() => onAdjust('b', 1)}
-					disabled={teamA.score + teamB.score >= pointsTarget}
-					class="bg-surface-raised flex h-11 w-11 items-center justify-center rounded-full text-2xl font-bold transition-all active:scale-95 disabled:opacity-40"
-					aria-label="Increase Team B score">+</button
-				>
+				/>
 			</div>
 		{:else}
-			<p class="text-5xl font-[800] tabular-nums {scoreColor(teamB.score, teamA.score)}">
-				{teamB.score}
-			</p>
+			<TeamScore score={teamB.score} opponentScore={teamA.score} {scored} size="lg" />
 		{/if}
 		<p class="text-[15px] font-semibold">{teamB.name}</p>
 		<div class="flex justify-center">
