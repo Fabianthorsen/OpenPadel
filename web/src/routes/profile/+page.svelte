@@ -12,6 +12,8 @@
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { Section } from '$lib/components/ui/section';
 	import { JoinCodeInput } from '$lib/components/ui/join-code-input';
+	import { ExpandableList } from '$lib/components/ui/expandable-list';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { userStream, type UserStream } from '$lib/stores/userStream.svelte';
@@ -263,7 +265,7 @@
 
 	{#if loading}
 		<div class="flex justify-center py-12">
-			<div class="border-border border-t-primary h-7 w-7 animate-spin rounded-full border-2"></div>
+			<Spinner />
 		</div>
 	{:else if stats}
 		<!-- Americano stats -->
@@ -333,11 +335,7 @@
 								<div class="space-y-1.5">
 									{#each searchResults as result}
 										<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
-											<div
-												class="bg-primary-muted text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-[800]"
-											>
-												{result.display_name[0].toUpperCase()}
-											</div>
+											<Avatar icon="" color="forest" name={result.display_name} size="sm" />
 											<p class="flex-1 truncate text-sm font-semibold">{result.display_name}</p>
 											{#if result.is_contact}
 												<button
@@ -418,11 +416,11 @@
 		<!-- Upcoming -->
 		<Section title={$_('profile_upcoming_label')} bind:open={showUpcoming}>
 			{#snippet children()}
-				<div class="space-y-2">
-					{#if upcoming.length === 0}
-						<p class="text-text-disabled py-1 text-sm">{$_('profile_upcoming_empty')}</p>
-					{:else}
-						{#each upcoming as t}
+				{#if upcoming.length === 0}
+					<p class="text-text-disabled py-1 text-sm">{$_('profile_upcoming_empty')}</p>
+				{:else}
+					<ExpandableList items={upcoming} showCount={5}>
+						{#snippet itemContent(t)}
 							<a
 								href={sessionHref(t.session_id)}
 								class="bg-surface-raised hover:bg-border flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-colors"
@@ -454,20 +452,20 @@
 								</div>
 								<span class="text-text-secondary text-sm">→</span>
 							</a>
-						{/each}
-					{/if}
-				</div>
+						{/snippet}
+					</ExpandableList>
+				{/if}
 			{/snippet}
 		</Section>
 
 		<!-- Tournament history -->
 		<Section title={$_('profile_history_label')} bind:open={showHistory}>
 			{#snippet children()}
-				<div class="space-y-2">
-					{#if tournaments.length === 0}
-						<p class="text-text-disabled py-2 text-sm">{$_('profile_history_empty')}</p>
-					{:else}
-						{#each tournaments as t}
+				{#if tournaments.length === 0}
+					<p class="text-text-disabled py-2 text-sm">{$_('profile_history_empty')}</p>
+				{:else}
+					<ExpandableList items={tournaments} showCount={5}>
+						{#snippet itemContent(t)}
 							<a
 								href="/s/{t.session_id}"
 								class="bg-surface-raised hover:bg-border flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-colors"
@@ -489,9 +487,9 @@
 								</div>
 								<span class="text-text-secondary text-sm">→</span>
 							</a>
-						{/each}
-					{/if}
-				</div>
+						{/snippet}
+					</ExpandableList>
+				{/if}
 			{/snippet}
 		</Section>
 	{/if}

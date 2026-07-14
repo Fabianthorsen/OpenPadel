@@ -6,7 +6,7 @@
 		CollapsibleTrigger
 	} from '$lib/components/ui/collapsible';
 	import { SectionLabel } from '$lib/components/ui/section-label';
-	import { ChevronDown } from '@lucide/svelte';
+	import { ChevronDown } from 'lucide-svelte';
 	import { cn } from '$lib/utils.js';
 
 	/**
