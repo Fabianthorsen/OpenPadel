@@ -1,50 +1,74 @@
-# Spec: Session Creation
+# Session creation — redesign spec
 
-## Goal
+**Ticket:** [Redesign spec: Session creation (CreateDrawer)](https://github.com/Fabianthorsen/OpenPadel/issues/175) (#175)
+**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [DESIGN.md](../../DESIGN.md) §2 · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md) · **Drawer primitive:** [drawer-design.md](drawer-design.md)
+**Surfaces:** `web/src/lib/components/CreateDrawer.svelte`; the home entry in `web/src/routes/+page.svelte` (**remove** its inline setup step).
 
-The drawer that creates a new Session from the home screen. Kept deliberately minimal —
-one choice (game mode), sensible defaults for everything else, tune the rest in the Lobby
-afterward. This documents the current, shipped implementation (`CreateDrawer.svelte`), not a
-pending redesign.
+> Register: **working screen → calm.** A bottom-sheet `Drawer`, opened from Home's "Start session". Login-gated (the creator auto-joins using their account name) — the signed-out → sign-in entry is Home's job (#176).
 
-## Layout
+---
 
-```
-┌──────────────────────────────────────────┐
-│  Let's set up a session          [×]     │  ← Drawer.Header
-├──────────────────────────────────────────┤
-│  [Americano] [Mexicano]                  │  ← pill toggle, Americano default
-│  "Rotating partners, individual points"  │  ← hint text, swaps per mode
-│                                          │
-│  [ Create session ]                     │  ← full width, green, disabled while creating
-└──────────────────────────────────────────┘
-```
+## The decision (grilling)
 
-Bottom sheet on mobile, floating card (480px, bottom-anchored) on desktop — `Drawer.Root`.
+**Minimal creation:** pick game mode + optionally name it → Create → land in the lobby and tune everything else there (via the lobby's Edit drawer / `SessionConfig`, #173). This keeps time-to-first-action low and **consolidates the audit's "three create UIs"**: the home full-setup form is **removed**; the lobby owns full config. `SessionConfig` lives **only in the lobby** — creation does *not* use it.
 
-## Behavior
+---
 
-- Defaults on create: `courts: 2, points: 24`; Mexicano additionally sets `rounds_total: 7`.
-  No pickers for these here — courts/points/rounds/name/schedule are all edited inline in the
-  Lobby after creation (see `docs/specs/lobby.md`), not at creation time.
-- On submit: creates the Session, stores `admin_token_<id>` in `localStorage`, immediately
-  joins the creator as a Player using their account display name, stores `player_id_<id>`
-  and `last_session_id`, then navigates to `/s/:id?token=<adminToken>`.
-- Creator must be logged in — `auth.user!.display_name` is read without a null check, so this
-  drawer assumes an authenticated context (unauthenticated users don't reach it from the UI).
-- Error state: inline `text-destructive` message below the toggle, from `translateApiError`.
+## Layout (the create drawer)
 
-## Key Design Decisions
+`Drawer` (bottom sheet, `max-w-[480px]` centred on desktop):
+1. **Header** — title "Set up a session" + close `×`.
+2. **Game mode** — `PillToggleGroup`: Americano / Mexicano (Americano default) + a hint line that swaps per mode.
+3. **Name** — optional `Input`, "Name it (optional)". (Resolves the old open question — you *can* name up front; still editable in the lobby.)
+4. **Create** — full-width `Button` `cta`, loading state while creating; inline `text-destructive` error below.
 
-| Decision | Why |
+Defaults applied on create (no pickers here): `courts: 2`, `points: 24`; Mexicano also `rounds_total: 7`. (Mexicano's ≥2-courts invariant is satisfied by the default.)
+
+---
+
+## Interaction & flow
+
+- **Create** → `api.sessions.create({ game_mode, name, ...defaults })` → store `admin_token_<id>` → creator **auto-joins** as a Player (account `display_name`) → store `player_id_<id>` + `last_session_id` → `goto('/s/:id?token=<adminToken>')` (into the lobby). Flow unchanged; restyled.
+- **Login-gated** — assumes `auth.user`. Signed-out users don't reach this drawer; Home (#176) presents sign-in first. A guest-creator path is backend capability → out of scope.
+- This is the app's **single** creation entry (Home routes here; the lobby's "Edit" is a *different* affordance — editing an existing session, not creating).
+
+---
+
+## Components & tokens
+
+- Reuse `Drawer`, `PillToggleGroup`, `Input`, `Button` (`cta` — replaces the raw `bg-primary … text-white` CTA string; `text-primary-foreground` not `text-white`).
+- **No `SessionConfig` here** (creation is minimal). `SessionConfig` is the lobby's Edit component (#173, built by the lobby implement #182).
+
+---
+
+## States
+
+- **Idle** — mode + optional name.
+- **Creating** — `Button` loading; inputs locked.
+- **Error** — inline `text-destructive` from `translateApiError`.
+
+---
+
+## A11y & responsiveness
+
+- Labels on the mode toggle + name input; `Drawer` handles focus-trap / Esc / restore.
+- `cta` ≥48px; `focus-visible`.
+- Safe-area; single column ≤480px; copy via `$_()` (already localised).
+
+---
+
+## Before → after
+
+| Before (shipped) | After (this spec) |
 |---|---|
-| No config pickers at creation | Reduces time-to-first-action; courts/points rarely known until players are actually gathering in the Lobby |
-| Mexicano forces `rounds_total: 7` default | Mexicano has no bench/auto round count like Americano — needs an explicit starting value, tunable via the Lobby's rounds Stepper |
-| Creator auto-joins as a Player | Creator is a participant by default, not just an organizer — consistent with the Admin ≠ Creator model in `CONTEXT.md` |
+| Two create paths: minimal `CreateDrawer` **and** the home full-setup form | **One** minimal drawer; home setup form removed |
+| No name at creation (rename in lobby) | Optional name field up front |
+| Raw `bg-primary … text-white` CTA `<button>` | `Button` `cta` variant |
 
-## Open Questions
+---
 
-- [ ] Should the creation drawer let admins name the session up front, instead of always
-      renaming afterward in the Lobby?
-- [ ] Is there a guest-creator path (create without an account), or is session creation always
-      gated behind login? Current code assumes the latter.
+## Out of scope
+
+- **Full config at creation** (chose minimal); **guest-creator** (backend capability).
+- The **Home entry + signed-out sign-in gate** → Home (#176).
+- The **lobby Edit / `SessionConfig`** → Lobby & join (#173).

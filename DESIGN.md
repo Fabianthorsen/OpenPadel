@@ -1,87 +1,206 @@
 # Design — OpenPadel
 
+> **Foundation updated 2026-07-14** by [Lock the design north-star & page-redesign rubric](https://github.com/Fabianthorsen/OpenPadel/issues/169) (#169),
+> reconciling this doc with the shipped app per the [UI audit](docs/research/ui-audit.md).
+> The **Principles → What this is not** sections below are current. The **Key Screens** mockups
+> are being redrawn one at a time by their per-page spec tickets — treat them as *historical* until
+> each is refreshed. The shared **[page-redesign rubric](docs/specs/redesign-rubric.md)** operationalises this doc into a checklist.
+
 ---
 
 ## Principles
 
-1. **Courtside first.** Every screen is used standing up, phone in one hand, sun overhead.
+1. **Courtside first.** Every working screen is used standing up, phone in one hand, sun overhead.
    Big tap targets. No tiny text. No fiddly inputs.
 2. **Score in 3 taps.** The most frequent action (entering a score) must be instant.
 3. **Glanceable leaderboard.** A player should read the standings in under 2 seconds.
-4. **Nordic restraint.** Muted, calm, typographically led. Colour is used sparingly and with purpose.
+4. **Calm by default, bold when we celebrate.** See below — the reconciled north-star.
+
+### Calm default, bold celebratory
+
+OpenPadel has two registers, and the design language switches between them deliberately:
+
+- **Working screens** — Home, Session creation, Lobby & join, Active round, Score entry, Auth,
+  Profile. These get **Nordic restraint**: muted surfaces, one accent used sparingly, typographic
+  hierarchy, functional icons only, no decorative motifs. Calm, fast, legible in sunlight.
+- **Celebratory surfaces** — the **Session complete** finale (and the winner moment). This is where
+  the product gets to feel like a win: podium, trophy, larger display type, and decorative motifs
+  (court-line SVG, trophy flourishes). **Note (decided in #172):** the **live** leaderboard, though it
+  shows standings, stays **calm & glanceable** — it's read repeatedly mid-session, so it follows
+  working-screen restraint (rank · name · points, rank-1 in `primary`, no hero card, no colored rows).
+  The drama is reserved for the finale.
+
+The failure mode the audit caught was expressive treatments *leaking into working screens*
+(saturated score cards, court-tab emoji). The rule: **expressive == celebratory-only.** When in
+doubt, a screen is a working screen.
 
 ---
 
 ## Color System
 
-Light mode first. Warm off-white base — not pure white, which feels clinical.
-Dark mode in V2.
+Light mode only (see *What this is not*). Source of truth is `web/src/app.css` `@theme`, mirrored in
+`web/src/lib/design-tokens.ts`. **Use tokens, never literal hex.**
 
 ```
-Background       #F7F6F3   warm off-white, main surface
-Surface          #FFFFFF   cards, sheets
-Surface raised   #EFEDE8   inputs, segmented controls, hover
-Border           #E0DDD7   subtle dividers
-Border strong    #C8C4BC   emphasized borders, active inputs
+Background       #edeee8   warm off-white, main surface        --color-background
+Surface          #f4f4f0   cards, sheets                        --color-surface
+Surface raised   #e3e3dc   inputs, segmented controls, hover    --color-surface-raised
+Border           #d2d2cb   subtle dividers                      --color-border
+Border strong    #b2b2aa   emphasized borders, active inputs    --color-border-strong
 
-Primary          #4A7856   forest green — buttons, active states, rank #1
-Primary hover    #3D6348   pressed/hover
-Primary muted    #EDF2EE   tinted backgrounds, selected states, tags
+Primary          #2d5a1a   THE accent — buttons, active, rank#1 --color-primary
+Primary hover    #234d13   pressed/hover                        --color-primary-hover
+Primary muted    #e2ede0   tinted backgrounds, selected, tags   --color-primary-muted
+Primary foreground #ffffff text on primary (use this, not text-white) --color-primary-foreground
 
-Text primary     #1C1B19   headings, scores — warm near-black
-Text secondary   #6B6860   labels, meta, bench
-Text disabled    #B5B2AB
+Text primary     #1a1a16   headings, scores — warm near-black   --color-text-primary
+Text secondary   #68685e   labels, meta, bench                  --color-text-secondary
+Text disabled    #aeaea4   —                                    --color-text-disabled
 
-Positive         #4A7856   same as primary — score confirmed
-Destructive      #C0392B   (reserved, use sparingly)
+Positive         #2d5a1a   same as primary — score confirmed    --color-positive
+Destructive      #c0392b   use sparingly                        --color-destructive
+Destructive fg   #ffffff   text on destructive                  --color-destructive-foreground
 ```
 
-Only one accent color. No gradients, no shadows beyond `box-shadow: 0 1px 3px rgba(0,0,0,0.07)`.
+**One accent.** `--color-primary` is the *only* green on working screens. The stray greens the audit
+found — `#3d7a24` (score cards), `#4A7856` (`app.html` `theme-color` meta) — **fold into
+`--color-primary`.** Update `app.html`'s `theme-color` to `#2d5a1a`.
+
+**Celebratory palette (leaderboard/complete only).** The podium tints are *sanctioned* here and get
+promoted to named tokens (add to `@theme` + `design-tokens.ts` when a celebratory screen first needs
+them): `--color-podium-silver` (≈`#4a7856`), `--color-podium-bronze` (≈`#a8c5b0`). Rank #1 uses
+`--color-primary`. No other greens exist.
+
+**Semantic states still missing tokens.** The audit found warning ("time expired") using raw
+`amber-*` and a "live/playing" indicator using raw `emerald-*`/`amber-*`. These need semantic tokens
+(`--color-warning`, and a decision on "live") — add them when a page first requires the state rather
+than reaching for a raw Tailwind palette color. Losses/negatives use `--color-destructive` (never
+`text-[#c0392b]`).
+
+**shadcn-compat tokens.** `app.css` also defines `--color-{card,popover,secondary,muted,accent,input,ring,foreground}`
+(+ `*-foreground`) for the vendored bits-ui components. These are plumbing — don't reach for them in
+app code; use the named tokens above.
+
+No gradients. Shadows are subtle and reserved (see *What this is not*).
 
 ---
 
 ## Typography
 
 ```
-Font: Inter — geometric, readable, excellent on mobile
-      Load via fontsource (@fontsource/inter) — no Google Fonts request
-
-Scale:
-  Display   48px / 700   match scores on score entry screen
-  H1        26px / 650   screen titles
-  H2        18px / 600   section headers, player names in leaderboard
-  H3        15px / 600   match cards, court labels
-  Body      15px / 400   regular content
-  Small     13px / 400   meta, bench label, timestamps
-  Mono      14px / 500   round indicators, point totals (tabular-nums)
+Font: Inter — loaded via @fontsource/inter (400–800), no Google Fonts request.
+      --font-sans: 'Inter', system-ui, …
 ```
 
-Letter spacing: `-0.01em` on headings. `0` on body.
-Scores always use `font-variant-numeric: tabular-nums` — digits stay fixed width.
-Line height: `1.5` body, `1.2` display/headings.
+There are **no font-size/weight tokens yet** — the app scatters arbitrary values (`text-[28px]`,
+`font-[800]`). Target scale to tokenize (add as `@theme` tokens when a page first touches type):
+
+```
+Display   64–80 / 800   celebratory only (winner, big scores)   line-height 1.0
+H1        28    / 700    screen titles                           line-height 1.1
+H2        18    / 600    section headers, player names           line-height 1.2
+H3        15    / 600    match cards, court labels
+Body      15    / 400    regular content                         line-height 1.5
+Small     13    / 400    meta, timestamps
+Micro     11    / 600    uppercase section labels (SectionLabel), tracking 0.1em
+```
+
+Weight **800** is allowed for *display* (celebratory); working screens top out at 700.
+Headings: `letter-spacing: -0.02em`, `line-height: 1.1` (matches `app.css`).
+Scores always use `font-variant-numeric: tabular-nums`.
 
 ---
 
 ## Spacing & Layout
 
-Base unit: 4px. Use multiples: 4, 8, 12, 16, 20, 24, 32, 48.
+Base unit 4px. Tokens `--spacing-0..4` cover 0/4/8/12/16px; larger steps (20/24/32/48) use Tailwind
+utilities directly for now.
 
 ```
-Screen padding      16px sides (safe area inset aware)
+Screen padding      16px sides (safe-area inset aware — always honor pt-safe / pb-safe)
 Card padding        16px
-Card gap            10px
 Section gap         24px
-Bottom nav height   60px + safe area inset
 Minimum tap target  48×48px
-Border radius       8px cards, 6px inputs, 4px badges, 99px pills
 ```
 
-Single column layout. Max content width 480px, centered.
-This is a phone app — no responsive grid needed.
+**Border radius — reconciled with real usage** (this mismatch is why primitives kept getting
+class-overridden; add the missing tokens when touched):
+
+```
+sm    4px   (0.25rem)  badges                          --radius-sm
+md    8px   (0.5rem)   inputs, small controls          --radius-md
+base  12px  (0.75rem)  —                               --radius
+lg    16px  (rounded-2xl)  cards, CTAs   ← most common — ADD TOKEN
+xl    24px  (rounded-3xl)  score cards, modals, sheets  ← ADD TOKEN
+full  99px  pills                                       (rounded-full)
+```
+
+Single column layout. Max content width 480px, centered. Phone app — no responsive grid.
+
+---
+
+## Component & tech stack
+
+**No `shadcn-svelte`, no Skeleton UI** (the Skeleton experiment was installed and reverted). The UI is
+a set of **vendored components** in `web/src/lib/components/ui/*`, built on:
+
+- **`bits-ui`** (^2.16.3) — accessible primitives (Dialog, Toggle, Switch, Tabs, Label, Separator…)
+- **`tailwind-variants`** — the Phase-1 variant pattern (all new/refactored components use `tv`)
+- **`clsx` + `tailwind-merge`** (via `cn()`) — class composition
+- **`svelte-sonner`** — toasts (`Toaster` in `+layout.svelte`; not "Sonner")
+- **`@lucide/svelte`** — icons (note: legacy `lucide-svelte` still lingers in `Avatar` — consolidate)
+
+**Score numpad** is a custom store (`$lib/stores/numpad`) with **auto-complement** — you enter one
+team's score and the other fills to the points target. This (not a native `inputmode=numeric` input)
+is the canonical model.
+
+Phase-1 components on the tv+JSDoc pattern: **Button, Input, Label, Switch, Toggle, Badge, Drawer.**
+The other 12 primitives are being migrated as touched (see `CONTEXT.md` component table + the
+[UI audit](docs/research/ui-audit.md) inventory).
+
+| Need              | Use                                                        |
+|-------------------|------------------------------------------------------------|
+| Buttons / CTAs    | `Button` — **needs** a full-width `cta` size + solid `destructive` (see rubric) |
+| Text inputs       | `Input`                                                    |
+| Segmented control | `PillToggleGroup` / `ToggleGroup`                          |
+| Cards             | `Card` (currently under-used — prefer it over hand-rolled `bg-surface-raised rounded-2xl`) |
+| Section labels    | `SectionLabel` (do **not** re-type `text-[11px] … uppercase` inline) |
+| Numeric stepper   | `Stepper`                                                  |
+| Toast             | `svelte-sonner`                                            |
+| Sheet / drawer    | `Drawer` (bottom slide-up), `Sheet` (sides), `Dialog` (centered) |
+
+---
+
+## Micro-interactions
+
+Shipped, keep: `active:scale-95/98` press feedback; `animate-shake` (invalid / over-max score);
+`animate-ptr-fade` (pull-to-refresh); a **toast** on score confirm; `transition-colors` on state
+changes. All 150–200ms, `ease-out`, nothing decorative.
+
+The older aspirational animations (row fade-in-from-below, green border-flash on confirm, leaderboard
+re-sort animation) are **not implemented** — a page spec may add them, but they're not a baseline.
+
+---
+
+## What this is not
+
+- **No dark mode in V1.** There is no dark palette. The vendored components leak `dark:` utility
+  classes that activate via `prefers-color-scheme` on dark devices (an inconsistent half-dark render) —
+  **strip that leakage** so light mode renders consistently. A real dark theme is a future effort.
+- **No emojis.** The shipped `🎾` / `⏱` / `ℹ` are replaced with `@lucide/svelte` icons.
+- **Icons:** the full *functional* lucide set is allowed app-wide. **Decorative** treatments —
+  court-line SVG patterns, trophy flourishes — are **celebratory-surface only** (leaderboard/complete).
+- **No gradients.**
+- **Shadows are subtle and reserved.** `--shadow-sm` for resting cards; `--shadow-md/lg` only for
+  lifted/celebratory chrome (bottom nav, drawers, winner card). Not decorative drop-shadows.
 
 ---
 
 ## Key Screens
+
+> ⚠️ **Historical — being redrawn per page-spec.** These mockups predate the shipped app and the
+> reconcile decision above. Each is authoritative only once its per-page spec ticket refreshes it.
+> Where a mockup conflicts with the Principles/Color/Type sections above, those sections win.
 
 ### 1. Home / Create session
 
@@ -131,7 +250,7 @@ Grouped, not a form dump. Segmented controls over dropdowns.
   ─────────────────────────────
 
   Waiting for players (2)...
-  [ Start when ready → ]         ← disabled until ≥ 5 players
+  [ Start when ready → ]         ← disabled until player count == courts × 4
 ```
 
 ---
@@ -160,7 +279,7 @@ Player joins via link, types their name. Admin view shows Start button.
 
 Admin sees:
 │  ┌─────────────────┐   │
-│  │   Start →       │   │  ← green, enabled at ≥ 5 players
+│  │   Start →       │   │  ← green, enabled when player count == courts × 4
 │  └─────────────────┘   │
 ```
 
@@ -200,7 +319,7 @@ Admin also sees:
 
 ### 5. Score entry (admin only)
 
-No keyboard by default. Tap number to type if needed.
+Auto-complement numpad (custom store). Tap number to type; the other team's score fills to target.
 
 ```
 ┌─────────────────────────┐
@@ -213,25 +332,21 @@ No keyboard by default. Tap number to type if needed.
 │                         │
 │  Carl + Diana           │
 │  ┌─────────────────┐   │
-│  │  −      9    +  │   │
+│  │  −      9    +  │   │  ← auto-fills to points target
 │  └─────────────────┘   │
 │                         │
-│  24 / 24               │  ← Small, green when valid, grey when not
-│                         │
 │  ┌─────────────────┐   │
-│  │   Confirm       │   │  ← Disabled until sum == points target
+│  │   Confirm       │   │  ← Disabled until both scores sum to target
 │  └─────────────────┘   │
 └─────────────────────────┘
 ```
 
-+/− adjusts by 1. Tapping the number opens a numeric input (no full keyboard — `inputmode="numeric"`).
-Confirm stays disabled until both scores sum to the points target.
++/− adjusts by 1. Tapping a number opens the custom numpad; entering one score auto-complements the
+other. Confirm stays disabled until both scores sum to the points target.
 
 ---
 
-### 6. Leaderboard
-
-Rank, name, points. Nothing else.
+### 6. Leaderboard  *(celebratory surface — expressive treatments allowed)*
 
 ```
 ┌─────────────────────────┐
@@ -243,24 +358,18 @@ Rank, name, points. Nothing else.
 │   1   Ana          38   │  ← #1: Primary color rank number
 │   2   Bruno        35   │
 │   3   Carl         31   │
-│   4   Diana        28   │
-│   5   Erik         24   │
-│   6   Fiona        22   │
-│   7   Gio          19   │
-│   8   Hanna        17   │
-│   9   Ivan         12   │
+│   ...                   │
 │                         │
 │  Updated just now       │  ← Small, Text disabled, bottom
 └─────────────────────────┘
 ```
 
-Rank 1 gets the Primary color on the number — no badge, no bold name. Subtle distinction.
+The shipped leaderboard is richer than this (leader hero card, W/L columns, avatars, podium). As a
+celebratory surface it's allowed to be — the spec ticket redraws it deliberately.
 
 ---
 
-### 7. Session complete
-
-Quiet celebration. Typography does the work.
+### 7. Session complete  *(celebratory surface)*
 
 ```
 ┌─────────────────────────┐
@@ -274,46 +383,9 @@ Quiet celebration. Typography does the work.
 │                         │
 │  2   Bruno      35      │
 │  3   Carl       31      │
-│  4   Diana      28      │
-│  5   Erik       24      │
 │  ...                    │
 │                         │
 │  [ Share results ]      │  ← Secondary button (outlined)
 │                         │
 └─────────────────────────┘
 ```
-
----
-
-## Component Notes (shadcn-svelte)
-
-| Need              | shadcn component | Notes                                             |
-|-------------------|------------------|---------------------------------------------------|
-| Primary button    | `Button`         | Custom green variant                              |
-| Secondary button  | `Button`         | Outlined, border color, transparent bg            |
-| Segmented control | `ToggleGroup`    | Courts and points selection, pill style           |
-| Match cards       | `Card`           | White surface, 1px border, subtle shadow          |
-| Score input       | Custom           | +/− with display number, tap for numpad           |
-| Player list row   | Custom           | Simple flex row, 48px min height                  |
-| Toast             | `Sonner`         | Score confirmed, player joined                    |
-| Sheet / drawer    | `Drawer`         | Numpad overlay when tapping score number          |
-
----
-
-## Micro-interactions
-
-- Player joins lobby → row fades in from below, name appears
-- Score confirmed → match card border flashes green briefly, then settles
-- Leaderboard re-sort → rows animate to new positions (150ms ease-out)
-- Round advances → previous round card fades, new one fades in
-- All animations 150–200ms, `ease-out`. Nothing decorative.
-
----
-
-## What this is not
-
-- No gradients
-- No shadows beyond a single 1px border or `0 1px 3px rgba(0,0,0,0.07)`
-- No emojis
-- No decorative icons beyond functional ones (copy, share, chevron)
-- No dark mode in V1
