@@ -19,8 +19,12 @@ expressive (hero cards, podium, motifs, display type). Expressive treatments are
 
 ## ⚠️ The anti-divergence rule (read first)
 
-Design-system debt is being fixed **per-page** (no prerequisite pass). That only works if fixes are
-**shared, not copied**. Therefore:
+The cross-cutting design-system layer is built **first** by the foundation ticket
+([#189](https://github.com/Fabianthorsen/OpenPadel/issues/189)) — shared components + tokens + global
+cleanups — so the page tickets mostly *compose* it rather than build it. (This revises the original
+"absorb per-page" plan, to keep the page tickets simple enough for a smaller model.) The rule below
+still governs anything a page needs **beyond** the foundation: fixes are **shared, not copied**.
+Therefore:
 
 > **When a page needs a component, variant, or token that doesn't exist yet, add it to the shared
 > layer — never inline it and never duplicate it.** The first page that needs it builds it for all;
@@ -81,21 +85,29 @@ the shared layer.
 
 ## Standing fixes to apply as pages are touched
 
-These are the systemic issues from the audit. Whichever page hits one first fixes it **in the shared
-layer**; later pages just consume it. Track them here as they land:
+These systemic issues from the audit are built up front by the **foundation ticket
+([#189](https://github.com/Fabianthorsen/OpenPadel/issues/189))** — this is its checklist. Screen-specific
+composites are owned by their page tickets. Anything else a page needs still lands in the shared layer
+(per the rule above).
 
-| Fix | Where it lands | Status |
-|-----|----------------|--------|
-| Full-width `cta` button size + solid `destructive` variant | `ui/button/` | ☐ pending |
-| Add `--radius-lg` (16px) / `--radius-xl` (24px) tokens | `app.css` + `design-tokens.ts` | ☐ pending |
-| Type-scale tokens (Display/H1/H2/H3/Body/Small/Micro) | `app.css` + `design-tokens.ts` | ☐ pending |
-| `SectionLabel` used everywhere (add `size`/`muted` variant) | `ui/section-label/` | ☐ pending |
-| Shared `<PageShell>` / `<AppHeader>` / `<CloseButton>` / `<Spinner>` | `lib/components/` | ☐ pending |
-| Semantic `--color-warning` (+ "live" decision) tokens | `app.css` + `design-tokens.ts` | ☐ pending |
-| Podium tokens `--color-podium-silver/bronze` | `app.css` + `design-tokens.ts` | ☐ pending |
-| Fold `#3d7a24` → primary; `app.html` theme-color → `#2d5a1a` | app code + `app.html` | ☐ pending |
-| Strip `dark:` leakage | vendored `ui/*` + composites | ☐ pending |
-| Consolidate lucide (`Avatar` → `@lucide/svelte`) | `ui/Avatar.svelte` | ☐ pending |
+| Fix | Where it lands | Owner |
+|-----|----------------|-------|
+| `Button` full-width `cta` size + solid `destructive` variant | `ui/button/` | #189 |
+| `--radius-lg` (16px) / `--radius-xl` (24px) tokens | `app.css` + `design-tokens.ts` | #189 |
+| Medal palette `--color-medal-gold/silver/bronze` (finale) | `app.css` + `design-tokens.ts` | #189 |
+| `--color-warning` (+ muted) token — "live" = `--color-primary`, no token | `app.css` + `design-tokens.ts` | #189 |
+| `Section` (collapsible + scrollable titled block) | `ui/section/` | #189 |
+| `JoinCodeInput` (OTP boxes + paste) | `ui/` | #189 |
+| `AvatarGroup` (stacked overlapping + "+N") | `ui/` | #189 |
+| `PasswordInput` (show/hide toggle) | `ui/` | #189 |
+| `Spinner` (shared loading) | `ui/` | #189 |
+| `Avatar` contact-action badge (corner `+`→`✓`) | `ui/Avatar.svelte` | #189 |
+| Fold `#3d7a24` → primary; `app.html` theme-color → `#2d5a1a` | app code + `app.html` | #189 |
+| Strip `dark:` leakage | vendored `ui/*` + composites | #189 |
+| Consolidate lucide (`Avatar` → `@lucide/svelte`) | `ui/Avatar.svelte` | #189 |
+| Type-scale tokens (Display/H1/…/Micro) — optional/stretch | `app.css` + `design-tokens.ts` | #189 |
+| `SectionLabel` everywhere (+ `size`/`muted` variant) | pages + `ui/section-label/` | pages |
+| `ScoreEntrySheet` / `SessionConfig` / `AuthShell` | `lib/components/` | #180 / #182 / #186 |
 
 ---
 
