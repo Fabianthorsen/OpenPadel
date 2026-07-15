@@ -154,6 +154,12 @@
 	"leaderboard_close": "Lukk",
 	"leaderboard_ranking": "Rangering",
 	"leaderboard_live": "Direkte",
+	"leaderboard_share": "Del resultater",
+	"leaderboard_share_text": "Sjekk ut resultatene fra {name}!",
+	"leaderboard_share_copied": "Resultatlenke kopiert",
+	"leaderboard_new_session": "Ny økt",
+	"avatar_contact_add": "Legg {name} til kontakter",
+	"avatar_contact_added": "{name} lagt til kontakter",
 
 	"auth_login_subtitle": "Logg inn for å spore statistikken din.",
 	"auth_register_subtitle": "Opprett konto for å spore statistikken din.",

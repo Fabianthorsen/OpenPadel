@@ -5,8 +5,12 @@
 	import { Trophy, UserPlus, Check } from 'lucide-svelte';
 	import { shortName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import AvatarWithContactBadge from '$lib/components/ui/AvatarWithContactBadge.svelte';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { auth } from '$lib/auth.svelte';
+	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 	import type { SessionStream } from '$lib/stores/sessionStream.svelte';
 
 	let {
@@ -26,6 +30,7 @@
 	let leaderboard = $state<App.Leaderboard | null>(null);
 	let addedContacts = $state<Record<string, boolean>>({});
 	let existingContacts = $state<Record<string, boolean>>({});
+	let loadingContacts = $state<Record<string, boolean>>({});
 
 	async function load() {
 		try {
@@ -43,8 +48,36 @@
 
 	async function addContact(userID: string) {
 		if (!auth.token) return;
-		await api.contacts.add(auth.token, userID);
-		addedContacts = { ...addedContacts, [userID]: true };
+		loadingContacts = { ...loadingContacts, [userID]: true };
+		try {
+			await api.contacts.add(auth.token, userID);
+			addedContacts = { ...addedContacts, [userID]: true };
+		} finally {
+			loadingContacts = { ...loadingContacts, [userID]: false };
+		}
+	}
+
+	async function shareResults() {
+		const text = `${sessionName || 'Tournament results'} ${window.location.href}`;
+		if (navigator.share) {
+			try {
+				await navigator.share({ title: sessionName, text });
+			} catch {
+				// User cancelled
+			}
+		} else {
+			navigator.clipboard.writeText(text).then(() => {
+				toast.success($_('leaderboard_share_copied'));
+			});
+		}
+	}
+
+	function newSession() {
+		goto('/?create=1');
+	}
+
+	function closeSession() {
+		goto(auth.user ? '/profile' : '/');
 	}
 
 	onMount(() => {
@@ -95,6 +128,8 @@
 		<div class="flex items-end justify-center gap-3 pt-6 pb-2">
 			{#each podiumOrder as s}
 				{@const isFirst = s.rank === 1}
+				{@const showBadge = !!(auth.token && s.user_id && s.user_id !== auth.user?.id)}
+				{@const isContact = !!(existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? ''])}
 				<div
 					class="flex flex-col items-center {isFirst
 						? 'order-2 -mb-0'
@@ -107,17 +142,21 @@
 						<div class="text-primary mb-1"><Trophy size={28} /></div>
 					{/if}
 
-					<!-- Avatar -->
+					<!-- Avatar with badge -->
 					<div
 						class={isFirst
 							? 'ring-primary-muted rounded-full shadow-lg ring-4'
 							: 'ring-border rounded-full ring-2'}
 					>
-						<Avatar
+						<AvatarWithContactBadge
 							icon={s.avatar_icon}
 							color={s.avatar_color}
 							name={s.name}
 							size={isFirst ? 'xl' : 'lg'}
+							{showBadge}
+							{isContact}
+							targetName={s.name}
+							onAdd={() => addContact(s.user_id!)}
 						/>
 					</div>
 
@@ -157,20 +196,6 @@
 							>{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}L</span
 						>
 					</div>
-					{#if auth.token && s.user_id && s.user_id !== auth.user?.id}
-						{@const isContact = existingContacts[s.user_id] || addedContacts[s.user_id]}
-						<button
-							onclick={() => !isContact && addContact(s.user_id!)}
-							disabled={isContact}
-							class="mt-2 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors
-                {isContact
-								? 'bg-border text-text-disabled cursor-default'
-								: 'bg-primary-muted text-primary hover:bg-primary hover:text-primary-foreground'}"
-						>
-							{#if isContact}<Check size={10} />{:else}<UserPlus size={10} />{/if}
-							{isContact ? 'Added' : 'Add'}
-						</button>
-					{/if}
 
 					<!-- Podium bar: gold/silver/bronze medal colors -->
 					<div
@@ -192,8 +217,38 @@
 					{$_('leaderboard_ranking')}
 				</p>
 				{#each leaderboard.standings.slice(3) as s (s.player_id)}
-					{@const isContact = existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? '']}
+					{@const isContact = !!(
+						existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? '']
+					)}
+					{@const showAddButton = !!(auth.token && s.user_id && s.user_id !== auth.user?.id)}
+					{@const isLoading = loadingContacts[s.user_id ?? ''] ?? false}
 					<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
+						{#if showAddButton}
+							<button
+								onclick={() => addContact(s.user_id!)}
+								disabled={isContact || isLoading}
+								aria-label={isContact
+									? $_('avatar_contact_added', { values: { name: s.name } })
+									: $_('avatar_contact_add', { values: { name: s.name } })}
+								class="flex h-5 w-5 items-center justify-center rounded-full text-[var(--color-text-primary)] transition-all
+									{isContact
+									? 'bg-[var(--color-surface-raised)]'
+									: 'cursor-pointer bg-[var(--color-surface-raised)] hover:scale-110'}
+									disabled:cursor-default disabled:opacity-60"
+							>
+								{#if isLoading}
+									<div
+										class="h-2 w-2 animate-spin rounded-full border-1 border-transparent border-t-current"
+									></div>
+								{:else if isContact}
+									<Check size={12} strokeWidth={3} />
+								{:else}
+									<UserPlus size={12} strokeWidth={3} />
+								{/if}
+							</button>
+						{:else}
+							<div class="w-5"></div>
+						{/if}
 						<span class="text-text-disabled w-6 text-sm font-[800] tabular-nums">{s.rank}</span>
 						<Avatar
 							icon={s.avatar_icon}
@@ -216,30 +271,24 @@
 						<span class="text-text-disabled text-[10px] font-bold tracking-widest uppercase"
 							>{$_('leaderboard_pts')}</span
 						>
-						{#if auth.token && s.user_id && s.user_id !== auth.user?.id}
-							<button
-								onclick={() => !isContact && addContact(s.user_id!)}
-								disabled={isContact}
-								class="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors
-                  {isContact
-									? 'bg-border text-text-disabled cursor-default'
-									: 'bg-primary-muted text-primary hover:bg-primary hover:text-primary-foreground'}"
-							>
-								{#if isContact}<Check size={10} />{:else}<UserPlus size={10} />{/if}
-							</button>
-						{/if}
 					</div>
 				{/each}
 			</div>
 		{/if}
 
-		<div class="flex justify-center">
-			<a
-				href="/"
-				class="border-border text-text-secondary hover:border-text-secondary hover:text-text-primary rounded-full border px-5 py-2 text-sm transition-colors"
-			>
-				✕ {$_('leaderboard_close')}
-			</a>
+		<!-- Actions -->
+		<div class="flex flex-col gap-3 pt-2">
+			<div class="flex gap-2">
+				<Button onclick={shareResults} variant="secondary" class="flex-1">
+					{$_('leaderboard_share')}
+				</Button>
+				<Button onclick={newSession} class="flex-1">
+					{$_('leaderboard_new_session')}
+				</Button>
+			</div>
+			<Button onclick={closeSession} variant="outline" class="w-full">
+				{$_('leaderboard_close')}
+			</Button>
 		</div>
 	{:else}
 		<!-- ── Live Standings (calm & lean) ── -->
