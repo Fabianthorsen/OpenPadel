@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import userEvent from '@testing-library/user-event';
 import { init, register, waitLocale } from 'svelte-i18n';
 import SessionConfig from './SessionConfig.svelte';
 
@@ -83,10 +82,12 @@ describe('SessionConfig points', () => {
 	});
 });
 
-describe('SessionConfig rounds (Americano is backend-derived, display-only)', () => {
-	it('shows the fair round count for the roster, read-only (no stepper)', () => {
-		// 6 active players on 1 court -> fair count 6. rounds_total (5) is only the
-		// non-null "limited" signal; the number shown is computed, not that stored value.
+describe('SessionConfig rounds', () => {
+	// The drawer no longer shows the Americano round *count* — that is derived by
+	// the backend and previewed in the lobby header. The drawer only carries the
+	// fixed/unlimited toggle for Americano, and a user-picked stepper for Mexicano.
+
+	it('Americano fixed: no round-count stepper in the drawer', () => {
 		const session = makeSession({
 			game_mode: 'americano',
 			courts: 1,
@@ -95,28 +96,12 @@ describe('SessionConfig rounds (Americano is backend-derived, display-only)', ()
 		});
 		render(SessionConfig, { session, sessionId: 'ABCD', open: true });
 
-		expect(screen.getByText('6')).toBeInTheDocument();
-		// Read-only: Americano's count is not editable, so there is no +/- stepper.
+		expect(screen.getByRole('radio', { name: 'Fixed' })).toBeChecked();
 		expect(screen.queryByRole('button', { name: /increase/i })).not.toBeInTheDocument();
 		expect(screen.queryByRole('button', { name: /decrease/i })).not.toBeInTheDocument();
 	});
 
-	it('counts only active players — removed (soft-inactive) records are excluded', () => {
-		// 6 active + 4 removed on 1 court. The fair count is 6 (from active players),
-		// NOT 10 (from all records). This is the exact regression: it used to show 10.
-		const session = makeSession({
-			game_mode: 'americano',
-			courts: 1,
-			rounds_total: 5,
-			players: makePlayers(6, 4)
-		});
-		render(SessionConfig, { session, sessionId: 'ABCD', open: true });
-
-		expect(screen.getByText('6')).toBeInTheDocument();
-		expect(screen.queryByText('10')).not.toBeInTheDocument();
-	});
-
-	it('shows unlimited (no fixed count, no stepper) when rounds_total is null', () => {
+	it('Americano unlimited: toggle reflects it, still no stepper', () => {
 		const session = makeSession({
 			game_mode: 'americano',
 			courts: 1,
@@ -126,11 +111,10 @@ describe('SessionConfig rounds (Americano is backend-derived, display-only)', ()
 		render(SessionConfig, { session, sessionId: 'ABCD', open: true });
 
 		expect(screen.getByRole('radio', { name: 'Unlimited' })).toBeChecked();
-		expect(screen.queryByText('6')).not.toBeInTheDocument();
 		expect(screen.queryByRole('button', { name: /increase/i })).not.toBeInTheDocument();
 	});
 
-	it('Mexicano keeps a user-picked round stepper', () => {
+	it('Mexicano fixed: keeps a user-picked round stepper', () => {
 		const session = makeSession({
 			game_mode: 'mexicano',
 			courts: 2,
@@ -140,59 +124,5 @@ describe('SessionConfig rounds (Americano is backend-derived, display-only)', ()
 		render(SessionConfig, { session, sessionId: 'ABCD', open: true });
 
 		expect(screen.getByRole('button', { name: /increase/i })).toBeInTheDocument();
-	});
-
-	it('recomputes when a player is removed — soft-delete keeps the record, count follows active', async () => {
-		// 10 active players on 2 courts -> 10 rounds.
-		const props = {
-			session: makeSession({
-				game_mode: 'americano' as const,
-				courts: 2,
-				rounds_total: 5,
-				players: makePlayers(10)
-			}),
-			sessionId: 'ABCD',
-			open: true
-		};
-		const { rerender } = render(SessionConfig, props);
-		expect(screen.getByText('10')).toBeInTheDocument();
-
-		// Remove one player. Removal is a SOFT delete: the player stays in
-		// session.players with active=false, so the array is still length 10 —
-		// 9 active + 1 inactive. This is the exact regression: counting
-		// session.players.length stayed at 10 and never updated; counting active
-		// players drops to 9 rounds.
-		await rerender({
-			...props,
-			session: makeSession({
-				game_mode: 'americano',
-				courts: 2,
-				rounds_total: 5,
-				players: makePlayers(9, 1)
-			})
-		});
-
-		expect(screen.getByText('9')).toBeInTheDocument();
-		expect(screen.queryByText('10')).not.toBeInTheDocument();
-	});
-
-	it('recomputes when a setting is changed inside the drawer (court count)', async () => {
-		const user = userEvent.setup({ pointerEventsCheck: 0 });
-		const session = makeSession({
-			game_mode: 'americano',
-			courts: 2,
-			rounds_total: 5,
-			players: makePlayers(8)
-		});
-		render(SessionConfig, { session, sessionId: 'ABCD', open: true });
-
-		// 8 players on 2 courts -> 7 rounds.
-		expect(screen.getByText('7')).toBeInTheDocument();
-
-		// Change to 1 court in the drawer -> 8 players on 1 court -> 8 rounds.
-		await user.click(screen.getByRole('radio', { name: '1' }));
-
-		expect(screen.getByText('8')).toBeInTheDocument();
-		expect(screen.queryByText('7')).not.toBeInTheDocument();
 	});
 });

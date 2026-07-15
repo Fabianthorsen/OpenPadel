@@ -43,16 +43,21 @@ beforeEach(() => {
 const LONG_NAME =
 	'The Great Annual Friday Night Padel Championship of the Whole Entire Neighbourhood';
 
-function makePlayers(): App.Player[] {
-	return [1, 2, 3, 4].map((n) => ({
+// `active` players plus optional `inactive` (removed but soft-deactivated) records.
+function makePlayers(active = 4, inactive = 0): App.Player[] {
+	const mk = (n: number, isActive: boolean): App.Player => ({
 		id: `p${n}`,
 		session_id: 's1',
 		name: `Player ${n}`,
 		avatar_icon: 'racket',
 		avatar_color: '#3d7a24',
-		active: true,
+		active: isActive,
 		joined_at: '2026-07-14T20:00:00Z'
-	}));
+	});
+	const arr: App.Player[] = [];
+	for (let i = 0; i < active; i++) arr.push(mk(i + 1, true));
+	for (let i = 0; i < inactive; i++) arr.push(mk(active + i + 1, false));
+	return arr;
 }
 
 function makeSession(overrides?: Partial<App.Session>): App.Session {
@@ -164,5 +169,76 @@ describe('Lobby header — non-admin (joined)', () => {
 		expect(screen.getByRole('heading', { name: new RegExp(LONG_NAME, 'i') }).className).toContain(
 			'truncate'
 		);
+	});
+});
+
+describe('Lobby header — config summary round count', () => {
+	it('derives the Americano round count from the active roster, live', async () => {
+		// 8 active players on 2 courts -> 7 rounds. rounds_total (5) is only the
+		// "limited" signal; the header shows the computed count, not that stored value.
+		const props = makeProps(
+			makeSession({ game_mode: 'americano', courts: 2, rounds_total: 5, players: makePlayers(8) }),
+			true
+		);
+		const { rerender } = render(Lobby, props);
+		expect(screen.getByText(/7 rds/)).toBeInTheDocument();
+
+		// A player joins -> 9 active on 2 courts -> 9 rounds. The summary must follow
+		// the roster (this is the regression: it used to show the stale rounds_total
+		// and never changed on join/leave).
+		await rerender(
+			makeProps(
+				makeSession({
+					game_mode: 'americano',
+					courts: 2,
+					rounds_total: 5,
+					players: makePlayers(9)
+				}),
+				true
+			)
+		);
+		expect(screen.getByText(/9 rds/)).toBeInTheDocument();
+		expect(screen.queryByText(/7 rds/)).not.toBeInTheDocument();
+	});
+
+	it('counts only active players — a removed (soft-inactive) player lowers the count', async () => {
+		// 8 active on 2 courts -> 7 rounds.
+		const props = makeProps(
+			makeSession({ game_mode: 'americano', courts: 2, rounds_total: 5, players: makePlayers(8) }),
+			true
+		);
+		const { rerender } = render(Lobby, props);
+		expect(screen.getByText(/7 rds/)).toBeInTheDocument();
+
+		// Remove one (soft-delete): array still length 8, but 7 active + 1 inactive
+		// -> 6 rounds. Counting players.length would wrongly stay at 7.
+		await rerender(
+			makeProps(
+				makeSession({
+					game_mode: 'americano',
+					courts: 2,
+					rounds_total: 5,
+					players: makePlayers(7, 1)
+				}),
+				true
+			)
+		);
+		expect(screen.getByText(/6 rds/)).toBeInTheDocument();
+	});
+
+	it('shows no round count for an unlimited session', () => {
+		render(
+			Lobby,
+			makeProps(
+				makeSession({
+					game_mode: 'americano',
+					courts: 2,
+					rounds_total: undefined,
+					players: makePlayers(8)
+				}),
+				true
+			)
+		);
+		expect(screen.queryByText(/rds/)).not.toBeInTheDocument();
 	});
 });

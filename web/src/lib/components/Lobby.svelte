@@ -27,6 +27,7 @@
 	import { auth } from '$lib/auth.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import SessionConfig from '$lib/components/SessionConfig.svelte';
+	import { calculateAmericanoRounds } from '$lib/americano';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { goto } from '$app/navigation';
@@ -150,20 +151,6 @@
 		const nextHour = now.getMinutes() > 0 ? now.getHours() + 1 : now.getHours();
 		const clamped = Math.min(21, Math.max(8, nextHour));
 		return Math.round((clamped * 60 - 8 * 60) / 30);
-	}
-
-	function gcd(a: number, b: number): number {
-		return b === 0 ? a : gcd(b, a % b);
-	}
-
-	function calculateAmericanoRounds(players: number, courts: number): number {
-		const benchSize = players - courts * 4;
-		if (benchSize <= 0) {
-			return players - 1;
-		}
-		const cycle = players / gcd(players, benchSize);
-		const target = players - 1;
-		return Math.ceil(target / cycle) * cycle;
 	}
 
 	async function patchConfig(patch: Parameters<typeof api.sessions.update>[1]) {
@@ -327,6 +314,17 @@
 	let showRules = $state(false);
 	const activePlayers = $derived(session.players.filter((p) => p.active));
 
+	// Rounds shown in the header summary. Unlimited (rounds_total null) → no count.
+	// Americano is derived live from the active roster (recomputes as players join
+	// and leave); Mexicano shows its user-picked count.
+	const summaryRounds = $derived(
+		session.rounds_total == null
+			? null
+			: session.game_mode === 'americano'
+				? calculateAmericanoRounds(activePlayers.length, session.courts)
+				: session.rounds_total
+	);
+
 	const requiredPlayers = $derived(session.courts * 4);
 	const maxPlayers = $derived(isMexicano ? requiredPlayers : undefined);
 	const isFull = $derived(maxPlayers ? activePlayers.length >= maxPlayers : false);
@@ -476,8 +474,8 @@
 				<p class="text-text-secondary text-sm">
 					{$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', {
 						values: { n: session.courts }
-					})} · {session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total}
-						· {session.rounds_total} rds{/if}{#if session.scheduled_at}
+					})} · {session.points + ' ' + $_('invite_points')} · {gameModeName}{#if summaryRounds != null}
+						· {summaryRounds} rds{/if}{#if session.scheduled_at}
 						· {new Date(session.scheduled_at).toLocaleString(undefined, {
 							weekday: 'short',
 							month: 'short',
@@ -651,8 +649,8 @@
 				· {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', {
 					values: { n: session.courts }
 				})} · {session.points}
-				{$_('invite_points')}{#if session.rounds_total}
-					· {session.rounds_total} rds{/if}
+				{$_('invite_points')}{#if summaryRounds != null}
+					· {summaryRounds} rds{/if}
 			</p>
 		</nav>
 
