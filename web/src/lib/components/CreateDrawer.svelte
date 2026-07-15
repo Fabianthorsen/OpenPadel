@@ -6,7 +6,7 @@
 	import { translateApiError } from '$lib/i18n/errors';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
+	import { ToggleGroup as RadioGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
 	import * as Drawer from '$lib/components/ui/drawer';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
@@ -17,6 +17,11 @@
 	let error = $state('');
 
 	async function create() {
+		if (!auth.user) {
+			error = 'Not authenticated';
+			return;
+		}
+
 		creating = true;
 		error = '';
 		try {
@@ -36,7 +41,7 @@
 			localStorage.setItem(`admin_token_${session.id}`, adminToken);
 			const player = await api.players.join(
 				session.id,
-				auth.user!.display_name,
+				auth.user.display_name,
 				auth.token ?? undefined,
 				adminToken
 			);
@@ -67,10 +72,10 @@
 		<div class="flex-1 space-y-6 overflow-y-auto px-6 pb-8">
 			<!-- Game mode -->
 			<div class="space-y-3">
-				<PillToggleGroup bind:value={gameMode}>
-					<PillToggleItem value="americano">Americano</PillToggleItem>
-					<PillToggleItem value="mexicano">Mexicano</PillToggleItem>
-				</PillToggleGroup>
+				<RadioGroup bind:value={gameMode}>
+					<ToggleGroupItem value="americano" class="flex-1">Americano</ToggleGroupItem>
+					<ToggleGroupItem value="mexicano" class="flex-1">Mexicano</ToggleGroupItem>
+				</RadioGroup>
 				<p class="text-text-secondary text-sm">
 					{gameMode === 'mexicano' ? $_('create_mexicano_hint') : $_('create_americano_hint')}
 				</p>
