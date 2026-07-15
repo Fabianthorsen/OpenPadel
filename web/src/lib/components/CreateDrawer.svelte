@@ -4,12 +4,15 @@
 	import { auth } from '$lib/auth.svelte';
 	import { _ } from 'svelte-i18n';
 	import { translateApiError } from '$lib/i18n/errors';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
 	import * as Drawer from '$lib/components/ui/drawer';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	let gameMode = $state<'americano' | 'mexicano'>('americano');
+	let name = $state('');
 	let creating = $state(false);
 	let error = $state('');
 
@@ -24,7 +27,7 @@
 			const session = await api.sessions.create(
 				{
 					game_mode: gameMode,
-					name: '',
+					name: name.trim(),
 					...defaults
 				},
 				auth.token ?? undefined
@@ -73,17 +76,27 @@
 				</p>
 			</div>
 
+			<!-- Session name (optional) -->
+			<div class="space-y-2.5">
+				<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
+					{$_('create_tournament_name_label')}
+				</p>
+				<Input
+					bind:value={name}
+					placeholder={$_('create_tournament_name_placeholder')}
+					maxlength={48}
+					disabled={creating}
+					class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
+				/>
+			</div>
+
 			{#if error}
 				<p class="text-destructive text-sm">{error}</p>
 			{/if}
 
-			<button
-				onclick={create}
-				disabled={creating}
-				class="bg-primary hover:bg-primary-hover w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white transition-colors disabled:opacity-60"
-			>
+			<Button onclick={create} disabled={creating} size="cta" variant="default">
 				{creating ? $_('create_button_loading') : $_('create_button')}
-			</button>
+			</Button>
 		</div>
 	</Drawer.Content>
 </Drawer.Root>
