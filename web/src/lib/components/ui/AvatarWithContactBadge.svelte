@@ -44,16 +44,18 @@
 		<button
 			onclick={handleClick}
 			disabled={isContact || loading}
-			aria-label={isContact ? $_('avatar_contact_added', { values: { name: targetName } }) : $_('avatar_contact_add', { values: { name: targetName } })}
-			class="absolute bottom-0 right-0 translate-x-1/3 translate-y-1/3 flex items-center justify-center
-				w-6 h-6 rounded-full transition-all shadow-md border-2 border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] text-[var(--color-text-primary)]
-				{isContact
-					? ''
-					: 'hover:scale-110 cursor-pointer'}
-				disabled:opacity-60 disabled:cursor-default"
+			aria-label={isContact
+				? $_('avatar_contact_added', { values: { name: targetName } })
+				: $_('avatar_contact_add', { values: { name: targetName } })}
+			class="absolute right-0 bottom-0 flex h-6 w-6 translate-x-1/3 translate-y-1/3
+				items-center justify-center rounded-full border-2 border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] text-[var(--color-text-primary)] shadow-md transition-all
+				{isContact ? '' : 'cursor-pointer hover:scale-110'}
+				disabled:cursor-default disabled:opacity-60"
 		>
 			{#if loading}
-				<div class="w-3 h-3 border-1 border-transparent border-t-current rounded-full animate-spin"></div>
+				<div
+					class="h-3 w-3 animate-spin rounded-full border-1 border-transparent border-t-current"
+				></div>
 			{:else if isContact}
 				<Check size={14} strokeWidth={3}></Check>
 			{:else}

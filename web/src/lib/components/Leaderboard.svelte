@@ -217,7 +217,9 @@
 					{$_('leaderboard_ranking')}
 				</p>
 				{#each leaderboard.standings.slice(3) as s (s.player_id)}
-					{@const isContact = !!(existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? ''])}
+					{@const isContact = !!(
+						existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? '']
+					)}
 					{@const showAddButton = !!(auth.token && s.user_id && s.user_id !== auth.user?.id)}
 					{@const isLoading = loadingContacts[s.user_id ?? ''] ?? false}
 					<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
@@ -225,15 +227,19 @@
 							<button
 								onclick={() => addContact(s.user_id!)}
 								disabled={isContact || isLoading}
-								aria-label={isContact ? $_('avatar_contact_added', { values: { name: s.name } }) : $_('avatar_contact_add', { values: { name: s.name } })}
-								class="flex items-center justify-center w-5 h-5 rounded-full transition-all text-[var(--color-text-primary)]
+								aria-label={isContact
+									? $_('avatar_contact_added', { values: { name: s.name } })
+									: $_('avatar_contact_add', { values: { name: s.name } })}
+								class="flex h-5 w-5 items-center justify-center rounded-full text-[var(--color-text-primary)] transition-all
 									{isContact
-										? 'bg-[var(--color-surface-raised)]'
-										: 'bg-[var(--color-surface-raised)] hover:scale-110 cursor-pointer'}
-									disabled:opacity-60 disabled:cursor-default"
+									? 'bg-[var(--color-surface-raised)]'
+									: 'cursor-pointer bg-[var(--color-surface-raised)] hover:scale-110'}
+									disabled:cursor-default disabled:opacity-60"
 							>
 								{#if isLoading}
-									<div class="w-2 h-2 border-1 border-transparent border-t-current rounded-full animate-spin"></div>
+									<div
+										class="h-2 w-2 animate-spin rounded-full border-1 border-transparent border-t-current"
+									></div>
 								{:else if isContact}
 									<Check size={12} strokeWidth={3} />
 								{:else}
