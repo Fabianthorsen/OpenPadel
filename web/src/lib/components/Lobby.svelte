@@ -1,6 +1,16 @@
 <script lang="ts">
 	import { api, ApiError } from '$lib/api/client';
-	import { Crown, Share, Check, Search, UserPlus, Clock, Info } from 'lucide-svelte';
+	import {
+		Crown,
+		Share,
+		Check,
+		Search,
+		UserPlus,
+		Clock,
+		Info,
+		Settings,
+		Pencil
+	} from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import { sessionName } from '$lib/utils';
 	import { Button } from '$lib/components/ui/button';
@@ -16,6 +26,8 @@
 	import { _ } from 'svelte-i18n';
 	import { auth } from '$lib/auth.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import SessionConfig from '$lib/components/SessionConfig.svelte';
+	import { calculateAmericanoRounds } from '$lib/americano';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { goto } from '$app/navigation';
@@ -71,6 +83,9 @@
 	let playerSearchLoading = $state(false);
 	let playerSearchDebounce: ReturnType<typeof setTimeout>;
 	let sessionInvites = $state<App.Invite[]>([]);
+
+	// SessionConfig drawer state
+	let configDrawerOpen = $state(false);
 
 	// ── Inline config editing state ──
 	let editingName = $state(false);
@@ -136,20 +151,6 @@
 		const nextHour = now.getMinutes() > 0 ? now.getHours() + 1 : now.getHours();
 		const clamped = Math.min(21, Math.max(8, nextHour));
 		return Math.round((clamped * 60 - 8 * 60) / 30);
-	}
-
-	function gcd(a: number, b: number): number {
-		return b === 0 ? a : gcd(b, a % b);
-	}
-
-	function calculateAmericanoRounds(players: number, courts: number): number {
-		const benchSize = players - courts * 4;
-		if (benchSize <= 0) {
-			return players - 1;
-		}
-		const cycle = players / gcd(players, benchSize);
-		const target = players - 1;
-		return Math.ceil(target / cycle) * cycle;
 	}
 
 	async function patchConfig(patch: Parameters<typeof api.sessions.update>[1]) {
@@ -313,6 +314,17 @@
 	let showRules = $state(false);
 	const activePlayers = $derived(session.players.filter((p) => p.active));
 
+	// Rounds shown in the header summary. Unlimited (rounds_total null) → no count.
+	// Americano is derived live from the active roster (recomputes as players join
+	// and leave); Mexicano shows its user-picked count.
+	const summaryRounds = $derived(
+		session.rounds_total == null
+			? null
+			: session.game_mode === 'americano'
+				? calculateAmericanoRounds(activePlayers.length, session.courts)
+				: session.rounds_total
+	);
+
 	const requiredPlayers = $derived(session.courts * 4);
 	const maxPlayers = $derived(isMexicano ? requiredPlayers : undefined);
 	const isFull = $derived(maxPlayers ? activePlayers.length >= maxPlayers : false);
@@ -462,8 +474,8 @@
 				<p class="text-text-secondary text-sm">
 					{$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', {
 						values: { n: session.courts }
-					})} · {session.points + ' ' + $_('invite_points')} · {gameModeName}{#if session.rounds_total}
-						· {session.rounds_total} rds{/if}{#if session.scheduled_at}
+					})} · {session.points + ' ' + $_('invite_points')} · {gameModeName}{#if summaryRounds != null}
+						· {summaryRounds} rds{/if}{#if session.scheduled_at}
 						· {new Date(session.scheduled_at).toLocaleString(undefined, {
 							weekday: 'short',
 							month: 'short',
@@ -557,27 +569,29 @@
 
 	<!-- ── Lobby (admin or already joined) ── -->
 {:else}
-	<main class="pt-safe-page mx-auto max-w-[480px] space-y-6 px-6 pb-6">
-		<nav class="flex items-center justify-between">
-			<div class="space-y-0.5">
-				<p class="text-text-secondary text-xs">
-					{#if session.scheduled_at}
-						{new Date(session.scheduled_at).toLocaleString(undefined, {
-							weekday: 'short',
-							month: 'short',
-							day: 'numeric',
-							hour: '2-digit',
-							minute: '2-digit'
-						})}
-					{:else}
-						{$_('lobby_waiting')}
-					{/if}
-				</p>
+	<main class="pt-safe-page mx-auto w-full max-w-[480px] space-y-6 px-4 pb-6">
+		<nav class="space-y-1">
+			<!-- Status -->
+			<p class="text-text-disabled text-[11px] font-bold tracking-[0.12em] uppercase">
+				{#if session.scheduled_at}
+					{new Date(session.scheduled_at).toLocaleString(undefined, {
+						weekday: 'short',
+						month: 'short',
+						day: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit'
+					})}
+				{:else}
+					{$_('lobby_waiting')}
+				{/if}
+			</p>
+			<!-- Name + actions on one row -->
+			<div class="flex items-center justify-between gap-2">
 				<!-- Click-to-edit name (admin only) -->
 				{#if isAdmin && editingName}
 					<input
 						bind:this={nameInputEl}
-						class="text-primary border-primary w-full border-b bg-transparent text-sm font-semibold focus:outline-none"
+						class="text-text-primary border-primary min-w-0 flex-1 border-b bg-transparent text-2xl font-[800] focus:outline-none"
 						bind:value={nameInput}
 						maxlength={48}
 						placeholder={$_('lobby_name_placeholder')}
@@ -586,200 +600,59 @@
 					/>
 				{:else if isAdmin}
 					<button
-						class="text-primary text-left text-sm font-semibold transition-opacity hover:opacity-70"
+						class="group flex min-w-0 flex-1 items-center gap-1.5 text-left"
 						onclick={() => {
 							nameInput = session.name ?? '';
 							editingName = true;
 						}}
 					>
-						{session.name || $_('lobby_name_placeholder')}
+						<span class="text-text-primary min-w-0 truncate text-2xl font-[800]">
+							{session.name || $_('lobby_name_placeholder')}
+						</span>
+						<Pencil
+							size={15}
+							class="text-text-disabled group-hover:text-text-secondary shrink-0 transition-colors"
+						/>
 					</button>
 				{:else}
-					<p class="text-primary text-sm font-semibold">{sessionName(session)}</p>
+					<h1 class="text-text-primary min-w-0 flex-1 truncate text-2xl font-[800]">
+						{sessionName(session)}
+					</h1>
 				{/if}
-			</div>
-			<div class="flex items-center gap-2">
-				<div class="text-text-secondary text-right text-xs">
-					{$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', {
-						values: { n: session.courts }
-					})} · {session.points + ' pts'} · {gameModeName}{#if session.rounds_total}
-						· {session.rounds_total} rds{/if}
-				</div>
-				<button
-					onclick={() => (showRules = true)}
-					aria-label={$_('lobby_rules_button')}
-					class="text-text-disabled hover:text-text-secondary transition-colors"
-				>
-					<Info size={16} />
-				</button>
-				{#if isAdmin || alreadyJoined}
-					<a
-						href="/"
-						class="text-text-disabled hover:bg-surface-raised hover:text-text-secondary flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
-						aria-label="Back to home">×</a
-					>
-				{/if}
-			</div>
-		</nav>
-
-		<!-- Admin config section -->
-		{#if isAdmin}
-			<div class="bg-surface-raised space-y-5 rounded-2xl px-5 py-4">
-				<SectionLabel>{$_('lobby_config_label')}</SectionLabel>
-
-				<!-- Game mode -->
-				<div class="space-y-2">
-					<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-						{$_('create_game_mode_label')}
-					</p>
-					<div class="grid grid-cols-2 gap-2">
-						{#each ['americano', 'mexicano'] as const as mode}
-							<button
-								type="button"
-								onclick={() => onModeChange(mode)}
-								class="rounded-xl border-2 px-3 py-3 text-left transition-colors {configMode ===
-								mode
-									? 'border-primary bg-primary/10'
-									: 'border-border bg-surface'}"
-							>
-								<p class="text-sm font-semibold capitalize">{mode}</p>
-								<p class="text-text-secondary mt-0.5 text-[11px]">
-									{$_(mode === 'americano' ? 'create_americano_hint' : 'create_mexicano_hint')}
-								</p>
-							</button>
-						{/each}
-					</div>
-				</div>
-
-				<!-- Courts -->
-				<div class="space-y-2">
-					<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-						{$_('create_courts_label')}
-					</p>
-					<PillToggleGroup
-						value={configCourts.toString()}
-						onValueChange={(v) => v && onCourtsChange(parseInt(v))}
-					>
-						{#each Array.from({ length: MAX_COURTS }, (_, i) => i + 1) as n}
-							{@const activePlayers = session.players.filter((p) => p.active).length}
-							{@const minPlayersNeeded = n * 4}
-							{@const isDisabled =
-								configMode === 'mexicano' && n === 1 ? true : activePlayers < minPlayersNeeded}
-							<PillToggleItem value={n.toString()} disabled={isDisabled}>{n}</PillToggleItem>
-						{/each}
-					</PillToggleGroup>
-				</div>
-
-				<!-- Points -->
-				<div class="space-y-2">
-					<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-						{$_('create_points_label')}
-					</p>
-					<PillToggleGroup
-						value={configPoints.toString()}
-						onValueChange={(v) => v && onPointsChange(parseInt(v))}
-					>
-						{#each [16, 24, 32] as p}
-							<PillToggleItem value={p.toString()}>{p}</PillToggleItem>
-						{/each}
-					</PillToggleGroup>
-				</div>
-
-				<!-- Rounds mode toggle + stepper (Mexicano & Americano unlimited) -->
-				{#if configMode === 'mexicano' || configMode === 'americano'}
-					<div class="space-y-2">
-						<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-							{$_('lobby_rounds_label')}
-						</p>
-						<PillToggleGroup
-							value={roundsMode}
-							onValueChange={(v) => v && onRoundsModeChange(v as 'fixed' | 'unlimited')}
+				<div class="flex shrink-0 items-center gap-0.5">
+					{#if isAdmin}
+						<button
+							onclick={() => (configDrawerOpen = true)}
+							aria-label={$_('lobby_edit_config')}
+							class="text-text-disabled hover:bg-surface-raised hover:text-text-secondary flex h-8 w-8 items-center justify-center rounded-full transition-colors"
 						>
-							<PillToggleItem value="fixed">{$_('lobby_rounds_mode_fixed')}</PillToggleItem>
-							<PillToggleItem value="unlimited">{$_('lobby_rounds_mode_unlimited')}</PillToggleItem>
-						</PillToggleGroup>
-						{#if roundsMode === 'fixed'}
-							<div class="flex items-center justify-end gap-4">
-								{#if configMode === 'mexicano'}
-									<Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
-								{:else if configMode === 'americano'}
-									{@const activePlayers = session.players.filter((p) => p.active).length}
-									{@const calculatedRounds =
-										activePlayers > 0 ? calculateAmericanoRounds(activePlayers, configCourts) : 0}
-									<p class="text-text-secondary text-sm">
-										{activePlayers > 0 ? `${calculatedRounds} rounds` : 'Waiting for players...'}
-									</p>
-								{/if}
-							</div>
-						{/if}
-					</div>
-				{/if}
-
-				<!-- Schedule -->
-				<div class="space-y-2">
-					<button
-						type="button"
-						onclick={() => commitSchedule(!scheduleEnabled)}
-						class="flex w-full items-center justify-between rounded-xl border px-4 py-3 transition-colors {scheduleEnabled
-							? 'border-primary bg-primary/10'
-							: 'border-border bg-surface'}"
-					>
-						<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-							{$_('create_schedule_label')}
-						</p>
-						{#if scheduleEnabled && calendarDate}
-							<p class="text-primary text-sm font-semibold">
-								{calendarDate.toDate(getLocalTimeZone()).toLocaleDateString(undefined, {
-									weekday: 'short',
-									month: 'short',
-									day: 'numeric'
-								})}
-							</p>
-						{:else}
-							<span class="text-text-disabled text-xs"
-								>{scheduleEnabled ? '–' : $_('lobby_schedule_tap_to_add')}</span
-							>
-						{/if}
-					</button>
-					{#if scheduleEnabled}
-						<div class="bg-surface overflow-hidden rounded-xl">
-							<Calendar
-								bind:value={calendarDate}
-								minValue={today(getLocalTimeZone())}
-								weekStartsOn={1}
-								onValueChange={() => commitScheduleTime()}
-							/>
-							<div class="space-y-3 px-4 pb-4">
-								<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-									{$_('create_schedule_time_label')}
-								</p>
-								<div class="flex items-center justify-center gap-3">
-									<div class="flex flex-col items-center gap-1">
-										<p class="text-text-disabled text-[10px] tracking-[0.1em] uppercase">
-											{$_('schedule_hour_label')}
-										</p>
-										<Stepper value={timeHour} min={8} max={21} onchange={onHourChange} />
-									</div>
-									<p class="text-text-secondary pb-1 text-xl font-[800]">:</p>
-									<div class="flex flex-col items-center gap-1">
-										<p class="text-text-disabled text-[10px] tracking-[0.1em] uppercase">
-											{$_('schedule_minute_label')}
-										</p>
-										<Stepper
-											value={timeMinute}
-											min={0}
-											max={30}
-											step={30}
-											onchange={onMinuteChange}
-										/>
-									</div>
-								</div>
-							</div>
-						</div>
+							<Settings size={17} />
+						</button>
+					{/if}
+					{#if isAdmin || alreadyJoined}
+						<a
+							href="/"
+							class="text-text-disabled hover:bg-surface-raised hover:text-text-secondary flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors"
+							aria-label="Back to home">×</a
+						>
 					{/if}
 				</div>
 			</div>
-		{/if}
+			<!-- Config summary — tap the mode for rules -->
+			<p class="text-text-secondary text-xs">
+				<button
+					onclick={() => (showRules = true)}
+					class="hover:text-text-primary capitalize underline decoration-dotted underline-offset-2 transition-colors"
+				>
+					{session.game_mode}
+				</button>
+				· {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', {
+					values: { n: session.courts }
+				})} · {session.points}
+				{$_('invite_points')}{#if summaryRounds != null}
+					· {summaryRounds} rds{/if}
+			</p>
+		</nav>
 
 		<!-- Join code + share -->
 		<div class="bg-surface-raised space-y-3 rounded-2xl px-5 py-4">
@@ -1045,3 +918,6 @@
 	onconfirm={cancel}
 	oncancel={() => (showCancelDialog = false)}
 />
+
+<!-- Session Config Drawer -->
+<SessionConfig bind:open={configDrawerOpen} {session} sessionId={session.id} {onRefresh} />

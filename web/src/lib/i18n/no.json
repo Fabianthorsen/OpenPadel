@@ -341,6 +341,7 @@
 	"api_error_contact_not_found": "Kontakt ikke funnet",
 
 	"create_americano_hint": "Roter partnere hver runde. Alle spiller hver kamp.",
+	"lobby_edit_config": "Rediger innstillinger",
 	"lobby_config_label": "Turneringsinnstillinger",
 	"lobby_invite_label": "Inviter spillere",
 	"lobby_name_placeholder": "Turneringsnavn",
@@ -348,5 +349,11 @@
 	"lobby_rounds_mode_fixed": "Begrenset",
 	"lobby_rounds_mode_unlimited": "Ubegrenset",
 	"api_error_mexicano_player_count_mismatch": "Mexicano trenger {required} spillere — du har {current}",
-	"api_error_americano_insufficient_players": "Trenger {required} spillere for {courts} baner — du har {current}"
+	"api_error_americano_insufficient_players": "Trenger {required} spillere for {courts} baner — du har {current}",
+	"schedule_session": "Planlegg senere",
+	"scheduled_for": "Planlagt for",
+	"rounds_fixed": "Begrenset",
+	"rounds_unlimited": "Ubegrenset",
+	"rounds_auto_hint": "Beregnes automatisk ut fra spillere og baner.",
+	"done": "Ferdig"
 }
