@@ -73,17 +73,20 @@ export const api = {
 			request<void>('POST', '/auth/reset', { token, password })
 	},
 	sessions: {
-		create: (params: {
-			courts: number;
-			points: number;
-			name: string;
-			game_mode: string;
-			scheduled_at?: string;
-			rounds_total?: number;
-			court_duration_minutes?: number;
-			total_duration_minutes?: number;
-			interval_between_rounds_minutes?: number;
-		}, token?: string) => {
+		create: (
+			params: {
+				courts: number;
+				points: number;
+				name: string;
+				game_mode: string;
+				scheduled_at?: string;
+				rounds_total?: number;
+				court_duration_minutes?: number;
+				total_duration_minutes?: number;
+				interval_between_rounds_minutes?: number;
+			},
+			token?: string
+		) => {
 			const body: Record<string, unknown> = {
 				courts: params.courts,
 				points: params.points,
