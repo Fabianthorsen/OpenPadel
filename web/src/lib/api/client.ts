@@ -65,23 +65,28 @@ export const api = {
 				undefined,
 				token
 			),
+		getSessions: (token: string) =>
+			request<{ sessions: App.Session[] }>('GET', '/auth/sessions', undefined, token),
 		deleteAccount: (token: string) => request<void>('DELETE', '/auth/account', undefined, token),
 		forgotPassword: (email: string) => request<void>('POST', '/auth/forgot', { email }),
 		resetPassword: (token: string, password: string) =>
 			request<void>('POST', '/auth/reset', { token, password })
 	},
 	sessions: {
-		create: (params: {
-			courts: number;
-			points: number;
-			name: string;
-			game_mode: string;
-			scheduled_at?: string;
-			rounds_total?: number;
-			court_duration_minutes?: number;
-			total_duration_minutes?: number;
-			interval_between_rounds_minutes?: number;
-		}) => {
+		create: (
+			params: {
+				courts: number;
+				points: number;
+				name: string;
+				game_mode: string;
+				scheduled_at?: string;
+				rounds_total?: number;
+				court_duration_minutes?: number;
+				total_duration_minutes?: number;
+				interval_between_rounds_minutes?: number;
+			},
+			token?: string
+		) => {
 			const body: Record<string, unknown> = {
 				courts: params.courts,
 				points: params.points,
@@ -96,7 +101,7 @@ export const api = {
 				body.total_duration_minutes = params.total_duration_minutes;
 			if (params.interval_between_rounds_minutes)
 				body.interval_between_rounds_minutes = params.interval_between_rounds_minutes;
-			return request<App.Session>('POST', '/sessions', body);
+			return request<App.Session>('POST', '/sessions', body, token);
 		},
 		get: (id: string, token?: string) =>
 			request<App.Session>('GET', `/sessions/${id}`, undefined, token),

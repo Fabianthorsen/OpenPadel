@@ -21,11 +21,14 @@
 				gameMode === 'mexicano'
 					? { courts: 2, points: 24, rounds_total: 7 }
 					: { courts: 2, points: 24 };
-			const session = await api.sessions.create({
-				game_mode: gameMode,
-				name: '',
-				...defaults
-			});
+			const session = await api.sessions.create(
+				{
+					game_mode: gameMode,
+					name: '',
+					...defaults
+				},
+				auth.token ?? undefined
+			);
 			const adminToken = session.admin_token!;
 			localStorage.setItem(`admin_token_${session.id}`, adminToken);
 			const player = await api.players.join(

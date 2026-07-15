@@ -208,6 +208,81 @@ func (q *Queries) GetSession(ctx context.Context, id string) (GetSessionRow, err
 	return i, err
 }
 
+const getUserSessions = `-- name: GetUserSessions :many
+SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, round_duration_seconds, round_started_at, created_at, updated_at
+FROM sessions WHERE creator_user_id = ?
+ORDER BY created_at DESC
+`
+
+type GetUserSessionsRow struct {
+	ID                   string
+	AdminToken           string
+	Status               string
+	Name                 string
+	GameMode             string
+	SetsToWin            int64
+	GamesPerSet          int64
+	Courts               int64
+	Points               int64
+	RoundsTotal          sql.NullInt64
+	CreatorPlayerID      sql.NullString
+	CreatorUserID        sql.NullString
+	CurrentRound         int64
+	ScheduledAt          sql.NullString
+	CourtDurationMinutes sql.NullInt64
+	EndsAt               sql.NullString
+	TotalDurationMinutes sql.NullInt64
+	RoundDurationSeconds sql.NullInt64
+	RoundStartedAt       sql.NullString
+	CreatedAt            string
+	UpdatedAt            string
+}
+
+func (q *Queries) GetUserSessions(ctx context.Context, creatorUserID sql.NullString) ([]GetUserSessionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUserSessions, creatorUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetUserSessionsRow{}
+	for rows.Next() {
+		var i GetUserSessionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AdminToken,
+			&i.Status,
+			&i.Name,
+			&i.GameMode,
+			&i.SetsToWin,
+			&i.GamesPerSet,
+			&i.Courts,
+			&i.Points,
+			&i.RoundsTotal,
+			&i.CreatorPlayerID,
+			&i.CreatorUserID,
+			&i.CurrentRound,
+			&i.ScheduledAt,
+			&i.CourtDurationMinutes,
+			&i.EndsAt,
+			&i.TotalDurationMinutes,
+			&i.RoundDurationSeconds,
+			&i.RoundStartedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setCreatorPlayer = `-- name: SetCreatorPlayer :exec
 UPDATE sessions SET creator_player_id = ?, updated_at = ? WHERE id = ?
 `

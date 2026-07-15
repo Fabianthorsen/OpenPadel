@@ -233,3 +233,20 @@ func (h *Handler) deleteAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *Handler) getUserSessions(w http.ResponseWriter, r *http.Request) {
+	user := userFromContext(r)
+	if user == nil {
+		respondAPIError(w, ErrNotAuthenticated)
+		return
+	}
+	sessions, err := h.store.GetUserSessions(user.ID)
+	if err != nil {
+		slog.Error("getUserSessions: GetUserSessions failed", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, map[string]any{
+		"sessions": sessions,
+	})
+}

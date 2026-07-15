@@ -53,3 +53,8 @@ UPDATE sessions SET name = ?, game_mode = ?, courts = ?, points = ?, rounds_tota
 
 -- name: UpdateRoundDuration :exec
 UPDATE sessions SET round_duration_seconds = ?, updated_at = ? WHERE id = ?;
+
+-- name: GetUserSessions :many
+SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, round_duration_seconds, round_started_at, created_at, updated_at
+FROM sessions WHERE creator_user_id = ?
+ORDER BY created_at DESC;

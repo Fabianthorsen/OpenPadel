@@ -317,3 +317,81 @@ func TestAdvanceRound_UnlimitedSessionPreservesNil(t *testing.T) {
 		t.Errorf("expected RoundsTotal=nil after start, got %v", loaded.RoundsTotal)
 	}
 }
+
+func TestGetUserSessions(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+	bob := createUser(t, s, "bob@example.com", "Bob")
+
+	// Create sessions for Alice
+	sess1, err := s.CreateSession(domain.SessionInput{
+		Courts:   2,
+		Points:   24,
+		Name:     "Alice Session 1",
+		GameMode: domain.ModeAmericano,
+	}, alice)
+	if err != nil {
+		t.Fatalf("CreateSession 1: %v", err)
+	}
+
+	sess2, err := s.CreateSession(domain.SessionInput{
+		Courts:   2,
+		Points:   24,
+		Name:     "Alice Session 2",
+		GameMode: domain.ModeAmericano,
+	}, alice)
+	if err != nil {
+		t.Fatalf("CreateSession 2: %v", err)
+	}
+
+	// Create session for Bob
+	_, err = s.CreateSession(domain.SessionInput{
+		Courts:   2,
+		Points:   24,
+		Name:     "Bob Session",
+		GameMode: domain.ModeAmericano,
+	}, bob)
+	if err != nil {
+		t.Fatalf("CreateSession for Bob: %v", err)
+	}
+
+	// Get Alice's sessions
+	aliceSessions, err := s.GetUserSessions(alice)
+	if err != nil {
+		t.Fatalf("GetUserSessions(alice): %v", err)
+	}
+
+	if len(aliceSessions) != 2 {
+		t.Errorf("expected 2 sessions for Alice, got %d", len(aliceSessions))
+	}
+
+	// Verify admin tokens are included
+	for _, sess := range aliceSessions {
+		if sess.AdminToken == "" {
+			t.Errorf("expected non-empty AdminToken in session %s", sess.ID)
+		}
+		if sess.AdminToken != sess1.AdminToken && sess.AdminToken != sess2.AdminToken {
+			t.Errorf("unexpected AdminToken in session %s", sess.ID)
+		}
+	}
+
+	// Get Bob's sessions
+	bobSessions, err := s.GetUserSessions(bob)
+	if err != nil {
+		t.Fatalf("GetUserSessions(bob): %v", err)
+	}
+
+	if len(bobSessions) != 1 {
+		t.Errorf("expected 1 session for Bob, got %d", len(bobSessions))
+	}
+
+	// Get sessions for non-existent user
+	emptySessions, err := s.GetUserSessions("nonexistent")
+	if err != nil {
+		t.Fatalf("GetUserSessions(nonexistent): %v", err)
+	}
+
+	if len(emptySessions) != 0 {
+		t.Errorf("expected 0 sessions for nonexistent user, got %d", len(emptySessions))
+	}
+}
