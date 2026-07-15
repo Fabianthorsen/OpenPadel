@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
-	import { Trophy } from 'lucide-svelte';
+	import { Trophy, UserPlus, Check } from 'lucide-svelte';
 	import { shortName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import AvatarWithContactBadge from '$lib/components/ui/AvatarWithContactBadge.svelte';
@@ -30,6 +30,7 @@
 	let leaderboard = $state<App.Leaderboard | null>(null);
 	let addedContacts = $state<Record<string, boolean>>({});
 	let existingContacts = $state<Record<string, boolean>>({});
+	let loadingContacts = $state<Record<string, boolean>>({});
 
 	async function load() {
 		try {
@@ -47,8 +48,13 @@
 
 	async function addContact(userID: string) {
 		if (!auth.token) return;
-		await api.contacts.add(auth.token, userID);
-		addedContacts = { ...addedContacts, [userID]: true };
+		loadingContacts = { ...loadingContacts, [userID]: true };
+		try {
+			await api.contacts.add(auth.token, userID);
+			addedContacts = { ...addedContacts, [userID]: true };
+		} finally {
+			loadingContacts = { ...loadingContacts, [userID]: false };
+		}
 	}
 
 	async function shareResults() {
@@ -122,6 +128,8 @@
 		<div class="flex items-end justify-center gap-3 pt-6 pb-2">
 			{#each podiumOrder as s}
 				{@const isFirst = s.rank === 1}
+				{@const showBadge = !!(auth.token && s.user_id && s.user_id !== auth.user?.id)}
+				{@const isContact = !!(existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? ''])}
 				<div
 					class="flex flex-col items-center {isFirst
 						? 'order-2 -mb-0'
@@ -134,17 +142,21 @@
 						<div class="text-primary mb-1"><Trophy size={28} /></div>
 					{/if}
 
-					<!-- Avatar -->
+					<!-- Avatar with badge -->
 					<div
 						class={isFirst
 							? 'ring-primary-muted rounded-full shadow-lg ring-4'
 							: 'ring-border rounded-full ring-2'}
 					>
-						<Avatar
+						<AvatarWithContactBadge
 							icon={s.avatar_icon}
 							color={s.avatar_color}
 							name={s.name}
 							size={isFirst ? 'xl' : 'lg'}
+							{showBadge}
+							{isContact}
+							targetName={s.name}
+							onAdd={() => addContact(s.user_id!)}
 						/>
 					</div>
 
@@ -206,19 +218,38 @@
 				</p>
 				{#each leaderboard.standings.slice(3) as s (s.player_id)}
 					{@const isContact = !!(existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? ''])}
-					{@const showBadge = !!(auth.token && s.user_id && s.user_id !== auth.user?.id)}
+					{@const showAddButton = !!(auth.token && s.user_id && s.user_id !== auth.user?.id)}
+					{@const isLoading = loadingContacts[s.user_id ?? ''] ?? false}
 					<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
+						{#if showAddButton}
+							<button
+								onclick={() => addContact(s.user_id!)}
+								disabled={isContact || isLoading}
+								aria-label={isContact ? $_('avatar_contact_added', { values: { name: s.name } }) : $_('avatar_contact_add', { values: { name: s.name } })}
+								class="flex items-center justify-center w-5 h-5 rounded-full transition-all text-[var(--color-text-primary)]
+									{isContact
+										? 'bg-[var(--color-surface-raised)]'
+										: 'bg-[var(--color-surface-raised)] hover:scale-110 cursor-pointer'}
+									disabled:opacity-60 disabled:cursor-default"
+							>
+								{#if isLoading}
+									<div class="w-2 h-2 border-1 border-transparent border-t-current rounded-full animate-spin"></div>
+								{:else if isContact}
+									<Check size={12} strokeWidth={3} />
+								{:else}
+									<UserPlus size={12} strokeWidth={3} />
+								{/if}
+							</button>
+						{:else}
+							<div class="w-5"></div>
+						{/if}
 						<span class="text-text-disabled w-6 text-sm font-[800] tabular-nums">{s.rank}</span>
-						<AvatarWithContactBadge
+						<Avatar
 							icon={s.avatar_icon}
 							color={s.avatar_color}
 							name={s.name}
 							size="sm"
 							ring="ring-2 ring-primary/30"
-							{showBadge}
-							{isContact}
-							targetName={s.name}
-							onAdd={() => addContact(s.user_id!)}
 						/>
 						<span class="flex-1 truncate text-sm font-semibold">{shortName(s.name)}</span>
 						<div class="flex items-center gap-1 text-[11px] font-bold tabular-nums">
