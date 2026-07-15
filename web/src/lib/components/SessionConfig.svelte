@@ -7,7 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Drawer from '$lib/components/ui/drawer';
-	import { Trophy, LayoutGrid, Target, Repeat, CalendarClock } from 'lucide-svelte';
+	import { Trophy, LayoutGrid, Target, Repeat, CalendarClock } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { _ } from 'svelte-i18n';

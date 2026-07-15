@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { UserPlus, Check } from 'lucide-svelte';
+	import { UserPlus, Check } from '@lucide/svelte';
 	import { _ } from 'svelte-i18n';
 
 	let {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import * as icons from 'lucide-svelte';
+	import * as icons from '@lucide/svelte';
 
 	type Size = 'sm' | 'md' | 'lg' | 'xl';
 
