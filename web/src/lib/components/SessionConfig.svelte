@@ -2,9 +2,11 @@
 	import { api, ApiError } from '$lib/api/client';
 	import { Calendar } from '$lib/components/ui/calendar';
 	import Stepper from '$lib/components/ui/stepper/Stepper.svelte';
-	import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
+	import { SegmentedControl, type SegmentedOption } from '$lib/components/ui/segmented-control';
 	import { Button } from '$lib/components/ui/button';
+	import { Switch } from '$lib/components/ui/switch';
 	import * as Drawer from '$lib/components/ui/drawer';
+	import { Trophy, LayoutGrid, Target, Repeat, CalendarClock } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { _ } from 'svelte-i18n';
@@ -18,11 +20,14 @@
 	let {
 		session,
 		open = $bindable(false),
-		sessionId
+		sessionId,
+		onRefresh
 	}: {
 		session: App.Session;
 		open: boolean;
 		sessionId: string;
+		/** Called after a config patch succeeds so the parent reloads the session. */
+		onRefresh?: () => void;
 	} = $props();
 
 	// ── Config editing state ──
@@ -107,6 +112,7 @@
 		const adminToken = localStorage.getItem(`admin_token_${sessionId}`) ?? '';
 		try {
 			await api.sessions.update(sessionId, patch, adminToken);
+			onRefresh?.();
 		} catch (e) {
 			toast.error(
 				e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error')
@@ -176,71 +182,116 @@
 		await patchConfig({ scheduled_at: d.toISOString() });
 	}
 
-	const maxCourts = 4;
-	const courtsDisabled = configMode === 'mexicano' ? [1] : [];
+	const MAX_COURTS = 4;
+	const POINTS_OPTIONS = [16, 24, 32];
+
+	// Derived so they react to mode/court changes (Mexicano disables 1 court).
+	const modeOptions: SegmentedOption[] = [
+		{ value: 'americano', label: 'Americano' },
+		{ value: 'mexicano', label: 'Mexicano' }
+	];
+	const courtOptions = $derived(
+		Array.from({ length: MAX_COURTS }, (_, i) => ({
+			value: String(i + 1),
+			label: String(i + 1),
+			disabled: configMode === 'mexicano' && i + 1 === 1
+		}))
+	);
+	const pointOptions: SegmentedOption[] = POINTS_OPTIONS.map((p) => ({
+		value: String(p),
+		label: String(p)
+	}));
 
 	const minRounds = 1;
-	const maxRounds = Math.max(
-		7,
-		configMode === 'americano' ? calculateAmericanoRounds(session.players.length, configCourts) : 5
+	const maxRounds = $derived(
+		Math.max(
+			7,
+			configMode === 'americano'
+				? calculateAmericanoRounds(session.players.length, configCourts)
+				: 5
+		)
 	);
 </script>
 
 <Drawer.Root bind:open>
-	<Drawer.Content class="mx-auto w-full max-w-[480px]">
-		<Drawer.Header>
-			<div class="flex w-full items-center justify-between">
-				<h2 class="text-lg font-[800]">{$_('lobby_edit_config')}</h2>
-				<Drawer.Close
-					class="bg-surface-raised text-text-secondary hover:bg-border flex h-8 w-8 items-center justify-center rounded-full text-xl leading-none transition-colors"
-					>×</Drawer.Close
-				>
-			</div>
+	<Drawer.Content size="lg" class="mx-auto w-full max-w-[480px]">
+		<Drawer.Header class="flex-row items-center justify-between">
+			<Drawer.Title>{$_('lobby_edit_config')}</Drawer.Title>
+			<Drawer.Close
+				class="bg-surface-raised text-text-secondary hover:bg-border flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl leading-none transition-colors"
+				>×</Drawer.Close
+			>
 		</Drawer.Header>
 
-		<div class="space-y-6 overflow-y-auto px-6 pb-8">
+		<Drawer.Body class="space-y-5">
 			<!-- Game Mode -->
-			<div class="space-y-2">
-				<p class="text-sm font-semibold">{$_('create_game_mode_label')}</p>
-				<PillToggleGroup value={configMode} onchange={onModeChange}>
-					<PillToggleItem value="americano">Americano</PillToggleItem>
-					<PillToggleItem value="mexicano">Mexicano</PillToggleItem>
-				</PillToggleGroup>
-			</div>
+			<section class="space-y-2.5">
+				<div class="flex items-center gap-2">
+					<Trophy size={15} class="text-primary" />
+					<p class="text-sm font-semibold">{$_('create_game_mode_label')}</p>
+				</div>
+				<SegmentedControl
+					options={modeOptions}
+					value={configMode}
+					onChange={(v) => onModeChange(v as 'americano' | 'mexicano')}
+					ariaLabel={$_('create_game_mode_label')}
+				/>
+				<p class="text-text-secondary text-xs leading-relaxed">
+					{configMode === 'mexicano' ? $_('create_mexicano_hint') : $_('create_americano_hint')}
+				</p>
+			</section>
+
+			<div class="bg-border h-px"></div>
 
 			<!-- Courts -->
-			<div class="space-y-2">
-				<p class="text-sm font-semibold">{$_('create_courts_label')}</p>
-				<PillToggleGroup
+			<section class="space-y-2.5">
+				<div class="flex items-center gap-2">
+					<LayoutGrid size={15} class="text-primary" />
+					<p class="text-sm font-semibold">{$_('create_courts_label')}</p>
+				</div>
+				<SegmentedControl
+					options={courtOptions}
 					value={configCourts.toString()}
-					onchange={(v: string) => onCourtsChange(parseInt(v))}
-				>
-					{#each Array.from({ length: maxCourts }, (_, i) => i + 1) as court}
-						<PillToggleItem value={court.toString()} disabled={courtsDisabled.includes(court)}>
-							{court}
-						</PillToggleItem>
-					{/each}
-				</PillToggleGroup>
-			</div>
+					onChange={(v) => onCourtsChange(parseInt(v))}
+					ariaLabel={$_('create_courts_label')}
+				/>
+			</section>
+
+			<div class="bg-border h-px"></div>
 
 			<!-- Points -->
-			<div class="space-y-2">
-				<p class="text-sm font-semibold">{$_('create_points_label')}</p>
-				<Stepper bind:value={configPoints} onchange={onPointsChange} min={11} max={31} step={1} />
-			</div>
+			<section class="space-y-2.5">
+				<div class="flex items-center gap-2">
+					<Target size={15} class="text-primary" />
+					<p class="text-sm font-semibold">{$_('create_points_label')}</p>
+				</div>
+				<SegmentedControl
+					options={pointOptions}
+					value={configPoints.toString()}
+					onChange={(v) => onPointsChange(parseInt(v))}
+					ariaLabel={$_('create_points_label')}
+				/>
+			</section>
 
-			<!-- Rounds -->
-			{#if configMode === 'mexicano'}
-				<div class="space-y-2">
+			<!-- Rounds (both modes support fixed / unlimited) -->
+			<div class="bg-border h-px"></div>
+			<section class="space-y-2.5">
+				<div class="flex items-center gap-2">
+					<Repeat size={15} class="text-primary" />
 					<p class="text-sm font-semibold">{$_('lobby_rounds_label')}</p>
-					<PillToggleGroup
-						value={roundsMode}
-						onchange={(v: string) => onRoundsModeChange(v as 'fixed' | 'unlimited')}
-					>
-						<PillToggleItem value="fixed">{$_('lobby_rounds_mode_fixed')}</PillToggleItem>
-						<PillToggleItem value="unlimited">{$_('lobby_rounds_mode_unlimited')}</PillToggleItem>
-					</PillToggleGroup>
-					{#if roundsMode === 'fixed'}
+				</div>
+				<SegmentedControl
+					options={[
+						{ value: 'fixed', label: $_('lobby_rounds_mode_fixed') },
+						{ value: 'unlimited', label: $_('lobby_rounds_mode_unlimited') }
+					]}
+					value={roundsMode}
+					onChange={(v) => onRoundsModeChange(v as 'fixed' | 'unlimited')}
+					ariaLabel={$_('lobby_rounds_label')}
+				/>
+				{#if roundsMode === 'fixed'}
+					<div class="bg-surface flex items-center justify-between rounded-xl px-4 py-2.5">
+						<span class="text-text-secondary text-sm">{$_('lobby_rounds_label')}</span>
 						<Stepper
 							bind:value={configRounds}
 							onchange={onRoundsChange}
@@ -248,48 +299,51 @@
 							max={maxRounds}
 							step={1}
 						/>
-					{/if}
-				</div>
-			{/if}
+					</div>
+				{/if}
+			</section>
+
+			<div class="bg-border h-px"></div>
 
 			<!-- Schedule -->
-			<div class="space-y-2">
-				<label class="flex items-center gap-2">
-					<input
-						type="checkbox"
+			<section class="space-y-3">
+				<div class="flex items-center justify-between gap-3">
+					<div class="flex items-center gap-2">
+						<CalendarClock size={15} class="text-primary" />
+						<p class="text-sm font-semibold">{$_('schedule_session')}</p>
+					</div>
+					<Switch
 						checked={scheduleEnabled}
-						onchange={(e) => commitSchedule(e.currentTarget.checked)}
-						class="rounded"
+						onCheckedChange={commitSchedule}
+						aria-label={$_('schedule_session')}
 					/>
-					<span class="text-sm font-semibold">{$_('schedule_session')}</span>
-				</label>
+				</div>
 				{#if scheduleEnabled && calendarDate}
 					<div class="space-y-4">
 						<Calendar bind:value={calendarDate} onchange={commitScheduleTime} />
 						<div class="grid grid-cols-2 gap-3">
-							<div class="space-y-1">
-								<p class="text-text-secondary text-xs font-semibold">{$_('schedule_hour_label')}</p>
+							<div class="bg-surface flex items-center justify-between rounded-xl px-4 py-2.5">
+								<span class="text-text-secondary text-xs font-semibold">
+									{$_('schedule_hour_label')}
+								</span>
 								<Stepper value={timeHour} onchange={onHourChange} min={8} max={21} step={1} />
 							</div>
-							<div class="space-y-1">
-								<p class="text-text-secondary text-xs font-semibold">
+							<div class="bg-surface flex items-center justify-between rounded-xl px-4 py-2.5">
+								<span class="text-text-secondary text-xs font-semibold">
 									{$_('schedule_minute_label')}
-								</p>
+								</span>
 								<Stepper value={timeMinute} onchange={onMinuteChange} min={0} max={30} step={30} />
 							</div>
 						</div>
-						<p class="text-text-secondary text-sm">
-							{$_('scheduled_for')}
-							{calendarDate.toString()}
-							{scheduleTime}
-						</p>
 					</div>
 				{/if}
-			</div>
+			</section>
+		</Drawer.Body>
 
+		<Drawer.Footer>
 			<Button class="w-full" onclick={() => (open = false)}>
 				{$_('done')}
 			</Button>
-		</div>
+		</Drawer.Footer>
 	</Drawer.Content>
 </Drawer.Root>

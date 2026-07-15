@@ -1,6 +1,16 @@
 <script lang="ts">
 	import { api, ApiError } from '$lib/api/client';
-	import { Crown, Share, Check, Search, UserPlus, Clock, Info, Settings } from 'lucide-svelte';
+	import {
+		Crown,
+		Share,
+		Check,
+		Search,
+		UserPlus,
+		Clock,
+		Info,
+		Settings,
+		Pencil
+	} from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import { sessionName } from '$lib/utils';
 	import { Button } from '$lib/components/ui/button';
@@ -561,27 +571,29 @@
 
 	<!-- ── Lobby (admin or already joined) ── -->
 {:else}
-	<main class="pt-safe-page mx-auto max-w-[480px] space-y-6 px-6 pb-6">
-		<nav class="flex items-center justify-between">
-			<div class="space-y-0.5">
-				<p class="text-text-secondary text-xs">
-					{#if session.scheduled_at}
-						{new Date(session.scheduled_at).toLocaleString(undefined, {
-							weekday: 'short',
-							month: 'short',
-							day: 'numeric',
-							hour: '2-digit',
-							minute: '2-digit'
-						})}
-					{:else}
-						{$_('lobby_waiting')}
-					{/if}
-				</p>
+	<main class="pt-safe-page mx-auto w-full max-w-[480px] space-y-6 px-4 pb-6">
+		<nav class="space-y-1">
+			<!-- Status -->
+			<p class="text-text-disabled text-[11px] font-bold tracking-[0.12em] uppercase">
+				{#if session.scheduled_at}
+					{new Date(session.scheduled_at).toLocaleString(undefined, {
+						weekday: 'short',
+						month: 'short',
+						day: 'numeric',
+						hour: '2-digit',
+						minute: '2-digit'
+					})}
+				{:else}
+					{$_('lobby_waiting')}
+				{/if}
+			</p>
+			<!-- Name + actions on one row -->
+			<div class="flex items-center justify-between gap-2">
 				<!-- Click-to-edit name (admin only) -->
 				{#if isAdmin && editingName}
 					<input
 						bind:this={nameInputEl}
-						class="text-primary border-primary w-full border-b bg-transparent text-sm font-semibold focus:outline-none"
+						class="text-text-primary border-primary min-w-0 flex-1 border-b bg-transparent text-2xl font-[800] focus:outline-none"
 						bind:value={nameInput}
 						maxlength={48}
 						placeholder={$_('lobby_name_placeholder')}
@@ -590,53 +602,59 @@
 					/>
 				{:else if isAdmin}
 					<button
-						class="text-primary text-left text-sm font-semibold transition-opacity hover:opacity-70"
+						class="group flex min-w-0 flex-1 items-center gap-1.5 text-left"
 						onclick={() => {
 							nameInput = session.name ?? '';
 							editingName = true;
 						}}
 					>
-						{session.name || $_('lobby_name_placeholder')}
+						<span class="text-text-primary min-w-0 truncate text-2xl font-[800]">
+							{session.name || $_('lobby_name_placeholder')}
+						</span>
+						<Pencil
+							size={15}
+							class="text-text-disabled group-hover:text-text-secondary shrink-0 transition-colors"
+						/>
 					</button>
 				{:else}
-					<p class="text-primary text-sm font-semibold">{sessionName(session)}</p>
+					<h1 class="text-text-primary min-w-0 flex-1 truncate text-2xl font-[800]">
+						{sessionName(session)}
+					</h1>
 				{/if}
-			</div>
-			<div class="flex items-center gap-2">
-				<div class="text-text-secondary text-right text-xs">
-					{$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', {
-						values: { n: session.courts }
-					})} · {session.points + ' pts'} · {gameModeName}{#if session.rounds_total}
-						· {session.rounds_total} rds{/if}
+				<div class="flex shrink-0 items-center gap-0.5">
+					{#if isAdmin}
+						<button
+							onclick={() => (configDrawerOpen = true)}
+							aria-label={$_('lobby_edit_config')}
+							class="text-text-disabled hover:bg-surface-raised hover:text-text-secondary flex h-8 w-8 items-center justify-center rounded-full transition-colors"
+						>
+							<Settings size={17} />
+						</button>
+					{/if}
+					{#if isAdmin || alreadyJoined}
+						<a
+							href="/"
+							class="text-text-disabled hover:bg-surface-raised hover:text-text-secondary flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors"
+							aria-label="Back to home">×</a
+						>
+					{/if}
 				</div>
+			</div>
+			<!-- Config summary — tap the mode for rules -->
+			<p class="text-text-secondary text-xs">
 				<button
 					onclick={() => (showRules = true)}
-					aria-label={$_('lobby_rules_button')}
-					class="text-text-disabled hover:text-text-secondary transition-colors"
+					class="hover:text-text-primary capitalize underline decoration-dotted underline-offset-2 transition-colors"
 				>
-					<Info size={16} />
+					{session.game_mode}
 				</button>
-				{#if isAdmin || alreadyJoined}
-					<a
-						href="/"
-						class="text-text-disabled hover:bg-surface-raised hover:text-text-secondary flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors"
-						aria-label="Back to home">×</a
-					>
-				{/if}
-			</div>
+				· {$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', {
+					values: { n: session.courts }
+				})} · {session.points}
+				{$_('invite_points')}{#if session.rounds_total}
+					· {session.rounds_total} rds{/if}
+			</p>
 		</nav>
-
-		<!-- Config summary + Edit drawer (admin) -->
-		{#if isAdmin}
-			<Button
-				onclick={() => (configDrawerOpen = true)}
-				variant="ghost"
-				class="text-primary hover:text-primary-hover hover:bg-surface-raised h-auto w-full justify-center p-3"
-				aria-label={$_('lobby_edit_config')}
-			>
-				<Settings size={20} />
-			</Button>
-		{/if}
 
 		<!-- Join code + share -->
 		<div class="bg-surface-raised space-y-3 rounded-2xl px-5 py-4">
@@ -904,4 +922,4 @@
 />
 
 <!-- Session Config Drawer -->
-<SessionConfig bind:open={configDrawerOpen} {session} sessionId={session.id} />
+<SessionConfig bind:open={configDrawerOpen} {session} sessionId={session.id} {onRefresh} />
