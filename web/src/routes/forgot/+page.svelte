@@ -2,6 +2,8 @@
 	import { api } from '$lib/api/client';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import AuthShell from '$lib/components/AuthShell.svelte';
 	import { _ } from 'svelte-i18n';
 
 	let email = $state('');
@@ -21,13 +23,8 @@
 	}
 </script>
 
-<main class="pt-safe-page flex min-h-svh flex-col items-center px-6 pb-12">
-	<div class="flex w-full max-w-sm flex-1 flex-col justify-center space-y-8">
-		<div class="space-y-1">
-			<h1 class="text-primary text-[28px] font-[800]">OpenPadel</h1>
-			<p class="text-text-secondary">{$_('forgot_subtitle')}</p>
-		</div>
-
+<AuthShell subtitle={$_('forgot_subtitle')} backHref="/auth">
+	{#snippet children()}
 		{#if sent}
 			<div class="bg-surface-raised space-y-1 rounded-2xl px-5 py-5">
 				<p class="font-semibold">{$_('forgot_sent_title')}</p>
@@ -42,32 +39,26 @@
 				class="space-y-4"
 			>
 				<div class="space-y-2">
-					<p class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase">
+					<Label
+						for="email"
+						class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase"
+					>
 						{$_('auth_email_label')}
-					</p>
+					</Label>
 					<Input
+						id="email"
 						bind:value={email}
 						type="email"
 						placeholder={$_('auth_email_placeholder')}
 						autocomplete="email"
-						class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
+						class="bg-surface-raised rounded-2xl px-4 py-3.5 text-sm"
 					/>
 				</div>
 
-				<Button
-					type="submit"
-					disabled={loading || !email.trim()}
-					class="bg-primary hover:bg-primary-hover h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white"
-				>
+				<Button type="submit" disabled={loading || !email.trim()} size="cta">
 					{loading ? $_('forgot_button_loading') : $_('forgot_button')}
 				</Button>
 			</form>
 		{/if}
-
-		<div class="flex justify-center">
-			<a href="/auth" class="text-text-disabled hover:text-text-secondary text-xs">
-				← {$_('auth_back_home')}
-			</a>
-		</div>
-	</div>
-</main>
+	{/snippet}
+</AuthShell>
