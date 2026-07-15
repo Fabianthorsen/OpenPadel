@@ -2,11 +2,15 @@
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
-	import { Trophy, UserPlus, Check } from 'lucide-svelte';
+	import { Trophy } from 'lucide-svelte';
 	import { shortName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import AvatarWithContactBadge from '$lib/components/ui/AvatarWithContactBadge.svelte';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { auth } from '$lib/auth.svelte';
+	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 	import type { SessionStream } from '$lib/stores/sessionStream.svelte';
 
 	let {
@@ -45,6 +49,29 @@
 		if (!auth.token) return;
 		await api.contacts.add(auth.token, userID);
 		addedContacts = { ...addedContacts, [userID]: true };
+	}
+
+	async function shareResults() {
+		const text = `${sessionName || 'Tournament results'} ${window.location.href}`;
+		if (navigator.share) {
+			try {
+				await navigator.share({ title: sessionName, text });
+			} catch {
+				// User cancelled
+			}
+		} else {
+			navigator.clipboard.writeText(text).then(() => {
+				toast.success($_('leaderboard_share_copied'));
+			});
+		}
+	}
+
+	function newSession() {
+		goto('/?create=1');
+	}
+
+	function closeSession() {
+		goto(auth.user ? '/profile' : '/');
 	}
 
 	onMount(() => {
@@ -157,20 +184,6 @@
 							>{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}L</span
 						>
 					</div>
-					{#if auth.token && s.user_id && s.user_id !== auth.user?.id}
-						{@const isContact = existingContacts[s.user_id] || addedContacts[s.user_id]}
-						<button
-							onclick={() => !isContact && addContact(s.user_id!)}
-							disabled={isContact}
-							class="mt-2 flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors
-                {isContact
-								? 'bg-border text-text-disabled cursor-default'
-								: 'bg-primary-muted text-primary hover:bg-primary hover:text-primary-foreground'}"
-						>
-							{#if isContact}<Check size={10} />{:else}<UserPlus size={10} />{/if}
-							{isContact ? 'Added' : 'Add'}
-						</button>
-					{/if}
 
 					<!-- Podium bar: gold/silver/bronze medal colors -->
 					<div
@@ -192,15 +205,20 @@
 					{$_('leaderboard_ranking')}
 				</p>
 				{#each leaderboard.standings.slice(3) as s (s.player_id)}
-					{@const isContact = existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? '']}
+					{@const isContact = !!(existingContacts[s.user_id ?? ''] || addedContacts[s.user_id ?? ''])}
+					{@const showBadge = !!(auth.token && s.user_id && s.user_id !== auth.user?.id)}
 					<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
 						<span class="text-text-disabled w-6 text-sm font-[800] tabular-nums">{s.rank}</span>
-						<Avatar
+						<AvatarWithContactBadge
 							icon={s.avatar_icon}
 							color={s.avatar_color}
 							name={s.name}
 							size="sm"
 							ring="ring-2 ring-primary/30"
+							{showBadge}
+							{isContact}
+							targetName={s.name}
+							onAdd={() => addContact(s.user_id!)}
 						/>
 						<span class="flex-1 truncate text-sm font-semibold">{shortName(s.name)}</span>
 						<div class="flex items-center gap-1 text-[11px] font-bold tabular-nums">
@@ -216,30 +234,24 @@
 						<span class="text-text-disabled text-[10px] font-bold tracking-widest uppercase"
 							>{$_('leaderboard_pts')}</span
 						>
-						{#if auth.token && s.user_id && s.user_id !== auth.user?.id}
-							<button
-								onclick={() => !isContact && addContact(s.user_id!)}
-								disabled={isContact}
-								class="flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors
-                  {isContact
-									? 'bg-border text-text-disabled cursor-default'
-									: 'bg-primary-muted text-primary hover:bg-primary hover:text-primary-foreground'}"
-							>
-								{#if isContact}<Check size={10} />{:else}<UserPlus size={10} />{/if}
-							</button>
-						{/if}
 					</div>
 				{/each}
 			</div>
 		{/if}
 
-		<div class="flex justify-center">
-			<a
-				href="/"
-				class="border-border text-text-secondary hover:border-text-secondary hover:text-text-primary rounded-full border px-5 py-2 text-sm transition-colors"
-			>
-				✕ {$_('leaderboard_close')}
-			</a>
+		<!-- Actions -->
+		<div class="flex flex-col gap-3 pt-2">
+			<div class="flex gap-2">
+				<Button onclick={shareResults} variant="secondary" class="flex-1">
+					{$_('leaderboard_share')}
+				</Button>
+				<Button onclick={newSession} class="flex-1">
+					{$_('leaderboard_new_session')}
+				</Button>
+			</div>
+			<Button onclick={closeSession} variant="outline" class="w-full">
+				{$_('leaderboard_close')}
+			</Button>
 		</div>
 	{:else}
 		<!-- ── Live Standings (calm & lean) ── -->

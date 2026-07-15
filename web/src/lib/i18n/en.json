@@ -154,6 +154,12 @@
 	"leaderboard_close": "Close",
 	"leaderboard_ranking": "Ranking",
 	"leaderboard_live": "Live",
+	"leaderboard_share": "Share Results",
+	"leaderboard_share_text": "Check out the results from {name}!",
+	"leaderboard_share_copied": "Results link copied",
+	"leaderboard_new_session": "New Session",
+	"avatar_contact_add": "Add {name} to contacts",
+	"avatar_contact_added": "{name} added to contacts",
 
 	"auth_login_subtitle": "Sign in to track your stats.",
 	"auth_register_subtitle": "Create an account to track your stats.",
