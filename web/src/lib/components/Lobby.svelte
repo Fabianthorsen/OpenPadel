@@ -16,6 +16,7 @@
 	import { _ } from 'svelte-i18n';
 	import { auth } from '$lib/auth.svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import SessionConfig from '$lib/components/SessionConfig.svelte';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { goto } from '$app/navigation';
@@ -71,6 +72,9 @@
 	let playerSearchLoading = $state(false);
 	let playerSearchDebounce: ReturnType<typeof setTimeout>;
 	let sessionInvites = $state<App.Invite[]>([]);
+
+	// SessionConfig drawer state
+	let configDrawerOpen = $state(false);
 
 	// ── Inline config editing state ──
 	let editingName = $state(false);
@@ -1045,3 +1049,6 @@
 	onconfirm={cancel}
 	oncancel={() => (showCancelDialog = false)}
 />
+
+<!-- Session Config Drawer -->
+<SessionConfig bind:open={configDrawerOpen} {session} sessionId={session.id} />

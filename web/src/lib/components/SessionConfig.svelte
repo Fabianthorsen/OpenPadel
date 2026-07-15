@@ -196,109 +196,94 @@
 			>
 		</Drawer.Header>
 
-		<div class="space-y-6 px-6 pb-8 overflow-y-auto">
-
-		<!-- Game Mode -->
-		<div class="space-y-2">
-			<p class="text-sm font-semibold">{$_('create_game_mode_label')}</p>
-			<PillToggleGroup value={configMode} onchange={onModeChange}>
-				<PillToggleItem value="americano">Americano</PillToggleItem>
-				<PillToggleItem value="mexicano">Mexicano</PillToggleItem>
-			</PillToggleGroup>
-		</div>
-
-		<!-- Courts -->
-		<div class="space-y-2">
-			<p class="text-sm font-semibold">{$_('create_courts_label')}</p>
-			<PillToggleGroup value={configCourts.toString()} onchange={(v: string) => onCourtsChange(parseInt(v))}>
-				{#each Array.from({ length: maxCourts }, (_, i) => i + 1) as court}
-					<PillToggleItem
-						value={court.toString()}
-						disabled={courtsDisabled.includes(court)}
-					>
-						{court}
-					</PillToggleItem>
-				{/each}
-			</PillToggleGroup>
-		</div>
-
-		<!-- Points -->
-		<div class="space-y-2">
-			<p class="text-sm font-semibold">{$_('create_points_label')}</p>
-			<Stepper
-				bind:value={configPoints}
-				onchange={onPointsChange}
-				min={11}
-				max={31}
-				step={1}
-			/>
-		</div>
-
-		<!-- Rounds -->
-		{#if configMode === 'mexicano'}
+		<div class="space-y-6 overflow-y-auto px-6 pb-8">
+			<!-- Game Mode -->
 			<div class="space-y-2">
-				<p class="text-sm font-semibold">{$_('lobby_rounds_label')}</p>
-				<PillToggleGroup
-					value={roundsMode}
-					onchange={(v: string) => onRoundsModeChange(v as 'fixed' | 'unlimited')}
-				>
-					<PillToggleItem value="fixed">{$_('lobby_rounds_mode_fixed')}</PillToggleItem>
-					<PillToggleItem value="unlimited">{$_('lobby_rounds_mode_unlimited')}</PillToggleItem>
+				<p class="text-sm font-semibold">{$_('create_game_mode_label')}</p>
+				<PillToggleGroup value={configMode} onchange={onModeChange}>
+					<PillToggleItem value="americano">Americano</PillToggleItem>
+					<PillToggleItem value="mexicano">Mexicano</PillToggleItem>
 				</PillToggleGroup>
-				{#if roundsMode === 'fixed'}
-					<Stepper
-						bind:value={configRounds}
-						onchange={onRoundsChange}
-						min={minRounds}
-						max={maxRounds}
-						step={1}
-					/>
-				{/if}
 			</div>
-		{/if}
 
-		<!-- Schedule -->
-		<div class="space-y-2">
-			<label class="flex items-center gap-2">
-				<input
-					type="checkbox"
-					checked={scheduleEnabled}
-					onchange={(e) => commitSchedule(e.currentTarget.checked)}
-					class="rounded"
-				/>
-				<span class="text-sm font-semibold">{$_('schedule_session')}</span>
-			</label>
-			{#if scheduleEnabled && calendarDate}
-				<div class="space-y-4">
-					<Calendar bind:value={calendarDate} onchange={commitScheduleTime} />
-					<div class="grid grid-cols-2 gap-3">
-						<div class="space-y-1">
-							<p class="text-xs font-semibold text-text-secondary">{$_('schedule_hour_label')}</p>
-							<Stepper
-								value={timeHour}
-								onchange={onHourChange}
-								min={8}
-								max={21}
-								step={1}
-							/>
-						</div>
-						<div class="space-y-1">
-							<p class="text-xs font-semibold text-text-secondary">{$_('schedule_minute_label')}</p>
-							<Stepper
-								value={timeMinute}
-								onchange={onMinuteChange}
-								min={0}
-								max={30}
-								step={30}
-							/>
-						</div>
-					</div>
-					<p class="text-sm text-text-secondary">
-						{$_('scheduled_for')} {calendarDate.toString()} {scheduleTime}
-					</p>
+			<!-- Courts -->
+			<div class="space-y-2">
+				<p class="text-sm font-semibold">{$_('create_courts_label')}</p>
+				<PillToggleGroup
+					value={configCourts.toString()}
+					onchange={(v: string) => onCourtsChange(parseInt(v))}
+				>
+					{#each Array.from({ length: maxCourts }, (_, i) => i + 1) as court}
+						<PillToggleItem value={court.toString()} disabled={courtsDisabled.includes(court)}>
+							{court}
+						</PillToggleItem>
+					{/each}
+				</PillToggleGroup>
+			</div>
+
+			<!-- Points -->
+			<div class="space-y-2">
+				<p class="text-sm font-semibold">{$_('create_points_label')}</p>
+				<Stepper bind:value={configPoints} onchange={onPointsChange} min={11} max={31} step={1} />
+			</div>
+
+			<!-- Rounds -->
+			{#if configMode === 'mexicano'}
+				<div class="space-y-2">
+					<p class="text-sm font-semibold">{$_('lobby_rounds_label')}</p>
+					<PillToggleGroup
+						value={roundsMode}
+						onchange={(v: string) => onRoundsModeChange(v as 'fixed' | 'unlimited')}
+					>
+						<PillToggleItem value="fixed">{$_('lobby_rounds_mode_fixed')}</PillToggleItem>
+						<PillToggleItem value="unlimited">{$_('lobby_rounds_mode_unlimited')}</PillToggleItem>
+					</PillToggleGroup>
+					{#if roundsMode === 'fixed'}
+						<Stepper
+							bind:value={configRounds}
+							onchange={onRoundsChange}
+							min={minRounds}
+							max={maxRounds}
+							step={1}
+						/>
+					{/if}
 				</div>
 			{/if}
-		</div>
+
+			<!-- Schedule -->
+			<div class="space-y-2">
+				<label class="flex items-center gap-2">
+					<input
+						type="checkbox"
+						checked={scheduleEnabled}
+						onchange={(e) => commitSchedule(e.currentTarget.checked)}
+						class="rounded"
+					/>
+					<span class="text-sm font-semibold">{$_('schedule_session')}</span>
+				</label>
+				{#if scheduleEnabled && calendarDate}
+					<div class="space-y-4">
+						<Calendar bind:value={calendarDate} onchange={commitScheduleTime} />
+						<div class="grid grid-cols-2 gap-3">
+							<div class="space-y-1">
+								<p class="text-text-secondary text-xs font-semibold">{$_('schedule_hour_label')}</p>
+								<Stepper value={timeHour} onchange={onHourChange} min={8} max={21} step={1} />
+							</div>
+							<div class="space-y-1">
+								<p class="text-text-secondary text-xs font-semibold">
+									{$_('schedule_minute_label')}
+								</p>
+								<Stepper value={timeMinute} onchange={onMinuteChange} min={0} max={30} step={30} />
+							</div>
+						</div>
+						<p class="text-text-secondary text-sm">
+							{$_('scheduled_for')}
+							{calendarDate.toString()}
+							{scheduleTime}
+						</p>
+					</div>
+				{/if}
+			</div>
 
 			<Button class="w-full" onclick={() => (open = false)}>
 				{$_('done')}
