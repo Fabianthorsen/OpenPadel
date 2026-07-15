@@ -2,9 +2,14 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { api } from '$lib/api/client';
+	import { ApiError } from '$lib/api/client';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import PasswordInput from '$lib/components/ui/password-input/password-input.svelte';
+	import AuthShell from '$lib/components/AuthShell.svelte';
 	import { _ } from 'svelte-i18n';
+	import { toast } from 'svelte-sonner';
+	import { translateApiError } from '$lib/i18n/errors';
 
 	const token = page.url.searchParams.get('token') ?? '';
 
@@ -19,20 +24,16 @@
 			await api.auth.resetPassword(token, password);
 			goto('/auth?reset=1');
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Something went wrong';
+			error =
+				e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error');
 		} finally {
 			loading = false;
 		}
 	}
 </script>
 
-<main class="pt-safe-page flex min-h-svh flex-col items-center px-6 pb-12">
-	<div class="flex w-full max-w-sm flex-1 flex-col justify-center space-y-8">
-		<div class="space-y-1">
-			<h1 class="text-primary text-[28px] font-[800]">OpenPadel</h1>
-			<p class="text-text-secondary">{$_('reset_subtitle')}</p>
-		</div>
-
+<AuthShell subtitle={$_('reset_subtitle')}>
+	{#snippet children()}
 		{#if !token}
 			<p class="text-destructive text-sm">{$_('reset_invalid_link')}</p>
 		{:else}
@@ -44,30 +45,30 @@
 				class="space-y-4"
 			>
 				<div class="space-y-2">
-					<p class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase">
+					<Label
+						for="password"
+						class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase"
+					>
 						{$_('reset_new_password_label')}
-					</p>
-					<Input
+					</Label>
+					<PasswordInput
+						id="password"
 						bind:value={password}
-						type="password"
 						placeholder={$_('auth_password_placeholder')}
 						autocomplete="new-password"
-						class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
+						ariaInvalid={!!error}
+						class="bg-surface-raised rounded-2xl px-4 py-3.5 text-sm"
 					/>
 				</div>
 
 				{#if error}
-					<p class="text-destructive text-sm">{error}</p>
+					<p class="text-destructive text-sm" role="alert">{error}</p>
 				{/if}
 
-				<Button
-					type="submit"
-					disabled={loading || password.length < 8}
-					class="bg-primary hover:bg-primary-hover h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white"
-				>
+				<Button type="submit" disabled={loading || password.length < 8} size="cta">
 					{loading ? $_('reset_button_loading') : $_('reset_button')}
 				</Button>
 			</form>
 		{/if}
-	</div>
-</main>
+	{/snippet}
+</AuthShell>

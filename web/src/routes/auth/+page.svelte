@@ -4,6 +4,9 @@
 	import { auth } from '$lib/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import PasswordInput from '$lib/components/ui/password-input/password-input.svelte';
+	import AuthShell from '$lib/components/AuthShell.svelte';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { ApiError } from '$lib/api/client';
@@ -25,6 +28,7 @@
 	let firstName = $state('');
 	let lastName = $state('');
 	let loading = $state(false);
+	let error = $state('');
 
 	// Show reset success toast once translations load
 	let resetToastShown = false;
@@ -36,6 +40,7 @@
 	});
 
 	async function submit() {
+		error = '';
 		loading = true;
 		try {
 			if (mode === 'login') {
@@ -45,25 +50,16 @@
 			}
 			goto(redirect || '/');
 		} catch (e) {
-			toast.error(
-				e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error')
-			);
+			error =
+				e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error');
 		} finally {
 			loading = false;
 		}
 	}
 </script>
 
-<main class="pt-safe-page flex min-h-svh flex-col items-center px-6 pb-12">
-	<div class="flex w-full max-w-sm flex-1 flex-col justify-center space-y-8">
-		<!-- Brand -->
-		<div class="space-y-1">
-			<h1 class="text-primary text-[28px] font-[800]">OpenPadel</h1>
-			<p class="text-text-secondary">
-				{mode === 'login' ? $_('auth_login_subtitle') : $_('auth_register_subtitle')}
-			</p>
-		</div>
-
+<AuthShell subtitle={mode === 'login' ? $_('auth_login_subtitle') : $_('auth_register_subtitle')}>
+	{#snippet children()}
 		<form
 			onsubmit={(e) => {
 				e.preventDefault();
@@ -74,63 +70,80 @@
 			{#if mode === 'register'}
 				<div class="flex gap-3">
 					<div class="flex-1 space-y-2">
-						<p class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase">
+						<Label
+							for="firstName"
+							class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase"
+						>
 							{$_('auth_first_name_label')}
-						</p>
+						</Label>
 						<Input
+							id="firstName"
 							bind:value={firstName}
 							placeholder={$_('auth_first_name_placeholder')}
 							maxlength={32}
 							autocomplete="given-name"
-							class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
+							class="bg-surface-raised rounded-2xl px-4 py-3.5 text-sm"
 						/>
 					</div>
 					<div class="flex-1 space-y-2">
-						<p class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase">
+						<Label
+							for="lastName"
+							class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase"
+						>
 							{$_('auth_last_name_label')}
-						</p>
+						</Label>
 						<Input
+							id="lastName"
 							bind:value={lastName}
 							placeholder={$_('auth_last_name_placeholder')}
 							maxlength={32}
 							autocomplete="family-name"
-							class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
+							class="bg-surface-raised rounded-2xl px-4 py-3.5 text-sm"
 						/>
 					</div>
 				</div>
 			{/if}
 
 			<div class="space-y-2">
-				<p class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase">
+				<Label
+					for="email"
+					class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase"
+				>
 					{$_('auth_email_label')}
-				</p>
+				</Label>
 				<Input
+					id="email"
 					bind:value={email}
 					type="email"
 					placeholder={$_('auth_email_placeholder')}
 					autocomplete="email"
-					class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
+					ariaInvalid={!!error}
+					class="bg-surface-raised rounded-2xl px-4 py-3.5 text-sm"
 				/>
 			</div>
 
 			<div class="space-y-2">
-				<p class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase">
+				<Label
+					for="password"
+					class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase"
+				>
 					{$_('auth_password_label')}
-				</p>
-				<Input
+				</Label>
+				<PasswordInput
+					id="password"
 					bind:value={password}
-					type="password"
 					placeholder={$_('auth_password_placeholder')}
 					autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
-					class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
+					ariaInvalid={!!error}
+					class="bg-surface-raised rounded-2xl px-4 py-3.5 text-sm"
 				/>
 			</div>
 
-			<Button
-				type="submit"
-				disabled={loading}
-				class="bg-primary hover:bg-primary-hover h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white"
-			>
+			{#if error}
+				<p class="text-destructive text-sm" role="alert">{error}</p>
+			{/if}
+
+			<Button type="submit" disabled={loading} size="cta">
 				{loading ? '…' : mode === 'login' ? $_('auth_login_button') : $_('auth_register_button')}
 			</Button>
 
@@ -143,11 +156,21 @@
 			{/if}
 		</form>
 
-		<!-- Back -->
-		<div class="flex justify-center">
-			<a href="/" class="text-text-disabled hover:text-text-secondary text-xs">
-				← {$_('auth_back_home')}
-			</a>
+		<!-- Mode toggle -->
+		<div class="flex justify-center gap-1 text-center text-xs">
+			<span class="text-text-secondary">
+				{mode === 'login' ? $_('auth_no_account') : $_('auth_have_account')}
+			</span>
+			<button
+				type="button"
+				onclick={() => {
+					mode = mode === 'login' ? 'register' : 'login';
+					error = '';
+				}}
+				class="text-primary hover:text-primary-hover font-semibold"
+			>
+				{mode === 'login' ? $_('auth_switch_register') : $_('auth_switch_login')}
+			</button>
 		</div>
-	</div>
-</main>
+	{/snippet}
+</AuthShell>

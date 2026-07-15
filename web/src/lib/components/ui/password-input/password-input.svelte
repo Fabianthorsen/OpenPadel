@@ -12,11 +12,13 @@
 	 */
 	let {
 		value = $bindable(''),
+		id = undefined,
 		class: className,
 		...restProps
 	}: {
 		/** value: two-way binding. */
 		value?: string;
+		id?: string;
 		class?: string;
 		[key: string]: unknown;
 	} = $props();
@@ -26,6 +28,7 @@
 
 <div class="relative" data-slot="password-input">
 	<Input
+		{id}
 		type={show ? 'text' : 'password'}
 		bind:value
 		class={cn('pr-10', className)}
