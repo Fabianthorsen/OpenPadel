@@ -49,8 +49,11 @@
 
 	$effect(() => {
 		if (auth.ready && auth.user) {
-			const notfound = page.url.searchParams.get('notfound');
-			goto(notfound ? '/profile?notfound=1' : '/profile');
+			const params = new URLSearchParams();
+			if (page.url.searchParams.get('create') === '1') params.set('create', '1');
+			if (page.url.searchParams.get('notfound') === '1') params.set('notfound', '1');
+			const query = params.toString();
+			goto(`/profile${query ? `?${query}` : ''}`);
 		}
 	});
 </script>
