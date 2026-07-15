@@ -119,6 +119,68 @@ func TestSubmitScore_InvalidSum(t *testing.T) {
 	res2.Body.Close()
 }
 
+// TestStartLimitedAmericano_RoundCountFromRoster is the frontend<->backend
+// integration regression for the Americano round count.
+//
+// Each layer is correct in isolation (the frontend computes 10, the backend's
+// TotalRounds/GenerateRounds produce 10), but the real flow used to yield 7:
+// the client only used its computed value to bound a stepper and actually sent
+// a hardcoded rounds_total of 7, which the backend took at face value. The fix
+// makes the backend the source of truth — for a limited ("fixed") Americano it
+// recomputes the fair count from the roster at start.
+//
+// This drives the exact HTTP sequence the web client issues: create a 2-court
+// Americano, join 10 players, PATCH it to "limited" (sending the stale 7 the UI
+// used to send), start it, and assert the session starts with 10 rounds.
+func TestStartLimitedAmericano_RoundCountFromRoster(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "admin@test.local", "Admin", "password123")
+	sessID, adminToken := mustCreateSessionWithParams(t, srv, userToken, 2, 24, "americano")
+
+	for i := 0; i < 10; i++ {
+		mustJoinSession(t, srv, sessID, fmt.Sprintf("Player %02d", i+1), adminToken)
+	}
+
+	// The client marks the session "limited" by sending a non-nil rounds_total.
+	// It sends the old buggy default (7); the backend must ignore the value and
+	// derive the fair count (TotalRounds(10,2) = 10) from the actual roster.
+	patchRes := patchReq(t, srv, "/api/sessions/"+sessID, map[string]any{"rounds_total": 7}, adminToken)
+	if patchRes.StatusCode != http.StatusOK {
+		t.Fatalf("patch config: expected 200, got %d", patchRes.StatusCode)
+	}
+	patchRes.Body.Close() //nolint:errcheck
+
+	mustStartSession(t, srv, sessID, adminToken)
+
+	res := getReq(t, srv, "/api/sessions/"+sessID+"/rounds", adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("get rounds: expected 200, got %d", res.StatusCode)
+	}
+	var body struct {
+		Rounds []struct {
+			Number  int      `json:"number"`
+			Bench   []string `json:"bench"`
+			Matches []struct {
+				ID string `json:"id"`
+			} `json:"matches"`
+		} `json:"rounds"`
+	}
+	decodeBody(t, res, &body)
+
+	if len(body.Rounds) != 10 {
+		t.Fatalf("limited 10p/2c Americano started with %d rounds, want 10 (backend must recompute, not use the client's 7)", len(body.Rounds))
+	}
+	// Sanity: every round fills both courts and benches exactly 2 of the 10.
+	for _, r := range body.Rounds {
+		if len(r.Matches) != 2 {
+			t.Errorf("round %d: %d matches, want 2", r.Number, len(r.Matches))
+		}
+		if len(r.Bench) != 2 {
+			t.Errorf("round %d: %d benched, want 2", r.Number, len(r.Bench))
+		}
+	}
+}
+
 func TestGetLeaderboard(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	sessID, adminToken, _ := setupStartedSession(t, srv)

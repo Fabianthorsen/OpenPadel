@@ -38,9 +38,17 @@ func New(store Store) *Service {
 func (s *Service) Start(w http.ResponseWriter, sessionID string, sess *domain.Session, active []domain.Player, endsAt *time.Time) error {
 	rand.Shuffle(len(active), func(i, j int) { active[i], active[j] = active[j], active[i] })
 
-	// Fixed mode: generate the full bench rotation upfront.
+	// Limited mode: generate the full bench rotation upfront.
+	//
+	// The round count for Americano is derived from the roster, not user-picked:
+	// a fair tournament for N players on C courts is exactly TotalRounds(N, C)
+	// rounds (everyone sits out equally, enough rounds to be meaningful). The
+	// config's rounds_total only signals "limited" vs "unlimited" (non-nil vs nil);
+	// the value itself is recomputed here from the actual player count at start, so
+	// a stale/placeholder value from the client (e.g. a default 7) can't produce an
+	// unfair schedule. This is the calculation promised in the update handler.
 	if sess.RoundsTotal != nil {
-		totalRounds := *sess.RoundsTotal
+		totalRounds := americano.TotalRounds(len(active), sess.Courts)
 		rounds := americano.GenerateRounds(active, sess.Courts, totalRounds)
 		if err := s.store.SaveRounds(sessionID, rounds); err != nil {
 			writeError(w, http.StatusInternalServerError, "server_error")

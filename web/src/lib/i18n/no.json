@@ -354,5 +354,6 @@
 	"scheduled_for": "Planlagt for",
 	"rounds_fixed": "Begrenset",
 	"rounds_unlimited": "Ubegrenset",
+	"rounds_auto_hint": "Beregnes automatisk ut fra spillere og baner.",
 	"done": "Ferdig"
 }

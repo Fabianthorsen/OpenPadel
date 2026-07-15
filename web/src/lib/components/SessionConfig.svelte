@@ -6,7 +6,14 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Drawer from '$lib/components/ui/drawer';
-	import { Trophy, LayoutGrid, Target, Repeat, CalendarClock } from 'lucide-svelte';
+	import {
+		Trophy,
+		LayoutGrid,
+		Target,
+		Repeat,
+		CalendarClock,
+		Infinity as InfinityIcon
+	} from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { _ } from 'svelte-i18n';
@@ -157,9 +164,12 @@
 		roundsMode = mode;
 		if (mode === 'unlimited') {
 			patchConfig({ rounds_total: null });
-		} else {
-			patchConfig({ rounds_total: configRounds });
+			return;
 		}
+		// A non-null rounds_total just signals "limited". Mexicano is user-picked;
+		// Americano's count is derived by the backend, so we send the display value
+		// (the backend recomputes the fair count from the roster at start anyway).
+		patchConfig({ rounds_total: configMode === 'americano' ? americanoRounds : configRounds });
 	}
 
 	async function commitSchedule(enabled: boolean) {
@@ -202,15 +212,24 @@
 		label: String(p)
 	}));
 
+	// Mirror the backend, which schedules from active players only (removed players
+	// are soft-deactivated but stay in session.players).
+	const activePlayerCount = $derived(session.players.filter((p) => p.active).length);
+
 	const minRounds = 1;
 	const maxRounds = $derived(
 		Math.max(
 			7,
-			configMode === 'americano'
-				? calculateAmericanoRounds(session.players.length, configCourts)
-				: 5
+			configMode === 'americano' ? calculateAmericanoRounds(activePlayerCount, configCourts) : 5
 		)
 	);
+
+	// Display-only preview of the fair Americano round count. Recomputes on every
+	// settings change (players joining/leaving, court count). The backend is the
+	// source of truth and recomputes the same value from the roster at start; this
+	// just shows the admin roughly how long the tournament will be. Not shown when
+	// the session is unlimited.
+	const americanoRounds = $derived(calculateAmericanoRounds(activePlayerCount, configCourts));
 </script>
 
 <Drawer.Root bind:open>
@@ -289,9 +308,15 @@
 					onChange={(v) => onRoundsModeChange(v as 'fixed' | 'unlimited')}
 					ariaLabel={$_('lobby_rounds_label')}
 				/>
-				{#if roundsMode === 'fixed'}
-					<div class="bg-surface flex items-center justify-between rounded-xl px-4 py-2.5">
-						<span class="text-text-secondary text-sm">{$_('lobby_rounds_label')}</span>
+				<div class="bg-surface flex items-center justify-between rounded-xl px-4 py-2.5">
+					<span class="text-text-secondary text-sm">{$_('lobby_rounds_label')}</span>
+					{#if roundsMode === 'unlimited'}
+						<InfinityIcon
+							size={20}
+							class="text-text-primary"
+							aria-label={$_('lobby_rounds_mode_unlimited')}
+						/>
+					{:else if configMode === 'mexicano'}
 						<Stepper
 							bind:value={configRounds}
 							onchange={onRoundsChange}
@@ -299,7 +324,15 @@
 							max={maxRounds}
 							step={1}
 						/>
-					</div>
+					{:else}
+						<!-- Americano: read-only preview; the backend computes the fair count. -->
+						<span class="text-text-primary text-base font-[800] tabular-nums">
+							{americanoRounds}
+						</span>
+					{/if}
+				</div>
+				{#if roundsMode === 'fixed' && configMode === 'americano'}
+					<p class="text-text-secondary text-xs">{$_('rounds_auto_hint')}</p>
 				{/if}
 			</section>
 

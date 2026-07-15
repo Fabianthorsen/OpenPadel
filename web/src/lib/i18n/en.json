@@ -354,5 +354,6 @@
 	"scheduled_for": "Scheduled for",
 	"rounds_fixed": "Fixed",
 	"rounds_unlimited": "Unlimited",
+	"rounds_auto_hint": "Calculated automatically from players and courts.",
 	"done": "Done"
 }
