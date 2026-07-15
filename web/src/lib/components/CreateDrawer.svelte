@@ -6,7 +6,7 @@
 	import { translateApiError } from '$lib/i18n/errors';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { ToggleGroup as RadioGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
+	import { SegmentedControl, type SegmentedOption } from '$lib/components/ui/segmented-control';
 	import * as Drawer from '$lib/components/ui/drawer';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
@@ -15,6 +15,11 @@
 	let name = $state('');
 	let creating = $state(false);
 	let error = $state('');
+
+	const modeOptions: SegmentedOption[] = [
+		{ value: 'americano', label: 'Americano' },
+		{ value: 'mexicano', label: 'Mexicano' }
+	];
 
 	async function create() {
 		if (!auth.user) {
@@ -72,10 +77,11 @@
 		<div class="flex-1 space-y-6 overflow-y-auto px-6 pb-8">
 			<!-- Game mode -->
 			<div class="space-y-3">
-				<RadioGroup bind:value={gameMode}>
-					<ToggleGroupItem value="americano" class="flex-1">Americano</ToggleGroupItem>
-					<ToggleGroupItem value="mexicano" class="flex-1">Mexicano</ToggleGroupItem>
-				</RadioGroup>
+				<SegmentedControl
+					options={modeOptions}
+					bind:value={gameMode}
+					ariaLabel={$_('create_game_mode_label')}
+				/>
 				<p class="text-text-secondary text-sm">
 					{gameMode === 'mexicano' ? $_('create_mexicano_hint') : $_('create_americano_hint')}
 				</p>
