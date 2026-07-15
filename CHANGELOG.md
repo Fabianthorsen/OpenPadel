@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.17.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.16.1...v1.17.0) (2026-07-15)
+
+
+### Features
+
+* **#179:** implement active round view - adaptive layout, calm design, standings pill ([#195](https://github.com/Fabianthorsen/OpenPadel/issues/195)) ([e71f99f](https://github.com/Fabianthorsen/OpenPadel/commit/e71f99f7091cb01989a9c0ebd0fa786f42989405))
+* **#191:** design system cleanup — strip dark: leakage + consolidate lucide ([#204](https://github.com/Fabianthorsen/OpenPadel/issues/204)) ([8e3aa40](https://github.com/Fabianthorsen/OpenPadel/commit/8e3aa4045e2b6b2bc1cf9fcbcd13018832d96623))
+* implement auth redesign (closes [#186](https://github.com/Fabianthorsen/OpenPadel/issues/186)) ([#203](https://github.com/Fabianthorsen/OpenPadel/issues/203)) ([44be616](https://github.com/Fabianthorsen/OpenPadel/commit/44be61615750fb02c017a9381515e300b862a239))
+* implement home/landing page redesign ([#185](https://github.com/Fabianthorsen/OpenPadel/issues/185)) ([#202](https://github.com/Fabianthorsen/OpenPadel/issues/202)) ([067c310](https://github.com/Fabianthorsen/OpenPadel/commit/067c31025ad872d199e54df83134bb1c9966f9be))
+* implement live leaderboard redesign (closes [#181](https://github.com/Fabianthorsen/OpenPadel/issues/181)) ([#197](https://github.com/Fabianthorsen/OpenPadel/issues/197)) ([304d713](https://github.com/Fabianthorsen/OpenPadel/commit/304d7136c940d5fd0c0a2555473a0c2b2486dc0a))
+* implement session complete screen redesign ([#183](https://github.com/Fabianthorsen/OpenPadel/issues/183)) ([#200](https://github.com/Fabianthorsen/OpenPadel/issues/200)) ([0db59f4](https://github.com/Fabianthorsen/OpenPadel/commit/0db59f45f56fc39f5c9fc639890206637547bc35))
+* implement session creation (closes [#184](https://github.com/Fabianthorsen/OpenPadel/issues/184)) ([#201](https://github.com/Fabianthorsen/OpenPadel/issues/201)) ([6be40d9](https://github.com/Fabianthorsen/OpenPadel/commit/6be40d9b2c0fbbc86a6a598b2edfe6b2d2cb08cb))
+* install Skeleton UI and configure OpenPadel theme ([7eb19f0](https://github.com/Fabianthorsen/OpenPadel/commit/7eb19f0b0ea4da3a7ebda2351c72471ae2548170))
+* profile dashboard & settings pages ([#187](https://github.com/Fabianthorsen/OpenPadel/issues/187)) ([#193](https://github.com/Fabianthorsen/OpenPadel/issues/193)) ([d7d2975](https://github.com/Fabianthorsen/OpenPadel/commit/d7d29752374a282ceb191b7695926371399e730a))
+* recover admin tokens for authenticated tournament creators on login ([#199](https://github.com/Fabianthorsen/OpenPadel/issues/199)) ([fa16037](https://github.com/Fabianthorsen/OpenPadel/commit/fa1603789b61c4a2484b62de11cb846676f9b2c0))
+* redesign Lobby with SessionConfig drawer and live round count ([#198](https://github.com/Fabianthorsen/OpenPadel/issues/198)) ([7cbca80](https://github.com/Fabianthorsen/OpenPadel/commit/7cbca80fd8b6d02c5efff4050447283b7ed1a0c6))
+* redesign score entry with ScoreBoard and editable multi-court (closes [#180](https://github.com/Fabianthorsen/OpenPadel/issues/180)) ([#196](https://github.com/Fabianthorsen/OpenPadel/issues/196)) ([95d51b4](https://github.com/Fabianthorsen/OpenPadel/commit/95d51b4ab1aacb66d75f6f944eadfc2d6ae08b96))
+* **ui:** shared design-system foundation — tokens + reusable components ([#189](https://github.com/Fabianthorsen/OpenPadel/issues/189)) ([#190](https://github.com/Fabianthorsen/OpenPadel/issues/190)) ([b8179ab](https://github.com/Fabianthorsen/OpenPadel/commit/b8179ab6aabc9f05826e6ef0e441bc0ede72df7d))
+
 ## [1.16.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.16.0...v1.16.1) (2026-07-13)
 
 
