@@ -4,16 +4,29 @@
 	import { auth } from '$lib/auth.svelte';
 	import { _ } from 'svelte-i18n';
 	import { translateApiError } from '$lib/i18n/errors';
-	import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { SegmentedControl, type SegmentedOption } from '$lib/components/ui/segmented-control';
 	import * as Drawer from '$lib/components/ui/drawer';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	let gameMode = $state<'americano' | 'mexicano'>('americano');
+	let name = $state('');
 	let creating = $state(false);
 	let error = $state('');
 
+	const modeOptions: SegmentedOption[] = [
+		{ value: 'americano', label: 'Americano' },
+		{ value: 'mexicano', label: 'Mexicano' }
+	];
+
 	async function create() {
+		if (!auth.user) {
+			error = 'Not authenticated';
+			return;
+		}
+
 		creating = true;
 		error = '';
 		try {
@@ -24,7 +37,7 @@
 			const session = await api.sessions.create(
 				{
 					game_mode: gameMode,
-					name: '',
+					name: name.trim(),
 					...defaults
 				},
 				auth.token ?? undefined
@@ -33,7 +46,7 @@
 			localStorage.setItem(`admin_token_${session.id}`, adminToken);
 			const player = await api.players.join(
 				session.id,
-				auth.user!.display_name,
+				auth.user.display_name,
 				auth.token ?? undefined,
 				adminToken
 			);
@@ -64,26 +77,37 @@
 		<div class="flex-1 space-y-6 overflow-y-auto px-6 pb-8">
 			<!-- Game mode -->
 			<div class="space-y-3">
-				<PillToggleGroup bind:value={gameMode}>
-					<PillToggleItem value="americano">Americano</PillToggleItem>
-					<PillToggleItem value="mexicano">Mexicano</PillToggleItem>
-				</PillToggleGroup>
+				<SegmentedControl
+					options={modeOptions}
+					bind:value={gameMode}
+					ariaLabel={$_('create_game_mode_label')}
+				/>
 				<p class="text-text-secondary text-sm">
 					{gameMode === 'mexicano' ? $_('create_mexicano_hint') : $_('create_americano_hint')}
 				</p>
+			</div>
+
+			<!-- Session name (optional) -->
+			<div class="space-y-2.5">
+				<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
+					{$_('create_tournament_name_label')}
+				</p>
+				<Input
+					bind:value={name}
+					placeholder={$_('create_tournament_name_placeholder')}
+					maxlength={48}
+					disabled={creating}
+					class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
+				/>
 			</div>
 
 			{#if error}
 				<p class="text-destructive text-sm">{error}</p>
 			{/if}
 
-			<button
-				onclick={create}
-				disabled={creating}
-				class="bg-primary hover:bg-primary-hover w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white transition-colors disabled:opacity-60"
-			>
+			<Button onclick={create} disabled={creating} size="cta" variant="default">
 				{creating ? $_('create_button_loading') : $_('create_button')}
-			</button>
+			</Button>
 		</div>
 	</Drawer.Content>
 </Drawer.Root>
