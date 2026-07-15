@@ -16,6 +16,7 @@ function createAuthStore() {
 				const me = await api.auth.me(stored);
 				token = stored;
 				user = me;
+				await recoverSessions(stored);
 			} catch {
 				localStorage.removeItem(TOKEN_KEY);
 			}
@@ -28,6 +29,7 @@ function createAuthStore() {
 		token = res.token;
 		user = res.user;
 		localStorage.setItem(TOKEN_KEY, res.token);
+		await recoverSessions(res.token);
 	}
 
 	async function register(email: string, displayName: string, password: string) {
@@ -35,6 +37,22 @@ function createAuthStore() {
 		token = res.token;
 		user = res.user;
 		localStorage.setItem(TOKEN_KEY, res.token);
+		await recoverSessions(res.token);
+	}
+
+	async function recoverSessions(authToken: string) {
+		try {
+			const res = await api.auth.getSessions(authToken);
+			if (res.sessions) {
+				for (const session of res.sessions) {
+					if (session.admin_token) {
+						localStorage.setItem(`admin_token_${session.id}`, session.admin_token);
+					}
+				}
+			}
+		} catch {
+			// Silently fail if we can't recover sessions
+		}
 	}
 
 	async function logout() {

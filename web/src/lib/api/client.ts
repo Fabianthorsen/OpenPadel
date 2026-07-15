@@ -65,6 +65,8 @@ export const api = {
 				undefined,
 				token
 			),
+		getSessions: (token: string) =>
+			request<{ sessions: App.Session[] }>('GET', '/auth/sessions', undefined, token),
 		deleteAccount: (token: string) => request<void>('DELETE', '/auth/account', undefined, token),
 		forgotPassword: (email: string) => request<void>('POST', '/auth/forgot', { email }),
 		resetPassword: (token: string, password: string) =>

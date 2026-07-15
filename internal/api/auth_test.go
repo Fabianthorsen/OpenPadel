@@ -218,3 +218,65 @@ func TestDeleteAccount(t *testing.T) {
 	}
 	res2.Body.Close()
 }
+
+func TestGetUserSessions(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	alice := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+
+	// Create two sessions as Alice
+	sess1ID, sess1Token := mustCreateSession(t, srv, alice)
+	sess2ID, sess2Token := mustCreateSession(t, srv, alice)
+
+	// Get Alice's sessions
+	res := getReq(t, srv, "/api/auth/sessions", alice)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+
+	var body struct {
+		Sessions []struct {
+			ID         string `json:"id"`
+			AdminToken string `json:"admin_token"`
+		} `json:"sessions"`
+	}
+	decodeBody(t, res, &body)
+
+	if len(body.Sessions) != 2 {
+		t.Errorf("expected 2 sessions, got %d", len(body.Sessions))
+	}
+
+	// Verify admin tokens are included and match
+	sessionTokens := map[string]string{
+		sess1ID: sess1Token,
+		sess2ID: sess2Token,
+	}
+	found := make(map[string]bool)
+	for _, sess := range body.Sessions {
+		if sess.AdminToken == "" {
+			t.Errorf("expected non-empty AdminToken for session %s", sess.ID)
+		}
+		if expectedToken, ok := sessionTokens[sess.ID]; ok {
+			if sess.AdminToken != expectedToken {
+				t.Errorf("expected token %q for session %s, got %q", expectedToken, sess.ID, sess.AdminToken)
+			}
+			found[sess.ID] = true
+		}
+	}
+
+	for sessionID := range sessionTokens {
+		if !found[sessionID] {
+			t.Errorf("expected session %s in response", sessionID)
+		}
+	}
+}
+
+func TestGetUserSessions_Unauthenticated(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := getReq(t, srv, "/api/auth/sessions", "")
+	if res.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", res.StatusCode)
+	}
+	if err := res.Body.Close(); err != nil {
+		t.Errorf("failed to close response body: %v", err)
+	}
+}

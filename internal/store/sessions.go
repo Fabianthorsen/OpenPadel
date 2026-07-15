@@ -254,3 +254,41 @@ func (s *Store) DeleteSession(id string) error {
 	s.queries.DeletePlayers(context.Background(), id)
 	return s.queries.DeleteSession(context.Background(), id)
 }
+
+func (s *Store) GetUserSessions(userID string) ([]*domain.Session, error) {
+	rows, err := s.queries.GetUserSessions(context.Background(), sql.NullString{String: userID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	sessions := make([]*domain.Session, 0, len(rows))
+	for _, row := range rows {
+		sess := &domain.Session{
+			ID:            row.ID,
+			AdminToken:    row.AdminToken,
+			Status:        domain.SessionStatus(row.Status),
+			Name:          row.Name,
+			GameMode:      domain.GameMode(row.GameMode),
+			Courts:        int(row.Courts),
+			Points:        int(row.Points),
+			CreatorUserID: row.CreatorUserID.String,
+			CreatedAt:     parseTime(row.CreatedAt),
+			UpdatedAt:     parseTime(row.UpdatedAt),
+		}
+		if row.RoundsTotal.Valid {
+			v := int(row.RoundsTotal.Int64)
+			sess.RoundsTotal = &v
+		}
+		if row.ScheduledAt.Valid {
+			sess.ScheduledAt = parseTimePtr(row.ScheduledAt.String)
+		}
+		if row.CourtDurationMinutes.Valid {
+			v := int(row.CourtDurationMinutes.Int64)
+			sess.CourtDurationMinutes = &v
+		}
+		if row.EndsAt.Valid {
+			sess.EndsAt = parseTimePtr(row.EndsAt.String)
+		}
+		sessions = append(sessions, sess)
+	}
+	return sessions, nil
+}

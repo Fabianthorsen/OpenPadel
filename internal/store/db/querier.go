@@ -63,6 +63,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id string) (GetUserByIDRow, error)
 	GetUserIDByToken(ctx context.Context, token string) (string, error)
+	GetUserSessions(ctx context.Context, creatorUserID sql.NullString) ([]GetUserSessionsRow, error)
 	IncrementTournamentWinCount(ctx context.Context, id string) error
 	InsertBench(ctx context.Context, arg InsertBenchParams) error
 	InsertMatch(ctx context.Context, arg InsertMatchParams) error
