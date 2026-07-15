@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { ChevronDown } from 'lucide-svelte';
+	import { ChevronDown } from '@lucide/svelte';
 	import { cn } from '$lib/utils.js';
 
 	/**

@@ -6,7 +6,7 @@
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
 	import { sessionDialog } from '$lib/stores/sessionDialog';
-	import { Pencil, Shield, Clock, Trophy } from 'lucide-svelte';
+	import { Pencil, Shield, Clock, Trophy } from '@lucide/svelte';
 	import { sessionName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { Button } from '$lib/components/ui/button';

@@ -10,7 +10,7 @@
 		Info,
 		Settings,
 		Pencil
-	} from 'lucide-svelte';
+	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { sessionName } from '$lib/utils';
 	import { Button } from '$lib/components/ui/button';

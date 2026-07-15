@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
-	import { Trophy, UserPlus, Check } from 'lucide-svelte';
+	import { Trophy, UserPlus, Check } from '@lucide/svelte';
 	import { shortName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import AvatarWithContactBadge from '$lib/components/ui/AvatarWithContactBadge.svelte';

@@ -5,7 +5,7 @@
 	import { auth } from '$lib/auth.svelte';
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
-	import { CalendarDays, Radio, UserPlus, X, Search, Check, Settings } from 'lucide-svelte';
+	import { CalendarDays, Radio, UserPlus, X, Search, Check, Settings } from '@lucide/svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import CreateDrawer from '$lib/components/CreateDrawer.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
