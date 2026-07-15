@@ -112,10 +112,7 @@
 						<DividerOr label={$_('home_join_code_divider')} />
 
 						<div class="space-y-3">
-							<label for="join-code-input" class="sr-only">
-								{$_('home_join_code_placeholder')}
-							</label>
-							<JoinCodeInput id="join-code-input" onComplete={(code) => goto(`/s/${code}`)} />
+							<JoinCodeInput onComplete={(code) => goto(`/s/${code}`)} />
 						</div>
 					{/if}
 				</div>
