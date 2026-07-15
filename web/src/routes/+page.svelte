@@ -116,13 +116,16 @@
 				d.setHours(h, m, 0, 0);
 				iso = d.toISOString();
 			}
-			const session = await api.sessions.create({
-				courts,
-				points,
-				name: tournamentName.trim(),
-				game_mode: 'americano',
-				scheduled_at: iso
-			});
+			const session = await api.sessions.create(
+				{
+					courts,
+					points,
+					name: tournamentName.trim(),
+					game_mode: 'americano',
+					scheduled_at: iso
+				},
+				auth.token ?? undefined
+			);
 			const adminToken = session.admin_token!;
 			localStorage.setItem(`admin_token_${session.id}`, adminToken);
 			const player = await api.players.join(
