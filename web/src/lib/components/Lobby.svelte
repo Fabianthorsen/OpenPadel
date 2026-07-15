@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { api, ApiError } from '$lib/api/client';
-	import { Crown, Share, Check, Search, UserPlus, Clock, Info } from 'lucide-svelte';
+	import { Crown, Share, Check, Search, UserPlus, Clock, Info, Settings } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import { sessionName } from '$lib/utils';
 	import { Button } from '$lib/components/ui/button';
@@ -626,163 +626,16 @@
 			</div>
 		</nav>
 
-		<!-- Admin config section -->
+		<!-- Config summary + Edit drawer (admin) -->
 		{#if isAdmin}
-			<div class="bg-surface-raised space-y-5 rounded-2xl px-5 py-4">
-				<SectionLabel>{$_('lobby_config_label')}</SectionLabel>
-
-				<!-- Game mode -->
-				<div class="space-y-2">
-					<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-						{$_('create_game_mode_label')}
-					</p>
-					<div class="grid grid-cols-2 gap-2">
-						{#each ['americano', 'mexicano'] as const as mode}
-							<button
-								type="button"
-								onclick={() => onModeChange(mode)}
-								class="rounded-xl border-2 px-3 py-3 text-left transition-colors {configMode ===
-								mode
-									? 'border-primary bg-primary/10'
-									: 'border-border bg-surface'}"
-							>
-								<p class="text-sm font-semibold capitalize">{mode}</p>
-								<p class="text-text-secondary mt-0.5 text-[11px]">
-									{$_(mode === 'americano' ? 'create_americano_hint' : 'create_mexicano_hint')}
-								</p>
-							</button>
-						{/each}
-					</div>
-				</div>
-
-				<!-- Courts -->
-				<div class="space-y-2">
-					<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-						{$_('create_courts_label')}
-					</p>
-					<PillToggleGroup
-						value={configCourts.toString()}
-						onValueChange={(v) => v && onCourtsChange(parseInt(v))}
-					>
-						{#each Array.from({ length: MAX_COURTS }, (_, i) => i + 1) as n}
-							{@const activePlayers = session.players.filter((p) => p.active).length}
-							{@const minPlayersNeeded = n * 4}
-							{@const isDisabled =
-								configMode === 'mexicano' && n === 1 ? true : activePlayers < minPlayersNeeded}
-							<PillToggleItem value={n.toString()} disabled={isDisabled}>{n}</PillToggleItem>
-						{/each}
-					</PillToggleGroup>
-				</div>
-
-				<!-- Points -->
-				<div class="space-y-2">
-					<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-						{$_('create_points_label')}
-					</p>
-					<PillToggleGroup
-						value={configPoints.toString()}
-						onValueChange={(v) => v && onPointsChange(parseInt(v))}
-					>
-						{#each [16, 24, 32] as p}
-							<PillToggleItem value={p.toString()}>{p}</PillToggleItem>
-						{/each}
-					</PillToggleGroup>
-				</div>
-
-				<!-- Rounds mode toggle + stepper (Mexicano & Americano unlimited) -->
-				{#if configMode === 'mexicano' || configMode === 'americano'}
-					<div class="space-y-2">
-						<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-							{$_('lobby_rounds_label')}
-						</p>
-						<PillToggleGroup
-							value={roundsMode}
-							onValueChange={(v) => v && onRoundsModeChange(v as 'fixed' | 'unlimited')}
-						>
-							<PillToggleItem value="fixed">{$_('lobby_rounds_mode_fixed')}</PillToggleItem>
-							<PillToggleItem value="unlimited">{$_('lobby_rounds_mode_unlimited')}</PillToggleItem>
-						</PillToggleGroup>
-						{#if roundsMode === 'fixed'}
-							<div class="flex items-center justify-end gap-4">
-								{#if configMode === 'mexicano'}
-									<Stepper bind:value={configRounds} min={1} max={20} onchange={onRoundsChange} />
-								{:else if configMode === 'americano'}
-									{@const activePlayers = session.players.filter((p) => p.active).length}
-									{@const calculatedRounds =
-										activePlayers > 0 ? calculateAmericanoRounds(activePlayers, configCourts) : 0}
-									<p class="text-text-secondary text-sm">
-										{activePlayers > 0 ? `${calculatedRounds} rounds` : 'Waiting for players...'}
-									</p>
-								{/if}
-							</div>
-						{/if}
-					</div>
-				{/if}
-
-				<!-- Schedule -->
-				<div class="space-y-2">
-					<button
-						type="button"
-						onclick={() => commitSchedule(!scheduleEnabled)}
-						class="flex w-full items-center justify-between rounded-xl border px-4 py-3 transition-colors {scheduleEnabled
-							? 'border-primary bg-primary/10'
-							: 'border-border bg-surface'}"
-					>
-						<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-							{$_('create_schedule_label')}
-						</p>
-						{#if scheduleEnabled && calendarDate}
-							<p class="text-primary text-sm font-semibold">
-								{calendarDate.toDate(getLocalTimeZone()).toLocaleDateString(undefined, {
-									weekday: 'short',
-									month: 'short',
-									day: 'numeric'
-								})}
-							</p>
-						{:else}
-							<span class="text-text-disabled text-xs"
-								>{scheduleEnabled ? '–' : $_('lobby_schedule_tap_to_add')}</span
-							>
-						{/if}
-					</button>
-					{#if scheduleEnabled}
-						<div class="bg-surface overflow-hidden rounded-xl">
-							<Calendar
-								bind:value={calendarDate}
-								minValue={today(getLocalTimeZone())}
-								weekStartsOn={1}
-								onValueChange={() => commitScheduleTime()}
-							/>
-							<div class="space-y-3 px-4 pb-4">
-								<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
-									{$_('create_schedule_time_label')}
-								</p>
-								<div class="flex items-center justify-center gap-3">
-									<div class="flex flex-col items-center gap-1">
-										<p class="text-text-disabled text-[10px] tracking-[0.1em] uppercase">
-											{$_('schedule_hour_label')}
-										</p>
-										<Stepper value={timeHour} min={8} max={21} onchange={onHourChange} />
-									</div>
-									<p class="text-text-secondary pb-1 text-xl font-[800]">:</p>
-									<div class="flex flex-col items-center gap-1">
-										<p class="text-text-disabled text-[10px] tracking-[0.1em] uppercase">
-											{$_('schedule_minute_label')}
-										</p>
-										<Stepper
-											value={timeMinute}
-											min={0}
-											max={30}
-											step={30}
-											onchange={onMinuteChange}
-										/>
-									</div>
-								</div>
-							</div>
-						</div>
-					{/if}
-				</div>
-			</div>
+			<Button
+				onclick={() => (configDrawerOpen = true)}
+				variant="ghost"
+				class="text-primary hover:text-primary-hover hover:bg-surface-raised h-auto w-full justify-center p-3"
+				aria-label={$_('lobby_edit_config')}
+			>
+				<Settings size={20} />
+			</Button>
 		{/if}
 
 		<!-- Join code + share -->

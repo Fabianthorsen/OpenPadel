@@ -189,11 +189,13 @@
 <Drawer.Root bind:open>
 	<Drawer.Content class="mx-auto w-full max-w-[480px]">
 		<Drawer.Header>
-			<h2 class="text-lg font-[800]">{$_('lobby_edit_config')}</h2>
-			<Drawer.Close
-				class="bg-surface-raised text-text-secondary hover:bg-border h-8 w-8 items-center justify-center rounded-full text-xl leading-none transition-colors"
-				>×</Drawer.Close
-			>
+			<div class="flex w-full items-center justify-between">
+				<h2 class="text-lg font-[800]">{$_('lobby_edit_config')}</h2>
+				<Drawer.Close
+					class="bg-surface-raised text-text-secondary hover:bg-border flex h-8 w-8 items-center justify-center rounded-full text-xl leading-none transition-colors"
+					>×</Drawer.Close
+				>
+			</div>
 		</Drawer.Header>
 
 		<div class="space-y-6 overflow-y-auto px-6 pb-8">
