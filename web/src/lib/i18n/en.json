@@ -341,6 +341,7 @@
 	"api_error_contact_not_found": "Contact not found",
 
 	"create_americano_hint": "Rotate partners every round. Everyone plays every game.",
+	"lobby_edit_config": "Edit settings",
 	"lobby_config_label": "Tournament settings",
 	"lobby_invite_label": "Invite players",
 	"lobby_name_placeholder": "Tournament name",
@@ -348,5 +349,10 @@
 	"lobby_rounds_mode_fixed": "Fixed",
 	"lobby_rounds_mode_unlimited": "Unlimited",
 	"api_error_mexicano_player_count_mismatch": "Mexicano needs {required} players — you have {current}",
-	"api_error_americano_insufficient_players": "Need {required} players for {courts} courts — you have {current}"
+	"api_error_americano_insufficient_players": "Need {required} players for {courts} courts — you have {current}",
+	"schedule_session": "Schedule for later",
+	"scheduled_for": "Scheduled for",
+	"rounds_fixed": "Fixed",
+	"rounds_unlimited": "Unlimited",
+	"done": "Done"
 }
