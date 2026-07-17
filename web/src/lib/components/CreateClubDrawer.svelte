@@ -84,7 +84,7 @@
 						placeholder="Optional description"
 						rows="3"
 						disabled={creating}
-						class="bg-surface-raised"
+						class="bg-surface-raised w-full resize-none rounded-2xl border-0 px-4 py-3.5 text-sm"
 					/>
 				</div>
 			</div>

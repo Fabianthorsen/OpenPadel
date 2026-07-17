@@ -12,12 +12,12 @@
 
 <button
 	{onclick}
-	class="bg-card flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
+	class="bg-surface-raised hover:bg-border flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left transition-colors"
 >
-	<Avatar color={club.avatar_color} name={club.name} size="md" />
+	<Avatar color={club.avatar_color} name={club.name} size="sm" />
 	<div class="min-w-0 flex-1">
-		<h2 class="text-sm font-semibold">{club.name}</h2>
-		<p class="text-xs text-slate-500">{club.roster_count} members • {club.my_role}</p>
+		<p class="truncate text-sm font-semibold">{club.name}</p>
+		<p class="text-text-secondary text-xs">{club.roster_count} members • {club.my_role}</p>
 	</div>
-	<span class="text-slate-400">→</span>
+	<span class="text-text-secondary text-sm">→</span>
 </button>
