@@ -176,12 +176,20 @@
 			navigator.clearAppBadge?.().catch(() => {});
 			showUpcoming = upcoming.length > 0;
 			showHistory = tournaments.length > 0;
+		} catch (err) {
+			console.error('Failed to load profile data:', err);
+			toast.error('Failed to load profile');
 		} finally {
 			loading = false;
 		}
 	}
 
 	onMount(async () => {
+		// Wait for auth to be ready before checking token
+		while (!auth.ready) {
+			await new Promise((resolve) => setTimeout(resolve, 10));
+		}
+
 		if (!auth.token) {
 			goto('/auth');
 			return;
