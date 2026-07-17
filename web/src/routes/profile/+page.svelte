@@ -9,9 +9,11 @@
 	import { CalendarDays, Radio, UserPlus, X, Search, Check, Settings } from '@lucide/svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import CreateDrawer from '$lib/components/CreateDrawer.svelte';
+	import CreateClubDrawer from '$lib/components/CreateClubDrawer.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import RatingGate from '$lib/components/RatingGate.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import ClubCard from '$lib/components/ui/ClubCard.svelte';
 	import { Section } from '$lib/components/ui/section';
 	import { JoinCodeInput } from '$lib/components/ui/join-code-input';
 	import { ExpandableList } from '$lib/components/ui/expandable-list';
@@ -53,6 +55,11 @@
 	let showContacts = $state(false);
 	let showUpcoming = $state(false);
 	let showHistory = $state(false);
+	let showClubs = $state(false);
+
+	let clubs = $state<App.ClubListItem[]>([]);
+	let clubsLoading = $state(false);
+	let showCreateClubDrawer = $state(false);
 
 	let invites = $state<App.Invite[]>([]);
 	let contacts = $state<App.Contact[]>([]);
@@ -183,6 +190,26 @@
 			loading = false;
 		}
 	}
+
+	async function loadClubs() {
+		if (!auth.token) return;
+		clubsLoading = true;
+		try {
+			clubs = await api.clubs.list(auth.token);
+			showClubs = clubs.length > 0;
+		} catch (err) {
+			console.error('Failed to load clubs:', err);
+			toast.error('Failed to load clubs');
+		} finally {
+			clubsLoading = false;
+		}
+	}
+
+	$effect(() => {
+		if (auth.ready && auth.token) {
+			loadClubs();
+		}
+	});
 
 	onMount(async () => {
 		// Wait for auth to be ready before checking token
@@ -566,10 +593,35 @@
 		</Section>
 	{/if}
 
+	{#if clubs.length > 0 || clubsLoading}
+		<Section title="Clubs" bind:open={showClubs}>
+			{#snippet children()}
+				{#if clubsLoading}
+					<div class="flex items-center justify-center py-8">
+						<Spinner label="Loading clubs..." />
+					</div>
+				{:else}
+					<div class="space-y-2">
+						{#each clubs as club}
+							<ClubCard {club} onclick={() => goto(`/clubs/${club.id}`)} />
+						{/each}
+					</div>
+					<button
+						onclick={() => (showCreateClubDrawer = true)}
+						class="text-primary hover:text-primary-hover w-full rounded-2xl px-4 py-3.5 text-sm font-semibold transition-colors"
+					>
+						+ Create Club
+					</button>
+				{/if}
+			{/snippet}
+		</Section>
+	{/if}
+
 	<Footer />
 </main>
 
 <CreateDrawer bind:open={showCreateDrawer} />
+<CreateClubDrawer bind:open={showCreateClubDrawer} />
 
 <!-- Home backfill gate (#213): legacy accounts with a null self_rating must pick a
      level before using the dashboard. Only mounts here on home, never on deep links. -->
