@@ -595,26 +595,26 @@
 		</Section>
 	{/if}
 
-	{#if (clubs && clubs.length > 0) || clubsLoading}
-		<Section title="Clubs" bind:open={showClubs}>
+	{#if auth.user}
+		<Section title={`Clubs (${clubs.length})`} bind:open={showClubs}>
 			{#snippet children()}
 				{#if clubsLoading}
 					<div class="flex items-center justify-center py-8">
 						<Spinner label="Loading clubs..." />
 					</div>
-				{:else if clubs && clubs.length > 0}
+				{:else if clubs.length > 0}
 					<div class="space-y-2">
 						{#each clubs as club}
 							<ClubCard {club} onclick={() => goto(`/clubs/${club.id}`)} />
 						{/each}
 					</div>
-					<button
-						onclick={() => (showCreateClubDrawer = true)}
-						class="text-primary hover:text-primary-hover w-full rounded-2xl px-4 py-3.5 text-sm font-semibold transition-colors"
-					>
-						+ Create Club
-					</button>
 				{/if}
+				<button
+					onclick={() => (showCreateClubDrawer = true)}
+					class="text-primary hover:text-primary-hover w-full rounded-2xl px-4 py-3.5 text-sm font-semibold transition-colors"
+				>
+					+ Create Club
+				</button>
 			{/snippet}
 		</Section>
 	{/if}

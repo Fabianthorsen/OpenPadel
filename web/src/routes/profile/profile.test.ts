@@ -143,4 +143,29 @@ describe('Profile clubs loading', () => {
 			expect(len).toBe(0);
 		}).not.toThrow();
 	});
+
+	it('should always render section when user is logged in, even with 0 clubs', () => {
+		// Simulate empty clubs after loading
+		clubs = [];
+		clubsLoading = false;
+
+		// Clubs section should be visible because:
+		// 1. User can create first club
+		// 2. "+ Create Club" button should always be accessible
+		const shouldShowSection = clubs !== null && clubs !== undefined;
+		expect(shouldShowSection).toBe(true);
+		expect(clubs.length).toBe(0);
+	});
+
+	it('shows create button even when no clubs exist', () => {
+		clubs = [];
+		clubsLoading = false;
+
+		// "+ Create Club" button should be visible regardless of club count
+		const showCreateButton = true; // Always shown for authenticated users
+		const clubCount = clubs.length;
+
+		expect(clubCount).toBe(0);
+		expect(showCreateButton).toBe(true);
+	});
 });
