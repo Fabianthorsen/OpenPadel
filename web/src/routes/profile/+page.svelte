@@ -195,10 +195,12 @@
 		if (!auth.token) return;
 		clubsLoading = true;
 		try {
-			clubs = await api.clubs.list(auth.token);
+			const result = await api.clubs.list(auth.token);
+			clubs = result ?? [];
 			showClubs = clubs.length > 0;
 		} catch (err) {
 			console.error('Failed to load clubs:', err);
+			clubs = [];
 			toast.error('Failed to load clubs');
 		} finally {
 			clubsLoading = false;
@@ -593,14 +595,14 @@
 		</Section>
 	{/if}
 
-	{#if clubs.length > 0 || clubsLoading}
+	{#if (clubs && clubs.length > 0) || clubsLoading}
 		<Section title="Clubs" bind:open={showClubs}>
 			{#snippet children()}
 				{#if clubsLoading}
 					<div class="flex items-center justify-center py-8">
 						<Spinner label="Loading clubs..." />
 					</div>
-				{:else}
+				{:else if clubs && clubs.length > 0}
 					<div class="space-y-2">
 						{#each clubs as club}
 							<ClubCard {club} onclick={() => goto(`/clubs/${club.id}`)} />
