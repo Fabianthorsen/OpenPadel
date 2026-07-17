@@ -55,7 +55,7 @@
 
 <Drawer.Root bind:open>
 	<Drawer.Content>
-		<div class="mx-auto w-full max-w-sm space-y-6 pb-safe-page px-6 py-6">
+		<div class="pb-safe-page mx-auto w-full max-w-sm space-y-6 px-6 py-6">
 			<div class="space-y-2">
 				<Drawer.Title>Create a Club</Drawer.Title>
 				<Drawer.Description>
@@ -90,13 +90,17 @@
 			</div>
 
 			<div class="space-y-3 pt-4">
-				<Button onclick={create} disabled={creating || !name.trim()} class="bg-primary hover:bg-primary-hover h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white">
+				<Button
+					onclick={create}
+					disabled={creating || !name.trim()}
+					class="bg-primary hover:bg-primary-hover h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white"
+				>
 					{creating ? 'Creating...' : 'Create Club'}
 				</Button>
 				<button
 					onclick={() => (showCancelConfirm = true)}
 					disabled={creating}
-					class="w-full text-center text-sm text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
+					class="text-text-secondary hover:text-text-primary w-full text-center text-sm transition-colors disabled:opacity-50"
 				>
 					Cancel
 				</button>

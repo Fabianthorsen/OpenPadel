@@ -249,15 +249,16 @@ export const api = {
 			request<void>('DELETE', '/push/subscribe', { endpoint }, token)
 	},
 	clubs: {
-		create: (token: string, params: {
-			name: string;
-			description: string;
-			avatar_icon: string;
-			avatar_color: string;
-		}) =>
-			request<App.Club>('POST', '/clubs', params, token),
-		list: (token: string) =>
-			request<App.ClubListItem[]>('GET', '/clubs', undefined, token),
+		create: (
+			token: string,
+			params: {
+				name: string;
+				description: string;
+				avatar_icon: string;
+				avatar_color: string;
+			}
+		) => request<App.Club>('POST', '/clubs', params, token),
+		list: (token: string) => request<App.ClubListItem[]>('GET', '/clubs', undefined, token),
 		detail: (token: string, clubId: string) =>
 			request<App.ClubDetail>('GET', `/clubs/${clubId}`, undefined, token)
 	}
