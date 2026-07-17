@@ -51,6 +51,27 @@
 			create();
 		}
 	}
+
+	function disableOtherInputs(focused: HTMLElement) {
+		const container = focused.closest('[data-form-group]');
+		if (!container) return;
+		const inputs = container.querySelectorAll('input, textarea');
+		inputs.forEach((input) => {
+			if (input !== focused) {
+				(input as HTMLInputElement | HTMLTextAreaElement).disabled = true;
+			}
+		});
+	}
+
+	function enableOtherInputs() {
+		if (creating) return;
+		const formGroup = document.querySelector('[data-form-group]');
+		if (!formGroup) return;
+		const inputs = formGroup.querySelectorAll('input, textarea');
+		inputs.forEach((input) => {
+			(input as HTMLInputElement | HTMLTextAreaElement).disabled = false;
+		});
+	}
 </script>
 
 <Drawer.Root bind:open>
@@ -63,7 +84,7 @@
 				</Drawer.Description>
 			</div>
 
-			<div class="space-y-4">
+			<div class="space-y-4" data-form-group>
 				<!-- Club Name -->
 				<div class="space-y-2.5">
 					<SectionLabel>Club Name</SectionLabel>
@@ -71,6 +92,8 @@
 						bind:value={name}
 						placeholder="e.g., Bouvet Padel"
 						onkeydown={handleKeydown}
+						onfocus={(e) => disableOtherInputs(e.target as HTMLElement)}
+						onblur={enableOtherInputs}
 						disabled={creating}
 						class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
 					/>
@@ -83,6 +106,8 @@
 						bind:value={description}
 						placeholder="Optional description"
 						rows="3"
+						onfocus={(e) => disableOtherInputs(e.target as HTMLElement)}
+						onblur={enableOtherInputs}
 						disabled={creating}
 						class="bg-surface-raised w-full resize-none rounded-2xl border-0 px-4 py-3.5 text-sm"
 					/>
