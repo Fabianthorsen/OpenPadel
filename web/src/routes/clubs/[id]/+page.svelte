@@ -4,7 +4,7 @@
 	import { auth } from '$lib/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import MemberRow from '$lib/components/MemberRow.svelte';
+	import MemberRow from '$lib/components/ui/MemberRow.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
