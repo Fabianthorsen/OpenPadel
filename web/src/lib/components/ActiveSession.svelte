@@ -9,7 +9,6 @@
 	import { Pencil, Shield, Clock, Trophy } from '@lucide/svelte';
 	import { sessionName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import RatingBadge from '$lib/components/ui/RatingBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { SectionLabel } from '$lib/components/ui/section-label';
 	import * as Sheet from '$lib/components/ui/sheet';
@@ -276,6 +275,10 @@
 		return `${parts[0]} ${parts[1][0]}.`;
 	}
 
+	function teamLabel(ids: readonly [string, string]) {
+		return `${shortPlayerName(playerName[ids[0]] ?? '?')} & ${shortPlayerName(playerName[ids[1]] ?? '?')}`;
+	}
+
 	const saveTimeout: Record<string, ReturnType<typeof setTimeout>> = {};
 
 	// Determine if layout is single-court or multi-court
@@ -373,10 +376,12 @@
 					<ScoreBoard
 						teamA={{
 							players: [playerById[match.team_a[0]], playerById[match.team_a[1]]].filter(Boolean),
+							name: teamLabel(match.team_a),
 							score: s.a
 						}}
 						teamB={{
 							players: [playerById[match.team_b[0]], playerById[match.team_b[1]]].filter(Boolean),
+							name: teamLabel(match.team_b),
 							score: s.b
 						}}
 						{scored}
@@ -389,20 +394,6 @@
 						onFinalize={() => submitScore(match.id)}
 					/>
 				{:else}
-					<!-- Per-player name + Rating badge, reused for both teams on a court card -->
-					{#snippet teamNames(pa: App.Player | undefined, pb: App.Player | undefined)}
-						<div class="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold">
-							<span class="flex min-w-0 items-center gap-1.5">
-								<span class="min-w-0 truncate">{shortPlayerName(pa?.name ?? '?')}</span>
-								{#if pa}<RatingBadge rating={pa.rating} />{/if}
-							</span>
-							<span class="text-text-disabled shrink-0">&</span>
-							<span class="flex min-w-0 items-center gap-1.5">
-								<span class="min-w-0 truncate">{shortPlayerName(pb?.name ?? '?')}</span>
-								{#if pb}<RatingBadge rating={pb.rating} />{/if}
-							</span>
-						</div>
-					{/snippet}
 					<!-- Multiple courts: Glanceable list layout -->
 					<div class="space-y-3">
 						{#each currentRound.matches as match}
@@ -466,7 +457,7 @@
 											/>
 										</div>
 									</div>
-									{@render teamNames(p1, p2)}
+									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
 									<TeamScore
 										score={s.a}
 										opponentScore={s.b}
@@ -502,7 +493,7 @@
 											/>
 										</div>
 									</div>
-									{@render teamNames(p3, p4)}
+									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_b)}</p>
 									<TeamScore
 										score={s.b}
 										opponentScore={s.a}
@@ -534,7 +525,6 @@
 											size="sm"
 										/>
 										<span class="text-sm font-medium">{p?.name ?? id}</span>
-										{#if p}<RatingBadge rating={p.rating} />{/if}
 									</div>
 								{/each}
 							</div>

@@ -28,7 +28,7 @@
 		stream?: SessionStream | null;
 		inSheet?: boolean;
 		// player_id → 1–5 Rating. Read from the Session's players (the leaderboard
-		// API carries no rating); shown on the live standings rows only.
+		// API carries no rating); shown on the standings rows and the final podium.
 		ratings?: Record<string, number>;
 	} = $props();
 
@@ -184,6 +184,11 @@
 					>
 						{shortName(s.name)}
 					</p>
+					{#if ratings[s.player_id] !== undefined}
+						<div class="mt-1 flex justify-center">
+							<RatingBadge rating={ratings[s.player_id]} />
+						</div>
+					{/if}
 					<p
 						class="text-[10px] font-bold tracking-widest uppercase {isFirst
 							? 'text-primary'
@@ -263,6 +268,9 @@
 							ring="ring-2 ring-primary/30"
 						/>
 						<span class="flex-1 truncate text-sm font-semibold">{shortName(s.name)}</span>
+						{#if ratings[s.player_id] !== undefined}
+							<RatingBadge rating={ratings[s.player_id]} />
+						{/if}
 						<div class="flex items-center gap-1 text-[11px] font-bold tabular-nums">
 							<span class="text-primary">{s.wins ?? 0}W</span>
 							<span class="text-text-disabled">·</span>

@@ -3,12 +3,12 @@
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import RatingBadge from '$lib/components/ui/RatingBadge.svelte';
 	import StepButton from './StepButton.svelte';
 	import TeamScore from './TeamScore.svelte';
 
 	interface Team {
-		players: Array<{ avatar_icon: string; avatar_color: string; name: string; rating: number }>;
+		players: Array<{ avatar_icon: string; avatar_color: string; name: string }>;
+		name: string;
 		score: number;
 	}
 
@@ -40,19 +40,6 @@
 	const canFinalize = $derived(teamA.score + teamB.score === pointsTarget);
 	const atTarget = $derived(teamA.score + teamB.score >= pointsTarget);
 </script>
-
-<!-- Team members with their 1–5 Rating badge, e.g. "Alice 3 & Bob 4" -->
-{#snippet teamNames(players: Team['players'])}
-	<div class="flex flex-wrap items-center justify-center gap-2 text-[15px] font-semibold">
-		{#each players as player, i}
-			{#if i > 0}<span class="text-text-disabled">&</span>{/if}
-			<span class="flex items-center gap-1.5">
-				<span>{player.name}</span>
-				<RatingBadge rating={player.rating} />
-			</span>
-		{/each}
-	</div>
-{/snippet}
 
 <Card class="border-border bg-surface rounded-3xl p-6">
 	<!-- Status chip -->
@@ -93,7 +80,7 @@
 				</div>
 			{/each}
 		</div>
-		{@render teamNames(teamA.players)}
+		<p class="text-[15px] font-semibold">{teamA.name}</p>
 		{#if editable}
 			<div class="flex items-center gap-5">
 				<StepButton
@@ -154,7 +141,7 @@
 		{:else}
 			<TeamScore score={teamB.score} opponentScore={teamA.score} {scored} size="lg" />
 		{/if}
-		{@render teamNames(teamB.players)}
+		<p class="text-[15px] font-semibold">{teamB.name}</p>
 		<div class="flex justify-center">
 			{#each teamB.players as player, i}
 				<div class={i > 0 ? '-ml-3' : ''}>

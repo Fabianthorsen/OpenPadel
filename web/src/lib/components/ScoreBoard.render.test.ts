@@ -18,12 +18,12 @@ beforeAll(async () => {
 });
 
 const teamA = {
-	players: [{ avatar_icon: 'racket', avatar_color: '#3d7a24', name: 'Ann', rating: 4 }],
+	players: [{ avatar_icon: 'racket', avatar_color: '#3d7a24', name: 'Ann' }],
 	name: 'Ann & Bo',
 	score: 0
 };
 const teamB = {
-	players: [{ avatar_icon: 'racket', avatar_color: '#3d7a24', name: 'Cy', rating: 2 }],
+	players: [{ avatar_icon: 'racket', avatar_color: '#3d7a24', name: 'Cy' }],
 	name: 'Cy & Di',
 	score: 0
 };
@@ -45,14 +45,10 @@ function baseProps(overrides = {}) {
 }
 
 describe('ScoreBoard', () => {
-	it('renders each player with their name and Rating badge', () => {
+	it('renders both team names', () => {
 		render(ScoreBoard, { props: baseProps() });
-		expect(screen.getByText('Ann')).toBeInTheDocument();
-		expect(screen.getByText('Cy')).toBeInTheDocument();
-		// The score-entry view (admin taps here) surfaces both players' ratings.
-		const badges = screen.getAllByLabelText('Rating');
-		expect(badges).toHaveLength(2);
-		expect(badges.map((b) => b.textContent?.trim())).toEqual(['4', '2']);
+		expect(screen.getByText('Ann & Bo')).toBeInTheDocument();
+		expect(screen.getByText('Cy & Di')).toBeInTheDocument();
 	});
 
 	it('shows steppers and tappable scores when editable (admin + not scored)', () => {

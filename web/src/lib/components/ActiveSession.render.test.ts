@@ -166,14 +166,4 @@ describe('ActiveSession multi-court score editing', () => {
 		expect(screen.queryByRole('button', { name: /edit team a score/i })).not.toBeInTheDocument();
 		expect(screen.queryByRole('button', { name: /set team a score/i })).not.toBeInTheDocument();
 	});
-
-	it('shows a Rating badge for all four players on every court', () => {
-		// 2 courts × 4 players, each seeded at rating 3 — the admin score-entry
-		// surface must surface every player's rating (unrated → median 3, never blank).
-		render(ActiveSession, makeMultiCourtProps(true));
-
-		const badges = screen.getAllByLabelText('Rating');
-		expect(badges).toHaveLength(8);
-		expect(badges.every((b) => b.textContent?.trim() === '3')).toBe(true);
-	});
 });

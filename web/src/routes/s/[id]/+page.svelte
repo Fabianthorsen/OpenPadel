@@ -38,6 +38,12 @@
 
 	const isAdmin = $derived(!!getAdminToken() || !!session?.is_creator);
 
+	// player_id → 1–5 Rating for the final standings (the leaderboard API has no
+	// rating; read it from the Session's players instead).
+	const playerRatings = $derived(
+		Object.fromEntries((session?.players ?? []).map((p) => [p.id, p.rating]))
+	);
+
 	async function load() {
 		const token = getAdminToken() ?? undefined;
 		try {
@@ -124,7 +130,12 @@
 	{:else if session.status === 'playing' && currentRound}
 		<ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} {stream} />
 	{:else if session.status === 'done'}
-		<Leaderboard sessionId={session.id} sessionName={session.name} complete />
+		<Leaderboard
+			sessionId={session.id}
+			sessionName={session.name}
+			ratings={playerRatings}
+			complete
+		/>
 	{:else}
 		<main class="flex flex-1 flex-col items-center justify-center gap-3 px-4">
 			<Spinner />

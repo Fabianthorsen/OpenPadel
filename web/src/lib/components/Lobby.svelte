@@ -16,7 +16,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import RatingBadge from '$lib/components/ui/RatingBadge.svelte';
 	import { SectionLabel } from '$lib/components/ui/section-label';
 	import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
 	const MAX_COURTS = 4;
@@ -761,7 +760,13 @@
 								ring="ring-2 ring-primary/30"
 							/>
 							<span class="text-sm font-medium">{player.name}</span>
-							<RatingBadge rating={player.rating} />
+							<span
+								class="bg-surface text-text-secondary flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums"
+								title={$_('auth_rating_label')}
+								aria-label={$_('auth_rating_label')}
+							>
+								{player.rating}
+							</span>
 							<div class="ml-auto flex items-center gap-1.5">
 								{#if player.id === session.creator_player_id}
 									<Crown size={13} class="text-primary" />
