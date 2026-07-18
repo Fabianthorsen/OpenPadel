@@ -126,11 +126,11 @@ export const api = {
 			request<void>('POST', `/sessions/${id}/close`, undefined, token)
 	},
 	players: {
-		join: (sessionId: string, name: string, token?: string, adminToken?: string) =>
+		join: (sessionId: string, name: string, token?: string, adminToken?: string, rating?: number) =>
 			request<App.Player>(
 				'POST',
 				`/sessions/${sessionId}/players`,
-				{ name },
+				rating === undefined ? { name } : { name, rating },
 				token,
 				adminToken ? { 'X-Admin-Token': adminToken } : undefined
 			),

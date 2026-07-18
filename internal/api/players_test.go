@@ -32,6 +32,40 @@ func TestJoinSession(t *testing.T) {
 	}
 }
 
+func TestJoinSession_GuestWithRating(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _ := mustCreateSession(t, srv, "")
+
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{
+		"name":   "Alice",
+		"rating": 5,
+	}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", res.StatusCode)
+	}
+	var player struct {
+		Rating int `json:"rating"`
+	}
+	decodeBody(t, res, &player)
+	if player.Rating != 5 {
+		t.Errorf("expected guest rating 5, got %d", player.Rating)
+	}
+}
+
+func TestJoinSession_InvalidRating(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _ := mustCreateSession(t, srv, "")
+
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{
+		"name":   "Alice",
+		"rating": 9,
+	}, "")
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for out-of-range rating, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
 func TestJoinSession_EmptyName(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	sessID, _ := mustCreateSession(t, srv, "")
