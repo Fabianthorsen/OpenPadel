@@ -38,6 +38,8 @@
 
 	const playerName = $derived(Object.fromEntries(session.players.map((p) => [p.id, p.name])));
 	const playerById = $derived(Object.fromEntries(session.players.map((p) => [p.id, p])));
+	// player_id → 1–5 Rating for the live standings peek (leaderboard API has no rating).
+	const playerRatings = $derived(Object.fromEntries(session.players.map((p) => [p.id, p.rating])));
 	const maxScore = $derived(session.points);
 
 	let localScores = $state<Record<string, { a: number; b: number }>>({});
@@ -600,7 +602,12 @@
 				<Sheet.Title>{$_('standings_label')}</Sheet.Title>
 			</Sheet.Header>
 			<div class="max-h-[70vh] overflow-y-auto">
-				<Leaderboard sessionId={session.id} sessionName={sessionName(session)} {stream} />
+				<Leaderboard
+					sessionId={session.id}
+					sessionName={sessionName(session)}
+					{stream}
+					ratings={playerRatings}
+				/>
 			</div>
 		</Sheet.Content>
 	</Sheet.Root>

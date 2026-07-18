@@ -1,7 +1,17 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { render, screen, within } from '@testing-library/svelte';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { render, screen } from '@testing-library/svelte';
 import { init, register, waitLocale } from 'svelte-i18n';
 import Leaderboard from './Leaderboard.svelte';
+
+// The live standings load via api.leaderboard.get on mount; stub it so the rows
+// render without reaching the network. Each test overrides the resolved value.
+const getLeaderboard = vi.fn();
+vi.mock('$lib/api/client', () => ({
+	api: {
+		leaderboard: { get: (...args: unknown[]) => getLeaderboard(...args) },
+		contacts: { list: vi.fn().mockResolvedValue([]) }
+	}
+}));
 
 /**
  * Render tests for the live leaderboard (!complete branch).
@@ -65,6 +75,7 @@ function makeLeaderboard(overrides?: Partial<App.Leaderboard>): App.Leaderboard 
 
 describe('Leaderboard (live, !complete)', () => {
 	it('renders a loading state initially', () => {
+		getLeaderboard.mockResolvedValue(makeLeaderboard());
 		const { container } = render(Leaderboard, {
 			props: {
 				sessionId: 's1',
@@ -76,6 +87,7 @@ describe('Leaderboard (live, !complete)', () => {
 	});
 
 	it('has complete=false prop for live mode', () => {
+		getLeaderboard.mockResolvedValue(makeLeaderboard());
 		const { container } = render(Leaderboard, {
 			props: {
 				sessionId: 's1',
@@ -83,5 +95,34 @@ describe('Leaderboard (live, !complete)', () => {
 			}
 		});
 		expect(container).toBeInTheDocument();
+	});
+
+	it('shows each standing row with its player Rating badge', async () => {
+		getLeaderboard.mockResolvedValue(makeLeaderboard());
+		render(Leaderboard, {
+			props: {
+				sessionId: 's1',
+				complete: false,
+				ratings: { p1: 5, p2: 3, p3: 1 }
+			}
+		});
+
+		await screen.findByText('Alice');
+		const badges = screen.getAllByLabelText('Rating');
+		expect(badges.map((b) => b.textContent?.trim())).toEqual(['5', '3', '1']);
+	});
+
+	it('omits the Rating badge for rows with no rating in the map', async () => {
+		getLeaderboard.mockResolvedValue(makeLeaderboard());
+		render(Leaderboard, {
+			props: {
+				sessionId: 's1',
+				complete: false
+				// no ratings prop → no badges
+			}
+		});
+
+		await screen.findByText('Alice');
+		expect(screen.queryByLabelText('Rating')).not.toBeInTheDocument();
 	});
 });
