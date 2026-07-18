@@ -32,3 +32,17 @@ OpenPadel — Go + SQLite backend, SvelteKit 5 frontend, single binary deploy to
 - `DESIGN.md` — visual/UX language
 - `docs/adr/` — hard-to-reverse decisions and why
 - `docs/specs/` — per-screen UI specs
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`Fabianthorsen/OpenPadel`), managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
