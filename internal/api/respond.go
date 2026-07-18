@@ -33,6 +33,7 @@ var (
 	ErrFieldsRequired       = APIError{"fields_required", http.StatusBadRequest}
 	ErrNameRequired         = APIError{"name_required", http.StatusBadRequest}
 	ErrPasswordTooShort     = APIError{"password_too_short", http.StatusBadRequest}
+	ErrInvalidRating        = APIError{"invalid_rating", http.StatusBadRequest}
 	ErrScoresNegative       = APIError{"scores_negative", http.StatusBadRequest}
 	ErrScoresInvalidSum     = APIError{"scores_invalid_sum", http.StatusBadRequest}
 	ErrInvalidResetLink     = APIError{"invalid_reset_link", http.StatusBadRequest}

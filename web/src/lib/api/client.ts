@@ -34,11 +34,12 @@ async function request<T>(
 
 export const api = {
 	auth: {
-		register: (email: string, displayName: string, password: string) =>
+		register: (email: string, displayName: string, password: string, selfRating: number) =>
 			request<{ token: string; user: App.User }>('POST', '/auth/register', {
 				email,
 				display_name: displayName,
-				password
+				password,
+				self_rating: selfRating
 			}),
 		login: (email: string, password: string) =>
 			request<{ token: string; user: App.User }>('POST', '/auth/login', { email, password }),

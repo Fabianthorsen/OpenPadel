@@ -13,12 +13,18 @@ func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, er
 	now := time.Now().UTC()
 	icon := "Bot"
 	color := "slate" // guests get grey Bot icon; overridden below for registered users
+	// Guests (no account) have no self_rating, so they start at the neutral
+	// median; a registered User seeds their Player.rating from their self_rating.
+	rating := domain.MedianRating
 	if userID != "" {
-		// Use the user's own avatar so their profile icon carries into sessions.
-		avatar, err := s.queries.GetUserAvatarByUserID(context.Background(), userID)
-		if err == nil {
-			icon = avatar.AvatarIcon
-			color = avatar.AvatarColor
+		// Use the user's own avatar + self_rating so their profile carries into
+		// the session. A pre-rating account with a null self_rating stays median.
+		if user, err := s.GetUserByID(userID); err == nil {
+			icon = user.AvatarIcon
+			color = user.AvatarColor
+			if user.SelfRating != nil {
+				rating = domain.NormalizeRating(*user.SelfRating)
+			}
 		}
 	}
 	p := &domain.Player{
@@ -28,7 +34,7 @@ func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, er
 		Name:        name,
 		AvatarIcon:  icon,
 		AvatarColor: color,
-		Rating:      domain.MedianRating,
+		Rating:      rating,
 		Active:      true,
 		JoinedAt:    now,
 	}

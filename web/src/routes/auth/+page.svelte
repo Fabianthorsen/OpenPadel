@@ -7,6 +7,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import PasswordInput from '$lib/components/ui/password-input/password-input.svelte';
 	import AuthShell from '$lib/components/AuthShell.svelte';
+	import RatingPicker from '$lib/components/RatingPicker.svelte';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { ApiError } from '$lib/api/client';
@@ -27,6 +28,7 @@
 	let password = $state('');
 	let firstName = $state('');
 	let lastName = $state('');
+	let selfRating = $state<number | null>(null);
 	let loading = $state(false);
 	let error = $state('');
 
@@ -46,7 +48,12 @@
 			if (mode === 'login') {
 				await auth.login(email, password);
 			} else {
-				await auth.register(email, `${firstName.trim()} ${lastName.trim()}`.trim(), password);
+				await auth.register(
+					email,
+					`${firstName.trim()} ${lastName.trim()}`.trim(),
+					password,
+					selfRating!
+				);
 			}
 			goto(redirect || '/');
 		} catch (e) {
@@ -139,11 +146,24 @@
 				/>
 			</div>
 
+			{#if mode === 'register'}
+				<div class="space-y-2">
+					<Label class="text-text-secondary text-[11px] font-semibold tracking-[0.1em] uppercase">
+						{$_('auth_rating_label')}
+					</Label>
+					<RatingPicker bind:value={selfRating} name="self_rating" disabled={loading} />
+				</div>
+			{/if}
+
 			{#if error}
 				<p class="text-destructive text-sm" role="alert">{error}</p>
 			{/if}
 
-			<Button type="submit" disabled={loading} size="cta">
+			<Button
+				type="submit"
+				disabled={loading || (mode === 'register' && selfRating === null)}
+				size="cta"
+			>
 				{loading ? '…' : mode === 'login' ? $_('auth_login_button') : $_('auth_register_button')}
 			</Button>
 

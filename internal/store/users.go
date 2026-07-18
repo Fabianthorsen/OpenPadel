@@ -20,12 +20,13 @@ var ErrInvalidOrExpiredToken = errors.New("invalid or expired token")
 var ErrEmailTaken = errors.New("email already registered")
 var ErrInvalidCredentials = errors.New("invalid email or password")
 
-func (s *Store) CreateUser(email, displayName, password string) (*domain.User, error) {
+func (s *Store) CreateUser(email, displayName, password string, selfRating int) (*domain.User, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
+	rating := selfRating
 	user := &domain.User{
 		ID:           newUserID(),
 		Email:        email,
@@ -33,6 +34,7 @@ func (s *Store) CreateUser(email, displayName, password string) (*domain.User, e
 		AvatarIcon:   randomAvatarIcon(),
 		AvatarColor:  randomAvatarColor(),
 		PasswordHash: string(hash),
+		SelfRating:   &rating,
 		CreatedAt:    time.Now().UTC(),
 	}
 

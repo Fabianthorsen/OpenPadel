@@ -71,6 +71,29 @@ func TestCreatePlayer_WithUserID(t *testing.T) {
 	}
 }
 
+func TestCreatePlayer_SeedsRatingFromSelfRating(t *testing.T) {
+	s := newTestStore(t)
+	user, err := s.CreateUser("expert@example.com", "Expert", "password123", 5)
+	if err != nil {
+		t.Fatalf("CreateUser: %v", err)
+	}
+	sess := createSession(t, s)
+
+	p, err := s.CreatePlayer(sess, "Expert", user.ID)
+	if err != nil {
+		t.Fatalf("CreatePlayer: %v", err)
+	}
+	if p.Rating != 5 {
+		t.Errorf("expected rating seeded from self_rating 5, got %d", p.Rating)
+	}
+
+	// Round-trips from the column.
+	players, _ := s.GetPlayers(sess)
+	if len(players) != 1 || players[0].Rating != 5 {
+		t.Errorf("expected persisted rating 5, got %+v", players)
+	}
+}
+
 func TestGetPlayers(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)

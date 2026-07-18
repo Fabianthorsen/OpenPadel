@@ -7,6 +7,7 @@ declare global {
 			display_name: string;
 			avatar_icon: string;
 			avatar_color: string;
+			self_rating?: number | null;
 			created_at: string;
 		}
 
@@ -55,6 +56,7 @@ declare global {
 			name: string;
 			avatar_icon: string;
 			avatar_color: string;
+			rating: number;
 			active: boolean;
 			joined_at: string;
 		}
