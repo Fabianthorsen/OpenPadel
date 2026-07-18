@@ -9,7 +9,7 @@ import (
 
 func TestCreateUser(t *testing.T) {
 	s := newTestStore(t)
-	u, err := s.CreateUser("alice@example.com", "Alice", "password123")
+	u, err := s.CreateUser("alice@example.com", "Alice", "password123", 3)
 	if err != nil {
 		t.Fatalf("CreateUser: %v", err)
 	}
@@ -18,28 +18,28 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
-func TestCreateUser_SelfRatingNullByDefault(t *testing.T) {
+func TestCreateUser_PersistsSelfRating(t *testing.T) {
 	s := newTestStore(t)
-	u, err := s.CreateUser("alice@example.com", "Alice", "password123")
+	u, err := s.CreateUser("alice@example.com", "Alice", "password123", 4)
 	if err != nil {
 		t.Fatalf("CreateUser: %v", err)
 	}
-	if u.SelfRating != nil {
-		t.Errorf("expected nil self_rating for new user, got %v", *u.SelfRating)
+	if u.SelfRating == nil || *u.SelfRating != 4 {
+		t.Errorf("expected self_rating 4, got %v", u.SelfRating)
 	}
 
 	got, err := s.GetUserByID(u.ID)
 	if err != nil {
 		t.Fatalf("GetUserByID: %v", err)
 	}
-	if got.SelfRating != nil {
-		t.Errorf("expected nil self_rating read back, got %v", *got.SelfRating)
+	if got.SelfRating == nil || *got.SelfRating != 4 {
+		t.Errorf("expected self_rating 4 read back, got %v", got.SelfRating)
 	}
 }
 
 func TestUpdateSelfRating(t *testing.T) {
 	s := newTestStore(t)
-	u, _ := s.CreateUser("alice@example.com", "Alice", "password123")
+	u, _ := s.CreateUser("alice@example.com", "Alice", "password123", 3)
 
 	if err := s.UpdateSelfRating(u.ID, 4); err != nil {
 		t.Fatalf("UpdateSelfRating: %v", err)
@@ -53,8 +53,8 @@ func TestUpdateSelfRating(t *testing.T) {
 
 func TestCreateUser_DuplicateEmail(t *testing.T) {
 	s := newTestStore(t)
-	s.CreateUser("alice@example.com", "Alice", "password123")
-	_, err := s.CreateUser("alice@example.com", "Other", "password123")
+	_, _ = s.CreateUser("alice@example.com", "Alice", "password123", 3)
+	_, err := s.CreateUser("alice@example.com", "Other", "password123", 3)
 	if !errors.Is(err, store.ErrEmailTaken) {
 		t.Errorf("expected ErrEmailTaken, got %v", err)
 	}
@@ -62,7 +62,7 @@ func TestCreateUser_DuplicateEmail(t *testing.T) {
 
 func TestAuthenticateUser(t *testing.T) {
 	s := newTestStore(t)
-	s.CreateUser("alice@example.com", "Alice", "password123")
+	_, _ = s.CreateUser("alice@example.com", "Alice", "password123", 3)
 
 	u, err := s.AuthenticateUser("alice@example.com", "password123")
 	if err != nil {
@@ -75,7 +75,7 @@ func TestAuthenticateUser(t *testing.T) {
 
 func TestAuthenticateUser_WrongPassword(t *testing.T) {
 	s := newTestStore(t)
-	s.CreateUser("alice@example.com", "Alice", "password123")
+	_, _ = s.CreateUser("alice@example.com", "Alice", "password123", 3)
 
 	_, err := s.AuthenticateUser("alice@example.com", "wrongpassword")
 	if !errors.Is(err, store.ErrInvalidCredentials) {
@@ -94,7 +94,7 @@ func TestAuthenticateUser_UnknownEmail(t *testing.T) {
 
 func TestCreateAuthToken_GetUserByToken(t *testing.T) {
 	s := newTestStore(t)
-	u, _ := s.CreateUser("alice@example.com", "Alice", "password123")
+	u, _ := s.CreateUser("alice@example.com", "Alice", "password123", 3)
 
 	token, err := s.CreateAuthToken(u.ID)
 	if err != nil {
@@ -124,7 +124,7 @@ func TestGetUserByToken_NotFound(t *testing.T) {
 
 func TestDeleteAuthToken(t *testing.T) {
 	s := newTestStore(t)
-	u, _ := s.CreateUser("alice@example.com", "Alice", "password123")
+	u, _ := s.CreateUser("alice@example.com", "Alice", "password123", 3)
 	token, _ := s.CreateAuthToken(u.ID)
 
 	if err := s.DeleteAuthToken(token); err != nil {
@@ -139,7 +139,7 @@ func TestDeleteAuthToken(t *testing.T) {
 
 func TestUpdateProfile(t *testing.T) {
 	s := newTestStore(t)
-	u, _ := s.CreateUser("alice@example.com", "Alice", "password123")
+	u, _ := s.CreateUser("alice@example.com", "Alice", "password123", 3)
 
 	updated, err := s.UpdateProfile(u.ID, "Alice Updated", "Star", "blue")
 	if err != nil {
@@ -155,7 +155,7 @@ func TestUpdateProfile(t *testing.T) {
 
 func TestPasswordResetFlow(t *testing.T) {
 	s := newTestStore(t)
-	s.CreateUser("alice@example.com", "Alice", "password123")
+	_, _ = s.CreateUser("alice@example.com", "Alice", "password123", 3)
 
 	rawToken, err := s.CreatePasswordResetToken("alice@example.com")
 	if err != nil {
@@ -200,7 +200,7 @@ func TestPasswordResetToken_UnknownEmail(t *testing.T) {
 
 func TestDeleteUser(t *testing.T) {
 	s := newTestStore(t)
-	u, _ := s.CreateUser("alice@example.com", "Alice", "password123")
+	u, _ := s.CreateUser("alice@example.com", "Alice", "password123", 3)
 	token, _ := s.CreateAuthToken(u.ID)
 
 	if err := s.DeleteUser(u.ID); err != nil {

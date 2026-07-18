@@ -11,6 +11,7 @@ func TestRegister(t *testing.T) {
 		"email":        "alice@example.com",
 		"display_name": "Alice",
 		"password":     "password123",
+		"self_rating":  5,
 	}, "")
 	if res.StatusCode != http.StatusCreated {
 		t.Fatalf("expected 201, got %d", res.StatusCode)
@@ -20,6 +21,7 @@ func TestRegister(t *testing.T) {
 		User  struct {
 			Email       string `json:"email"`
 			DisplayName string `json:"display_name"`
+			SelfRating  *int   `json:"self_rating"`
 		} `json:"user"`
 	}
 	decodeBody(t, res, &body)
@@ -28,6 +30,38 @@ func TestRegister(t *testing.T) {
 	}
 	if body.User.Email != "alice@example.com" {
 		t.Errorf("expected email alice@example.com, got %q", body.User.Email)
+	}
+	if body.User.SelfRating == nil || *body.User.SelfRating != 5 {
+		t.Errorf("expected self_rating 5, got %v", body.User.SelfRating)
+	}
+}
+
+func TestRegister_MissingRating(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := postReq(t, srv, "/api/auth/register", map[string]any{
+		"email":        "alice@example.com",
+		"display_name": "Alice",
+		"password":     "password123",
+	}, "")
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for missing self_rating, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestRegister_OutOfRangeRating(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	for _, rating := range []int{0, 6, -1} {
+		res := postReq(t, srv, "/api/auth/register", map[string]any{
+			"email":        "alice@example.com",
+			"display_name": "Alice",
+			"password":     "password123",
+			"self_rating":  rating,
+		}, "")
+		if res.StatusCode != http.StatusBadRequest {
+			t.Fatalf("expected 400 for self_rating %d, got %d", rating, res.StatusCode)
+		}
+		_ = res.Body.Close()
 	}
 }
 
@@ -61,6 +95,7 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 		"email":        "alice@example.com",
 		"display_name": "Alice",
 		"password":     "password123",
+		"self_rating":  3,
 	}
 	postReq(t, srv, "/api/auth/register", body, "").Body.Close()
 	res := postReq(t, srv, "/api/auth/register", body, "")

@@ -51,6 +51,7 @@ function makePlayers(active = 4, inactive = 0): App.Player[] {
 		name: `Player ${n}`,
 		avatar_icon: 'racket',
 		avatar_color: '#3d7a24',
+		rating: 3,
 		active: isActive,
 		joined_at: '2026-07-14T20:00:00Z'
 	});

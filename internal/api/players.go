@@ -18,6 +18,9 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 
 	var body struct {
 		Name string `json:"name"`
+		// Optional guest rating. Registered users always seed from their own
+		// self_rating, so this is honoured only for guests (no account).
+		Rating *int `json:"rating"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondAPIError(w, ErrInvalidRequestBody)
@@ -26,6 +29,10 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 	body.Name = strings.TrimSpace(body.Name)
 	if body.Name == "" {
 		respondAPIError(w, ErrNameRequired)
+		return
+	}
+	if body.Rating != nil && !domain.IsValidRating(*body.Rating) {
+		respondAPIError(w, ErrInvalidRating)
 		return
 	}
 
@@ -56,6 +63,14 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		}
 		respondAPIError(w, ErrServerError)
 		return
+	}
+
+	// A guest may bring their own rating at join time; registered users keep the
+	// rating already seeded from their self_rating.
+	if userID == "" && body.Rating != nil {
+		if err := h.store.UpdatePlayerRating(player.ID, *body.Rating); err == nil {
+			player.Rating = *body.Rating
+		}
 	}
 
 	// If the joiner is the admin and no creator is set yet, mark them as creator.

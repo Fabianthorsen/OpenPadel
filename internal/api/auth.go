@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/fabianthorsen/openpadel/internal/domain"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -14,6 +15,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		Email       string `json:"email"`
 		DisplayName string `json:"display_name"`
 		Password    string `json:"password"`
+		SelfRating  int    `json:"self_rating"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondAPIError(w, ErrInvalidRequestBody)
@@ -27,8 +29,14 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrPasswordTooShort)
 		return
 	}
+	// self_rating is required at registration so new accounts are never unrated
+	// (ADR 0006). Missing decodes to the zero value 0, which fails the range check.
+	if !domain.IsValidRating(body.SelfRating) {
+		respondAPIError(w, ErrInvalidRating)
+		return
+	}
 
-	user, err := h.store.CreateUser(body.Email, body.DisplayName, body.Password)
+	user, err := h.store.CreateUser(body.Email, body.DisplayName, body.Password, body.SelfRating)
 	if errors.Is(err, store.ErrEmailTaken) {
 		respondAPIError(w, ErrEmailAlreadyRegistered)
 		return

@@ -389,12 +389,20 @@
 	async function seedPlayers() {
 		seeding = true;
 		const existing = new Set(activePlayers.map((p) => p.name));
-		const needed = session.courts * 4 + 2;
-		const toAdd = devNames
-			.filter((n) => !existing.has(n))
-			.slice(0, Math.max(0, needed - activePlayers.length));
-		for (const name of toAdd) {
-			await api.players.join(session.id, name).catch(() => {});
+		// Fill to a random roster size that fits the court count: courts×4 up to
+		// courts×4+3 (1 court → 4–7, 2 courts → 8–11), each with a random 1–5 rating
+		// so the balancer has real spread to work with.
+		const min = session.courts * 4;
+		const target = min + Math.floor(Math.random() * 4);
+		const wanted = Math.max(0, target - activePlayers.length);
+		const names: string[] = [];
+		for (let i = 0; names.length < wanted && i < 100; i++) {
+			const name = devNames[i] ?? `Player ${i + 1}`;
+			if (!existing.has(name)) names.push(name);
+		}
+		for (const name of names) {
+			const rating = 1 + Math.floor(Math.random() * 5);
+			await api.players.join(session.id, name, undefined, undefined, rating).catch(() => {});
 		}
 		seeding = false;
 		onRefresh();
@@ -752,6 +760,13 @@
 								ring="ring-2 ring-primary/30"
 							/>
 							<span class="text-sm font-medium">{player.name}</span>
+							<span
+								class="bg-surface text-text-secondary flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums"
+								title={$_('auth_rating_label')}
+								aria-label={$_('auth_rating_label')}
+							>
+								{player.rating}
+							</span>
 							<div class="ml-auto flex items-center gap-1.5">
 								{#if player.id === session.creator_player_id}
 									<Crown size={13} class="text-primary" />

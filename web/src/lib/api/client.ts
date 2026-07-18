@@ -34,11 +34,12 @@ async function request<T>(
 
 export const api = {
 	auth: {
-		register: (email: string, displayName: string, password: string) =>
+		register: (email: string, displayName: string, password: string, selfRating: number) =>
 			request<{ token: string; user: App.User }>('POST', '/auth/register', {
 				email,
 				display_name: displayName,
-				password
+				password,
+				self_rating: selfRating
 			}),
 		login: (email: string, password: string) =>
 			request<{ token: string; user: App.User }>('POST', '/auth/login', { email, password }),
@@ -125,11 +126,11 @@ export const api = {
 			request<void>('POST', `/sessions/${id}/close`, undefined, token)
 	},
 	players: {
-		join: (sessionId: string, name: string, token?: string, adminToken?: string) =>
+		join: (sessionId: string, name: string, token?: string, adminToken?: string, rating?: number) =>
 			request<App.Player>(
 				'POST',
 				`/sessions/${sessionId}/players`,
-				{ name },
+				rating === undefined ? { name } : { name, rating },
 				token,
 				adminToken ? { 'X-Admin-Token': adminToken } : undefined
 			),

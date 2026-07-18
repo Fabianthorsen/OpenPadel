@@ -30,6 +30,7 @@ function makePlayers(): App.Player[] {
 		name: `Player ${n}`,
 		avatar_icon: 'racket',
 		avatar_color: '#3d7a24',
+		rating: 3,
 		active: true,
 		joined_at: '2026-07-13T20:00:00Z'
 	}));
@@ -100,6 +101,7 @@ function makeMultiCourtProps(isAdmin: boolean) {
 		name: `Player ${i + 1}`,
 		avatar_icon: 'racket',
 		avatar_color: '#3d7a24',
+		rating: 3,
 		active: true,
 		joined_at: '2026-07-13T20:00:00Z'
 	}));

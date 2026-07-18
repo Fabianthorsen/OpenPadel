@@ -33,13 +33,18 @@ describe('api.auth.register', () => {
 	it('sends POST with correct body', async () => {
 		mockFetch(201, { token: 'abc', user: { id: 'u1', email: 'a@b.com' } });
 
-		await api.auth.register('a@b.com', 'Alice', 'password123');
+		await api.auth.register('a@b.com', 'Alice', 'password123', 3);
 
 		expect(fetch).toHaveBeenCalledWith(
 			'/api/auth/register',
 			expect.objectContaining({
 				method: 'POST',
-				body: JSON.stringify({ email: 'a@b.com', display_name: 'Alice', password: 'password123' })
+				body: JSON.stringify({
+					email: 'a@b.com',
+					display_name: 'Alice',
+					password: 'password123',
+					self_rating: 3
+				})
 			})
 		);
 	});
@@ -47,7 +52,7 @@ describe('api.auth.register', () => {
 	it('throws ApiError on 4xx response', async () => {
 		mockFetch(409, { error: 'email_already_registered' }, false);
 
-		await expect(api.auth.register('a@b.com', 'Alice', 'password123')).rejects.toBeInstanceOf(
+		await expect(api.auth.register('a@b.com', 'Alice', 'password123', 3)).rejects.toBeInstanceOf(
 			ApiError
 		);
 	});
@@ -56,7 +61,7 @@ describe('api.auth.register', () => {
 		mockFetch(409, { error: 'email_already_registered' }, false);
 
 		try {
-			await api.auth.register('a@b.com', 'Alice', 'password123');
+			await api.auth.register('a@b.com', 'Alice', 'password123', 3);
 		} catch (e) {
 			expect(e).toBeInstanceOf(ApiError);
 			expect((e as ApiError).status).toBe(409);
@@ -84,7 +89,7 @@ describe('Authorization header', () => {
 	it('omits Authorization header when no token', async () => {
 		mockFetch(201, { token: 'abc', user: {} });
 
-		await api.auth.register('a@b.com', 'Alice', 'pw12345678');
+		await api.auth.register('a@b.com', 'Alice', 'pw12345678', 3);
 
 		const call = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
 		const headers = call[1]?.headers ?? {};

@@ -110,6 +110,7 @@ func mustRegister(t *testing.T, srv *httptest.Server, emailAddr, name, password 
 		"email":        emailAddr,
 		"display_name": name,
 		"password":     password,
+		"self_rating":  3,
 	}, "")
 	if res.StatusCode != http.StatusCreated {
 		t.Fatalf("register: expected 201, got %d", res.StatusCode)
