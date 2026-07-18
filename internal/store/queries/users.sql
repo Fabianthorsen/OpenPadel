@@ -1,6 +1,9 @@
 -- name: CreateUser :exec
-INSERT INTO users (id, email, display_name, avatar_icon, avatar_color, password_hash, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO users (id, email, display_name, avatar_icon, avatar_color, password_hash, self_rating, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+-- name: UpdateUserSelfRating :exec
+UPDATE users SET self_rating = ? WHERE id = ?;
 
 -- name: UpdateProfile :exec
 UPDATE users SET display_name = ?, avatar_icon = ?, avatar_color = ? WHERE id = ?;
@@ -12,11 +15,11 @@ UPDATE users SET password_hash = ? WHERE id = ?;
 UPDATE players SET avatar_icon = ?, avatar_color = ? WHERE user_id = ?;
 
 -- name: GetUserByEmail :one
-SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at
+SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, self_rating, created_at
 FROM users WHERE email = ?;
 
 -- name: GetUserByID :one
-SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at
+SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, self_rating, created_at
 FROM users WHERE id = ?;
 
 -- name: CreateAuthToken :exec

@@ -2,8 +2,8 @@ package mexicano
 
 import (
 	"encoding/json"
-	"math/rand/v2"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
@@ -28,16 +28,23 @@ func New(store Store) *Service {
 	return &Service{store: store}
 }
 
-// Start generates round 1 (random order), saves it, and activates the session.
+// Start generates round 1 and activates the session. Round 1 is seeded by rating
+// (descending) rather than randomly: mexicano.GenerateRound pairs rank 1+4 vs 2+3,
+// so a rating-descending seed makes the opening round balanced by skill instead of
+// a coin-flip. Rounds 2+ are driven by live standings (see AdvanceRound) and are
+// unaffected. Per ADR 0006.
 // Returns a non-nil error only if it has already written an HTTP error response.
 func (s *Service) Start(w http.ResponseWriter, sessionID string, sess *domain.Session, active []domain.Player, endsAt *time.Time) error {
-	standings := make([]domain.Standing, len(active))
-	for i, p := range active {
+	seeded := make([]domain.Player, len(active))
+	copy(seeded, active)
+	// Stable sort by normalised rating descending; an all-equal (e.g. all-median
+	// or unrated) field keeps its incoming order, so this is a no-op there.
+	sort.SliceStable(seeded, func(i, j int) bool {
+		return domain.NormalizeRating(seeded[i].Rating) > domain.NormalizeRating(seeded[j].Rating)
+	})
+	standings := make([]domain.Standing, len(seeded))
+	for i, p := range seeded {
 		standings[i] = domain.Standing{Rank: i + 1, PlayerID: p.ID, Name: p.Name}
-	}
-	rand.Shuffle(len(standings), func(i, j int) { standings[i], standings[j] = standings[j], standings[i] })
-	for i := range standings {
-		standings[i].Rank = i + 1
 	}
 
 	round := mexicano.GenerateRound(standings, sess.Courts, 1)

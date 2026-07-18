@@ -18,6 +18,39 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
+func TestCreateUser_SelfRatingNullByDefault(t *testing.T) {
+	s := newTestStore(t)
+	u, err := s.CreateUser("alice@example.com", "Alice", "password123")
+	if err != nil {
+		t.Fatalf("CreateUser: %v", err)
+	}
+	if u.SelfRating != nil {
+		t.Errorf("expected nil self_rating for new user, got %v", *u.SelfRating)
+	}
+
+	got, err := s.GetUserByID(u.ID)
+	if err != nil {
+		t.Fatalf("GetUserByID: %v", err)
+	}
+	if got.SelfRating != nil {
+		t.Errorf("expected nil self_rating read back, got %v", *got.SelfRating)
+	}
+}
+
+func TestUpdateSelfRating(t *testing.T) {
+	s := newTestStore(t)
+	u, _ := s.CreateUser("alice@example.com", "Alice", "password123")
+
+	if err := s.UpdateSelfRating(u.ID, 4); err != nil {
+		t.Fatalf("UpdateSelfRating: %v", err)
+	}
+
+	got, _ := s.GetUserByID(u.ID)
+	if got.SelfRating == nil || *got.SelfRating != 4 {
+		t.Errorf("expected self_rating 4, got %v", got.SelfRating)
+	}
+}
+
 func TestCreateUser_DuplicateEmail(t *testing.T) {
 	s := newTestStore(t)
 	s.CreateUser("alice@example.com", "Alice", "password123")

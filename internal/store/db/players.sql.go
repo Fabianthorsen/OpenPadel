@@ -11,8 +11,8 @@ import (
 )
 
 const createPlayer = `-- name: CreatePlayer :exec
-INSERT INTO players (id, session_id, user_id, name, avatar_icon, avatar_color, active, joined_at)
-VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+INSERT INTO players (id, session_id, user_id, name, avatar_icon, avatar_color, rating, active, joined_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
 `
 
 type CreatePlayerParams struct {
@@ -22,6 +22,7 @@ type CreatePlayerParams struct {
 	Name        string
 	AvatarIcon  string
 	AvatarColor string
+	Rating      int64
 	JoinedAt    string
 }
 
@@ -33,6 +34,7 @@ func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) erro
 		arg.Name,
 		arg.AvatarIcon,
 		arg.AvatarColor,
+		arg.Rating,
 		arg.JoinedAt,
 	)
 	return err
@@ -61,7 +63,7 @@ func (q *Queries) GetCreatorName(ctx context.Context, id string) (string, error)
 }
 
 const getPlayersBySessionID = `-- name: GetPlayersBySessionID :many
-SELECT id, session_id, COALESCE(user_id, ''), name, avatar_icon, avatar_color, active, joined_at
+SELECT id, session_id, COALESCE(user_id, ''), name, avatar_icon, avatar_color, rating, active, joined_at
 FROM players WHERE session_id = ? ORDER BY joined_at
 `
 
@@ -72,6 +74,7 @@ type GetPlayersBySessionIDRow struct {
 	Name        string
 	AvatarIcon  string
 	AvatarColor string
+	Rating      int64
 	Active      int64
 	JoinedAt    string
 }
@@ -92,6 +95,7 @@ func (q *Queries) GetPlayersBySessionID(ctx context.Context, sessionID string) (
 			&i.Name,
 			&i.AvatarIcon,
 			&i.AvatarColor,
+			&i.Rating,
 			&i.Active,
 			&i.JoinedAt,
 		); err != nil {
@@ -122,4 +126,18 @@ func (q *Queries) GetUserAvatarByUserID(ctx context.Context, id string) (GetUser
 	var i GetUserAvatarByUserIDRow
 	err := row.Scan(&i.AvatarIcon, &i.AvatarColor)
 	return i, err
+}
+
+const updatePlayerRating = `-- name: UpdatePlayerRating :exec
+UPDATE players SET rating = ? WHERE id = ?
+`
+
+type UpdatePlayerRatingParams struct {
+	Rating int64
+	ID     string
+}
+
+func (q *Queries) UpdatePlayerRating(ctx context.Context, arg UpdatePlayerRatingParams) error {
+	_, err := q.db.ExecContext(ctx, updatePlayerRating, arg.Rating, arg.ID)
+	return err
 }

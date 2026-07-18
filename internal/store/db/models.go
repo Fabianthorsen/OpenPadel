@@ -64,6 +64,7 @@ type Player struct {
 	UserID      sql.NullString
 	AvatarIcon  string
 	AvatarColor string
+	Rating      int64
 }
 
 type PushSubscription struct {
@@ -117,4 +118,5 @@ type User struct {
 	AvatarIcon   string
 	AvatarColor  string
 	WinCount     int64
+	SelfRating   sql.NullInt64
 }

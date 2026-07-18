@@ -1,5 +1,31 @@
 package domain
 
+// Rating scale: a self-set skill level, stored and displayed as the integer 1–5.
+// The neutral median is used for any Player whose rating is unknown, so an
+// all-unrated field has zero rating gaps and the scheduler behaves as it did
+// before ratings existed. See ADR 0006.
+const (
+	MinRating    = 1
+	MaxRating    = 5
+	MedianRating = 3
+)
+
+// IsValidRating reports whether r is within the 1–5 rating scale.
+func IsValidRating(r int) bool {
+	return r >= MinRating && r <= MaxRating
+}
+
+// NormalizeRating maps any out-of-range rating (including the zero value of an
+// unrated player) to the neutral median. Schedulers use this so an all-unrated
+// field has zero rating gaps and behaves exactly as it did before ratings
+// existed. See ADR 0006.
+func NormalizeRating(r int) int {
+	if !IsValidRating(r) {
+		return MedianRating
+	}
+	return r
+}
+
 // ValidationError represents a constraint violation with a structured error code and parameters.
 type ValidationError struct {
 	Code   string                 `json:"code"`

@@ -41,8 +41,8 @@ func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg CreatePasswo
 }
 
 const createUser = `-- name: CreateUser :exec
-INSERT INTO users (id, email, display_name, avatar_icon, avatar_color, password_hash, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO users (id, email, display_name, avatar_icon, avatar_color, password_hash, self_rating, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateUserParams struct {
@@ -52,6 +52,7 @@ type CreateUserParams struct {
 	AvatarIcon   string
 	AvatarColor  string
 	PasswordHash string
+	SelfRating   sql.NullInt64
 	CreatedAt    string
 }
 
@@ -63,6 +64,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 		arg.AvatarIcon,
 		arg.AvatarColor,
 		arg.PasswordHash,
+		arg.SelfRating,
 		arg.CreatedAt,
 	)
 	return err
@@ -290,7 +292,7 @@ func (q *Queries) GetUpcomingTournaments(ctx context.Context, userID sql.NullStr
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at
+SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, self_rating, created_at
 FROM users WHERE email = ?
 `
 
@@ -301,6 +303,7 @@ type GetUserByEmailRow struct {
 	AvatarIcon   string
 	AvatarColor  string
 	PasswordHash string
+	SelfRating   sql.NullInt64
 	CreatedAt    string
 }
 
@@ -314,13 +317,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 		&i.AvatarIcon,
 		&i.AvatarColor,
 		&i.PasswordHash,
+		&i.SelfRating,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, created_at
+SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, self_rating, created_at
 FROM users WHERE id = ?
 `
 
@@ -331,6 +335,7 @@ type GetUserByIDRow struct {
 	AvatarIcon   string
 	AvatarColor  string
 	PasswordHash string
+	SelfRating   sql.NullInt64
 	CreatedAt    string
 }
 
@@ -344,6 +349,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, e
 		&i.AvatarIcon,
 		&i.AvatarColor,
 		&i.PasswordHash,
+		&i.SelfRating,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -425,5 +431,19 @@ type UpdateUserPasswordParams struct {
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.PasswordHash, arg.ID)
+	return err
+}
+
+const updateUserSelfRating = `-- name: UpdateUserSelfRating :exec
+UPDATE users SET self_rating = ? WHERE id = ?
+`
+
+type UpdateUserSelfRatingParams struct {
+	SelfRating sql.NullInt64
+	ID         string
+}
+
+func (q *Queries) UpdateUserSelfRating(ctx context.Context, arg UpdateUserSelfRatingParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserSelfRating, arg.SelfRating, arg.ID)
 	return err
 }

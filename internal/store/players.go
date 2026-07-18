@@ -28,6 +28,7 @@ func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, er
 		Name:        name,
 		AvatarIcon:  icon,
 		AvatarColor: color,
+		Rating:      domain.MedianRating,
 		Active:      true,
 		JoinedAt:    now,
 	}
@@ -42,6 +43,7 @@ func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, er
 		Name:        p.Name,
 		AvatarIcon:  p.AvatarIcon,
 		AvatarColor: p.AvatarColor,
+		Rating:      int64(p.Rating),
 		JoinedAt:    p.JoinedAt.Format(time.RFC3339),
 	})
 	if err != nil {
@@ -64,6 +66,7 @@ func (s *Store) GetPlayers(sessionID string) ([]domain.Player, error) {
 			Name:        row.Name,
 			AvatarIcon:  row.AvatarIcon,
 			AvatarColor: row.AvatarColor,
+			Rating:      int(row.Rating),
 			Active:      row.Active == 1,
 			JoinedAt:    parseTime(row.JoinedAt),
 		}
@@ -80,6 +83,15 @@ func (s *Store) GetCreatorName(sessionID string) string {
 		return ""
 	}
 	return name
+}
+
+// UpdatePlayerRating sets a Player's per-session rating. This is a lobby-scoped
+// snapshot and does not propagate back to the owning User's self_rating.
+func (s *Store) UpdatePlayerRating(playerID string, rating int) error {
+	return s.queries.UpdatePlayerRating(context.Background(), db.UpdatePlayerRatingParams{
+		Rating: int64(rating),
+		ID:     playerID,
+	})
 }
 
 func (s *Store) DeactivatePlayer(playerID string) error {
