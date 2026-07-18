@@ -5,6 +5,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import MemberRow from '$lib/components/ui/MemberRow.svelte';
+	import { Section } from '$lib/components/ui/section';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import Footer from '$lib/components/Footer.svelte';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
@@ -44,60 +46,59 @@
 	});
 </script>
 
-{#if loading}
-	<div class="flex min-h-screen items-center justify-center">
-		<p>Loading club...</p>
-	</div>
-{:else if error}
-	<div class="flex min-h-screen flex-col items-center justify-center gap-4">
-		<p class="text-red-500">{error}</p>
-		<Button onclick={() => goto('/profile')}>Back to profile</Button>
-	</div>
-{:else if club}
-	<div class="flex h-screen flex-col">
-		<div class="flex-1 overflow-y-auto pb-20">
-			<!-- Header with back button and member count -->
-			<div
-				class="pt-safe-page bg-surface-raised sticky top-0 z-10 flex items-center justify-between border-b px-6 py-4"
+<main class="pt-safe-page mx-auto max-w-[480px] space-y-8 px-6 pb-10">
+	{#if loading}
+		<div class="flex justify-center py-12">
+			<Spinner />
+		</div>
+	{:else if error}
+		<div class="space-y-6 py-12">
+			<div class="space-y-2">
+				<p class="text-destructive text-center text-sm font-semibold">{error}</p>
+			</div>
+			<Button onclick={() => goto('/profile')} variant="default" size="cta">Back to Profile</Button>
+		</div>
+	{:else if club}
+		<!-- Header -->
+		<div class="flex items-center justify-between gap-4">
+			<button
+				onclick={() => goto('/profile')}
+				class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
+				aria-label="Back"
 			>
-				<button
-					onclick={() => goto('/profile')}
-					class="text-text-secondary hover:text-text-primary text-lg transition-colors"
-				>
-					‹
-				</button>
-				<h1 class="flex-1 text-center text-lg font-bold">{club.club.name}</h1>
-				<div class="w-8 text-center">
-					<p class="text-text-secondary text-xs font-semibold">{club.roster_count}</p>
-				</div>
+				‹
+			</button>
+			<div class="min-w-0 flex-1">
+				<h1 class="truncate text-2xl font-[800]">{club.club.name}</h1>
 			</div>
-
-			<!-- Club Details -->
-			<div class="border-b px-6 py-6">
-				<div class="flex items-start gap-4">
-					<Avatar color={club.club.avatar_color} name={club.club.name} size="lg" />
-					<div class="min-w-0 flex-1">
-						{#if club.club.description}
-							<p class="text-text-secondary text-sm break-words">{club.club.description}</p>
-						{/if}
-						<p class="text-text-disabled mt-2 text-xs">{club.roster_count} members</p>
-					</div>
-				</div>
-			</div>
-
-			<!-- Roster -->
-			<div class="px-6 py-6">
-				<p class="text-text-secondary mb-4 text-[11px] font-bold tracking-[0.1em] uppercase">
-					Members
-				</p>
-				<div class="space-y-2">
-					{#each club.members as member}
-						<MemberRow {member} />
-					{/each}
-				</div>
+			<div class="flex-shrink-0 text-right">
+				<p class="text-text-secondary text-xs font-semibold">{club.roster_count}</p>
+				<p class="text-text-disabled text-[11px]">members</p>
 			</div>
 		</div>
 
-		<Footer />
-	</div>
-{/if}
+		<!-- Club Info -->
+		{#if club.club.description}
+			<div class="bg-surface-raised space-y-2 rounded-2xl px-4 py-3.5">
+				<p class="text-sm">{club.club.description}</p>
+			</div>
+		{/if}
+
+		<!-- Members Section -->
+		<Section title={`Members (${club.roster_count})`} collapsible={false}>
+			{#snippet children()}
+				{#if club.members && club.members.length > 0}
+					<div class="space-y-2">
+						{#each club.members as member}
+							<MemberRow {member} />
+						{/each}
+					</div>
+				{:else}
+					<p class="text-text-disabled py-1 text-sm">No members yet</p>
+				{/if}
+			{/snippet}
+		</Section>
+	{/if}
+
+	<Footer />
+</main>
