@@ -9,6 +9,7 @@ type User struct {
 	AvatarIcon   string    `json:"avatar_icon"`
 	AvatarColor  string    `json:"avatar_color"`
 	PasswordHash string    `json:"-"`
+	SelfRating   *int      `json:"self_rating"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -202,6 +203,7 @@ type Player struct {
 	Name        string    `json:"name"`
 	AvatarIcon  string    `json:"avatar_icon"`
 	AvatarColor string    `json:"avatar_color"`
+	Rating      int       `json:"rating"`
 	Active      bool      `json:"active"`
 	JoinedAt    time.Time `json:"joined_at"`
 }

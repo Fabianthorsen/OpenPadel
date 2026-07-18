@@ -43,6 +43,7 @@ func (s *Store) CreateUser(email, displayName, password string) (*domain.User, e
 		AvatarIcon:   user.AvatarIcon,
 		AvatarColor:  user.AvatarColor,
 		PasswordHash: user.PasswordHash,
+		SelfRating:   nullInt64FromPtr(user.SelfRating),
 		CreatedAt:    user.CreatedAt.Format(time.RFC3339),
 	})
 	if err != nil {
@@ -321,6 +322,7 @@ func rowToUserEmail(row db.GetUserByEmailRow) *domain.User {
 		AvatarIcon:   row.AvatarIcon,
 		AvatarColor:  row.AvatarColor,
 		PasswordHash: row.PasswordHash,
+		SelfRating:   intPtrFromNull(row.SelfRating),
 	}
 	u.CreatedAt, _ = time.Parse(time.RFC3339, row.CreatedAt)
 	return u
@@ -334,9 +336,35 @@ func rowToUserID(row db.GetUserByIDRow) *domain.User {
 		AvatarIcon:   row.AvatarIcon,
 		AvatarColor:  row.AvatarColor,
 		PasswordHash: row.PasswordHash,
+		SelfRating:   intPtrFromNull(row.SelfRating),
 	}
 	u.CreatedAt, _ = time.Parse(time.RFC3339, row.CreatedAt)
 	return u
+}
+
+// UpdateSelfRating sets the authenticated User's default self_rating. Per ADR
+// 0006 this only seeds future sessions; it never rewrites Player.rating in
+// sessions already joined.
+func (s *Store) UpdateSelfRating(userID string, rating int) error {
+	return s.queries.UpdateUserSelfRating(context.Background(), db.UpdateUserSelfRatingParams{
+		SelfRating: sql.NullInt64{Int64: int64(rating), Valid: true},
+		ID:         userID,
+	})
+}
+
+func nullInt64FromPtr(p *int) sql.NullInt64 {
+	if p == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: int64(*p), Valid: true}
+}
+
+func intPtrFromNull(n sql.NullInt64) *int {
+	if !n.Valid {
+		return nil
+	}
+	v := int(n.Int64)
+	return &v
 }
 
 func newUserID() string {

@@ -79,6 +79,7 @@ type Querier interface {
 	UpdateInviteStatus(ctx context.Context, arg UpdateInviteStatusParams) error
 	UpdateMatchLiveScore(ctx context.Context, arg UpdateMatchLiveScoreParams) error
 	UpdateMatchScore(ctx context.Context, arg UpdateMatchScoreParams) error
+	UpdatePlayerRating(ctx context.Context, arg UpdatePlayerRatingParams) error
 	UpdatePlayerUserIDToNull(ctx context.Context, userID sql.NullString) error
 	UpdateProfile(ctx context.Context, arg UpdateProfileParams) error
 	UpdateProfileAvatarOnPlayers(ctx context.Context, arg UpdateProfileAvatarOnPlayersParams) error
@@ -86,6 +87,7 @@ type Querier interface {
 	UpdateSessionConfig(ctx context.Context, arg UpdateSessionConfigParams) error
 	UpdateSessionCurrentRound(ctx context.Context, arg UpdateSessionCurrentRoundParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	UpdateUserSelfRating(ctx context.Context, arg UpdateUserSelfRatingParams) error
 	UserExists(ctx context.Context, id string) (int64, error)
 }
 

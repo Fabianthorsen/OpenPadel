@@ -20,6 +20,43 @@ func TestCreatePlayer(t *testing.T) {
 	}
 }
 
+func TestCreatePlayer_RatingDefaultsToMedian(t *testing.T) {
+	s := newTestStore(t)
+	sess := createSession(t, s)
+
+	p, err := s.CreatePlayer(sess, "Alice", "")
+	if err != nil {
+		t.Fatalf("CreatePlayer: %v", err)
+	}
+	if p.Rating != 3 {
+		t.Errorf("expected default rating 3, got %d", p.Rating)
+	}
+
+	// Read back through the store to confirm it round-trips from the column.
+	players, err := s.GetPlayers(sess)
+	if err != nil {
+		t.Fatalf("GetPlayers: %v", err)
+	}
+	if len(players) != 1 || players[0].Rating != 3 {
+		t.Errorf("expected persisted rating 3, got %+v", players)
+	}
+}
+
+func TestUpdatePlayerRating(t *testing.T) {
+	s := newTestStore(t)
+	sess := createSession(t, s)
+
+	p, _ := s.CreatePlayer(sess, "Alice", "")
+	if err := s.UpdatePlayerRating(p.ID, 5); err != nil {
+		t.Fatalf("UpdatePlayerRating: %v", err)
+	}
+
+	players, _ := s.GetPlayers(sess)
+	if len(players) != 1 || players[0].Rating != 5 {
+		t.Errorf("expected rating 5 after update, got %+v", players)
+	}
+}
+
 func TestCreatePlayer_WithUserID(t *testing.T) {
 	s := newTestStore(t)
 	alice := createUser(t, s, "alice@example.com", "Alice")

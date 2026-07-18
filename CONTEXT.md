@@ -20,6 +20,10 @@ _Avoid_: Anonymous player, unregistered player
 A registered account holder (email + password). Distinct from Player — a User only becomes a Player by joining a specific Session.
 _Avoid_: Account, member
 
+**Rating**:
+A player's self-assessed skill level on a 1–5 scale — Beginner, Improver, Intermediate, Advanced, Expert — each anchored to a concrete padel milestone, selected by label but stored and displayed as the number. Lives on the **Player** (per-session, admin-editable in the lobby), seeded from a `self_rating` on the **User** (set at registration, editable in settings). Used to make matches more competitive by sending pairs of similar strength to face each other — it influences **match-ups, not partnerships** (partner rotation is untouched). Unrated players count as the median (3). See `docs/adr/0006-rating-balances-matchups-not-partnerships.md`.
+_Avoid_: Skill, level, handicap, seed
+
 **Admin**:
 Whoever holds a Session's `AdminToken` (a secret bearer token generated at creation). Admin status is the actual authorization gate for privileged actions (start, cancel, close, score entry, kick players) — checked via `isAdmin()`, independent of login state. A Session's join link without the token is read-only.
 _Avoid_: Owner, moderator

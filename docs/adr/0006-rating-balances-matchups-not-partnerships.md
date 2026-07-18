@@ -1,0 +1,117 @@
+# ADR 0006: Rating Balances Match-ups, Not Partnerships
+
+## Status
+
+Proposed
+
+## Context
+
+Players want more competitive Americano matches — fewer blowouts where a strong pair
+steamrolls a weak one. A natural instinct is to add a skill **Rating** and "make the pairings
+more even." But Americano's defining property is that **partners rotate so everyone partners
+everyone** — the live scheduler (`internal/pairing/americano/scheduler.go`) minimises partner
+repeats as its **primary** objective, with scoring done individually.
+
+That property is in direct tension with the obvious reading of "balance by rating." If teams
+were formed strong+weak (an 8 always partnered with a 3), then strong players would *never*
+partner other strong players, and "everyone partners everyone" would be abandoned. At that point
+it is no longer Americano.
+
+The scheduler runs in two steps:
+
+1. **Partner step** (`bestPartnerMatching`) — decides *who partners whom*; minimises partner
+   repeats. This is what makes it Americano.
+2. **Court-assignment step** (`bestCourtAssignment`) — decides *which two pairs share a court and
+   therefore face each other*; today minimises court co-occurrence (how often the same people
+   share a court).
+
+The insight is that a competitive *match* does not require balanced *teams*. It requires the two
+teams on a court to be **of similar combined strength** — a strong pair facing another strong
+pair, a weak pair facing another weak pair. That is entirely a **court-assignment** concern and
+leaves the partner step untouched.
+
+Ratings are self-set and unreliable, and much of a real lobby is **Guests** with no account.
+Any use of rating has to survive missing data and a mostly-unrated field without doing worse than
+today.
+
+## Decision
+
+Rating influences **match-ups, not partnerships**. The partner step is unchanged. Rating enters
+only at the **court-assignment step**, where the objective becomes a **weighted blend**:
+
+```
+score = ratingGap · W + coOccurrence
+```
+
+`ratingGap` is `|teamA_total − teamB_total|` for the court; `W` is tuned so rating usually
+dominates while co-occurrence breaks near-ties. Rejected alternatives: making rating the *primary*
+objective at the partner step (abandons everyone-partners-everyone — no longer Americano), and a
+pure tiebreaker (too weak — the optimal co-occurrence grouping is often forced, so it rarely
+changes anything).
+
+Supporting decisions:
+
+- **Scale:** 5 levels, self-selected by label at registration, stored and displayed as the
+  number **1–5**. Median is **3**. Each level is anchored to a concrete, self-checkable padel
+  milestone so adjacent levels don't blur (the classic Beginner/Improver/Intermediate confusion):
+
+  | # | Name | Description |
+  |---|------|-------------|
+  | 1 | Beginner | New to padel — still learning the rules, scoring and basic contact. Rallies are short. |
+  | 2 | Improver | Knows the rules and can keep a basic rally going, but shots are inconsistent and not yet using the back wall. |
+  | 3 | Intermediate | Reliably uses the back wall and lob, hits a bandeja, and understands court positioning. |
+  | 4 | Advanced | Controlled and consistent — viboras, smashes, tactical wall play. Competes in local leagues/tournaments. |
+  | 5 | Expert | Strong competitive player with a full shot repertoire under pressure; high club / regional level. |
+
+  "Pro" was rejected as the top name — self-selecting "Pro" is intimidating, so few honest players
+  pick it, squashing the distribution into 1–4 and starving the balancer of a top rung. "Expert"
+  is the deliberately-more-approachable ceiling.
+- **Editable in settings.** `User.self_rating` is changeable any time from profile/settings (skill
+  changes over time). Editing it updates the User's default seed only; it does **not** retroactively
+  change `Player.rating` in sessions already joined (those are per-session snapshots).
+- **Storage:** `Player.rating` (per-session, admin-editable in the lobby), seeded from an optional
+  `User.self_rating` when a registered User joins. Guests remain first-class — the admin can rate
+  any player, including guests.
+- **How each Player gets a rating:**
+  - *Registered User joins* — seeded from their (always-set) `self_rating`.
+  - *Guest self-joins via link* — picks a level **alongside their name, in the same join step**;
+    it is **required** to join. This revises the "join by name only" simplicity to "name + level."
+  - *Admin adds a guest* — sets the level **next to the name** while adding; **optional**, blank
+    defaults to median **3**, editable later in the lobby. This is the one path that can produce an
+    unrated Player, so the median fallback stays a real (not merely defensive) case.
+- **Rating is required at registration.** A new User must pick a rating to create an account —
+  `self_rating` is a required field at signup, so new accounts are never null.
+- **A home-load gate backfills existing accounts.** After the migration, every pre-existing User
+  has a null `self_rating`. Such a User is shown a **blocking interstitial on home/dashboard load**
+  and must pick a rating to proceed past home. The gate is deliberately **narrow**: it fires *only*
+  on the home surface. Every deep link — a session join link, a session view — **passes through
+  unblocked**, so a returning user is never trapped at the court. New signups never see the gate
+  (they can't be null); it exists purely to backfill the legacy user base.
+- **Missing data:** unrated players are treated as the neutral median (**3**). An all-unrated
+  lobby therefore has zero rating gaps everywhere, the rating term vanishes, and behaviour is
+  identical to today. The feature is **self-cancelling** without data, so it is **always on** —
+  no session toggle.
+- **Visibility:** the 1–5 number is visible to everyone; the admin edits it in the lobby.
+- **1 court:** no effect — with a single court the four active players form two pairs that must
+  face each other, so there is no assignment freedom to exploit.
+- **Mexicano:** ratings seed **round 1 only** (replacing the current random shuffle of initial
+  standings); rounds 2+ already balance from live standings and are unchanged.
+
+Gender / mixed-doubles composition was considered alongside this and **deferred entirely** to its
+own design pass — it is a partner-step constraint (it *does* eliminate same-gender partnerships)
+and needs a balanced-lobby rule, so it does not belong bundled with this change.
+
+## Consequences
+
+- **Rating is a lobby concern; finalize before Start.** Fixed-mode Americano pre-generates all
+  rounds at `Start()` (`GenerateRounds`), so editing a rating mid-session does not rewrite
+  already-generated rounds. In unlimited mode, only round 1 is generated at start and later rounds
+  come from `GenerateNextRound` at advance time, so mid-session edits *do* influence future rounds
+  there. This mirrors how roster changes already behave.
+- The court-assignment search space is unchanged (same backtracking over pair groupings), so the
+  performance characteristics are unaffected; only the per-grouping score changes.
+- Because rating never touches the partner step, the "everyone partners everyone" guarantee and
+  all existing partner-repeat/bench invariants hold exactly as before.
+- Self-set ratings can be wrong or gamed; the admin override in the lobby is the intended
+  correction path, which is why the admin must be able to see and edit them (rules out a fully
+  hidden rating).

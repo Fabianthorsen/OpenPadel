@@ -8,6 +8,29 @@ import (
 	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
+// ratingWeight (W) blends skill balance into the court-assignment score:
+// score = ratingGap·W + coOccurrence. It is tuned large enough that the rating
+// gap usually dominates the grouping choice, while co-occurrence still breaks
+// near-ties (groupings with an equal rating gap). Team rating totals span 2–10,
+// so a court's rating gap is 0–8; co-occurrence deltas between candidate
+// groupings are small single/low-double-digit integers, so W=100 makes any
+// difference in rating gap outweigh co-occurrence, which then acts as the
+// tiebreaker. See ADR 0006.
+const ratingWeight = 100
+
+// buildRatingMap builds an id→rating lookup from the players, normalising any
+// out-of-range value (including the zero value of an unrated player) to the
+// neutral median. This is what makes the feature self-cancelling: an all-unrated
+// field maps to all-median, every court has a zero rating gap, the rating term
+// vanishes, and the schedule is identical to today. See ADR 0006.
+func buildRatingMap(players []domain.Player) map[string]int {
+	rating := make(map[string]int, len(players))
+	for _, p := range players {
+		rating[p.ID] = domain.NormalizeRating(p.Rating)
+	}
+	return rating
+}
+
 // GenerateRounds produces all rounds for an Americano session upfront.
 // Hard constraint: a player benched in round N must play in round N+1.
 // Core invariant: minimise partner and matchup repeats across the full tournament.
@@ -16,6 +39,7 @@ func GenerateRounds(players []domain.Player, courts, totalRounds int) []domain.R
 	for i, p := range players {
 		ids[i] = p.ID
 	}
+	rating := buildRatingMap(players)
 
 	benchSize := len(ids) - courts*4
 
@@ -72,7 +96,7 @@ func GenerateRounds(players []domain.Player, courts, totalRounds int) []domain.R
 			benchTotal[id]++
 		}
 
-		matches := assignCourts(active, courts, partnerCount, courtShareCount)
+		matches := assignCourts(active, partnerCount, courtShareCount, rating)
 		shuffleTeamSides(matches)
 		shuffleCourtNumbers(matches)
 
@@ -110,6 +134,7 @@ func GenerateNextRound(previousRounds []domain.Round, players []domain.Player, c
 	for i, p := range players {
 		ids[i] = p.ID
 	}
+	rating := buildRatingMap(players)
 
 	benchSize := len(ids) - courts*4
 
@@ -179,7 +204,7 @@ func GenerateNextRound(previousRounds []domain.Round, players []domain.Player, c
 		active = append([]string{}, ids...)
 	}
 
-	matches := assignCourts(active, courts, partnerCount, courtShareCount)
+	matches := assignCourts(active, partnerCount, courtShareCount, rating)
 	shuffleTeamSides(matches)
 	shuffleCourtNumbers(matches)
 
@@ -246,10 +271,18 @@ func bestPartnerMatching(players []string, partnerCount map[[2]string]int) [][2]
 	return best
 }
 
-// bestCourtAssignment groups the given partner pairs into courts, minimising
-// court co-occurrence (how often any two players have shared the same court).
+// bestCourtAssignment groups the given partner pairs into courts, minimising a
+// weighted blend of the per-court rating gap and court co-occurrence:
+//
+//	score = ratingGap·W + coOccurrence
+//
+// where ratingGap = |teamA_total − teamB_total| pairs a strong team against
+// another strong team (and weak against weak), and co-occurrence (how often any
+// two players have shared a court) breaks ties. With an all-median (or unrated)
+// field every rating gap is zero, so this reduces exactly to the previous
+// co-occurrence-only objective. See ADR 0006.
 // Number of groupings: for 4 pairs→3, 6 pairs→15, 8 pairs→105.
-func bestCourtAssignment(pairs [][2]string, courtShareCount map[[2]string]int) []domain.Match {
+func bestCourtAssignment(pairs [][2]string, courtShareCount map[[2]string]int, rating map[string]int) []domain.Match {
 	numPairs := len(pairs)
 	courts := numPairs / 2
 	usedPair := make([]bool, numPairs)
@@ -279,7 +312,8 @@ func bestCourtAssignment(pairs [][2]string, courtShareCount map[[2]string]int) [
 		for second := first + 1; second < numPairs; second++ {
 			if !usedPair[second] {
 				usedPair[second] = true
-				// Score: sum of pairwise co-occurrences for all 6 pairs on this court.
+				// Score: rating gap between the two teams (weighted) plus the
+				// sum of pairwise co-occurrences for all 6 pairs on this court.
 				players := []string{pairs[first][0], pairs[first][1], pairs[second][0], pairs[second][1]}
 				courtScore := 0
 				for i := 0; i < 4; i++ {
@@ -287,6 +321,13 @@ func bestCourtAssignment(pairs [][2]string, courtShareCount map[[2]string]int) [
 						courtScore += courtShareCount[pairKey(players[i], players[j])]
 					}
 				}
+				teamATotal := rating[pairs[first][0]] + rating[pairs[first][1]]
+				teamBTotal := rating[pairs[second][0]] + rating[pairs[second][1]]
+				ratingGap := teamATotal - teamBTotal
+				if ratingGap < 0 {
+					ratingGap = -ratingGap
+				}
+				courtScore += ratingGap * ratingWeight
 				scratch[courtIdx] = domain.Match{
 					ID:    shortID(),
 					Court: courtIdx + 1,
@@ -307,9 +348,9 @@ func bestCourtAssignment(pairs [][2]string, courtShareCount map[[2]string]int) [
 // assignCourts finds the optimal assignment of active players to courts using
 // exact backtracking search: first minimise partner repeats (primary constraint),
 // then minimise court co-occurrence (secondary). Guaranteed optimal for up to 16 players.
-func assignCourts(active []string, courts int, partnerCount map[[2]string]int, courtShareCount map[[2]string]int) []domain.Match {
+func assignCourts(active []string, partnerCount map[[2]string]int, courtShareCount map[[2]string]int, rating map[string]int) []domain.Match {
 	pairs := bestPartnerMatching(active, partnerCount)
-	return bestCourtAssignment(pairs, courtShareCount)
+	return bestCourtAssignment(pairs, courtShareCount, rating)
 }
 
 // TotalRounds returns the correct number of rounds for a fair Americano tournament.
