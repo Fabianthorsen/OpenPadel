@@ -9,6 +9,7 @@
 	import { Pencil, Shield, Clock, Trophy } from '@lucide/svelte';
 	import { sessionName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import RatingBadge from '$lib/components/ui/RatingBadge.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { SectionLabel } from '$lib/components/ui/section-label';
 	import * as Sheet from '$lib/components/ui/sheet';
@@ -38,6 +39,8 @@
 
 	const playerName = $derived(Object.fromEntries(session.players.map((p) => [p.id, p.name])));
 	const playerById = $derived(Object.fromEntries(session.players.map((p) => [p.id, p])));
+	// player_id → 1–5 Rating for the live standings peek (leaderboard API has no rating).
+	const playerRatings = $derived(Object.fromEntries(session.players.map((p) => [p.id, p.rating])));
 	const maxScore = $derived(session.points);
 
 	let localScores = $state<Record<string, { a: number; b: number }>>({});
@@ -273,10 +276,6 @@
 		return `${parts[0]} ${parts[1][0]}.`;
 	}
 
-	function teamLabel(ids: readonly [string, string]) {
-		return `${shortPlayerName(playerName[ids[0]] ?? '?')} & ${shortPlayerName(playerName[ids[1]] ?? '?')}`;
-	}
-
 	const saveTimeout: Record<string, ReturnType<typeof setTimeout>> = {};
 
 	// Determine if layout is single-court or multi-court
@@ -374,12 +373,10 @@
 					<ScoreBoard
 						teamA={{
 							players: [playerById[match.team_a[0]], playerById[match.team_a[1]]].filter(Boolean),
-							name: teamLabel(match.team_a),
 							score: s.a
 						}}
 						teamB={{
 							players: [playerById[match.team_b[0]], playerById[match.team_b[1]]].filter(Boolean),
-							name: teamLabel(match.team_b),
 							score: s.b
 						}}
 						{scored}
@@ -392,6 +389,20 @@
 						onFinalize={() => submitScore(match.id)}
 					/>
 				{:else}
+					<!-- Per-player name + Rating badge, reused for both teams on a court card -->
+					{#snippet teamNames(pa: App.Player | undefined, pb: App.Player | undefined)}
+						<div class="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold">
+							<span class="flex min-w-0 items-center gap-1.5">
+								<span class="min-w-0 truncate">{shortPlayerName(pa?.name ?? '?')}</span>
+								{#if pa}<RatingBadge rating={pa.rating} />{/if}
+							</span>
+							<span class="text-text-disabled shrink-0">&</span>
+							<span class="flex min-w-0 items-center gap-1.5">
+								<span class="min-w-0 truncate">{shortPlayerName(pb?.name ?? '?')}</span>
+								{#if pb}<RatingBadge rating={pb.rating} />{/if}
+							</span>
+						</div>
+					{/snippet}
 					<!-- Multiple courts: Glanceable list layout -->
 					<div class="space-y-3">
 						{#each currentRound.matches as match}
@@ -455,7 +466,7 @@
 											/>
 										</div>
 									</div>
-									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_a)}</p>
+									{@render teamNames(p1, p2)}
 									<TeamScore
 										score={s.a}
 										opponentScore={s.b}
@@ -491,7 +502,7 @@
 											/>
 										</div>
 									</div>
-									<p class="flex-1 truncate text-sm font-semibold">{teamLabel(match.team_b)}</p>
+									{@render teamNames(p3, p4)}
 									<TeamScore
 										score={s.b}
 										opponentScore={s.a}
@@ -523,6 +534,7 @@
 											size="sm"
 										/>
 										<span class="text-sm font-medium">{p?.name ?? id}</span>
+										{#if p}<RatingBadge rating={p.rating} />{/if}
 									</div>
 								{/each}
 							</div>
@@ -600,7 +612,12 @@
 				<Sheet.Title>{$_('standings_label')}</Sheet.Title>
 			</Sheet.Header>
 			<div class="max-h-[70vh] overflow-y-auto">
-				<Leaderboard sessionId={session.id} sessionName={sessionName(session)} {stream} />
+				<Leaderboard
+					sessionId={session.id}
+					sessionName={sessionName(session)}
+					{stream}
+					ratings={playerRatings}
+				/>
 			</div>
 		</Sheet.Content>
 	</Sheet.Root>

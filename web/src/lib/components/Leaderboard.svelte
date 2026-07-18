@@ -5,6 +5,7 @@
 	import { Trophy, UserPlus, Check } from '@lucide/svelte';
 	import { shortName } from '$lib/utils';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import RatingBadge from '$lib/components/ui/RatingBadge.svelte';
 	import AvatarWithContactBadge from '$lib/components/ui/AvatarWithContactBadge.svelte';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -18,13 +19,17 @@
 		sessionName = '',
 		complete = false,
 		stream = null,
-		inSheet = false
+		inSheet = false,
+		ratings = {}
 	}: {
 		sessionId: string;
 		sessionName?: string;
 		complete?: boolean;
 		stream?: SessionStream | null;
 		inSheet?: boolean;
+		// player_id → 1–5 Rating. Read from the Session's players (the leaderboard
+		// API carries no rating); shown on the live standings rows only.
+		ratings?: Record<string, number>;
 	} = $props();
 
 	let leaderboard = $state<App.Leaderboard | null>(null);
@@ -354,6 +359,9 @@
 							>
 								{shortName(s.name)}
 							</span>
+							{#if ratings[s.player_id] !== undefined}
+								<RatingBadge rating={ratings[s.player_id]} />
+							{/if}
 						</div>
 
 						<!-- Points: right-aligned, the ranking metric -->
