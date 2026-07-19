@@ -54,6 +54,27 @@ type CareerSummary struct {
 	PointWinPct float64 `json:"point_win_pct"`
 }
 
+// ModeStats is the per-Game-Mode career aggregate behind the Career Stats page
+// (ADR 0007). Point-share is only apples-to-apples within one scoring model, so
+// Americano and Mexicano are aggregated separately and never blended here.
+// PointWinPct is a percentage in [0, 100] (mean per-Match share); NetPoints is
+// TotalPoints − PointsConceded and may be negative. A mode the user has no games
+// in is still returned, zero-valued, so the UI can render its "no games yet"
+// state. Same fully-scored / guest-inclusive / compute-on-read rules as
+// CareerSummary.
+type ModeStats struct {
+	Mode           GameMode `json:"mode"`
+	Games          int      `json:"games"`
+	Wins           int      `json:"wins"`
+	Draws          int      `json:"draws"`
+	Losses         int      `json:"losses"`
+	TotalPoints    int      `json:"total_points"`
+	PointsConceded int      `json:"points_conceded"`
+	NetPoints      int      `json:"net_points"`
+	PointWinPct    float64  `json:"point_win_pct"`
+	Tournaments    int      `json:"tournaments"`
+}
+
 type TournamentHistoryEntry struct {
 	SessionID   string `json:"session_id"`
 	Name        string `json:"name"`

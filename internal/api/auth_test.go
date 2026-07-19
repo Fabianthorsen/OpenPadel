@@ -395,3 +395,47 @@ func TestProfileSummary_Unauthenticated(t *testing.T) {
 		t.Errorf("failed to close response body: %v", err)
 	}
 }
+
+func TestModeStats(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+
+	res := getReq(t, srv, "/api/auth/stats", token)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+
+	var body struct {
+		Modes []struct {
+			Mode        string  `json:"mode"`
+			Games       int     `json:"games"`
+			NetPoints   int     `json:"net_points"`
+			PointWinPct float64 `json:"point_win_pct"`
+		} `json:"modes"`
+	}
+	decodeBody(t, res, &body)
+
+	// Both Game Modes are always present, zero-valued for a brand-new user.
+	if len(body.Modes) != 2 {
+		t.Fatalf("expected 2 mode sections, got %d", len(body.Modes))
+	}
+	if body.Modes[0].Mode != "americano" || body.Modes[1].Mode != "mexicano" {
+		t.Errorf("expected [americano, mexicano], got [%s, %s]", body.Modes[0].Mode, body.Modes[1].Mode)
+	}
+	for _, m := range body.Modes {
+		if m.Games != 0 || m.NetPoints != 0 || m.PointWinPct != 0 {
+			t.Errorf("expected zeroed %s section, got %+v", m.Mode, m)
+		}
+	}
+}
+
+func TestModeStats_Unauthenticated(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := getReq(t, srv, "/api/auth/stats", "")
+	if res.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", res.StatusCode)
+	}
+	if err := res.Body.Close(); err != nil {
+		t.Errorf("failed to close response body: %v", err)
+	}
+}

@@ -159,6 +159,44 @@ func (s *Store) GetCareerSummary(userID string) (*domain.CareerSummary, error) {
 	return summary, nil
 }
 
+// GetModeStats returns the per-Game-Mode career aggregates behind the Career
+// Stats page (ADR 0007), computed on read. Both Game Modes are always returned
+// in canonical order (Americano, then Mexicano); a mode the user has no history
+// in comes back zero-valued so the UI can render its "no games yet" state.
+func (s *Store) GetModeStats(userID string) ([]domain.ModeStats, error) {
+	rows, err := s.queries.GetModeStats(context.Background(), sql.NullString{String: userID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	byMode := make(map[domain.GameMode]domain.ModeStats, len(rows))
+	for _, row := range rows {
+		mode := domain.GameMode(row.Mode)
+		ms := domain.ModeStats{
+			Mode:           mode,
+			Tournaments:    int(row.Tournaments),
+			Games:          int(row.Games),
+			Wins:           int(row.Wins),
+			Draws:          int(row.Draws),
+			TotalPoints:    int(row.TotalPoints),
+			PointsConceded: int(row.PointsConceded),
+			PointWinPct:    row.PointShare * 100,
+		}
+		ms.Losses = ms.Games - ms.Wins - ms.Draws
+		ms.NetPoints = ms.TotalPoints - ms.PointsConceded
+		byMode[mode] = ms
+	}
+	modes := domain.ModeAmericano.Values()
+	out := make([]domain.ModeStats, 0, len(modes))
+	for _, mode := range modes {
+		if ms, ok := byMode[mode]; ok {
+			out = append(out, ms)
+		} else {
+			out = append(out, domain.ModeStats{Mode: mode})
+		}
+	}
+	return out, nil
+}
+
 // CreatePasswordResetToken generates a secure token for the given email.
 // Returns the raw token (to be emailed) and ErrNotFound if the email doesn't exist.
 func (s *Store) CreatePasswordResetToken(email string) (rawToken string, err error) {
