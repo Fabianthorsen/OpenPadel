@@ -17,16 +17,12 @@
 	import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
 
 	const AVATAR_ICONS = [
-		'Zap',
-		'Star',
 		'Flame',
 		'Shield',
 		'Crown',
-		'Trophy',
 		'Target',
 		'Rocket',
 		'Ghost',
-		'Cat',
 		'Dog',
 		'Bird',
 		'Leaf',
@@ -216,20 +212,19 @@
 	<Section title={$_('settings_profile_section')} collapsible={false}>
 		{#snippet children()}
 			<div class="space-y-4">
-				<!-- Avatar preview -->
-				<div class="flex justify-center pb-2">
-					<Avatar
-						icon={pickerIcon}
-						color={auth.user?.avatar_color ?? 'forest'}
-						name={displayName}
-						size="lg"
-					/>
-				</div>
-
-				<!-- Icon picker -->
+				<!-- Icon picker: 2x2 live preview inline with the icon buttons -->
 				<div class="space-y-2">
 					<p class="text-text-secondary text-xs font-semibold">{$_('settings_avatar_icon')}</p>
 					<div class="grid grid-cols-6 gap-2">
+						<!-- Live preview, spans a 2x2 block matching the icon buttons -->
+						<div class="col-span-2 row-span-2 flex items-center justify-center">
+							<Avatar
+								icon={pickerIcon}
+								color={auth.user?.avatar_color ?? 'forest'}
+								name={displayName}
+								size="lg"
+							/>
+						</div>
 						<button
 							onclick={() => (pickerIcon = '')}
 							class="flex items-center justify-center rounded-lg p-2 transition-colors {pickerIcon ===
@@ -246,7 +241,7 @@
 								size="sm"
 							/>
 						</button>
-						{#each AVATAR_ICONS.slice(0, 11) as icon}
+						{#each AVATAR_ICONS.slice(0, 7) as icon}
 							<button
 								onclick={() => (pickerIcon = icon)}
 								class="flex items-center justify-center rounded-lg p-2 transition-colors {pickerIcon ===
