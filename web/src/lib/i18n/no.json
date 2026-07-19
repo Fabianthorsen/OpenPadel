@@ -243,7 +243,7 @@
 	"stats_tournaments": "Turneringer",
 	"stats_legend_title": "Hva betyr disse",
 	"stats_games_desc": "Ferdigspilte kamper med poeng i denne modusen.",
-	"stats_record_desc": "Seire, uavgjort og tap i disse kampene.",
+	"stats_record_desc": "Vunnet, uavgjort og tap i disse kampene.",
 	"stats_point_win_pct_desc": "Din gjennomsnittlige andel av poengene per kamp — et marginbevisst ferdighetsmål som er rettferdig på tvers av ulike poengmål.",
 	"stats_total_points_desc": "Alle poengene du har scoret i denne modusen — et mål på totalt volum.",
 	"stats_net_points_desc": "Poeng du har scoret minus poeng sluppet inn. Positivt betyr at du scorer mer enn motstanderne totalt.",
