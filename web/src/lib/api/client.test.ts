@@ -70,6 +70,29 @@ describe('api.auth.register', () => {
 	});
 });
 
+describe('api.auth.updateSelfRating', () => {
+	it('sends PATCH with rating and bearer token', async () => {
+		mockFetch(200, { id: 'u1', email: 'a@b.com', self_rating: 5 });
+
+		await api.auth.updateSelfRating('my-token', 5);
+
+		expect(fetch).toHaveBeenCalledWith(
+			'/api/auth/self_rating',
+			expect.objectContaining({
+				method: 'PATCH',
+				body: JSON.stringify({ self_rating: 5 }),
+				headers: expect.objectContaining({ Authorization: 'Bearer my-token' })
+			})
+		);
+	});
+
+	it('throws ApiError on 4xx response', async () => {
+		mockFetch(400, { error: 'invalid_rating' }, false);
+
+		await expect(api.auth.updateSelfRating('my-token', 9)).rejects.toBeInstanceOf(ApiError);
+	});
+});
+
 describe('Authorization header', () => {
 	it('sets bearer token on authenticated requests', async () => {
 		mockFetch(200, { id: 'u1', email: 'a@b.com' });
