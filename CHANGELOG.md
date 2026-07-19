@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.2](https://github.com/Fabianthorsen/OpenPadel/compare/v1.18.1...v1.18.2) (2026-07-19)
+
+
+### Bug Fixes
+
+* invite revocation, leave tournaments, delete-race guard, settings icons ([#224](https://github.com/Fabianthorsen/OpenPadel/issues/224)) ([0107c3e](https://github.com/Fabianthorsen/OpenPadel/commit/0107c3e1065aa8a17e08e124f14aa713a7c7634d))
+
 ## [1.18.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.18.0...v1.18.1) (2026-07-19)
 
 
