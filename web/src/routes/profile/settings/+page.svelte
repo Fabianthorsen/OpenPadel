@@ -300,6 +300,7 @@
 					bind:value={selectedRating}
 					name="self_rating"
 					disabled={savingRating}
+					current={auth.user?.self_rating ?? null}
 					compact
 				/>
 				<button

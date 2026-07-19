@@ -186,6 +186,7 @@
 	"auth_switch_login": "Logg inn →",
 	"auth_rating_label": "Rating",
 	"rating_compact_hint": "Velg nivået som passer deg best.",
+	"rating_current_marker": "Nåværende nivå",
 	"rating_1_name": "Nybegynner",
 	"rating_1_desc": "Ny i padel — lærer fortsatt regler, poeng og grunnleggende ballkontakt. Ballvekslingene er korte.",
 	"rating_2_name": "Ferskere",

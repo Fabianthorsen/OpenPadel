@@ -186,6 +186,7 @@
 	"auth_switch_login": "Sign in →",
 	"auth_rating_label": "Rating",
 	"rating_compact_hint": "Pick the level that fits you best.",
+	"rating_current_marker": "Current level",
 	"rating_1_name": "Beginner",
 	"rating_1_desc": "New to padel — still learning the rules, scoring and basic contact. Rallies are short.",
 	"rating_2_name": "Improver",
