@@ -46,12 +46,14 @@
 		isAdmin,
 		onRefresh,
 		onStarted,
+		onLeave,
 		stream
 	}: {
 		session: App.Session;
 		isAdmin: boolean;
 		onRefresh: () => void;
 		onStarted: () => void;
+		onLeave?: (leaving: boolean) => void;
 		stream?: SessionStream;
 	} = $props();
 
@@ -75,6 +77,8 @@
 	let starting = $state(false);
 	let cancelling = $state(false);
 	let showCancelDialog = $state(false);
+	let leavingSession = $state(false);
+	let showLeaveDialog = $state(false);
 	let seeding = $state(false);
 	let joinName = $state('');
 	// Guests self-joining by link must pick a skill level (#210); registered
@@ -457,13 +461,42 @@
 
 	async function cancel() {
 		cancelling = true;
+		// Flag the deletion before the request so the page ignores the resulting
+		// session_updated/poll 404 instead of bouncing to "Tournament does not exist".
+		onLeave?.(true);
 		try {
 			const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
 			await api.sessions.cancel(session.id, adminToken);
 			goto('/');
 		} catch {
+			onLeave?.(false); // delete failed — re-enable the page's normal loading
 			cancelling = false;
 			showCancelDialog = false;
+		}
+	}
+
+	async function leave() {
+		leavingSession = true;
+		try {
+			if (auth.token) {
+				// Retroactive path: server resolves membership by user_id, no stored
+				// player id required.
+				await api.sessions.leave(session.id, auth.token);
+			} else if (myPlayerId) {
+				// Guest self-removal via the player id stored at join time.
+				await api.players.leave(session.id, myPlayerId);
+			} else {
+				return;
+			}
+			localStorage.removeItem(`player_id_${session.id}`);
+			toast.success($_('lobby_left'));
+			goto(auth.user ? '/profile' : '/');
+		} catch (e) {
+			toast.error(
+				e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error')
+			);
+			leavingSession = false;
+			showLeaveDialog = false;
 		}
 	}
 
@@ -957,8 +990,19 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="bg-surface-raised rounded-2xl px-4 py-3 text-center">
-				<p class="text-text-secondary text-sm">{$_('lobby_waiting_admin')}</p>
+			<div class="space-y-2">
+				<div class="bg-surface-raised rounded-2xl px-4 py-3 text-center">
+					<p class="text-text-secondary text-sm">{$_('lobby_waiting_admin')}</p>
+				</div>
+				{#if alreadyJoined}
+					<button
+						onclick={() => (showLeaveDialog = true)}
+						disabled={leavingSession}
+						class="border-border text-text-secondary hover:border-destructive hover:text-destructive h-auto w-full rounded-2xl border px-4 py-3.5 text-sm font-semibold transition-colors disabled:opacity-40"
+					>
+						{leavingSession ? $_('lobby_leaving') : $_('lobby_leave')}
+					</button>
+				{/if}
 			</div>
 		{/if}
 	</main>
@@ -1000,6 +1044,17 @@
 	destructive
 	onconfirm={cancel}
 	oncancel={() => (showCancelDialog = false)}
+/>
+
+<ConfirmDialog
+	open={showLeaveDialog}
+	title={$_('leave_dialog_title')}
+	description={$_('leave_dialog_desc')}
+	confirmLabel={$_('leave_dialog_confirm')}
+	cancelLabel={$_('leave_dialog_cancel')}
+	destructive
+	onconfirm={leave}
+	oncancel={() => (showLeaveDialog = false)}
 />
 
 <!-- Admin rating edit (#211) -->

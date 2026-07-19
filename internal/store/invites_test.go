@@ -66,6 +66,29 @@ func TestGetPendingInvites(t *testing.T) {
 	}
 }
 
+func TestDeleteSession_RemovesPendingInvites(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+	bob := createUser(t, s, "bob@example.com", "Bob")
+	sess := createSession(t, s)
+
+	if _, err := s.CreateInvite(sess, alice, bob); err != nil {
+		t.Fatalf("CreateInvite: %v", err)
+	}
+
+	if err := s.DeleteSession(sess); err != nil {
+		t.Fatalf("DeleteSession: %v", err)
+	}
+
+	invites, err := s.GetPendingInvites(bob)
+	if err != nil {
+		t.Fatalf("GetPendingInvites: %v", err)
+	}
+	if len(invites) != 0 {
+		t.Errorf("expected invite removed after session delete, got %v", invites)
+	}
+}
+
 func TestGetPendingInvites_Empty(t *testing.T) {
 	s := newTestStore(t)
 	bob := createUser(t, s, "bob@example.com", "Bob")

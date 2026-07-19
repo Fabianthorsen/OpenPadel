@@ -125,7 +125,12 @@ export const api = {
 		cancel: (id: string, token: string) =>
 			request<void>('DELETE', `/sessions/${id}`, undefined, token),
 		close: (id: string, token: string) =>
-			request<void>('POST', `/sessions/${id}/close`, undefined, token)
+			request<void>('POST', `/sessions/${id}/close`, undefined, token),
+		// Leave a session as the authenticated user. Membership is resolved
+		// server-side by user_id, so this works retroactively without a stored
+		// player id.
+		leave: (id: string, token: string) =>
+			request<{ id: string; active: boolean }>('POST', `/sessions/${id}/leave`, undefined, token)
 	},
 	players: {
 		join: (sessionId: string, name: string, token?: string, adminToken?: string, rating?: number) =>

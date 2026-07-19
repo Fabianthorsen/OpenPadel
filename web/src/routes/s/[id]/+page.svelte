@@ -20,6 +20,11 @@
 	let currentRound = $state<App.Round | null>(null);
 	let fallbackInterval: ReturnType<typeof setInterval>;
 
+	// Set when the admin intentionally deletes this session. The delete triggers a
+	// `session_updated` broadcast (and the fallback poll) that would otherwise race
+	// load() into a 404 and bounce us to "Tournament does not exist" — suppress it.
+	let leaving = $state(false);
+
 	const FALLBACK_POLL = 30_000;
 
 	const sessionId = $derived(page.params.id as string);
@@ -45,6 +50,7 @@
 	);
 
 	async function load() {
+		if (leaving) return;
 		const token = getAdminToken() ?? undefined;
 		try {
 			session = await api.sessions.get(sessionId, token);
@@ -57,7 +63,8 @@
 			}
 		} catch (e) {
 			if (e instanceof ApiError && e.status === 404) {
-				goto('/?notfound=1');
+				// A load() already in flight when the admin hit delete — stay quiet.
+				if (!leaving) goto('/?notfound=1');
 				return;
 			}
 			toast.error(
@@ -126,9 +133,23 @@
 			<p class="text-text-secondary text-sm">{$_('loading')}</p>
 		</main>
 	{:else if session.status === 'lobby'}
-		<Lobby {session} {isAdmin} onRefresh={load} onStarted={load} {stream} />
+		<Lobby
+			{session}
+			{isAdmin}
+			onRefresh={load}
+			onStarted={load}
+			onLeave={(v) => (leaving = v)}
+			{stream}
+		/>
 	{:else if session.status === 'playing' && currentRound}
-		<ActiveSession {session} {currentRound} {isAdmin} onRefresh={load} {stream} />
+		<ActiveSession
+			{session}
+			{currentRound}
+			{isAdmin}
+			onRefresh={load}
+			onLeave={(v) => (leaving = v)}
+			{stream}
+		/>
 	{:else if session.status === 'done'}
 		<Leaderboard
 			sessionId={session.id}

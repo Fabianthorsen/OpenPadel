@@ -391,10 +391,22 @@ func (h *Handler) cancelSession(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrAdminRequired)
 		return
 	}
+
+	// Grab pending invitees before the delete: the FK cascade removes the invite
+	// rows, so we must capture who to notify while they still exist.
+	pending, _ := h.store.GetSessionInvites(id)
+
 	if err := h.store.DeleteSession(id); err != nil {
 		respondAPIError(w, ErrServerError)
 		return
 	}
 	h.hub.Emit(id, events.Envelope{Type: events.EventSessionUpdated})
+
+	// Tell invited users their pending invite is gone so their client drops it
+	// immediately instead of waiting for the next app reload.
+	for _, inv := range pending {
+		h.hub.EmitToUser(inv.ToUserID, events.Envelope{Type: events.EventInviteRevoked})
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }

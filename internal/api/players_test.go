@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -361,6 +362,97 @@ func TestDeactivatePlayer_SelfRemoval(t *testing.T) {
 		t.Fatalf("expected 200 for self-removal, got %d", res.StatusCode)
 	}
 	res.Body.Close()
+}
+
+// countActivePlayers reads the session and returns how many of its players are
+// still active.
+func countActivePlayers(t *testing.T, srv *httptest.Server, sessID string) int {
+	t.Helper()
+	res := getReq(t, srv, "/api/sessions/"+sessID, "")
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("getSession: expected 200, got %d", res.StatusCode)
+	}
+	var sess struct {
+		Players []struct {
+			Active bool `json:"active"`
+		} `json:"players"`
+	}
+	decodeBody(t, res, &sess)
+	n := 0
+	for _, p := range sess.Players {
+		if p.Active {
+			n++
+		}
+	}
+	return n
+}
+
+// A registered user can leave a session using only their auth token — no stored
+// player id — which is what makes it work retroactively for legacy sessions.
+func TestLeaveSession_RegisteredUser(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+	sessID, _ := mustCreateSession(t, srv, "")
+
+	// Alice joins as a registered user (player carries her user_id).
+	mustJoinSession(t, srv, sessID, "Alice", token)
+	if got := countActivePlayers(t, srv, sessID); got != 1 {
+		t.Fatalf("expected 1 active player after join, got %d", got)
+	}
+
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/leave", nil, token)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("leave: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+
+	if got := countActivePlayers(t, srv, sessID); got != 0 {
+		t.Fatalf("expected 0 active players after leave, got %d", got)
+	}
+}
+
+func TestLeaveSession_NotAMember(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+	sessID, adminToken := mustCreateSession(t, srv, "")
+	mustJoinSession(t, srv, sessID, "Bob", adminToken) // someone else, a guest
+
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/leave", nil, token)
+	if res.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404 when not a member, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestLeaveSession_RequiresAuth(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+	mustJoinSession(t, srv, sessID, "Alice", adminToken)
+
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/leave", nil, "")
+	if res.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 without auth, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestLeaveSession_AfterStartBlocked(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	// Alice (registered) plus three guests fill the single court, then start.
+	mustJoinSession(t, srv, sessID, "Alice", token)
+	mustJoinSession(t, srv, sessID, "Bob", adminToken)
+	mustJoinSession(t, srv, sessID, "Charlie", adminToken)
+	mustJoinSession(t, srv, sessID, "Diana", adminToken)
+	mustStartSession(t, srv, sessID, adminToken)
+
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/leave", nil, token)
+	if res.StatusCode != http.StatusConflict {
+		t.Fatalf("expected 409 after start, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
 }
 
 func TestDeactivatePlayer_SessionAlreadyStarted(t *testing.T) {

@@ -5,6 +5,7 @@ const (
 	EventRoundUpdated   = "round_updated"
 	EventLiveScore      = "live_score"
 	EventInviteReceived = "invite_received"
+	EventInviteRevoked  = "invite_revoked"
 	EventTimerSync      = "timer_sync"
 )
 
