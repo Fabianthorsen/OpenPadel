@@ -27,10 +27,21 @@ export async function subscribeToPush(token: string): Promise<boolean> {
 
 	const { public_key } = await api.push.getVapidKey();
 
-	const sub = await reg.pushManager.subscribe({
-		userVisibleOnly: true,
-		applicationServerKey: urlBase64ToUint8Array(public_key) as BufferSource
-	});
+	let sub: PushSubscription;
+	try {
+		sub = await reg.pushManager.subscribe({
+			userVisibleOnly: true,
+			applicationServerKey: urlBase64ToUint8Array(public_key) as BufferSource
+		});
+	} catch (e) {
+		// Some browsers/simulators reject here with NotAllowedError even after
+		// Notification.requestPermission resolved as granted — surface it as blocked
+		// rather than leaking the raw native message.
+		if (e instanceof DOMException && e.name === 'NotAllowedError') {
+			throw new Error('notifications_blocked');
+		}
+		throw e;
+	}
 
 	const json = sub.toJSON();
 	const keys = json.keys ?? {};

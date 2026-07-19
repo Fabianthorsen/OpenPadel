@@ -88,14 +88,6 @@
 
 	let showDeleteConfirm = $state(false);
 	let deleting = $state(false);
-	let prevPushEnabled = $state(false);
-
-	$effect(() => {
-		if (pushEnabled !== prevPushEnabled && pushSupported) {
-			prevPushEnabled = pushEnabled;
-			togglePush();
-		}
-	});
 
 	async function checkPushState() {
 		const reg = await navigator.serviceWorker.ready;
@@ -103,16 +95,19 @@
 		pushEnabled = !!sub && Notification.permission === 'granted';
 	}
 
-	async function togglePush() {
-		if (!auth.token) return;
+	// Driven by the Switch's onCheckedChange, so `desired` is the state the user
+	// asked for. Never read `pushEnabled` here to decide — that value can also be
+	// set programmatically from the real browser state (onMount/checkPushState),
+	// and reacting to those reads would tear down a working subscription.
+	async function togglePush(desired: boolean) {
+		if (!auth.token || pushToggling) return;
 		pushToggling = true;
 		try {
-			if (pushEnabled) {
-				await unsubscribeFromPush(auth.token);
-			} else {
+			if (desired) {
 				await subscribeToPush(auth.token);
+			} else {
+				await unsubscribeFromPush(auth.token);
 			}
-			await checkPushState();
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : 'unknown';
 			const label =
@@ -123,6 +118,9 @@
 						: msg;
 			toast.error(label);
 		} finally {
+			// Re-sync the toggle from the real browser state so a failed/blocked
+			// subscribe snaps back off instead of showing a phantom "on".
+			await checkPushState();
 			pushToggling = false;
 		}
 	}
@@ -324,7 +322,11 @@
 						<p class="text-sm font-semibold">{$_('pref_notifications_title')}</p>
 						<p class="text-text-secondary text-xs">{$_('pref_notifications_desc')}</p>
 					</div>
-					<Switch bind:checked={pushEnabled} disabled={pushToggling || !pushSupported} />
+					<Switch
+						bind:checked={pushEnabled}
+						onCheckedChange={togglePush}
+						disabled={pushToggling || !pushSupported}
+					/>
 				</div>
 
 				<!-- Install prompt -->
