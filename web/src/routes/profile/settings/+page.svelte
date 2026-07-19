@@ -11,7 +11,9 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import LocaleSwitcher from '$lib/components/LocaleSwitcher.svelte';
 	import { Section } from '$lib/components/ui/section';
+	import RatingPicker from '$lib/components/RatingPicker.svelte';
 	import { toast } from 'svelte-sonner';
+	import { translateApiError } from '$lib/i18n/errors';
 	import { subscribeToPush, unsubscribeFromPush } from '$lib/push';
 
 	const AVATAR_ICONS = [
@@ -47,6 +49,32 @@
 	let pickerIcon = $state(auth.user?.avatar_icon ?? '');
 	let savingProfile = $state(false);
 	let profileError = $state('');
+
+	// Skill-level editor (#212). Seeds from the current self_rating; saving only
+	// updates the User's default for future joins — a Player.rating already
+	// snapshotted into a joined Session is untouched (ADR 0006). null when a legacy
+	// account hasn't picked a level yet; the home gate (#213) handles that case.
+	let selectedRating = $state<number | null>(auth.user?.self_rating ?? null);
+	let savingRating = $state(false);
+	const ratingDirty = $derived(
+		selectedRating !== null && selectedRating !== (auth.user?.self_rating ?? null)
+	);
+
+	async function saveRating() {
+		if (!auth.token || selectedRating === null) return;
+		savingRating = true;
+		try {
+			const updated = await api.auth.updateSelfRating(auth.token, selectedRating);
+			auth.updateUser(updated);
+			toast.success($_('settings_rating_saved'));
+		} catch (e) {
+			const msg =
+				e instanceof Error ? translateApiError(e.message) : translateApiError('server_error');
+			toast.error(msg);
+		} finally {
+			savingRating = false;
+		}
+	}
 
 	let pushSupported = $state(false);
 	let pushEnabled = $state(false);
@@ -258,6 +286,29 @@
 					class="bg-primary w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
 				>
 					{savingProfile ? $_('settings_saving') : $_('settings_save')}
+				</button>
+			</div>
+		{/snippet}
+	</Section>
+
+	<!-- Skill level section (#212) -->
+	<Section title={$_('settings_rating_section')} collapsible={false}>
+		{#snippet children()}
+			<div class="space-y-4">
+				<p class="text-text-secondary text-xs">{$_('settings_rating_desc')}</p>
+				<RatingPicker
+					bind:value={selectedRating}
+					name="self_rating"
+					disabled={savingRating}
+					current={auth.user?.self_rating ?? null}
+					compact
+				/>
+				<button
+					onclick={saveRating}
+					disabled={!ratingDirty || savingRating}
+					class="bg-primary w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+				>
+					{savingRating ? $_('settings_rating_saving') : $_('settings_rating_save')}
 				</button>
 			</div>
 		{/snippet}

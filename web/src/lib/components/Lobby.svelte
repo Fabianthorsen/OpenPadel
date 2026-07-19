@@ -1017,7 +1017,11 @@
 			<p class="text-text-secondary text-sm">
 				{$_('lobby_edit_rating_desc', { values: { name: editingPlayer.name } })}
 			</p>
-			<RatingPicker bind:value={editRating} disabled={savingRating} />
+			<RatingPicker
+				bind:value={editRating}
+				current={editingPlayer.rating}
+				disabled={savingRating}
+			/>
 		{/if}
 		<Dialog.Footer class="gap-2">
 			<button
