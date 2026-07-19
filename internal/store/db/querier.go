@@ -71,6 +71,11 @@ type Querier interface {
 	GetPushSubscriptionsForSession(ctx context.Context, sessionID string) ([]GetPushSubscriptionsForSessionRow, error)
 	GetRoundsBySessionID(ctx context.Context, sessionID string) ([]GetRoundsBySessionIDRow, error)
 	GetSession(ctx context.Context, id string) (GetSessionRow, error)
+	// Done Sessions the user played, newest first, for both the tournament history
+	// timeline and the cross-mode placement stats (ADR 0007). scored is 1 when the
+	// user has at least one fully-scored Match in the Session, so placement can
+	// ignore ended-early Sessions the user never actually finished a game in; the
+	// finishing rank itself is resolved from the leaderboard in Go.
 	GetTournamentHistorySessions(ctx context.Context, userID sql.NullString) ([]GetTournamentHistorySessionsRow, error)
 	GetUpcomingTournaments(ctx context.Context, userID sql.NullString) ([]GetUpcomingTournamentsRow, error)
 	GetUserAvatarByUserID(ctx context.Context, id string) (GetUserAvatarByUserIDRow, error)

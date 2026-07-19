@@ -17,6 +17,13 @@ declare global {
 			games: number;
 			winrate: number;
 			point_win_pct: number;
+			// Placement stats from finishing rank per Session, blended across modes
+			// (ADR 0007). titles = rank-1 finishes, podiums = rank ≤ 3, best_finish =
+			// lowest rank, average_finish = mean rank. All zero at zero games.
+			titles: number;
+			podiums: number;
+			best_finish: number;
+			average_finish: number;
 		}
 
 		// Per-Game-Mode career aggregate for the Career Stats page (ADR 0007).

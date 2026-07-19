@@ -156,6 +156,21 @@ func (s *Store) GetCareerSummary(userID string) (*domain.CareerSummary, error) {
 	if summary.Games > 0 {
 		summary.Winrate = float64(row.Wins) / float64(summary.Games) * 100
 	}
+
+	// Placement stats (titles / podiums / best / average finish) are not a SQL
+	// aggregate: the finishing rank comes from the leaderboard tiebreaker chain,
+	// so we rank each done Session in Go. Ranks compare across scoring models, so
+	// these blend both Game Modes (unlike point-share).
+	placement, err := s.getPlacementStats(userID)
+	if err != nil {
+		return nil, err
+	}
+	summary.Titles = placement.titles
+	summary.Podiums = placement.podiums
+	summary.BestFinish = placement.bestFinish
+	if placement.count > 0 {
+		summary.AverageFinish = float64(placement.rankSum) / float64(placement.count)
+	}
 	return summary, nil
 }
 
@@ -195,6 +210,50 @@ func (s *Store) GetModeStats(userID string) ([]domain.ModeStats, error) {
 		}
 	}
 	return out, nil
+}
+
+// placementStats accumulates the user's finishing ranks across their done
+// Sessions: titles (rank 1), podiums (rank ≤ 3), the best (lowest) rank, and the
+// running sum/count behind average finish.
+type placementStats struct {
+	titles     int
+	podiums    int
+	bestFinish int
+	rankSum    int
+	count      int
+}
+
+// getPlacementStats computes the cross-mode placement aggregate from the user's
+// finishing rank in each done Session they played a scored match in, reusing the
+// same ranked-Sessions walk as the tournament history timeline. Sessions the
+// user has no scored Match in (ended early before finishing a game) and Sessions
+// with no ranked standing (rank 0) are skipped rather than counted as finishes.
+// Both Game Modes fold together: a finishing rank is comparable across scoring
+// models in a way point-share is not.
+func (s *Store) getPlacementStats(userID string) (placementStats, error) {
+	ranked, err := s.rankedTournaments(userID)
+	if err != nil {
+		return placementStats{}, err
+	}
+	var p placementStats
+	for _, rt := range ranked {
+		rank := rt.entry.Rank
+		if !rt.scored || rank == 0 {
+			continue
+		}
+		if rank == 1 {
+			p.titles++
+		}
+		if rank <= 3 {
+			p.podiums++
+		}
+		if p.bestFinish == 0 || rank < p.bestFinish {
+			p.bestFinish = rank
+		}
+		p.rankSum += rank
+		p.count++
+	}
+	return p, nil
 }
 
 // CreatePasswordResetToken generates a secure token for the given email.
@@ -268,39 +327,61 @@ func (s *Store) RedeemPasswordResetToken(rawToken, newPassword string) error {
 	return tx.Commit()
 }
 
-func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryEntry, error) {
+// rankedTournament is one of the user's done Sessions with their finishing rank
+// resolved from the leaderboard and whether they played a fully-scored Match in
+// it. It backs both the tournament history timeline and the placement stats, so
+// each done Session is ranked exactly once per read.
+type rankedTournament struct {
+	entry  domain.TournamentHistoryEntry
+	scored bool
+}
+
+// rankedTournaments walks the user's done Sessions (newest first) and resolves
+// each one's finishing rank/points/games from GetLeaderboard — the same sort +
+// tiebreaker chain the rest of the app uses. Leaderboard errors on a single
+// Session are tolerated (that Session simply carries a zero rank), matching the
+// historical behaviour of the tournament history endpoint.
+func (s *Store) rankedTournaments(userID string) ([]rankedTournament, error) {
 	sessions, err := s.queries.GetTournamentHistorySessions(context.Background(), sql.NullString{String: userID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
-
-	var entries []domain.TournamentHistoryEntry
+	out := make([]rankedTournament, 0, len(sessions))
 	for _, sess := range sessions {
-		e := domain.TournamentHistoryEntry{
-			SessionID:  sess.ID,
-			Name:       sess.Name,
-			Status:     sess.Status,
-			PlayedAt:   sess.CreatedAt,
-			EndedEarly: sess.EndedEarly == 1,
+		rt := rankedTournament{
+			entry: domain.TournamentHistoryEntry{
+				SessionID:  sess.ID,
+				Name:       sess.Name,
+				Status:     sess.Status,
+				PlayedAt:   sess.CreatedAt,
+				EndedEarly: sess.EndedEarly == 1,
+			},
+			scored: sess.Scored == 1,
 		}
-
-		// Compute rank/points/games from the leaderboard (reuses existing sort + tiebreaker logic).
 		standings, err := s.GetLeaderboard(sess.ID)
 		if err == nil {
 			for _, st := range standings {
 				if st.UserID != nil && *st.UserID == userID {
-					e.Rank = st.Rank
-					e.Points = st.Points
-					e.GamesPlayed = st.GamesPlayed
+					rt.entry.Rank = st.Rank
+					rt.entry.Points = st.Points
+					rt.entry.GamesPlayed = st.GamesPlayed
 					break
 				}
 			}
 		}
-
-		entries = append(entries, e)
+		out = append(out, rt)
 	}
-	if entries == nil {
-		entries = []domain.TournamentHistoryEntry{}
+	return out, nil
+}
+
+func (s *Store) GetTournamentHistory(userID string) ([]domain.TournamentHistoryEntry, error) {
+	ranked, err := s.rankedTournaments(userID)
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]domain.TournamentHistoryEntry, 0, len(ranked))
+	for _, rt := range ranked {
+		entries = append(entries, rt.entry)
 	}
 	return entries, nil
 }

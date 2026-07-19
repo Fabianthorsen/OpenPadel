@@ -64,6 +64,11 @@ scale problem normalization removes); **replacing winrate entirely** (see below)
   apples-to-apples *within* a scoring model, so per-mode sections keep every number meaningful.
   Rendered from a data-driven metric catalog over a per-Session results series (so trend/form/streak
   stats derive client-side without new endpoints).
+- **Placement stats are the one cross-mode exception** (titles, podiums, best / average finish;
+  #229). A *finishing rank* compares like-for-like across scoring models — 1st is 1st in Americano
+  or Mexicano — so unlike point-share it is honest to blend. These live in the cross-mode summary
+  (`CareerSummary`), not the per-mode sections. Derived on read from each done Session's leaderboard
+  rank, reusing the tournament-history walk.
 
 ### Low sample counts
 

@@ -44,14 +44,27 @@ type UserSearchResult struct {
 	AvatarColor string `json:"avatar_color"`
 }
 
-// CareerSummary is the cross-mode profile headline: the three numbers that stay
-// honest blended across Game Modes (ADR 0007). PointWinPct and Winrate are
-// percentages in [0, 100]; both are zero when Games is zero (callers hide the
-// stat rather than render a jarring 0% / 100%).
+// CareerSummary is the cross-mode profile headline: the numbers that stay honest
+// blended across Game Modes (ADR 0007). PointWinPct and Winrate are percentages
+// in [0, 100]; both are zero when Games is zero (callers hide the stat rather
+// than render a jarring 0% / 100%).
+//
+// The placement fields (Titles, Podiums, BestFinish, AverageFinish) come from
+// the player's finishing rank in each done Session, ranked by the same
+// leaderboard tiebreaker chain GetTournamentHistory uses. Unlike point-share,
+// a finishing rank compares like-for-like across scoring models — 1st is 1st in
+// any mode — so these are aggregated across both Game Modes here rather than
+// segmented per mode. Titles counts rank-1 finishes, Podiums rank ≤ 3,
+// BestFinish is the lowest (best) rank, AverageFinish the mean rank. All are
+// zero when Games is zero.
 type CareerSummary struct {
-	Games       int     `json:"games"`
-	Winrate     float64 `json:"winrate"`
-	PointWinPct float64 `json:"point_win_pct"`
+	Games         int     `json:"games"`
+	Winrate       float64 `json:"winrate"`
+	PointWinPct   float64 `json:"point_win_pct"`
+	Titles        int     `json:"titles"`
+	Podiums       int     `json:"podiums"`
+	BestFinish    int     `json:"best_finish"`
+	AverageFinish float64 `json:"average_finish"`
 }
 
 // ModeStats is the per-Game-Mode career aggregate behind the Career Stats page

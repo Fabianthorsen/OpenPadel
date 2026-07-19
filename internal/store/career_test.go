@@ -279,6 +279,78 @@ func TestGetModeStats_ZeroGames(t *testing.T) {
 	}
 }
 
+// Placement stats come from the player's finishing rank in each done Session
+// (ADR 0007), blended across both Game Modes since a rank compares like-for-like
+// where point-share does not. In a single-match session the winning team (alice)
+// finishes rank 1, the losing team rank 3, so win/loss controls her placement.
+// Titles = rank-1 finishes, podiums = rank ≤ 3, best finish = lowest rank,
+// average finish = mean rank.
+func TestGetCareerSummary_Placement(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	// Americano: two firsts (wins → rank 1) and one third (loss → rank 3).
+	seedFinishedMatch(t, s, "p1", domain.ModeAmericano, 24, alice, 16, 8, true, true)  // rank 1
+	seedFinishedMatch(t, s, "p2", domain.ModeAmericano, 24, alice, 21, 3, true, true)  // rank 1
+	seedFinishedMatch(t, s, "p3", domain.ModeAmericano, 24, alice, 10, 14, true, true) // rank 3
+	// Mexicano: a single third-place finish (loss → rank 3), folded into the same aggregate.
+	seedFinishedMatch(t, s, "p4", domain.ModeMexicano, 36, alice, 15, 21, true, true) // rank 3
+
+	sum, err := s.GetCareerSummary(alice)
+	if err != nil {
+		t.Fatalf("GetCareerSummary: %v", err)
+	}
+	if sum.Titles != 2 {
+		t.Errorf("titles = %d, want 2 (two rank-1 finishes)", sum.Titles)
+	}
+	if sum.Podiums != 4 {
+		t.Errorf("podiums = %d, want 4 (all four finishes are rank ≤ 3)", sum.Podiums)
+	}
+	if sum.BestFinish != 1 {
+		t.Errorf("best finish = %d, want 1", sum.BestFinish)
+	}
+	// Mean of ranks (1, 1, 3, 3) = 8/4 = 2.
+	if !approx(sum.AverageFinish, 2) {
+		t.Errorf("average finish = %.3f, want ~2", sum.AverageFinish)
+	}
+}
+
+// A user with no games has no placements: every placement field is zero (and the
+// UI hides the tiles off Games == 0, same as the rest of the headline).
+func TestGetCareerSummary_PlacementNoGames(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	sum, err := s.GetCareerSummary(alice)
+	if err != nil {
+		t.Fatalf("GetCareerSummary: %v", err)
+	}
+	if sum.Titles != 0 || sum.Podiums != 0 || sum.BestFinish != 0 || sum.AverageFinish != 0 {
+		t.Errorf("expected no placements, got titles=%d podiums=%d best=%d avg=%.2f",
+			sum.Titles, sum.Podiums, sum.BestFinish, sum.AverageFinish)
+	}
+}
+
+// Only fully-scored, done sessions yield a finish: an unscored (ended-early) or
+// still-live session gives the player no ranked standing to count.
+func TestGetCareerSummary_PlacementExcludesUnscoredAndLive(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	seedFinishedMatch(t, s, "counted", domain.ModeAmericano, 24, alice, 16, 8, true, true)  // rank 1, counts
+	seedFinishedMatch(t, s, "unscored", domain.ModeAmericano, 24, alice, 0, 0, false, true) // done but unscored
+	seedFinishedMatch(t, s, "live", domain.ModeAmericano, 24, alice, 12, 12, true, false)   // scored but not done
+
+	sum, err := s.GetCareerSummary(alice)
+	if err != nil {
+		t.Fatalf("GetCareerSummary: %v", err)
+	}
+	if sum.Titles != 1 || sum.Podiums != 1 || sum.BestFinish != 1 || !approx(sum.AverageFinish, 1) {
+		t.Errorf("expected exactly one counted first place, got titles=%d podiums=%d best=%d avg=%.2f",
+			sum.Titles, sum.Podiums, sum.BestFinish, sum.AverageFinish)
+	}
+}
+
 func mustModeStats(t *testing.T, s *store.Store, userID string) []domain.ModeStats {
 	t.Helper()
 	all, err := s.GetModeStats(userID)

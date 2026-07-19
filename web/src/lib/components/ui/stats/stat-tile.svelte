@@ -35,7 +35,9 @@
 	>
 		{value}
 	</p>
-	<p class="text-text-disabled text-center text-[11px] font-bold tracking-[0.1em] uppercase">
+	<p
+		class="text-text-disabled text-center text-[11px] font-bold tracking-[0.1em] break-words hyphens-auto uppercase"
+	>
 		{label}
 	</p>
 </div>
