@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.18.0...v1.18.1) (2026-07-19)
+
+
+### Bug Fixes
+
+* **push:** notification toggle logic + keep Fly machine warm ([#222](https://github.com/Fabianthorsen/OpenPadel/issues/222)) ([4ac6f98](https://github.com/Fabianthorsen/OpenPadel/commit/4ac6f9867b683888f4663656a3f5e96583f41593))
+
 ## [1.18.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.17.0...v1.18.0) (2026-07-19)
 
 
