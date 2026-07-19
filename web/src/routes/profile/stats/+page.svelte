@@ -4,19 +4,27 @@
 	import { auth } from '$lib/auth.svelte';
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
-	import { ChevronLeft } from '@lucide/svelte';
+	import { ChevronLeft, Info } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import Footer from '$lib/components/Footer.svelte';
 	import { Spinner } from '$lib/components/ui/spinner';
-	import { Section } from '$lib/components/ui/section';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { SectionLabel } from '$lib/components/ui/section-label';
-	import { StatTile, ModeSection, StatLegend, MODE_METRICS } from '$lib/components/ui/stats';
+	import {
+		StatTile,
+		ModeSection,
+		FormStrip,
+		StatLegend,
+		MODE_METRICS,
+		FORM_WINDOW
+	} from '$lib/components/ui/stats';
 
 	let summary = $state<App.CareerSummary | null>(null);
 	let modes = $state<App.ModeStats[]>([]);
+	let series = $state<App.MatchResult[]>([]);
 	let loading = $state(true);
-	let showLegend = $state(false);
+	let showInfo = $state(false);
 
 	async function load() {
 		if (!auth.token) return;
@@ -27,6 +35,7 @@
 			]);
 			summary = profileRes.stats;
 			modes = statsRes.modes;
+			series = statsRes.series;
 		} catch (e) {
 			// Mirror the profile page: surface the failure rather than silently
 			// rendering an empty hero indistinguishable from a real zero-games user.
@@ -79,7 +88,15 @@
 		>
 			<ChevronLeft size={24} />
 		</a>
-		<h1 class="text-2xl font-[800]">{$_('stats_page_title')}</h1>
+		<h1 class="flex-1 text-2xl font-[800]">{$_('stats_page_title')}</h1>
+		<button
+			type="button"
+			class="text-text-secondary hover:text-text-primary transition-colors"
+			aria-label={$_('stats_legend_title')}
+			onclick={() => (showInfo = true)}
+		>
+			<Info size={22} />
+		</button>
 	</div>
 
 	{#if loading}
@@ -112,18 +129,60 @@
 
 		<!-- One section per Game Mode, aggregated separately so every number is
 		     compared like-for-like within one scoring model. -->
+		<!-- Cross-mode recent form: one sparkline over the player's most recent
+		     matches, both modes mixed (form is mode-agnostic). The header names the
+		     actual number of games shown. Hidden until there's history so an empty
+		     career never shows a hollow strip. -->
+		{#if series.length > 0}
+			<section class="space-y-3">
+				<SectionLabel>
+					{$_('stats_form_title', {
+						values: { count: Math.min(series.length, FORM_WINDOW) }
+					})}
+				</SectionLabel>
+				<FormStrip {series} />
+			</section>
+		{/if}
+
 		{#each modes as mode (mode.mode)}
 			<ModeSection title={modeTitle(mode.mode)} stats={mode} metrics={MODE_METRICS} />
 		{/each}
-
-		<!-- Collapsible key so the per-mode metrics are explained on demand
-		     without crowding the numbers. -->
-		<Section title={$_('stats_legend_title')} bind:open={showLegend}>
-			{#snippet children()}
-				<StatLegend metrics={MODE_METRICS} />
-			{/snippet}
-		</Section>
 	{/if}
 
 	<Footer />
 </main>
+
+<!-- The metric key lives behind the header info button rather than a section, so
+     the numbers aren't crowded by explanations the reader rarely needs. -->
+<Dialog.Root bind:open={showInfo}>
+	<Dialog.Content class="max-h-[85vh] gap-5 overflow-y-auto rounded-2xl p-6 sm:max-w-[420px]">
+		<Dialog.Header class="space-y-0">
+			<Dialog.Title class="text-text-primary text-xl font-[800]">
+				{$_('stats_legend_title')}
+			</Dialog.Title>
+		</Dialog.Header>
+
+		<!-- Form curve: the least self-evident element, so it leads, with a colour
+		     key that reinforces the win/draw/loss read. -->
+		<section class="space-y-2.5">
+			<h3 class="text-text-primary text-sm font-semibold">{$_('stats_form_legend_label')}</h3>
+			<p class="text-text-secondary text-sm leading-relaxed">{$_('stats_form_desc')}</p>
+			<div class="text-text-secondary flex flex-wrap gap-x-4 gap-y-1.5 pt-0.5 text-xs font-medium">
+				<span class="inline-flex items-center gap-1.5">
+					<span class="bg-positive size-2.5 rounded-full"></span>{$_('stats_result_win')}
+				</span>
+				<span class="inline-flex items-center gap-1.5">
+					<span class="bg-warning size-2.5 rounded-full"></span>{$_('stats_result_draw')}
+				</span>
+				<span class="inline-flex items-center gap-1.5">
+					<span class="bg-destructive size-2.5 rounded-full"></span>{$_('stats_result_loss')}
+				</span>
+			</div>
+		</section>
+
+		<hr class="border-border" />
+
+		<!-- Per-mode metric key, driven by the same catalog as the stat grids. -->
+		<StatLegend metrics={MODE_METRICS} />
+	</Dialog.Content>
+</Dialog.Root>

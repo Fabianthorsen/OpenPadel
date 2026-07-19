@@ -88,6 +88,36 @@ type ModeStats struct {
 	Tournaments    int      `json:"tournaments"`
 }
 
+// MatchOutcome is a Match's win/draw/loss result from the scoring player's side.
+type MatchOutcome string
+
+const (
+	MatchResultWin  MatchOutcome = "win"
+	MatchResultDraw MatchOutcome = "draw"
+	MatchResultLoss MatchOutcome = "loss"
+)
+
+// MatchResult is one row of the per-Match results series behind the Career Stats
+// page's recent-form curve (ADR 0007). One row per fully-scored Match the player
+// took part in within a done Session, ordered oldest-first so the client can read
+// it as a time series and derive the form stats client-side (no new endpoint per
+// stat). Per-Match rather than per-Session because the Match is ADR 0007's atomic
+// Point Win % unit — see the ADR for why.
+//
+// Points/Conceded are the player's own-team and opponent-team score for that
+// Match; Result is the outcome from that differential (win when Points >
+// Conceded, draw when equal, loss otherwise). Date is the Session's date (Matches
+// carry no timestamp of their own). Point Win % per match is derived client-side
+// from Points/Conceded, so it isn't carried here.
+type MatchResult struct {
+	MatchID  string       `json:"match_id"`
+	Mode     GameMode     `json:"mode"`
+	Date     string       `json:"date"`
+	Points   int          `json:"points"`
+	Conceded int          `json:"conceded"`
+	Result   MatchOutcome `json:"result"`
+}
+
 type TournamentHistoryEntry struct {
 	SessionID   string `json:"session_id"`
 	Name        string `json:"name"`

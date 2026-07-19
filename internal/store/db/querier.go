@@ -54,6 +54,15 @@ type Querier interface {
 	GetLastRoundBySessionID(ctx context.Context, sessionID string) (GetLastRoundBySessionIDRow, error)
 	GetLeaderboard(ctx context.Context, sessionID string) ([]GetLeaderboardRow, error)
 	GetMatchByID(ctx context.Context, id string) (Match, error)
+	// Per-Match results series for the Career Stats page's recent-form curve
+	// (ADR 0007). One row per fully-scored Match the user played in a done Session,
+	// oldest-first (by Session date, then round, then court) so the client reads it
+	// as a time series. INNER JOINs on rounds/matches keep out ended-early Sessions
+	// with no scored Match. points / conceded are the user's own-team and opponent
+	// -team score for that Match; the win/draw/loss outcome is derived in Go. date is
+	// the Session date (Matches carry no timestamp of their own). Guests fill seats
+	// but only the user's player rows are aggregated.
+	GetMatchResultsSeries(ctx context.Context, userID sql.NullString) ([]GetMatchResultsSeriesRow, error)
 	GetMatchesByRoundID(ctx context.Context, roundID string) ([]Match, error)
 	// Per-Game-Mode career aggregate for the Career Stats page (ADR 0007). One row
 	// per Game Mode the user has a done Session in; modes with no history are absent

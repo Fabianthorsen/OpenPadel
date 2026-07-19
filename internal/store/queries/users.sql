@@ -117,6 +117,36 @@ LEFT JOIN matches m ON m.round_id = r.id
 WHERE p.user_id = ? AND p.active = 1
 GROUP BY s.game_mode;
 
+-- name: GetMatchResultsSeries :many
+-- Per-Match results series for the Career Stats page's recent-form curve
+-- (ADR 0007). One row per fully-scored Match the user played in a done Session,
+-- oldest-first (by Session date, then round, then court) so the client reads it
+-- as a time series. INNER JOINs on rounds/matches keep out ended-early Sessions
+-- with no scored Match. points / conceded are the user's own-team and opponent
+-- -team score for that Match; the win/draw/loss outcome is derived in Go. date is
+-- the Session date (Matches carry no timestamp of their own). Guests fill seats
+-- but only the user's player rows are aggregated.
+SELECT
+    m.id AS match_id,
+    s.game_mode AS mode,
+    s.created_at AS date,
+    CAST(CASE
+        WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
+        ELSE m.score_b
+    END AS INTEGER) AS points,
+    CAST(CASE
+        WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_b
+        ELSE m.score_a
+    END AS INTEGER) AS conceded
+FROM players p
+JOIN sessions s ON s.id = p.session_id AND s.status = 'done'
+JOIN rounds r ON r.session_id = p.session_id
+JOIN matches m ON m.round_id = r.id
+    AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
+    AND m.score_a IS NOT NULL
+WHERE p.user_id = ? AND p.active = 1
+ORDER BY s.created_at ASC, s.rowid ASC, r.number ASC, m.court ASC;
+
 -- name: CreatePasswordResetToken :exec
 INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?);
 

@@ -1,6 +1,7 @@
 package store_test
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -348,6 +349,163 @@ func TestGetCareerSummary_PlacementExcludesUnscoredAndLive(t *testing.T) {
 	if sum.Titles != 1 || sum.Podiums != 1 || sum.BestFinish != 1 || !approx(sum.AverageFinish, 1) {
 		t.Errorf("expected exactly one counted first place, got titles=%d podiums=%d best=%d avg=%.2f",
 			sum.Titles, sum.Podiums, sum.BestFinish, sum.AverageFinish)
+	}
+}
+
+// seedSessionMatches creates a session with `userID` on team A and three guests,
+// one round + scored match per entry in `scores` ([scoreFor, scoreAgainst]), so a
+// single Session can carry several fully-scored Matches — the granularity the
+// per-Match series depends on. id must be unique within a test.
+func seedSessionMatches(t *testing.T, s *store.Store, id string, mode domain.GameMode, points int, userID string, scores [][2]int, done bool) {
+	t.Helper()
+	sess, err := s.CreateSession(domain.SessionInput{Courts: 2, Points: points, GameMode: mode}, "")
+	if err != nil {
+		t.Fatalf("CreateSession(%s): %v", id, err)
+	}
+	alice, _ := s.CreatePlayer(sess.ID, "Alice", userID, false)
+	bob, _ := s.CreatePlayer(sess.ID, "Bob", "", false)
+	carol, _ := s.CreatePlayer(sess.ID, "Carol", "", false)
+	dan, _ := s.CreatePlayer(sess.ID, "Dan", "", false)
+
+	rounds := make([]domain.Round, len(scores))
+	matchIDs := make([]string, len(scores))
+	for i := range scores {
+		mid := fmt.Sprintf("m_%s_%d", id, i)
+		matchIDs[i] = mid
+		rounds[i] = domain.Round{
+			ID:      fmt.Sprintf("r_%s_%d", id, i),
+			Number:  i + 1,
+			Bench:   []string{},
+			Matches: []domain.Match{{ID: mid, Court: 1, TeamA: [2]string{alice.ID, bob.ID}, TeamB: [2]string{carol.ID, dan.ID}}},
+		}
+	}
+	if err := s.SaveRounds(sess.ID, rounds); err != nil {
+		t.Fatalf("SaveRounds(%s): %v", id, err)
+	}
+	if err := s.StartSession(sess.ID, len(scores), nil); err != nil {
+		t.Fatalf("StartSession(%s): %v", id, err)
+	}
+	for i, sc := range scores {
+		if _, err := s.UpdateScore(matchIDs[i], sc[0], sc[1]); err != nil {
+			t.Fatalf("UpdateScore(%s,%d): %v", id, i, err)
+		}
+	}
+	if done {
+		if err := s.CompleteSession(sess.ID, false); err != nil {
+			t.Fatalf("CompleteSession(%s): %v", id, err)
+		}
+	}
+}
+
+// The series carries one row per fully-scored Match, oldest-first, with the
+// user's own-team / opponent-team score and a win/draw/loss outcome from their
+// sign. Both Game Modes appear in a single chronological series (form is
+// mode-agnostic; ADR 0007).
+func TestGetMatchResultsSeries_RowsAndOutcomes(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	// Ordered by creation: a win, a loss, then a draw.
+	seedFinishedMatch(t, s, "win", domain.ModeAmericano, 24, alice, 16, 8, true, true)
+	seedFinishedMatch(t, s, "loss", domain.ModeMexicano, 36, alice, 15, 21, true, true)
+	seedFinishedMatch(t, s, "draw", domain.ModeAmericano, 24, alice, 12, 12, true, true)
+
+	series, err := s.GetMatchResultsSeries(alice)
+	if err != nil {
+		t.Fatalf("GetMatchResultsSeries: %v", err)
+	}
+	if len(series) != 3 {
+		t.Fatalf("expected 3 series rows, got %d: %+v", len(series), series)
+	}
+
+	want := []struct {
+		mode     domain.GameMode
+		points   int
+		conceded int
+		result   domain.MatchOutcome
+	}{
+		{domain.ModeAmericano, 16, 8, domain.MatchResultWin},
+		{domain.ModeMexicano, 15, 21, domain.MatchResultLoss},
+		{domain.ModeAmericano, 12, 12, domain.MatchResultDraw},
+	}
+	for i, w := range want {
+		got := series[i]
+		if got.Mode != w.mode || got.Points != w.points || got.Conceded != w.conceded || got.Result != w.result {
+			t.Errorf("row %d = %+v, want mode=%s points=%d conceded=%d result=%s",
+				i, got, w.mode, w.points, w.conceded, w.result)
+		}
+		if got.MatchID == "" || got.Date == "" {
+			t.Errorf("row %d missing match_id/date: %+v", i, got)
+		}
+	}
+}
+
+// A single Session with several scored Matches yields one series row per Match,
+// in round order — this is the whole point of a per-Match (vs per-Session) series.
+func TestGetMatchResultsSeries_MultipleMatchesPerSession(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	// One tournament, three rounds: win, loss, draw.
+	seedSessionMatches(t, s, "tourney", domain.ModeAmericano, 24, alice,
+		[][2]int{{16, 8}, {8, 16}, {12, 12}}, true)
+
+	series, err := s.GetMatchResultsSeries(alice)
+	if err != nil {
+		t.Fatalf("GetMatchResultsSeries: %v", err)
+	}
+	if len(series) != 3 {
+		t.Fatalf("expected 3 rows (one per match), got %d: %+v", len(series), series)
+	}
+	wantResults := []domain.MatchOutcome{domain.MatchResultWin, domain.MatchResultLoss, domain.MatchResultDraw}
+	for i, want := range wantResults {
+		if series[i].Result != want {
+			t.Errorf("row %d result = %s, want %s (round order)", i, series[i].Result, want)
+		}
+	}
+	// Distinct matches, all sharing the one Session's date.
+	if series[0].MatchID == series[1].MatchID {
+		t.Errorf("expected distinct match ids, got %q twice", series[0].MatchID)
+	}
+	if series[0].Date != series[2].Date {
+		t.Errorf("matches in one session should share its date: %q vs %q", series[0].Date, series[2].Date)
+	}
+}
+
+// Rows come only from fully-scored matches: an ended-early unscored Session and a
+// still-live scored Session both stay out. Guest-filled sessions are included.
+func TestGetMatchResultsSeries_OnlyFullyScored(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	seedFinishedMatch(t, s, "counted", domain.ModeAmericano, 24, alice, 10, 14, true, true) // guest-filled, counts
+	seedFinishedMatch(t, s, "unscored", domain.ModeAmericano, 24, alice, 0, 0, false, true) // done but unscored
+	seedFinishedMatch(t, s, "live", domain.ModeAmericano, 24, alice, 12, 12, true, false)   // scored but not done
+
+	series, err := s.GetMatchResultsSeries(alice)
+	if err != nil {
+		t.Fatalf("GetMatchResultsSeries: %v", err)
+	}
+	if len(series) != 1 {
+		t.Fatalf("expected only the fully-scored match, got %d rows: %+v", len(series), series)
+	}
+	if series[0].Points != 10 || series[0].Conceded != 14 || series[0].Result != domain.MatchResultLoss {
+		t.Errorf("row = %+v, want points=10 conceded=14 result=loss", series[0])
+	}
+}
+
+// A brand-new user with no done sessions gets an empty (non-nil) series, so the
+// UI degrades gracefully rather than erroring.
+func TestGetMatchResultsSeries_ZeroSessions(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	series, err := s.GetMatchResultsSeries(alice)
+	if err != nil {
+		t.Fatalf("GetMatchResultsSeries: %v", err)
+	}
+	if len(series) != 0 {
+		t.Errorf("expected empty series, got %+v", series)
 	}
 }
 
