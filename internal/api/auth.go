@@ -108,6 +108,41 @@ func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, user)
 }
 
+// updateSelfRating sets the authenticated User's default self_rating. Per ADR
+// 0006 this only seeds future joins — a Player.rating already snapshotted into a
+// joined Session is untouched. It is the shared save path behind both the
+// settings editor (#212) and the home backfill gate (#213).
+func (h *Handler) updateSelfRating(w http.ResponseWriter, r *http.Request) {
+	user := userFromContext(r)
+	if user == nil {
+		respondAPIError(w, ErrNotAuthenticated)
+		return
+	}
+	var body struct {
+		SelfRating int `json:"self_rating"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondAPIError(w, ErrInvalidRequestBody)
+		return
+	}
+	if !domain.IsValidRating(body.SelfRating) {
+		respondAPIError(w, ErrInvalidRating)
+		return
+	}
+	if err := h.store.UpdateSelfRating(user.ID, body.SelfRating); err != nil {
+		slog.Error("updateSelfRating failed", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	updated, err := h.store.GetUserByID(user.ID)
+	if err != nil {
+		slog.Error("updateSelfRating: GetUserByID failed", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, updated)
+}
+
 func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 	user := userFromContext(r)
 	if user == nil {

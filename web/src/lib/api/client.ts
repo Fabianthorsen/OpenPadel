@@ -59,6 +59,8 @@ export const api = {
 				{ display_name: displayName, avatar_icon: avatarIcon, avatar_color: avatarColor },
 				token
 			),
+		updateSelfRating: (token: string, selfRating: number) =>
+			request<App.User>('PATCH', '/auth/self_rating', { self_rating: selfRating }, token),
 		history: (token: string) =>
 			request<{ tournaments: App.TournamentEntry[]; upcoming: App.UpcomingEntry[] }>(
 				'GET',

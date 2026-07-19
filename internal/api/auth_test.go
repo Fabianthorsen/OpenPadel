@@ -224,6 +224,50 @@ func TestUpdateProfile(t *testing.T) {
 	}
 }
 
+func TestUpdateSelfRating(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+
+	res := patchReq(t, srv, "/api/auth/self_rating", map[string]any{
+		"self_rating": 5,
+	}, token)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+	var user struct {
+		SelfRating *int `json:"self_rating"`
+	}
+	decodeBody(t, res, &user)
+	if user.SelfRating == nil || *user.SelfRating != 5 {
+		t.Errorf("expected self_rating 5, got %v", user.SelfRating)
+	}
+}
+
+func TestUpdateSelfRating_OutOfRange(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+
+	res := patchReq(t, srv, "/api/auth/self_rating", map[string]any{
+		"self_rating": 6,
+	}, token)
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestUpdateSelfRating_Unauthenticated(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+
+	res := patchReq(t, srv, "/api/auth/self_rating", map[string]any{
+		"self_rating": 3,
+	}, "")
+	if res.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
 func TestUpdateProfile_MissingDisplayName(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")

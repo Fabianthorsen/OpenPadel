@@ -9,6 +9,7 @@
 	import Footer from '$lib/components/Footer.svelte';
 	import CreateDrawer from '$lib/components/CreateDrawer.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import RatingGate from '$lib/components/RatingGate.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { Section } from '$lib/components/ui/section';
 	import { JoinCodeInput } from '$lib/components/ui/join-code-input';
@@ -498,3 +499,9 @@
 </main>
 
 <CreateDrawer bind:open={showCreateDrawer} />
+
+<!-- Home backfill gate (#213): legacy accounts with a null self_rating must pick a
+     level before using the dashboard. Only mounts here on home, never on deep links. -->
+{#if auth.ready && auth.user && auth.user.self_rating == null}
+	<RatingGate />
+{/if}
