@@ -38,8 +38,13 @@ type Querier interface {
 	DeleteSession(ctx context.Context, id string) error
 	DeleteStalePushSubscription(ctx context.Context, endpoint string) error
 	DeleteUser(ctx context.Context, id string) error
-	GetAmericanoCareerStats(ctx context.Context, userID sql.NullString) (GetAmericanoCareerStatsRow, error)
 	GetBenchByRoundID(ctx context.Context, roundID string) ([]string, error)
+	// Cross-mode career summary: games played, wins, and mean per-Match point-share.
+	// point_share is the average of yourTeamScore / (yourTeamScore + opponentTeamScore)
+	// over every fully-scored Match in a done Session, each match weighted equally
+	// regardless of its points target (ADR 0007). Guests fill seats but only the
+	// user's own player rows are aggregated.
+	GetCareerSummary(ctx context.Context, userID sql.NullString) (GetCareerSummaryRow, error)
 	GetContacts(ctx context.Context, userID string) ([]GetContactsRow, error)
 	GetCreatorName(ctx context.Context, id string) (string, error)
 	GetCurrentRoundBySessionID(ctx context.Context, sessionID string) (GetCurrentRoundBySessionIDRow, error)

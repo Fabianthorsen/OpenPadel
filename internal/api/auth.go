@@ -177,9 +177,9 @@ func (h *Handler) profile(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrNotAuthenticated)
 		return
 	}
-	stats, err := h.store.GetCareerStats(user.ID)
+	stats, err := h.store.GetCareerSummary(user.ID)
 	if err != nil {
-		slog.Error("profile: GetCareerStats failed", "err", err)
+		slog.Error("profile: GetCareerSummary failed", "err", err)
 		respondAPIError(w, ErrServerError)
 		return
 	}

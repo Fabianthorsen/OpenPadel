@@ -141,20 +141,22 @@ func (s *Store) DeleteAuthToken(token string) error {
 	return s.queries.DeleteAuthToken(context.Background(), token)
 }
 
-func (s *Store) GetCareerStats(userID string) (*domain.AmericanoCareerStats, error) {
-	row, err := s.queries.GetAmericanoCareerStats(context.Background(), sql.NullString{String: userID, Valid: true})
+// GetCareerSummary returns the cross-mode profile headline (Point Win %, winrate,
+// games) for a user, computed on read from every fully-scored Match across both
+// Game Modes. See domain.CareerSummary and ADR 0007.
+func (s *Store) GetCareerSummary(userID string) (*domain.CareerSummary, error) {
+	row, err := s.queries.GetCareerSummary(context.Background(), sql.NullString{String: userID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
-	stats := &domain.AmericanoCareerStats{
-		Tournaments: int(row.Tournaments),
-		GamesPlayed: int(row.GamesPlayed),
-		Wins:        int(row.Wins),
-		Draws:       int(row.Draws),
-		TotalPoints: int(row.TotalPoints),
+	summary := &domain.CareerSummary{
+		Games:       int(row.Games),
+		PointWinPct: row.PointShare * 100,
 	}
-	stats.Losses = stats.GamesPlayed - stats.Wins - stats.Draws
-	return stats, nil
+	if summary.Games > 0 {
+		summary.Winrate = float64(row.Wins) / float64(summary.Games) * 100
+	}
+	return summary, nil
 }
 
 // CreatePasswordResetToken generates a secure token for the given email.

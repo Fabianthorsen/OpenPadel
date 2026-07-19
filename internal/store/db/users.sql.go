@@ -115,10 +115,9 @@ func (q *Queries) DeleteUser(ctx context.Context, id string) error {
 	return err
 }
 
-const getAmericanoCareerStats = `-- name: GetAmericanoCareerStats :one
+const getCareerSummary = `-- name: GetCareerSummary :one
 SELECT
-    COUNT(DISTINCT p.session_id) AS tournaments,
-    COUNT(m.id) AS games_played,
+    COUNT(m.id) AS games,
     CAST(COALESCE(SUM(
         CASE
             WHEN (m.p1 = p.id OR m.p2 = p.id) AND m.score_a > m.score_b THEN 1
@@ -126,18 +125,15 @@ SELECT
             ELSE 0
         END
     ), 0) AS INTEGER) AS wins,
-    CAST(COALESCE(SUM(
-        CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END
-    ), 0) AS INTEGER) AS draws,
-    CAST(COALESCE(SUM(
+    CAST(COALESCE(AVG(
         CASE
-            WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
-            WHEN m.p3 = p.id OR m.p4 = p.id THEN m.score_b
-            ELSE 0
+            WHEN (m.score_a + m.score_b) = 0 THEN 0.5
+            WHEN (m.p1 = p.id OR m.p2 = p.id) THEN CAST(m.score_a AS REAL) / (m.score_a + m.score_b)
+            ELSE CAST(m.score_b AS REAL) / (m.score_a + m.score_b)
         END
-    ), 0) AS INTEGER) AS total_points
+    ), 0.0) AS REAL) AS point_share
 FROM players p
-JOIN sessions s ON s.id = p.session_id AND s.status = 'done' AND s.game_mode == 'americano'
+JOIN sessions s ON s.id = p.session_id AND s.status = 'done'
 LEFT JOIN rounds r ON r.session_id = p.session_id
 LEFT JOIN matches m ON m.round_id = r.id
     AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
@@ -145,24 +141,21 @@ LEFT JOIN matches m ON m.round_id = r.id
 WHERE p.user_id = ? AND p.active = 1
 `
 
-type GetAmericanoCareerStatsRow struct {
-	Tournaments int64
-	GamesPlayed int64
-	Wins        int64
-	Draws       int64
-	TotalPoints int64
+type GetCareerSummaryRow struct {
+	Games      int64
+	Wins       int64
+	PointShare float64
 }
 
-func (q *Queries) GetAmericanoCareerStats(ctx context.Context, userID sql.NullString) (GetAmericanoCareerStatsRow, error) {
-	row := q.db.QueryRowContext(ctx, getAmericanoCareerStats, userID)
-	var i GetAmericanoCareerStatsRow
-	err := row.Scan(
-		&i.Tournaments,
-		&i.GamesPlayed,
-		&i.Wins,
-		&i.Draws,
-		&i.TotalPoints,
-	)
+// Cross-mode career summary: games played, wins, and mean per-Match point-share.
+// point_share is the average of yourTeamScore / (yourTeamScore + opponentTeamScore)
+// over every fully-scored Match in a done Session, each match weighted equally
+// regardless of its points target (ADR 0007). Guests fill seats but only the
+// user's own player rows are aggregated.
+func (q *Queries) GetCareerSummary(ctx context.Context, userID sql.NullString) (GetCareerSummaryRow, error) {
+	row := q.db.QueryRowContext(ctx, getCareerSummary, userID)
+	var i GetCareerSummaryRow
+	err := row.Scan(&i.Games, &i.Wins, &i.PointShare)
 	return i, err
 }
 

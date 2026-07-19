@@ -159,7 +159,6 @@
 	"leaderboard_leader": "Leader",
 	"leaderboard_rank1": "Rank #1",
 	"leaderboard_pts": "Pts",
-	"leaderboard_wl": "W/D/L",
 	"leaderboard_current": "Current Standings",
 	"leaderboard_final": "Final Standings",
 	"leaderboard_round_of": "Round {current} of {total}",
@@ -213,9 +212,9 @@
 	"auth_forgot_password": "Forgot your password?",
 	"auth_sign_out": "Sign out",
 
-	"profile_tournaments": "Tournaments played",
 	"profile_games": "Games",
 	"profile_win_rate": "Win rate",
+	"profile_point_win_pct": "Point win %",
 	"profile_wins": "Wins",
 	"profile_losses": "Losses",
 	"profile_total_points": "Total points",

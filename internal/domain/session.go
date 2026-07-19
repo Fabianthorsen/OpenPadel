@@ -44,13 +44,14 @@ type UserSearchResult struct {
 	AvatarColor string `json:"avatar_color"`
 }
 
-type AmericanoCareerStats struct {
-	GamesPlayed int `json:"games_played"`
-	Wins        int `json:"wins"`
-	Draws       int `json:"draws"`
-	Losses      int `json:"losses"`
-	TotalPoints int `json:"total_points"`
-	Tournaments int `json:"tournaments"`
+// CareerSummary is the cross-mode profile headline: the three numbers that stay
+// honest blended across Game Modes (ADR 0007). PointWinPct and Winrate are
+// percentages in [0, 100]; both are zero when Games is zero (callers hide the
+// stat rather than render a jarring 0% / 100%).
+type CareerSummary struct {
+	Games       int     `json:"games"`
+	Winrate     float64 `json:"winrate"`
+	PointWinPct float64 `json:"point_win_pct"`
 }
 
 type TournamentHistoryEntry struct {

@@ -46,7 +46,7 @@ export const api = {
 		logout: (token: string) => request<void>('POST', '/auth/logout', undefined, token),
 		me: (token: string) => request<App.User>('GET', '/auth/me', undefined, token),
 		profile: (token: string) =>
-			request<{ user: App.User; stats: App.AmericanoCareerStats }>(
+			request<{ user: App.User; stats: App.CareerSummary }>(
 				'GET',
 				'/auth/profile',
 				undefined,

@@ -42,7 +42,7 @@
 
 	let showCreateDrawer = $state(false);
 
-	let stats = $state<App.AmericanoCareerStats | null>(null);
+	let stats = $state<App.CareerSummary | null>(null);
 	let tournaments = $state<App.TournamentEntry[]>([]);
 	let upcoming = $state<App.UpcomingEntry[]>([]);
 	let loading = $state(true);
@@ -200,9 +200,11 @@
 		stream.start();
 	});
 
-	const winRate = $derived(
-		stats && stats.games_played > 0 ? Math.round((stats.wins / stats.games_played) * 100) : 0
-	);
+	// Summary numbers are hidden (em dash) at zero games so an empty profile reads
+	// as intentional rather than a jarring 0% (ADR 0007).
+	const hasGames = $derived(!!stats && stats.games > 0);
+	const pointWinPct = $derived(hasGames ? `${Math.round(stats!.point_win_pct)}%` : '–');
+	const winRate = $derived(hasGames ? `${Math.round(stats!.winrate)}%` : '–');
 
 	const memberSince = $derived(
 		auth.user
@@ -303,39 +305,34 @@
 			<Spinner />
 		</div>
 	{:else if stats}
-		<!-- Americano stats -->
+		<!-- Cross-mode career summary: the three numbers that stay honest blended
+		     across game modes (ADR 0007). -->
 		{@const s = stats}
-		<Section title="Americano" bind:open={showStats}>
+		<Section title={$_('profile_stats_section')} bind:open={showStats}>
 			{#snippet children()}
-				<div class="grid grid-cols-2 gap-3">
-					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-5 py-5">
-						<p class="text-3xl leading-none font-[800]">{s.tournaments}</p>
-						<p class="text-text-disabled text-[11px] font-bold tracking-[0.1em] uppercase">
-							{$_('profile_tournaments')}
+				<div class="grid grid-cols-3 gap-3">
+					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-3 py-5">
+						<p class="text-primary text-3xl leading-none font-[800] tabular-nums">{pointWinPct}</p>
+						<p
+							class="text-text-disabled text-center text-[11px] font-bold tracking-[0.1em] uppercase"
+						>
+							{$_('profile_point_win_pct')}
 						</p>
 					</div>
-					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-5 py-5">
-						<p class="text-3xl leading-none font-[800]">{winRate}</p>
-						<p class="text-text-disabled text-[11px] font-bold tracking-[0.1em] uppercase">
-							{$_('profile_win_rate')} %
+					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-3 py-5">
+						<p class="text-3xl leading-none font-[800] tabular-nums">{winRate}</p>
+						<p
+							class="text-text-disabled text-center text-[11px] font-bold tracking-[0.1em] uppercase"
+						>
+							{$_('profile_win_rate')}
 						</p>
 					</div>
-					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-5 py-5">
-						<p class="text-3xl leading-none font-[800]">{s.games_played}</p>
-						<p class="text-text-disabled text-[11px] font-bold tracking-[0.1em] uppercase">
+					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-3 py-5">
+						<p class="text-3xl leading-none font-[800] tabular-nums">{s.games}</p>
+						<p
+							class="text-text-disabled text-center text-[11px] font-bold tracking-[0.1em] uppercase"
+						>
 							{$_('profile_games')}
-						</p>
-					</div>
-					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-5 py-5">
-						<div class="flex items-baseline gap-1 leading-none font-[800] tabular-nums">
-							<span class="text-primary text-2xl">{s.wins}V</span>
-							<span class="text-text-disabled text-base">·</span>
-							<span class="text-text-disabled text-2xl">{s.draws}U</span>
-							<span class="text-text-disabled text-base">·</span>
-							<span class="text-destructive text-2xl">{s.losses}T</span>
-						</div>
-						<p class="text-text-disabled text-[11px] font-bold tracking-[0.1em] uppercase">
-							{$_('leaderboard_wl')}
 						</p>
 					</div>
 				</div>
