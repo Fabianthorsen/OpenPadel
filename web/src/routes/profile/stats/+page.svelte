@@ -54,6 +54,14 @@
 	const winRate = $derived(hasGames ? `${Math.round(summary!.winrate)}%` : '–');
 	const games = $derived(summary ? `${summary.games}` : '–');
 
+	// Placement stats blend both modes (a finishing rank compares like-for-like
+	// where point-share does not — ADR 0007). Hidden (em dash) at zero games, same
+	// as the hero, so an empty career never shows a hollow "1st / 0 titles".
+	const titles = $derived(hasGames ? `${summary!.titles}` : '–');
+	const podiums = $derived(hasGames ? `${summary!.podiums}` : '–');
+	const bestFinish = $derived(hasGames ? `${summary!.best_finish}` : '–');
+	const averageFinish = $derived(hasGames ? summary!.average_finish.toFixed(1) : '–');
+
 	// A mode's translated section title from its id, so the page stays fully
 	// data-driven off the per-mode aggregates.
 	function modeTitle(mode: App.ModeStats['mode']): string {
@@ -87,6 +95,18 @@
 				<StatTile value={pointWinPct} label={$_('profile_point_win_pct')} accent />
 				<StatTile value={winRate} label={$_('profile_win_rate')} />
 				<StatTile value={games} label={$_('profile_games')} />
+			</div>
+		</section>
+
+		<!-- Cross-mode placement: titles, podiums and finishing position blend both
+		     modes, since a finishing rank compares like-for-like (ADR 0007). -->
+		<section class="space-y-3">
+			<SectionLabel>{$_('stats_placement_title')}</SectionLabel>
+			<div class="grid grid-cols-2 gap-3">
+				<StatTile value={titles} label={$_('stats_titles')} />
+				<StatTile value={podiums} label={$_('stats_podiums')} />
+				<StatTile value={bestFinish} label={$_('stats_best_finish')} />
+				<StatTile value={averageFinish} label={$_('stats_average_finish')} />
 			</div>
 		</section>
 

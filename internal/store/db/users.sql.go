@@ -278,9 +278,13 @@ SELECT
     CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
     s.status,
     s.created_at,
-    COALESCE(s.ended_early, 0) AS ended_early
+    COALESCE(s.ended_early, 0) AS ended_early,
+    CAST(MAX(CASE WHEN m.score_a IS NOT NULL THEN 1 ELSE 0 END) AS INTEGER) AS scored
 FROM players p
 JOIN sessions s ON s.id = p.session_id
+LEFT JOIN rounds r ON r.session_id = p.session_id
+LEFT JOIN matches m ON m.round_id = r.id
+    AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
 WHERE p.user_id = ? AND p.active = 1 AND s.status = 'done'
 GROUP BY s.id
 ORDER BY s.created_at DESC
@@ -292,8 +296,14 @@ type GetTournamentHistorySessionsRow struct {
 	Status     string
 	CreatedAt  string
 	EndedEarly int64
+	Scored     int64
 }
 
+// Done Sessions the user played, newest first, for both the tournament history
+// timeline and the cross-mode placement stats (ADR 0007). scored is 1 when the
+// user has at least one fully-scored Match in the Session, so placement can
+// ignore ended-early Sessions the user never actually finished a game in; the
+// finishing rank itself is resolved from the leaderboard in Go.
 func (q *Queries) GetTournamentHistorySessions(ctx context.Context, userID sql.NullString) ([]GetTournamentHistorySessionsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getTournamentHistorySessions, userID)
 	if err != nil {
@@ -309,6 +319,7 @@ func (q *Queries) GetTournamentHistorySessions(ctx context.Context, userID sql.N
 			&i.Status,
 			&i.CreatedAt,
 			&i.EndedEarly,
+			&i.Scored,
 		); err != nil {
 			return nil, err
 		}
