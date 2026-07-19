@@ -138,3 +138,152 @@ func TestGetCareerSummary_ZeroGames(t *testing.T) {
 		t.Errorf("expected zeroed summary, got point_win_pct=%.2f winrate=%.2f", sum.PointWinPct, sum.Winrate)
 	}
 }
+
+// modeStatsFor returns the ModeStats for the given mode from a GetModeStats
+// result. GetModeStats always returns both modes, so this never fails to find.
+func modeStatsFor(t *testing.T, all []domain.ModeStats, mode domain.GameMode) domain.ModeStats {
+	t.Helper()
+	for _, ms := range all {
+		if ms.Mode == mode {
+			return ms
+		}
+	}
+	t.Fatalf("mode %s not present in ModeStats result %+v", mode, all)
+	return domain.ModeStats{}
+}
+
+// Americano and Mexicano are aggregated into separate sections; a match in one
+// mode never bleeds into the other's numbers, and point-share is a per-mode mean.
+func TestGetModeStats_SeparatesModes(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	// Americano: two matches — a win (16–8) and a loss (10–14).
+	seedFinishedMatch(t, s, "a1", domain.ModeAmericano, 24, alice, 16, 8, true, true)
+	seedFinishedMatch(t, s, "a2", domain.ModeAmericano, 24, alice, 10, 14, true, true)
+	// Mexicano: one win (20–16).
+	seedFinishedMatch(t, s, "m1", domain.ModeMexicano, 36, alice, 20, 16, true, true)
+
+	all, err := s.GetModeStats(alice)
+	if err != nil {
+		t.Fatalf("GetModeStats: %v", err)
+	}
+	if len(all) != 2 {
+		t.Fatalf("expected both modes, got %d rows", len(all))
+	}
+	// Canonical order: Americano first, then Mexicano.
+	if all[0].Mode != domain.ModeAmericano || all[1].Mode != domain.ModeMexicano {
+		t.Errorf("modes out of canonical order: %s, %s", all[0].Mode, all[1].Mode)
+	}
+
+	am := modeStatsFor(t, all, domain.ModeAmericano)
+	if am.Games != 2 || am.Wins != 1 || am.Losses != 1 || am.Draws != 0 {
+		t.Errorf("americano record: games=%d wins=%d losses=%d draws=%d, want 2/1/1/0", am.Games, am.Wins, am.Losses, am.Draws)
+	}
+	if am.TotalPoints != 26 || am.PointsConceded != 22 || am.NetPoints != 4 {
+		t.Errorf("americano points: total=%d conceded=%d net=%d, want 26/22/4", am.TotalPoints, am.PointsConceded, am.NetPoints)
+	}
+	if am.Tournaments != 2 {
+		t.Errorf("americano tournaments = %d, want 2", am.Tournaments)
+	}
+	// Mean of shares (16/24, 10/24) = (0.6667 + 0.4167)/2 = 0.5417 -> 54.17%.
+	if !approx(am.PointWinPct, 54.17) {
+		t.Errorf("americano point_win_pct = %.2f, want ~54.17", am.PointWinPct)
+	}
+
+	mx := modeStatsFor(t, all, domain.ModeMexicano)
+	if mx.Games != 1 || mx.Wins != 1 || mx.NetPoints != 4 {
+		t.Errorf("mexicano: games=%d wins=%d net=%d, want 1/1/4", mx.Games, mx.Wins, mx.NetPoints)
+	}
+	if mx.TotalPoints != 20 || mx.PointsConceded != 16 {
+		t.Errorf("mexicano points: total=%d conceded=%d, want 20/16", mx.TotalPoints, mx.PointsConceded)
+	}
+}
+
+// Net point differential is scored − conceded, and is negative for a losing net.
+func TestGetModeStats_NetDifferentialNegative(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	seedFinishedMatch(t, s, "loss", domain.ModeAmericano, 24, alice, 8, 16, true, true)
+
+	am := modeStatsFor(t, mustModeStats(t, s, alice), domain.ModeAmericano)
+	if am.TotalPoints != 8 || am.PointsConceded != 16 {
+		t.Errorf("points: total=%d conceded=%d, want 8/16", am.TotalPoints, am.PointsConceded)
+	}
+	if am.NetPoints != -8 {
+		t.Errorf("net = %d, want -8", am.NetPoints)
+	}
+}
+
+// A mode with no games is still returned, zero-valued, so the UI renders its
+// "no games yet" state rather than dropping the section.
+func TestGetModeStats_ModeWithNoGames(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	seedFinishedMatch(t, s, "only", domain.ModeAmericano, 24, alice, 16, 8, true, true)
+
+	all := mustModeStats(t, s, alice)
+	mx := modeStatsFor(t, all, domain.ModeMexicano)
+	if mx.Games != 0 || mx.Wins != 0 || mx.TotalPoints != 0 || mx.NetPoints != 0 || mx.PointWinPct != 0 || mx.Tournaments != 0 {
+		t.Errorf("expected zeroed mexicano section, got %+v", mx)
+	}
+}
+
+// Only fully-scored matches in done sessions contribute; unscored and still-live
+// matches are excluded, exactly as the cross-mode summary excludes them.
+func TestGetModeStats_ExcludesUnscoredAndLive(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	seedFinishedMatch(t, s, "counted", domain.ModeAmericano, 24, alice, 16, 8, true, true)  // counts
+	seedFinishedMatch(t, s, "unscored", domain.ModeAmericano, 24, alice, 0, 0, false, true) // done but unscored
+	seedFinishedMatch(t, s, "live", domain.ModeAmericano, 24, alice, 12, 12, true, false)   // scored but not done
+
+	am := modeStatsFor(t, mustModeStats(t, s, alice), domain.ModeAmericano)
+	if am.Games != 1 {
+		t.Errorf("games = %d, want 1 (only fully-scored, done match)", am.Games)
+	}
+	if am.TotalPoints != 16 || am.PointsConceded != 8 {
+		t.Errorf("points: total=%d conceded=%d, want 16/8", am.TotalPoints, am.PointsConceded)
+	}
+}
+
+// Guest teammates/opponents (no user_id) still count toward the mode's games.
+func TestGetModeStats_GuestsCounted(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	seedFinishedMatch(t, s, "guests", domain.ModeAmericano, 24, alice, 10, 14, true, true)
+
+	am := modeStatsFor(t, mustModeStats(t, s, alice), domain.ModeAmericano)
+	if am.Games != 1 {
+		t.Errorf("games = %d, want 1 (guest-inclusive game counted)", am.Games)
+	}
+}
+
+// A brand-new user with no sessions gets both modes back, fully zeroed.
+func TestGetModeStats_ZeroGames(t *testing.T) {
+	s := newTestStore(t)
+	alice := createUser(t, s, "alice@example.com", "Alice")
+
+	all := mustModeStats(t, s, alice)
+	if len(all) != 2 {
+		t.Fatalf("expected both modes, got %d", len(all))
+	}
+	for _, ms := range all {
+		if ms.Games != 0 || ms.PointWinPct != 0 || ms.Tournaments != 0 {
+			t.Errorf("expected zeroed %s section, got %+v", ms.Mode, ms)
+		}
+	}
+}
+
+func mustModeStats(t *testing.T, s *store.Store, userID string) []domain.ModeStats {
+	t.Helper()
+	all, err := s.GetModeStats(userID)
+	if err != nil {
+		t.Fatalf("GetModeStats: %v", err)
+	}
+	return all
+}

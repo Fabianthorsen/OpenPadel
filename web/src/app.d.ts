@@ -19,6 +19,24 @@ declare global {
 			point_win_pct: number;
 		}
 
+		// Per-Game-Mode career aggregate for the Career Stats page (ADR 0007).
+		// Point-share only compares like-for-like within one scoring model, so
+		// Americano and Mexicano are never blended here. point_win_pct is 0–100;
+		// net_points = total_points − points_conceded and may be negative. Both
+		// modes are always present; a mode with no games is zero-valued.
+		interface ModeStats {
+			mode: 'americano' | 'mexicano';
+			games: number;
+			wins: number;
+			draws: number;
+			losses: number;
+			total_points: number;
+			points_conceded: number;
+			net_points: number;
+			point_win_pct: number;
+			tournaments: number;
+		}
+
 		type SessionStatus = 'lobby' | 'playing' | 'done';
 
 		interface ValidationError {

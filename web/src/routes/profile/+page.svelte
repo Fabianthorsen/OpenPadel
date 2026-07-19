@@ -336,6 +336,10 @@
 						</p>
 					</div>
 				</div>
+				<!-- Expand the headline into the full per-mode Career Stats page (#228). -->
+				<a href="/profile/stats" class="text-primary mt-3 block text-center text-sm font-semibold">
+					{$_('profile_see_all_stats')}
+				</a>
 			{/snippet}
 		</Section>
 

@@ -189,6 +189,24 @@ func (h *Handler) profile(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// stats returns the per-Game-Mode career aggregates behind the Career Stats page
+// (ADR 0007). Auth-gated; both modes are always present (zero-valued when the
+// user has no games in one). See domain.ModeStats.
+func (h *Handler) stats(w http.ResponseWriter, r *http.Request) {
+	user := userFromContext(r)
+	if user == nil {
+		respondAPIError(w, ErrNotAuthenticated)
+		return
+	}
+	modes, err := h.store.GetModeStats(user.ID)
+	if err != nil {
+		slog.Error("stats: GetModeStats failed", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, map[string]any{"modes": modes})
+}
+
 func (h *Handler) history(w http.ResponseWriter, r *http.Request) {
 	user := userFromContext(r)
 	if user == nil {

@@ -55,6 +55,15 @@ type Querier interface {
 	GetLeaderboard(ctx context.Context, sessionID string) ([]GetLeaderboardRow, error)
 	GetMatchByID(ctx context.Context, id string) (Match, error)
 	GetMatchesByRoundID(ctx context.Context, roundID string) ([]Match, error)
+	// Per-Game-Mode career aggregate for the Career Stats page (ADR 0007). One row
+	// per Game Mode the user has a done Session in; modes with no history are absent
+	// and filled in by the store. point_share is the mean per-Match share (same as
+	// GetCareerSummary) but grouped by mode, since point-share only compares like-for
+	// -like within one scoring model. total_points / points_conceded are the user's
+	// own-team and opponent-team score totals across fully-scored matches. tournaments
+	// counts distinct done Sessions the user joined in that mode. Guests fill seats
+	// but only the user's own player rows are aggregated.
+	GetModeStats(ctx context.Context, userID sql.NullString) ([]GetModeStatsRow, error)
 	GetPasswordResetToken(ctx context.Context, tokenHash string) (GetPasswordResetTokenRow, error)
 	GetPendingInvitesBySessionID(ctx context.Context, sessionID string) ([]GetPendingInvitesBySessionIDRow, error)
 	GetPlayersBySessionID(ctx context.Context, sessionID string) ([]GetPlayersBySessionIDRow, error)
