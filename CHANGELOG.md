@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.18.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.17.0...v1.18.0) (2026-07-19)
+
+
+### Features
+
+* **#208:** rating foundation — persist ratings & make schedulers consume them ([#214](https://github.com/Fabianthorsen/OpenPadel/issues/214)) ([5e25070](https://github.com/Fabianthorsen/OpenPadel/commit/5e25070b272641c9ce8e075626f1de503d8a8eb1))
+* **#209:** require rating at registration, seed Player + show in lobby ([#215](https://github.com/Fabianthorsen/OpenPadel/issues/215)) ([70efea5](https://github.com/Fabianthorsen/OpenPadel/commit/70efea5f3faed816fe66fb23077f6057829ed629))
+* **#210:** guest self-join requires picking a skill level ([#218](https://github.com/Fabianthorsen/OpenPadel/issues/218)) ([d88928a](https://github.com/Fabianthorsen/OpenPadel/commit/d88928ace7a2cd257b03118e567f417818e91465)), closes [#210](https://github.com/Fabianthorsen/OpenPadel/issues/210)
+* **#211:** admin sets & edits ratings for guests they add ([#219](https://github.com/Fabianthorsen/OpenPadel/issues/219)) ([5865b1c](https://github.com/Fabianthorsen/OpenPadel/commit/5865b1cc9006164479c0de83d05ee65217bf9ef9))
+* **#212:** edit skill level from settings (future sessions only) ([#221](https://github.com/Fabianthorsen/OpenPadel/issues/221)) ([ba7e359](https://github.com/Fabianthorsen/OpenPadel/commit/ba7e3594c9139474e69a6ccf75065cf8e5bed06f))
+* **#213:** home backfill gate for legacy accounts with no rating ([#220](https://github.com/Fabianthorsen/OpenPadel/issues/220)) ([d399ad0](https://github.com/Fabianthorsen/OpenPadel/commit/d399ad04308e98bb0430cb4e71a40d895ddf095e))
+* **#216:** show player ratings during live play ([#217](https://github.com/Fabianthorsen/OpenPadel/issues/217)) ([ebb776f](https://github.com/Fabianthorsen/OpenPadel/commit/ebb776fabee6f9d616dee43845f02069a96c0e7d))
+
+
+### Chores
+
+* scaffold agent skills config (domain + triage labels) ([#205](https://github.com/Fabianthorsen/OpenPadel/issues/205)) ([748ca7d](https://github.com/Fabianthorsen/OpenPadel/commit/748ca7df37a4dc2534819d6a10b39cc527e63e94))
+
 ## [1.17.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.16.1...v1.17.0) (2026-07-15)
 
 
