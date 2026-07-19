@@ -107,6 +107,7 @@
 	"invite_no_account": "Ingen konto?",
 	"invite_account_benefit": "Lagre statistikken din og følg fremgangen på tvers av turneringer",
 	"invite_guest_join": "Bli med →",
+	"invite_rating_label": "Nivået ditt",
 	"invite_joining": "Blir med…",
 
 	"active_round_of": "Runde {current} av {total}",
@@ -178,6 +179,7 @@
 	"auth_switch_register": "Opprett en →",
 	"auth_switch_login": "Logg inn →",
 	"auth_rating_label": "Rating",
+	"rating_compact_hint": "Velg nivået som passer deg best.",
 	"rating_1_name": "Nybegynner",
 	"rating_1_desc": "Ny i padel — lærer fortsatt regler, poeng og grunnleggende ballkontakt. Ballvekslingene er korte.",
 	"rating_2_name": "Ferskere",
@@ -322,6 +324,7 @@
 	"api_error_email_already_registered": "E-posten er allerede registrert",
 	"api_error_password_too_short": "Passordet må ha minst 8 tegn",
 	"api_error_invalid_rating": "Velg ferdighetsnivået ditt",
+	"api_error_rating_required": "Velg ferdighetsnivået ditt",
 	"api_error_fields_required": "Fyll ut alle påkrevde felt",
 	"api_error_display_name_required": "Visningsnavn er påkrevd",
 	"api_error_invalid_reset_link": "Ugyldig eller utløpt tilbakestillingslenke",

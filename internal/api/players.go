@@ -55,6 +55,22 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		userID = u.ID
 	}
 
+	// Accept admin token from Authorization header OR X-Admin-Token header.
+	adminToken := extractAdminToken(r)
+	if adminToken == "" {
+		adminToken = r.Header.Get("X-Admin-Token")
+	}
+	joinerIsAdmin := isAdmin(adminToken, sess.AdminToken)
+
+	// A guest self-joining by link must pick a skill level (#210). Registered
+	// users seed from their own self_rating, and an admin adding a guest by name
+	// falls back to the median — so the rating is only required when an anonymous
+	// guest joins on their own behalf.
+	if body.Rating == nil && userID == "" && !joinerIsAdmin {
+		respondAPIError(w, ErrRatingRequired)
+		return
+	}
+
 	player, err := h.store.CreatePlayer(id, body.Name, userID)
 	if err != nil {
 		if isUniqueConstraintError(err) {
@@ -74,12 +90,7 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the joiner is the admin and no creator is set yet, mark them as creator.
-	// Accept admin token from Authorization header OR X-Admin-Token header.
-	adminToken := extractAdminToken(r)
-	if adminToken == "" {
-		adminToken = r.Header.Get("X-Admin-Token")
-	}
-	if isAdmin(adminToken, sess.AdminToken) && sess.CreatorPlayerID == "" {
+	if joinerIsAdmin && sess.CreatorPlayerID == "" {
 		h.store.SetCreatorPlayer(id, player.ID) //nolint:errcheck
 	}
 

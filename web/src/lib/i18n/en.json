@@ -107,6 +107,7 @@
 	"invite_no_account": "No account?",
 	"invite_account_benefit": "Save your stats and track progress across tournaments",
 	"invite_guest_join": "Join →",
+	"invite_rating_label": "Your level",
 	"invite_joining": "Joining…",
 
 	"active_round_of": "Round {current} of {total}",
@@ -178,6 +179,7 @@
 	"auth_switch_register": "Create one →",
 	"auth_switch_login": "Sign in →",
 	"auth_rating_label": "Rating",
+	"rating_compact_hint": "Pick the level that fits you best.",
 	"rating_1_name": "Beginner",
 	"rating_1_desc": "New to padel — still learning the rules, scoring and basic contact. Rallies are short.",
 	"rating_2_name": "Improver",
@@ -322,6 +324,7 @@
 	"api_error_email_already_registered": "Email already registered",
 	"api_error_password_too_short": "Password must be at least 8 characters",
 	"api_error_invalid_rating": "Please pick your skill level",
+	"api_error_rating_required": "Please pick your skill level",
 	"api_error_fields_required": "Please fill in all required fields",
 	"api_error_display_name_required": "Display name is required",
 	"api_error_invalid_reset_link": "Invalid or expired reset link",

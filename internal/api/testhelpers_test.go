@@ -150,7 +150,9 @@ func mustCreateSessionWithParams(t *testing.T, srv *httptest.Server, token strin
 // mustJoinSession joins a session and returns the player ID.
 func mustJoinSession(t *testing.T, srv *httptest.Server, sessionID, name, token string) string {
 	t.Helper()
-	res := postReq(t, srv, "/api/sessions/"+sessionID+"/players", map[string]any{"name": name}, token)
+	// Rating 3 (median) keeps anonymous guest joins valid now that a skill level
+	// is required (#210); it is ignored for admin/registered joins.
+	res := postReq(t, srv, "/api/sessions/"+sessionID+"/players", map[string]any{"name": name, "rating": 3}, token)
 	if res.StatusCode != http.StatusCreated {
 		t.Fatalf("joinSession(%q): expected 201, got %d", name, res.StatusCode)
 	}
