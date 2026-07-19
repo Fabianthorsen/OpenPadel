@@ -159,6 +159,74 @@ func (q *Queries) GetCareerSummary(ctx context.Context, userID sql.NullString) (
 	return i, err
 }
 
+const getMatchResultsSeries = `-- name: GetMatchResultsSeries :many
+SELECT
+    m.id AS match_id,
+    s.game_mode AS mode,
+    s.created_at AS date,
+    CAST(CASE
+        WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_a
+        ELSE m.score_b
+    END AS INTEGER) AS points,
+    CAST(CASE
+        WHEN m.p1 = p.id OR m.p2 = p.id THEN m.score_b
+        ELSE m.score_a
+    END AS INTEGER) AS conceded
+FROM players p
+JOIN sessions s ON s.id = p.session_id AND s.status = 'done'
+JOIN rounds r ON r.session_id = p.session_id
+JOIN matches m ON m.round_id = r.id
+    AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
+    AND m.score_a IS NOT NULL
+WHERE p.user_id = ? AND p.active = 1
+ORDER BY s.created_at ASC, s.rowid ASC, r.number ASC, m.court ASC
+`
+
+type GetMatchResultsSeriesRow struct {
+	MatchID  string
+	Mode     string
+	Date     string
+	Points   int64
+	Conceded int64
+}
+
+// Per-Match results series for the Career Stats page's recent-form curve
+// (ADR 0007). One row per fully-scored Match the user played in a done Session,
+// oldest-first (by Session date, then round, then court) so the client reads it
+// as a time series. INNER JOINs on rounds/matches keep out ended-early Sessions
+// with no scored Match. points / conceded are the user's own-team and opponent
+// -team score for that Match; the win/draw/loss outcome is derived in Go. date is
+// the Session date (Matches carry no timestamp of their own). Guests fill seats
+// but only the user's player rows are aggregated.
+func (q *Queries) GetMatchResultsSeries(ctx context.Context, userID sql.NullString) ([]GetMatchResultsSeriesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getMatchResultsSeries, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetMatchResultsSeriesRow{}
+	for rows.Next() {
+		var i GetMatchResultsSeriesRow
+		if err := rows.Scan(
+			&i.MatchID,
+			&i.Mode,
+			&i.Date,
+			&i.Points,
+			&i.Conceded,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getModeStats = `-- name: GetModeStats :many
 SELECT
     s.game_mode AS mode,

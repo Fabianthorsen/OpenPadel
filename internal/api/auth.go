@@ -204,7 +204,15 @@ func (h *Handler) stats(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrServerError)
 		return
 	}
-	respond(w, http.StatusOK, map[string]any{"modes": modes})
+	// The per-Match results series backs the cross-mode recent-form curve derived
+	// client-side, so no new endpoint is needed per stat (ADR 0007).
+	series, err := h.store.GetMatchResultsSeries(user.ID)
+	if err != nil {
+		slog.Error("stats: GetMatchResultsSeries failed", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, map[string]any{"modes": modes, "series": series})
 }
 
 func (h *Handler) history(w http.ResponseWriter, r *http.Request) {

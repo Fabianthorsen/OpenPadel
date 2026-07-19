@@ -44,6 +44,21 @@ declare global {
 			tournaments: number;
 		}
 
+		// One fully-scored Match of the cross-mode results series behind the Career
+		// Stats recent-form curve (ADR 0007). Ordered oldest-first. result is the
+		// match outcome from its point differential; date is the session's date
+		// (matches carry no timestamp of their own). Per-match (not per-session)
+		// because the match is the metric's atomic Point Win % unit — see the ADR.
+		// Point Win % per match is derived from points/conceded client-side.
+		interface MatchResult {
+			match_id: string;
+			mode: 'americano' | 'mexicano';
+			date: string;
+			points: number;
+			conceded: number;
+			result: 'win' | 'draw' | 'loss';
+		}
+
 		type SessionStatus = 'lobby' | 'playing' | 'done';
 
 		interface ValidationError {

@@ -212,6 +212,41 @@ func (s *Store) GetModeStats(userID string) ([]domain.ModeStats, error) {
 	return out, nil
 }
 
+// GetMatchResultsSeries returns the per-Match results series behind the Career
+// Stats page's recent-form curve (ADR 0007): one row per fully-scored Match the
+// user played in a done Session, oldest-first (by Session date, then round, then
+// court). Points/conceded and the mode/date come straight from the query; the
+// win/draw/loss outcome is the sign of the point differential. See domain.MatchResult
+// and ADR 0007 for why the series is per-Match.
+func (s *Store) GetMatchResultsSeries(userID string) ([]domain.MatchResult, error) {
+	rows, err := s.queries.GetMatchResultsSeries(context.Background(), sql.NullString{String: userID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+
+	series := make([]domain.MatchResult, 0, len(rows))
+	for _, row := range rows {
+		points := int(row.Points)
+		conceded := int(row.Conceded)
+		result := domain.MatchResultDraw
+		switch {
+		case points > conceded:
+			result = domain.MatchResultWin
+		case points < conceded:
+			result = domain.MatchResultLoss
+		}
+		series = append(series, domain.MatchResult{
+			MatchID:  row.MatchID,
+			Mode:     domain.GameMode(row.Mode),
+			Date:     row.Date,
+			Points:   points,
+			Conceded: conceded,
+			Result:   result,
+		})
+	}
+	return series, nil
+}
+
 // placementStats accumulates the user's finishing ranks across their done
 // Sessions: titles (rank 1), podiums (rank ≤ 3), the best (lowest) rank, and the
 // running sum/count behind average finish.

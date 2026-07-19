@@ -62,7 +62,12 @@ export const api = {
 		updateSelfRating: (token: string, selfRating: number) =>
 			request<App.User>('PATCH', '/auth/self_rating', { self_rating: selfRating }, token),
 		stats: (token: string) =>
-			request<{ modes: App.ModeStats[] }>('GET', '/auth/stats', undefined, token),
+			request<{ modes: App.ModeStats[]; series: App.MatchResult[] }>(
+				'GET',
+				'/auth/stats',
+				undefined,
+				token
+			),
 		history: (token: string) =>
 			request<{ tournaments: App.TournamentEntry[]; upcoming: App.UpcomingEntry[] }>(
 				'GET',

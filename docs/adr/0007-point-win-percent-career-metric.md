@@ -62,8 +62,17 @@ scale problem normalization removes); **replacing winrate entirely** (see below)
   secondary read**, not as the skill signal ADR 0005 rejected it as.
 - **Career Stats page:** the full metric set **segmented per Game Mode**. Point-share is only
   apples-to-apples *within* a scoring model, so per-mode sections keep every number meaningful.
-  Rendered from a data-driven metric catalog over a per-Session results series (so trend/form/streak
+  Rendered from a data-driven metric catalog over a per-Match results series (so trend/form/streak
   stats derive client-side without new endpoints).
+- **Recent-form curve is the second cross-mode exception** (#230). *Form* — "am I winning lately?"
+  — is mode-agnostic like a finishing rank, so it lives as **one cross-mode sparkline**, not a
+  per-mode strip: the last N matches' Point Win % (the metric's atomic unit) with a 50% midline,
+  dots coloured by win/draw/loss, and a won–drawn–lost record over the window. **Implementation note
+  (#230):** the series ships **one row per fully-scored Match** (not per Session) — the Match is the
+  Point Win % unit, so per-match form stays consistent with the career number and gives the
+  sparkline dense data; and a *cross-mode, per-match* form-curve is what shipped, superseding this
+  ADR's original per-Session, per-mode "trend/form/streak" wording. The longest-win-streak stat the
+  ticket floated was dropped as career trivia in favour of the recent record.
 - **Placement stats are the one cross-mode exception** (titles, podiums, best / average finish;
   #229). A *finishing rank* compares like-for-like across scoring models — 1st is 1st in Americano
   or Mexicano — so unlike point-share it is honest to blend. These live in the cross-mode summary

@@ -429,6 +429,36 @@ func TestModeStats(t *testing.T) {
 	}
 }
 
+func TestModeStats_IncludesSeries(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+
+	res := getReq(t, srv, "/api/auth/stats", token)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+
+	var body struct {
+		Modes  []map[string]any `json:"modes"`
+		Series []struct {
+			Mode     string `json:"mode"`
+			Points   int    `json:"points"`
+			Conceded int    `json:"conceded"`
+			Result   string `json:"result"`
+		} `json:"series"`
+	}
+	decodeBody(t, res, &body)
+
+	// A brand-new user has no fully-scored sessions: the series is present and
+	// empty (never null), so the client can derive form/streak without a guard.
+	if body.Series == nil {
+		t.Error("expected a non-null series array, got null")
+	}
+	if len(body.Series) != 0 {
+		t.Errorf("expected empty series for new user, got %+v", body.Series)
+	}
+}
+
 func TestModeStats_Unauthenticated(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	res := getReq(t, srv, "/api/auth/stats", "")
