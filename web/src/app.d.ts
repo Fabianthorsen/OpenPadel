@@ -11,13 +11,12 @@ declare global {
 			created_at: string;
 		}
 
-		interface AmericanoCareerStats {
-			games_played: number;
-			wins: number;
-			draws: number;
-			losses: number;
-			total_points: number;
-			tournaments: number;
+		// Cross-mode profile headline (ADR 0007). Percentages are 0–100; both are
+		// zero when games is zero (the UI hides the stat rather than showing 0%/100%).
+		interface CareerSummary {
+			games: number;
+			winrate: number;
+			point_win_pct: number;
 		}
 
 		type SessionStatus = 'lobby' | 'playing' | 'done';

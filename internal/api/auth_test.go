@@ -359,3 +359,39 @@ func TestGetUserSessions_Unauthenticated(t *testing.T) {
 		t.Errorf("failed to close response body: %v", err)
 	}
 }
+
+func TestProfileSummary(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+
+	res := getReq(t, srv, "/api/auth/profile", token)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+
+	var body struct {
+		User  map[string]any `json:"user"`
+		Stats struct {
+			Games       int     `json:"games"`
+			Winrate     float64 `json:"winrate"`
+			PointWinPct float64 `json:"point_win_pct"`
+		} `json:"stats"`
+	}
+	decodeBody(t, res, &body)
+
+	// Brand-new user: unified summary present and gracefully zeroed.
+	if body.Stats.Games != 0 || body.Stats.Winrate != 0 || body.Stats.PointWinPct != 0 {
+		t.Errorf("expected zeroed summary for new user, got %+v", body.Stats)
+	}
+}
+
+func TestProfileSummary_Unauthenticated(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	res := getReq(t, srv, "/api/auth/profile", "")
+	if res.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", res.StatusCode)
+	}
+	if err := res.Body.Close(); err != nil {
+		t.Errorf("failed to close response body: %v", err)
+	}
+}

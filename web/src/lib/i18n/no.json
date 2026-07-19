@@ -159,7 +159,6 @@
 	"leaderboard_leader": "Leder",
 	"leaderboard_rank1": "Plass #1",
 	"leaderboard_pts": "Pts",
-	"leaderboard_wl": "V/U/T",
 	"leaderboard_current": "Nåværende stilling",
 	"leaderboard_final": "Sluttresultat",
 	"leaderboard_round_of": "Runde {current} av {total}",
@@ -213,9 +212,9 @@
 	"auth_forgot_password": "Glemt passordet?",
 	"auth_sign_out": "Logg ut",
 
-	"profile_tournaments": "Turneringer spilt",
 	"profile_games": "Kamper",
 	"profile_win_rate": "Seierrate",
+	"profile_point_win_pct": "% Poeng vunnet",
 	"profile_wins": "Seiere",
 	"profile_losses": "Tap",
 	"profile_total_points": "Totale poeng",

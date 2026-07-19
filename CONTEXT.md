@@ -53,6 +53,14 @@ One court's game within a Round — two teams of two Players, an optional final 
 The ranked, live-updating view of a Session's Players by points — public, no auth required to view.
 _Avoid_: Ranking, scoreboard
 
+**Point-share**:
+A career skill metric for a **User**, shown as "Point Win %". For each completed Match, it is the player's team score ÷ total points in that Match; the career figure is the **average of these per-Match shares** (each Match weighted equally, regardless of its points target). Scale-free across Sessions played to different point targets, individual (scoring credits points to the player, not the pair), and inherently captures margin — above 50% means you win more points than you concede. Preferred over **winrate** because rotating partners make winrate half your partners' doing and blind to blowout-vs-squeaker. Because it is a normalized fraction it stays meaningful blended across Game Modes, so the profile shows a unified {Point-share, winrate, games} summary; the dedicated **Career Stats** page segments the fuller metric set per Game Mode.
+_Avoid_: Dominance, point differential (these are folded into Point-share)
+
+**Career Stats**:
+A **User**'s cross-Session, lifetime statistics — distinct from a Session **Standing** (which is one Session's live ranking). The profile shows a unified summary; a dedicated Career Stats page shows the full set, segmented per **Game Mode** (Americano / Mexicano sections), rendered from a data-driven metric catalog over a per-Session results series.
+_Avoid_: Standing/Leaderboard (that is per-Session, not lifetime)
+
 **Contact**:
 A saved connection between two Users (added via search), used to streamline sending Invites.
 
