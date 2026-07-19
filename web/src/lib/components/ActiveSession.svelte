@@ -27,12 +27,14 @@
 		currentRound,
 		isAdmin,
 		onRefresh,
+		onLeave,
 		stream
 	}: {
 		session: App.Session;
 		currentRound: App.Round;
 		isAdmin: boolean;
 		onRefresh: () => void;
+		onLeave?: (leaving: boolean) => void;
 		stream: SessionStream;
 	} = $props();
 
@@ -216,11 +218,15 @@
 
 	async function cancelSession() {
 		cancelling = true;
+		// Flag the deletion before the request so the page ignores the resulting
+		// session_updated/poll 404 instead of bouncing to "Tournament does not exist".
+		onLeave?.(true);
 		try {
 			const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
 			await api.sessions.cancel(session.id, adminToken);
 			location.href = auth.user ? '/profile' : '/';
 		} catch (e) {
+			onLeave?.(false); // delete failed — re-enable the page's normal loading
 			toast.error(
 				e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error')
 			);

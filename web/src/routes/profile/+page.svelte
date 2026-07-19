@@ -20,14 +20,25 @@
 	import { userStream, type UserStream } from '$lib/stores/userStream.svelte';
 
 	const stream: UserStream = userStream(() => auth.token);
-	let offInvite: (() => void) | null = null;
+	let offInvite: Array<() => void> = [];
 
 	onMount(() => {
 		return () => {
-			offInvite?.();
+			offInvite.forEach((off) => off());
 			stream.close();
 		};
 	});
+
+	async function refreshInvites() {
+		if (!auth.token) return;
+		try {
+			invites = await api.invites.list(auth.token);
+		} catch {
+			/* heal on next load */
+		}
+		// Viewing invites is an acknowledgement — clear the app-icon badge.
+		navigator.clearAppBadge?.().catch(() => {});
+	}
 
 	let showCreateDrawer = $state(false);
 
@@ -79,6 +90,31 @@
 		if (!auth.token) return;
 		await api.invites.decline(inviteID, auth.token);
 		invites = invites.filter((i) => i.id !== inviteID);
+	}
+
+	// Leave an upcoming tournament straight from the profile — works for any
+	// session the user belongs to, including legacy ones (server matches by
+	// user_id). Only offered for lobby entries; a started tournament can't be left.
+	let leaveTarget = $state<App.UpcomingEntry | null>(null);
+	let leaving = $state(false);
+
+	async function confirmLeave() {
+		if (!auth.token || !leaveTarget) return;
+		const sessionID = leaveTarget.session_id;
+		leaving = true;
+		try {
+			await api.sessions.leave(sessionID, auth.token);
+			upcoming = upcoming.filter((u) => u.session_id !== sessionID);
+			localStorage.removeItem(`player_id_${sessionID}`);
+			toast.success($_('lobby_left'));
+			leaveTarget = null;
+		} catch (e) {
+			toast.error(
+				e instanceof Error ? translateApiError(e.message) : translateApiError('server_error')
+			);
+		} finally {
+			leaving = false;
+		}
 	}
 
 	async function addContact(userID: string) {
@@ -135,6 +171,8 @@
 			});
 			contacts = contactsRes;
 			invites = invitesRes;
+			// Landing on the profile clears any pending-invite app-icon badge.
+			navigator.clearAppBadge?.().catch(() => {});
 			showUpcoming = upcoming.length > 0;
 			showHistory = tournaments.length > 0;
 		} finally {
@@ -155,14 +193,10 @@
 		}
 		await load();
 
-		offInvite = stream.onEvent('invite_received', async () => {
-			if (!auth.token) return;
-			try {
-				invites = await api.invites.list(auth.token);
-			} catch {
-				/* heal on next load */
-			}
-		});
+		offInvite = [
+			stream.onEvent('invite_received', refreshInvites),
+			stream.onEvent('invite_revoked', refreshInvites)
+		];
 		stream.start();
 	});
 
@@ -414,6 +448,18 @@
 			oncancel={() => (showContactDeleteConfirm = false)}
 		/>
 
+		<!-- Leave tournament confirmation -->
+		<ConfirmDialog
+			open={leaveTarget !== null}
+			title={$_('leave_dialog_title')}
+			description={$_('leave_dialog_desc')}
+			confirmLabel={$_('leave_dialog_confirm')}
+			cancelLabel={$_('leave_dialog_cancel')}
+			destructive={true}
+			onconfirm={confirmLeave}
+			oncancel={() => (leaveTarget = null)}
+		/>
+
 		<!-- Upcoming -->
 		<Section title={$_('profile_upcoming_label')} bind:open={showUpcoming}>
 			{#snippet children()}
@@ -422,37 +468,52 @@
 				{:else}
 					<ExpandableList items={upcoming} showCount={5}>
 						{#snippet itemContent(t)}
-							<a
-								href={sessionHref(t.session_id)}
-								class="bg-surface-raised hover:bg-border flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-colors"
+							<div
+								class="bg-surface-raised hover:bg-border flex items-center gap-2 rounded-2xl pr-2 transition-colors"
 							>
-								<div
-									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status ===
-									'playing'
-										? 'bg-primary/15 text-primary'
-										: 'bg-primary-muted text-primary'}"
+								<a
+									href={sessionHref(t.session_id)}
+									class="flex min-w-0 flex-1 items-center gap-4 py-3.5 pl-4"
 								>
-									{#if t.status === 'playing'}<Radio size={18} />{:else}<CalendarDays
-											size={18}
-										/>{/if}
-								</div>
-								<div class="min-w-0 flex-1">
-									<div class="flex items-center gap-2">
-										<p class="truncate text-sm font-semibold">{t.name}</p>
-										{#if t.status === 'playing'}
-											<span
-												class="bg-primary/15 text-primary shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase"
-												>Live</span
-											>
-										{/if}
+									<div
+										class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status ===
+										'playing'
+											? 'bg-primary/15 text-primary'
+											: 'bg-primary-muted text-primary'}"
+									>
+										{#if t.status === 'playing'}<Radio size={18} />{:else}<CalendarDays
+												size={18}
+											/>{/if}
 									</div>
-									<p class="text-text-secondary text-xs">
-										{t.player_count}
-										{$_('profile_upcoming_players')} · Americano
-									</p>
-								</div>
-								<span class="text-text-secondary text-sm">→</span>
-							</a>
+									<div class="min-w-0 flex-1">
+										<div class="flex items-center gap-2">
+											<p class="truncate text-sm font-semibold">{t.name}</p>
+											{#if t.status === 'playing'}
+												<span
+													class="bg-primary/15 text-primary shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase"
+													>Live</span
+												>
+											{/if}
+										</div>
+										<p class="text-text-secondary text-xs">
+											{t.player_count}
+											{$_('profile_upcoming_players')} · Americano
+										</p>
+									</div>
+								</a>
+								{#if t.status === 'lobby'}
+									<button
+										onclick={() => (leaveTarget = t)}
+										disabled={leaving}
+										class="text-text-disabled hover:text-destructive shrink-0 p-2 transition-colors disabled:opacity-40"
+										aria-label={$_('lobby_leave')}
+									>
+										<X size={16} />
+									</button>
+								{:else}
+									<span class="text-text-secondary pr-2 text-sm">→</span>
+								{/if}
+							</div>
 						{/snippet}
 					</ExpandableList>
 				{/if}

@@ -50,12 +50,17 @@ self.addEventListener('push', (event) => {
 	}
 
 	event.waitUntil(
-		self.registration.showNotification(title, {
-			body,
-			icon: '/icon-192.png',
-			badge: '/icon-192.png',
-			data: { url }
-		})
+		(async () => {
+			await self.registration.showNotification(title, {
+				body,
+				icon: '/icon-192.png',
+				badge: '/icon-192.png',
+				data: { url }
+			});
+			// Bump the app-icon badge. `setAppBadge()` without a count shows a
+			// generic dot on platforms that support it (no-op elsewhere).
+			await self.navigator.setAppBadge?.().catch(() => {});
+		})()
 	);
 });
 
@@ -63,10 +68,13 @@ self.addEventListener('notificationclick', (event) => {
 	event.notification.close();
 	const url = event.notification.data?.url ?? '/';
 	event.waitUntil(
-		self.clients.matchAll({ type: 'window' }).then((clients) => {
+		(async () => {
+			// Opening the notification acknowledges it — clear the app-icon badge.
+			await self.navigator.clearAppBadge?.().catch(() => {});
+			const clients = await self.clients.matchAll({ type: 'window' });
 			const existing = clients.find((c) => c.url.includes(url) && 'focus' in c);
 			if (existing) return existing.focus();
 			return self.clients.openWindow(url);
-		})
+		})()
 	);
 });

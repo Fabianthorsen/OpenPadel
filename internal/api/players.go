@@ -140,6 +140,53 @@ func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, map[string]any{"id": playerID, "active": false})
 }
 
+// leaveSession lets an authenticated user remove themselves from a session they
+// joined. Membership is resolved server-side by matching the caller's user_id
+// against the session's Player rows, so it works retroactively for any session —
+// including ones joined before self-leave existed, and from a device that never
+// stored a client-side player id. Guests (no account) still self-remove via the
+// X-Player-Id path in deactivatePlayer.
+func (h *Handler) leaveSession(w http.ResponseWriter, r *http.Request) {
+	sessionID := chi.URLParam(r, "id")
+	user := userFromContext(r)
+
+	sess, err := h.store.GetSession(sessionID)
+	if errors.Is(err, store.ErrNotFound) {
+		respondAPIError(w, ErrSessionNotFound)
+		return
+	}
+	if err != nil {
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	// Once play has begun the schedule and pairings depend on a stable roster,
+	// so leaving is only allowed while still in the lobby.
+	if sess.Status != domain.StatusLobby {
+		respondAPIError(w, ErrSessionAlreadyStarted)
+		return
+	}
+
+	var playerID string
+	for i := range sess.Players {
+		if sess.Players[i].UserID == user.ID && sess.Players[i].Active {
+			playerID = sess.Players[i].ID
+			break
+		}
+	}
+	if playerID == "" {
+		respondAPIError(w, ErrPlayerNotFound)
+		return
+	}
+
+	if err := h.store.DeactivatePlayer(playerID); err != nil {
+		respondAPIError(w, ErrServerError)
+		return
+	}
+
+	h.hub.Emit(sessionID, events.Envelope{Type: events.EventSessionUpdated})
+	respond(w, http.StatusOK, map[string]any{"id": playerID, "active": false})
+}
+
 // updatePlayerRating lets an admin correct the per-session rating of a guest
 // they added by hand (#211). It is gated by isAdmin() only — a matching
 // CreatorUserID/CreatorPlayerID never grants edit rights — and further limited
