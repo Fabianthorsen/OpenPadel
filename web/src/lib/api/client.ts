@@ -141,6 +141,14 @@ export const api = {
 				undefined,
 				token
 			),
+		updateRating: (sessionId: string, playerId: string, rating: number, adminToken: string) =>
+			request<App.Player>(
+				'PATCH',
+				`/sessions/${sessionId}/players/${playerId}/rating`,
+				{ rating },
+				undefined,
+				adminToken ? { 'X-Admin-Token': adminToken } : undefined
+			),
 		leave: (sessionId: string, playerId: string) =>
 			request<{ id: string; active: boolean }>(
 				'DELETE',

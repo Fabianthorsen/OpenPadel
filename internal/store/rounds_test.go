@@ -10,10 +10,10 @@ func TestSaveRounds_GetRounds(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p1, _ := s.CreatePlayer(sess, "Alice", "")
-	p2, _ := s.CreatePlayer(sess, "Bob", "")
-	p3, _ := s.CreatePlayer(sess, "Charlie", "")
-	p4, _ := s.CreatePlayer(sess, "Diana", "")
+	p1, _ := s.CreatePlayer(sess, "Alice", "", false)
+	p2, _ := s.CreatePlayer(sess, "Bob", "", false)
+	p3, _ := s.CreatePlayer(sess, "Charlie", "", false)
+	p4, _ := s.CreatePlayer(sess, "Diana", "", false)
 
 	round := domain.Round{
 		ID:     "r001",
@@ -43,10 +43,10 @@ func TestGetCurrentRound(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p1, _ := s.CreatePlayer(sess, "Alice", "")
-	p2, _ := s.CreatePlayer(sess, "Bob", "")
-	p3, _ := s.CreatePlayer(sess, "Charlie", "")
-	p4, _ := s.CreatePlayer(sess, "Diana", "")
+	p1, _ := s.CreatePlayer(sess, "Alice", "", false)
+	p2, _ := s.CreatePlayer(sess, "Bob", "", false)
+	p3, _ := s.CreatePlayer(sess, "Charlie", "", false)
+	p4, _ := s.CreatePlayer(sess, "Diana", "", false)
 
 	round := domain.Round{
 		ID:     "r001",
@@ -75,10 +75,10 @@ func TestUpdateScore(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p1, _ := s.CreatePlayer(sess, "Alice", "")
-	p2, _ := s.CreatePlayer(sess, "Bob", "")
-	p3, _ := s.CreatePlayer(sess, "Charlie", "")
-	p4, _ := s.CreatePlayer(sess, "Diana", "")
+	p1, _ := s.CreatePlayer(sess, "Alice", "", false)
+	p2, _ := s.CreatePlayer(sess, "Bob", "", false)
+	p3, _ := s.CreatePlayer(sess, "Charlie", "", false)
+	p4, _ := s.CreatePlayer(sess, "Diana", "", false)
 
 	round := domain.Round{
 		ID:     "r001",
@@ -107,10 +107,10 @@ func TestGetLeaderboard(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p1, _ := s.CreatePlayer(sess, "Alice", "")
-	p2, _ := s.CreatePlayer(sess, "Bob", "")
-	p3, _ := s.CreatePlayer(sess, "Charlie", "")
-	p4, _ := s.CreatePlayer(sess, "Diana", "")
+	p1, _ := s.CreatePlayer(sess, "Alice", "", false)
+	p2, _ := s.CreatePlayer(sess, "Bob", "", false)
+	p3, _ := s.CreatePlayer(sess, "Charlie", "", false)
+	p4, _ := s.CreatePlayer(sess, "Diana", "", false)
 
 	round := domain.Round{
 		ID:     "r001",
@@ -145,10 +145,10 @@ func TestAllRoundsComplete(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p1, _ := s.CreatePlayer(sess, "Alice", "")
-	p2, _ := s.CreatePlayer(sess, "Bob", "")
-	p3, _ := s.CreatePlayer(sess, "Charlie", "")
-	p4, _ := s.CreatePlayer(sess, "Diana", "")
+	p1, _ := s.CreatePlayer(sess, "Alice", "", false)
+	p2, _ := s.CreatePlayer(sess, "Bob", "", false)
+	p3, _ := s.CreatePlayer(sess, "Charlie", "", false)
+	p4, _ := s.CreatePlayer(sess, "Diana", "", false)
 
 	round := domain.Round{
 		ID:     "r001",

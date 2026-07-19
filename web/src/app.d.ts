@@ -57,6 +57,7 @@ declare global {
 			avatar_icon: string;
 			avatar_color: string;
 			rating: number;
+			added_by_admin: boolean;
 			active: boolean;
 			joined_at: string;
 		}

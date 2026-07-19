@@ -11,7 +11,7 @@ func TestCreatePlayer(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p, err := s.CreatePlayer(sess, "Alice", "")
+	p, err := s.CreatePlayer(sess, "Alice", "", false)
 	if err != nil {
 		t.Fatalf("CreatePlayer: %v", err)
 	}
@@ -24,7 +24,7 @@ func TestCreatePlayer_RatingDefaultsToMedian(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p, err := s.CreatePlayer(sess, "Alice", "")
+	p, err := s.CreatePlayer(sess, "Alice", "", false)
 	if err != nil {
 		t.Fatalf("CreatePlayer: %v", err)
 	}
@@ -46,7 +46,7 @@ func TestUpdatePlayerRating(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p, _ := s.CreatePlayer(sess, "Alice", "")
+	p, _ := s.CreatePlayer(sess, "Alice", "", false)
 	if err := s.UpdatePlayerRating(p.ID, 5); err != nil {
 		t.Fatalf("UpdatePlayerRating: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestCreatePlayer_WithUserID(t *testing.T) {
 	alice := createUser(t, s, "alice@example.com", "Alice")
 	sess := createSession(t, s)
 
-	p, err := s.CreatePlayer(sess, "Alice", alice)
+	p, err := s.CreatePlayer(sess, "Alice", alice, false)
 	if err != nil {
 		t.Fatalf("CreatePlayer: %v", err)
 	}
@@ -79,7 +79,7 @@ func TestCreatePlayer_SeedsRatingFromSelfRating(t *testing.T) {
 	}
 	sess := createSession(t, s)
 
-	p, err := s.CreatePlayer(sess, "Expert", user.ID)
+	p, err := s.CreatePlayer(sess, "Expert", user.ID, false)
 	if err != nil {
 		t.Fatalf("CreatePlayer: %v", err)
 	}
@@ -98,8 +98,12 @@ func TestGetPlayers(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	s.CreatePlayer(sess, "Alice", "")
-	s.CreatePlayer(sess, "Bob", "")
+	if _, err := s.CreatePlayer(sess, "Alice", "", false); err != nil {
+		t.Fatalf("CreatePlayer(Alice): %v", err)
+	}
+	if _, err := s.CreatePlayer(sess, "Bob", "", false); err != nil {
+		t.Fatalf("CreatePlayer(Bob): %v", err)
+	}
 
 	players, err := s.GetPlayers(sess)
 	if err != nil {
@@ -127,7 +131,7 @@ func TestDeactivatePlayer(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p, _ := s.CreatePlayer(sess, "Alice", "")
+	p, _ := s.CreatePlayer(sess, "Alice", "", false)
 	if err := s.DeactivatePlayer(p.ID); err != nil {
 		t.Fatalf("DeactivatePlayer: %v", err)
 	}
@@ -153,7 +157,7 @@ func TestGetCreatorName(t *testing.T) {
 	s := newTestStore(t)
 	sess := createSession(t, s)
 
-	p, _ := s.CreatePlayer(sess, "Alice", "")
+	p, _ := s.CreatePlayer(sess, "Alice", "", false)
 	s.SetCreatorPlayer(sess, p.ID)
 
 	name := s.GetCreatorName(sess)

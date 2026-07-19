@@ -283,15 +283,21 @@
 		sessionInvites = await api.invites.listForSession(session.id).catch(() => []);
 	}
 
+	// Optional level the admin picks when adding a guest by hand (#211). Blank
+	// (null) lets the server fall back to the median, the one path that yields an
+	// unrated-by-default Player.
+	let guestAddRating = $state<number | null>(null);
+
 	async function addGuest(name: string) {
 		if (!name) return;
 		joining = true;
 		try {
 			// Admin adds the guest by name; the admin token authorises the join so
-			// the server lets the guest fall back to the median rating (#210).
+			// the server lets the guest fall back to the median rating (#210, #211).
 			const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? undefined;
-			await api.players.join(session.id, name, undefined, adminToken);
+			await api.players.join(session.id, name, undefined, adminToken, guestAddRating ?? undefined);
 			playerSearch = '';
+			guestAddRating = null;
 			toast.success($_('lobby_player_joined'));
 			onRefresh();
 		} catch (e) {
@@ -300,6 +306,34 @@
 			);
 		} finally {
 			joining = false;
+		}
+	}
+
+	// ── Inline rating edit (admin only, #211) ──
+	// AdminToken is the only gate; a matching CreatorUserID never grants edit rights.
+	let editingPlayer = $state<App.Player | null>(null);
+	let editRating = $state<number | null>(null);
+	let savingRating = $state(false);
+
+	function openRatingEdit(player: App.Player) {
+		editingPlayer = player;
+		editRating = player.rating;
+	}
+
+	async function saveRating() {
+		if (!editingPlayer || editRating == null) return;
+		savingRating = true;
+		try {
+			const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+			await api.players.updateRating(session.id, editingPlayer.id, editRating, adminToken);
+			editingPlayer = null;
+			onRefresh();
+		} catch (e) {
+			toast.error(
+				e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error')
+			);
+		} finally {
+			savingRating = false;
 		}
 	}
 
@@ -746,14 +780,20 @@
 					</div>
 				{/if}
 				{#if playerSearch.trim().length > 0 && !playerSearchLoading}
-					<button
-						onclick={() => addGuest(playerSearch.trim())}
-						disabled={joining || isFull}
-						class="border-border text-text-secondary hover:border-primary hover:text-primary flex w-full items-center gap-3 rounded-2xl border border-dashed px-4 py-3 text-sm transition-colors disabled:opacity-50"
-					>
-						<UserPlus size={15} class="shrink-0" />
-						Add "{playerSearch.trim()}" as guest
-					</button>
+					<div class="space-y-2">
+						<div class="space-y-1.5">
+							<SectionLabel>{$_('lobby_guest_rating_optional')}</SectionLabel>
+							<RatingPicker compact bind:value={guestAddRating} disabled={joining || isFull} />
+						</div>
+						<button
+							onclick={() => addGuest(playerSearch.trim())}
+							disabled={joining || isFull}
+							class="border-border text-text-secondary hover:border-primary hover:text-primary flex w-full items-center gap-3 rounded-2xl border border-dashed px-4 py-3 text-sm transition-colors disabled:opacity-50"
+						>
+							<UserPlus size={15} class="shrink-0" />
+							Add "{playerSearch.trim()}" as guest
+						</button>
+					</div>
 				{/if}
 			</div>
 		{/if}
@@ -777,13 +817,24 @@
 								ring="ring-2 ring-primary/30"
 							/>
 							<span class="text-sm font-medium">{player.name}</span>
-							<span
-								class="bg-surface text-text-secondary flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums"
-								title={$_('auth_rating_label')}
-								aria-label={$_('auth_rating_label')}
-							>
-								{player.rating}
-							</span>
+							{#if isAdmin && player.added_by_admin}
+								<button
+									onclick={() => openRatingEdit(player)}
+									class="bg-surface text-text-secondary hover:ring-primary/40 flex h-5 items-center gap-0.5 rounded-full px-1.5 text-xs font-bold tabular-nums transition-shadow hover:ring-2"
+									aria-label={$_('lobby_edit_rating_aria', { values: { name: player.name } })}
+								>
+									{player.rating}
+									<Pencil size={9} class="opacity-60" />
+								</button>
+							{:else}
+								<span
+									class="bg-surface text-text-secondary flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums"
+									title={$_('auth_rating_label')}
+									aria-label={$_('auth_rating_label')}
+								>
+									{player.rating}
+								</span>
+							{/if}
 							<div class="ml-auto flex items-center gap-1.5">
 								{#if player.id === session.creator_player_id}
 									<Crown size={13} class="text-primary" />
@@ -950,6 +1001,42 @@
 	onconfirm={cancel}
 	oncancel={() => (showCancelDialog = false)}
 />
+
+<!-- Admin rating edit (#211) -->
+<Dialog.Root
+	open={editingPlayer != null}
+	onOpenChange={(o) => {
+		if (!o) editingPlayer = null;
+	}}
+>
+	<Dialog.Content class="w-full max-w-sm">
+		<Dialog.Header>
+			<Dialog.Title>{$_('lobby_edit_rating_title')}</Dialog.Title>
+		</Dialog.Header>
+		{#if editingPlayer}
+			<p class="text-text-secondary text-sm">
+				{$_('lobby_edit_rating_desc', { values: { name: editingPlayer.name } })}
+			</p>
+			<RatingPicker bind:value={editRating} disabled={savingRating} />
+		{/if}
+		<Dialog.Footer class="gap-2">
+			<button
+				onclick={() => (editingPlayer = null)}
+				disabled={savingRating}
+				class="border-border text-text-secondary hover:bg-surface-raised flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-50"
+			>
+				{$_('lobby_rating_cancel')}
+			</button>
+			<Button
+				onclick={saveRating}
+				disabled={savingRating || editRating == null}
+				class="bg-primary hover:bg-primary-hover h-auto flex-1 rounded-2xl px-4 py-3 text-sm font-semibold text-white"
+			>
+				{savingRating ? '…' : $_('lobby_rating_save')}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
 
 <!-- Session Config Drawer -->
 <SessionConfig bind:open={configDrawerOpen} {session} sessionId={session.id} {onRefresh} />

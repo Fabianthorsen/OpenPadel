@@ -43,7 +43,8 @@ var (
 	ErrInvalidToken           = APIError{"invalid_token", http.StatusUnauthorized}
 	ErrInvalidEmailOrPassword = APIError{"invalid_email_or_password", http.StatusUnauthorized}
 
-	ErrAdminRequired = APIError{"admin_required", http.StatusForbidden}
+	ErrAdminRequired     = APIError{"admin_required", http.StatusForbidden}
+	ErrRatingNotEditable = APIError{"rating_not_editable", http.StatusForbidden}
 
 	ErrAlreadyInSession       = APIError{"already_in_session", http.StatusConflict}
 	ErrAlreadyContact         = APIError{"already_contact", http.StatusConflict}

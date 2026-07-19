@@ -146,6 +146,177 @@ func TestJoinSession_AlreadyStarted(t *testing.T) {
 	res.Body.Close()
 }
 
+func TestUpdatePlayerRating(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+	playerID := mustJoinSession(t, srv, sessID, "Alice", adminToken)
+
+	res := patchReq(t, srv, "/api/sessions/"+sessID+"/players/"+playerID+"/rating", map[string]any{
+		"rating": 5,
+	}, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+	var player struct {
+		Rating int `json:"rating"`
+	}
+	decodeBody(t, res, &player)
+	if player.Rating != 5 {
+		t.Errorf("expected rating 5 in response, got %d", player.Rating)
+	}
+
+	// The change persists and re-displays on the session.
+	res = getReq(t, srv, "/api/sessions/"+sessID, adminToken)
+	var sess struct {
+		Players []struct {
+			ID     string `json:"id"`
+			Rating int    `json:"rating"`
+		} `json:"players"`
+	}
+	decodeBody(t, res, &sess)
+	var found bool
+	for _, p := range sess.Players {
+		if p.ID == playerID {
+			found = true
+			if p.Rating != 5 {
+				t.Errorf("expected persisted rating 5, got %d", p.Rating)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("player not found in session after rating edit")
+	}
+}
+
+func TestUpdatePlayerRating_AdminTokenViaHeader(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+	playerID := mustJoinSession(t, srv, sessID, "Alice", adminToken)
+
+	// The web client sends the admin token in the X-Admin-Token header (not the
+	// Authorization bearer header). The endpoint must accept it, same as join.
+	res := doRequest(t, srv, http.MethodPatch, "/api/sessions/"+sessID+"/players/"+playerID+"/rating", map[string]any{
+		"rating": 5,
+	}, "", map[string]string{"X-Admin-Token": adminToken})
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 with X-Admin-Token header, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestUpdatePlayerRating_RequiresAdmin(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+	playerID := mustJoinSession(t, srv, sessID, "Alice", adminToken)
+
+	res := patchReq(t, srv, "/api/sessions/"+sessID+"/players/"+playerID+"/rating", map[string]any{
+		"rating": 5,
+	}, "")
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 without admin token, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestUpdatePlayerRating_CreatorTokenNotAuthorized(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	// The creating user owns the session (CreatorUserID) but that alone must not
+	// authorize a rating edit — only the AdminToken gates it (#211).
+	userToken := mustRegister(t, srv, "creator@test.local", "Creator", "password123")
+	sessID, adminToken := mustCreateSession(t, srv, userToken)
+	playerID := mustJoinSession(t, srv, sessID, "Alice", adminToken)
+
+	res := patchReq(t, srv, "/api/sessions/"+sessID+"/players/"+playerID+"/rating", map[string]any{
+		"rating": 5,
+	}, userToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 for creator token without admin token, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestUpdatePlayerRating_InvalidRating(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+	playerID := mustJoinSession(t, srv, sessID, "Alice", adminToken)
+
+	res := patchReq(t, srv, "/api/sessions/"+sessID+"/players/"+playerID+"/rating", map[string]any{
+		"rating": 9,
+	}, adminToken)
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for out-of-range rating, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestUpdatePlayerRating_PlayerNotFound(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	res := patchReq(t, srv, "/api/sessions/"+sessID+"/players/NOPE/rating", map[string]any{
+		"rating": 4,
+	}, adminToken)
+	if res.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected 404 for unknown player, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestUpdatePlayerRating_RegisteredPlayerNotEditable(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	userToken := mustRegister(t, srv, "player@test.local", "Player", "password123")
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	// A registered user joins with their account — they own their own rating, so
+	// the admin cannot edit it (#211).
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Player"}, userToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("join: expected 201, got %d", res.StatusCode)
+	}
+	var player struct {
+		ID string `json:"id"`
+	}
+	decodeBody(t, res, &player)
+
+	res = patchReq(t, srv, "/api/sessions/"+sessID+"/players/"+player.ID+"/rating", map[string]any{
+		"rating": 5,
+	}, adminToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 editing a registered player, got %d", res.StatusCode)
+	}
+	var body struct {
+		Error string `json:"error"`
+	}
+	decodeBody(t, res, &body)
+	if body.Error != "rating_not_editable" {
+		t.Errorf("expected error 'rating_not_editable', got %q", body.Error)
+	}
+}
+
+func TestUpdatePlayerRating_SelfJoinedGuestNotEditable(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	// A guest who self-joins by link (no admin token) picked their own level, so
+	// the admin cannot edit it — only admin-added guests are editable (#211).
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Guest", "rating": 2}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("join: expected 201, got %d", res.StatusCode)
+	}
+	var player struct {
+		ID string `json:"id"`
+	}
+	decodeBody(t, res, &player)
+
+	res = patchReq(t, srv, "/api/sessions/"+sessID+"/players/"+player.ID+"/rating", map[string]any{
+		"rating": 5,
+	}, adminToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 editing a self-joined guest, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
 func TestDeactivatePlayer(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	sessID, adminToken := mustCreateSession(t, srv, "")

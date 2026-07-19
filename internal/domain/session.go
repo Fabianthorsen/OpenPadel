@@ -197,15 +197,18 @@ type Session struct {
 }
 
 type Player struct {
-	ID          string    `json:"id"`
-	SessionID   string    `json:"session_id"`
-	UserID      string    `json:"user_id,omitempty"`
-	Name        string    `json:"name"`
-	AvatarIcon  string    `json:"avatar_icon"`
-	AvatarColor string    `json:"avatar_color"`
-	Rating      int       `json:"rating"`
-	Active      bool      `json:"active"`
-	JoinedAt    time.Time `json:"joined_at"`
+	ID          string `json:"id"`
+	SessionID   string `json:"session_id"`
+	UserID      string `json:"user_id,omitempty"`
+	Name        string `json:"name"`
+	AvatarIcon  string `json:"avatar_icon"`
+	AvatarColor string `json:"avatar_color"`
+	Rating      int    `json:"rating"`
+	// AddedByAdmin marks a guest the admin created by hand (via an admin token).
+	// Only these players may have their rating inline-edited by the admin (#211).
+	AddedByAdmin bool      `json:"added_by_admin"`
+	Active       bool      `json:"active"`
+	JoinedAt     time.Time `json:"joined_at"`
 }
 
 type Round struct {

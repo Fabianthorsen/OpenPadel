@@ -9,7 +9,15 @@ import (
 	"github.com/fabianthorsen/openpadel/internal/store/db"
 )
 
-func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, error) {
+// boolToInt64 maps a Go bool to SQLite's integer boolean (0/1).
+func boolToInt64(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func (s *Store) CreatePlayer(sessionID, name, userID string, addedByAdmin bool) (*domain.Player, error) {
 	now := time.Now().UTC()
 	icon := "Bot"
 	color := "slate" // guests get grey Bot icon; overridden below for registered users
@@ -28,29 +36,31 @@ func (s *Store) CreatePlayer(sessionID, name, userID string) (*domain.Player, er
 		}
 	}
 	p := &domain.Player{
-		ID:          newID(),
-		SessionID:   sessionID,
-		UserID:      userID,
-		Name:        name,
-		AvatarIcon:  icon,
-		AvatarColor: color,
-		Rating:      rating,
-		Active:      true,
-		JoinedAt:    now,
+		ID:           newID(),
+		SessionID:    sessionID,
+		UserID:       userID,
+		Name:         name,
+		AvatarIcon:   icon,
+		AvatarColor:  color,
+		Rating:       rating,
+		AddedByAdmin: addedByAdmin,
+		Active:       true,
+		JoinedAt:     now,
 	}
 	var uid sql.NullString
 	if userID != "" {
 		uid = sql.NullString{String: userID, Valid: true}
 	}
 	err := s.queries.CreatePlayer(context.Background(), db.CreatePlayerParams{
-		ID:          p.ID,
-		SessionID:   p.SessionID,
-		UserID:      uid,
-		Name:        p.Name,
-		AvatarIcon:  p.AvatarIcon,
-		AvatarColor: p.AvatarColor,
-		Rating:      int64(p.Rating),
-		JoinedAt:    p.JoinedAt.Format(time.RFC3339),
+		ID:           p.ID,
+		SessionID:    p.SessionID,
+		UserID:       uid,
+		Name:         p.Name,
+		AvatarIcon:   p.AvatarIcon,
+		AvatarColor:  p.AvatarColor,
+		Rating:       int64(p.Rating),
+		AddedByAdmin: boolToInt64(addedByAdmin),
+		JoinedAt:     p.JoinedAt.Format(time.RFC3339),
 	})
 	if err != nil {
 		return nil, err
@@ -66,15 +76,16 @@ func (s *Store) GetPlayers(sessionID string) ([]domain.Player, error) {
 	players := make([]domain.Player, 0, len(rows))
 	for _, row := range rows {
 		p := domain.Player{
-			ID:          row.ID,
-			SessionID:   row.SessionID,
-			UserID:      row.UserID,
-			Name:        row.Name,
-			AvatarIcon:  row.AvatarIcon,
-			AvatarColor: row.AvatarColor,
-			Rating:      int(row.Rating),
-			Active:      row.Active == 1,
-			JoinedAt:    parseTime(row.JoinedAt),
+			ID:           row.ID,
+			SessionID:    row.SessionID,
+			UserID:       row.UserID,
+			Name:         row.Name,
+			AvatarIcon:   row.AvatarIcon,
+			AvatarColor:  row.AvatarColor,
+			Rating:       int(row.Rating),
+			AddedByAdmin: row.AddedByAdmin == 1,
+			Active:       row.Active == 1,
+			JoinedAt:     parseTime(row.JoinedAt),
 		}
 		players = append(players, p)
 	}

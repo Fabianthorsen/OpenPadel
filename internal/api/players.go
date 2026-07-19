@@ -71,7 +71,10 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player, err := h.store.CreatePlayer(id, body.Name, userID)
+	// A guest the admin creates by hand (admin token, no account) is marked so
+	// only these players are rating-editable later (#211).
+	addedByAdmin := joinerIsAdmin && userID == ""
+	player, err := h.store.CreatePlayer(id, body.Name, userID, addedByAdmin)
 	if err != nil {
 		if isUniqueConstraintError(err) {
 			respondAPIError(w, ErrNameTaken)
@@ -89,8 +92,10 @@ func (h *Handler) joinSession(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// If the joiner is the admin and no creator is set yet, mark them as creator.
-	if joinerIsAdmin && sess.CreatorPlayerID == "" {
+	// Crown the creator only when the creator themselves join as a player — a
+	// registered user whose account matches the session's CreatorUserID. Never
+	// auto-assign it to an admin-added guest, who isn't the creator (#211).
+	if userID != "" && userID == sess.CreatorUserID && sess.CreatorPlayerID == "" {
 		h.store.SetCreatorPlayer(id, player.ID) //nolint:errcheck
 	}
 
@@ -133,6 +138,76 @@ func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 
 	h.hub.Emit(sessionID, events.Envelope{Type: events.EventSessionUpdated})
 	respond(w, http.StatusOK, map[string]any{"id": playerID, "active": false})
+}
+
+// updatePlayerRating lets an admin correct the per-session rating of a guest
+// they added by hand (#211). It is gated by isAdmin() only — a matching
+// CreatorUserID/CreatorPlayerID never grants edit rights — and further limited
+// to admin-added guests, so registered users and self-joined guests keep sole
+// control of their own rating.
+func (h *Handler) updatePlayerRating(w http.ResponseWriter, r *http.Request) {
+	sessionID := chi.URLParam(r, "id")
+	playerID := chi.URLParam(r, "playerID")
+
+	var body struct {
+		Rating int `json:"rating"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondAPIError(w, ErrInvalidRequestBody)
+		return
+	}
+	if !domain.IsValidRating(body.Rating) {
+		respondAPIError(w, ErrInvalidRating)
+		return
+	}
+
+	sess, err := h.store.GetSession(sessionID)
+	if errors.Is(err, store.ErrNotFound) {
+		respondAPIError(w, ErrSessionNotFound)
+		return
+	}
+	if err != nil {
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	// Accept the admin token from the Authorization header OR the X-Admin-Token
+	// header — the web client sends it via the latter (mirrors joinSession).
+	adminToken := extractAdminToken(r)
+	if adminToken == "" {
+		adminToken = r.Header.Get("X-Admin-Token")
+	}
+	if !isAdmin(adminToken, sess.AdminToken) {
+		respondAPIError(w, ErrAdminRequired)
+		return
+	}
+
+	// The player must belong to this session.
+	var target *domain.Player
+	for i := range sess.Players {
+		if sess.Players[i].ID == playerID {
+			target = &sess.Players[i]
+			break
+		}
+	}
+	if target == nil {
+		respondAPIError(w, ErrPlayerNotFound)
+		return
+	}
+	// Only a guest the admin added by hand may be rating-edited. Registered users
+	// and self-joined guests own their own rating (#211).
+	if !target.AddedByAdmin {
+		respondAPIError(w, ErrRatingNotEditable)
+		return
+	}
+
+	if err := h.store.UpdatePlayerRating(playerID, body.Rating); err != nil {
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	target.Rating = body.Rating
+
+	h.hub.Emit(sessionID, events.Envelope{Type: events.EventSessionUpdated})
+	respond(w, http.StatusOK, target)
 }
 
 func isUniqueConstraintError(err error) bool {
