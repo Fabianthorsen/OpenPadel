@@ -115,7 +115,7 @@ func (s *Store) AddContactPlayer(sessionID, contactUserID string) (*domain.Playe
 	if err != nil {
 		return nil, err
 	}
-	return s.CreatePlayer(sessionID, user.DisplayName, user.ID)
+	return s.CreatePlayer(sessionID, user.DisplayName, user.ID, false)
 }
 
 // escapeLike escapes special LIKE characters in a query string.

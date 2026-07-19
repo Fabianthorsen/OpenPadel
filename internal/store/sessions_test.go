@@ -92,7 +92,7 @@ func TestGetTournamentHistory_EndedEarly(t *testing.T) {
 	sess := createSession(t, s)
 
 	// Join as Alice
-	_, err := s.CreatePlayer(sess, "Alice", alice)
+	_, err := s.CreatePlayer(sess, "Alice", alice, false)
 	if err != nil {
 		t.Fatalf("CreatePlayer: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestGetTournamentHistory_NaturalCompletion(t *testing.T) {
 	sess := createSession(t, s)
 
 	// Join as Alice
-	_, err := s.CreatePlayer(sess, "Alice", alice)
+	_, err := s.CreatePlayer(sess, "Alice", alice, false)
 	if err != nil {
 		t.Fatalf("CreatePlayer: %v", err)
 	}
@@ -253,16 +253,16 @@ func TestStartMexicanoSession_PreservesUnlimited(t *testing.T) {
 	}
 
 	// Create some players (minimum 4 for 1 court in Mexicano)
-	if _, err := s.CreatePlayer(sess.ID, "Player 1", ""); err != nil {
+	if _, err := s.CreatePlayer(sess.ID, "Player 1", "", false); err != nil {
 		t.Fatalf("CreatePlayer p1: %v", err)
 	}
-	if _, err := s.CreatePlayer(sess.ID, "Player 2", ""); err != nil {
+	if _, err := s.CreatePlayer(sess.ID, "Player 2", "", false); err != nil {
 		t.Fatalf("CreatePlayer p2: %v", err)
 	}
-	if _, err := s.CreatePlayer(sess.ID, "Player 3", ""); err != nil {
+	if _, err := s.CreatePlayer(sess.ID, "Player 3", "", false); err != nil {
 		t.Fatalf("CreatePlayer p3: %v", err)
 	}
-	if _, err := s.CreatePlayer(sess.ID, "Player 4", ""); err != nil {
+	if _, err := s.CreatePlayer(sess.ID, "Player 4", "", false); err != nil {
 		t.Fatalf("CreatePlayer p4: %v", err)
 	}
 

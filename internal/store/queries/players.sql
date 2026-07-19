@@ -1,9 +1,9 @@
 -- name: CreatePlayer :exec
-INSERT INTO players (id, session_id, user_id, name, avatar_icon, avatar_color, rating, active, joined_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?);
+INSERT INTO players (id, session_id, user_id, name, avatar_icon, avatar_color, rating, added_by_admin, active, joined_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?);
 
 -- name: GetPlayersBySessionID :many
-SELECT id, session_id, COALESCE(user_id, ''), name, avatar_icon, avatar_color, rating, active, joined_at
+SELECT id, session_id, COALESCE(user_id, ''), name, avatar_icon, avatar_color, rating, added_by_admin, active, joined_at
 FROM players WHERE session_id = ? ORDER BY joined_at;
 
 -- name: UpdatePlayerRating :exec

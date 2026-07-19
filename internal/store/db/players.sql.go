@@ -11,19 +11,20 @@ import (
 )
 
 const createPlayer = `-- name: CreatePlayer :exec
-INSERT INTO players (id, session_id, user_id, name, avatar_icon, avatar_color, rating, active, joined_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+INSERT INTO players (id, session_id, user_id, name, avatar_icon, avatar_color, rating, added_by_admin, active, joined_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
 `
 
 type CreatePlayerParams struct {
-	ID          string
-	SessionID   string
-	UserID      sql.NullString
-	Name        string
-	AvatarIcon  string
-	AvatarColor string
-	Rating      int64
-	JoinedAt    string
+	ID           string
+	SessionID    string
+	UserID       sql.NullString
+	Name         string
+	AvatarIcon   string
+	AvatarColor  string
+	Rating       int64
+	AddedByAdmin int64
+	JoinedAt     string
 }
 
 func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) error {
@@ -35,6 +36,7 @@ func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) erro
 		arg.AvatarIcon,
 		arg.AvatarColor,
 		arg.Rating,
+		arg.AddedByAdmin,
 		arg.JoinedAt,
 	)
 	return err
@@ -63,20 +65,21 @@ func (q *Queries) GetCreatorName(ctx context.Context, id string) (string, error)
 }
 
 const getPlayersBySessionID = `-- name: GetPlayersBySessionID :many
-SELECT id, session_id, COALESCE(user_id, ''), name, avatar_icon, avatar_color, rating, active, joined_at
+SELECT id, session_id, COALESCE(user_id, ''), name, avatar_icon, avatar_color, rating, added_by_admin, active, joined_at
 FROM players WHERE session_id = ? ORDER BY joined_at
 `
 
 type GetPlayersBySessionIDRow struct {
-	ID          string
-	SessionID   string
-	UserID      string
-	Name        string
-	AvatarIcon  string
-	AvatarColor string
-	Rating      int64
-	Active      int64
-	JoinedAt    string
+	ID           string
+	SessionID    string
+	UserID       string
+	Name         string
+	AvatarIcon   string
+	AvatarColor  string
+	Rating       int64
+	AddedByAdmin int64
+	Active       int64
+	JoinedAt     string
 }
 
 func (q *Queries) GetPlayersBySessionID(ctx context.Context, sessionID string) ([]GetPlayersBySessionIDRow, error) {
@@ -96,6 +99,7 @@ func (q *Queries) GetPlayersBySessionID(ctx context.Context, sessionID string) (
 			&i.AvatarIcon,
 			&i.AvatarColor,
 			&i.Rating,
+			&i.AddedByAdmin,
 			&i.Active,
 			&i.JoinedAt,
 		); err != nil {

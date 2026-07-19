@@ -56,15 +56,16 @@ type PasswordResetToken struct {
 }
 
 type Player struct {
-	ID          string
-	SessionID   string
-	Name        string
-	Active      int64
-	JoinedAt    string
-	UserID      sql.NullString
-	AvatarIcon  string
-	AvatarColor string
-	Rating      int64
+	ID           string
+	SessionID    string
+	Name         string
+	Active       int64
+	JoinedAt     string
+	UserID       sql.NullString
+	AvatarIcon   string
+	AvatarColor  string
+	Rating       int64
+	AddedByAdmin int64
 }
 
 type PushSubscription struct {
