@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.19.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.18.2...v1.19.0) (2026-07-19)
+
+
+### Features
+
+* **#227:** cross-mode Point Win % profile summary ([#231](https://github.com/Fabianthorsen/OpenPadel/issues/231)) ([c82d47d](https://github.com/Fabianthorsen/OpenPadel/commit/c82d47d11756500b6cc65278a0f74f42bc438605)), closes [#227](https://github.com/Fabianthorsen/OpenPadel/issues/227)
+* **#228:** per-mode Career Stats page + reusable stat catalog ([#233](https://github.com/Fabianthorsen/OpenPadel/issues/233)) ([97249bd](https://github.com/Fabianthorsen/OpenPadel/commit/97249bdcc41e023ace1d751bbf511921b24fb6e1))
+* **#229:** cross-mode placement stats (titles, podiums, best/avg finish) ([#234](https://github.com/Fabianthorsen/OpenPadel/issues/234)) ([c4f59ba](https://github.com/Fabianthorsen/OpenPadel/commit/c4f59ba8eaa4f6412800e32f3ee731d68d43f0b1)), closes [#229](https://github.com/Fabianthorsen/OpenPadel/issues/229)
+* **#230:** cross-mode recent-form curve from per-match results series ([#235](https://github.com/Fabianthorsen/OpenPadel/issues/235)) ([4728667](https://github.com/Fabianthorsen/OpenPadel/commit/4728667529a10f8e5e251a28e0391cada91b6e7c))
+
 ## [1.18.2](https://github.com/Fabianthorsen/OpenPadel/compare/v1.18.1...v1.18.2) (2026-07-19)
 
 
