@@ -27,6 +27,7 @@
 	import { auth } from '$lib/auth.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import SessionConfig from '$lib/components/SessionConfig.svelte';
+	import RatingPicker from '$lib/components/RatingPicker.svelte';
 	import { calculateAmericanoRounds } from '$lib/americano';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
@@ -76,6 +77,9 @@
 	let showCancelDialog = $state(false);
 	let seeding = $state(false);
 	let joinName = $state('');
+	// Guests self-joining by link must pick a skill level (#210); registered
+	// users seed their rating from their account, so this stays null for them.
+	let guestRating = $state<number | null>(null);
 	let joining = $state(false);
 
 	let playerSearch = $state('');
@@ -283,7 +287,10 @@
 		if (!name) return;
 		joining = true;
 		try {
-			await api.players.join(session.id, name);
+			// Admin adds the guest by name; the admin token authorises the join so
+			// the server lets the guest fall back to the median rating (#210).
+			const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? undefined;
+			await api.players.join(session.id, name, undefined, adminToken);
 			playerSearch = '';
 			toast.success($_('lobby_player_joined'));
 			onRefresh();
@@ -363,12 +370,18 @@
 	async function join() {
 		const name = joinName.trim();
 		if (!name) return;
+		// A guest (no account) must bring a rating; registered users seed theirs
+		// from their account server-side, so we send none for them.
+		const rating = auth.user ? undefined : (guestRating ?? undefined);
+		if (!auth.user && rating === undefined) return;
 		joining = true;
 		try {
 			const player = await api.players.join(
 				session.id,
 				name,
-				isAdmin ? undefined : (auth.token ?? undefined)
+				isAdmin ? undefined : (auth.token ?? undefined),
+				undefined,
+				rating
 			);
 			if (!isAdmin) {
 				localStorage.setItem(`player_id_${session.id}`, player.id);
@@ -547,24 +560,28 @@
 						<div class="bg-border h-px flex-1"></div>
 					</div>
 
-					<!-- Guest fallback -->
+					<!-- Guest fallback: name + required skill level -->
 					<form
 						onsubmit={(e) => {
 							e.preventDefault();
 							join();
 						}}
-						class="flex gap-2"
+						class="space-y-3"
 					>
 						<Input
 							bind:value={joinName}
 							placeholder={$_('invite_name_placeholder')}
 							maxlength={32}
-							class="bg-surface-raised flex-1 rounded-2xl border-0 px-4 py-3 text-sm"
+							class="bg-surface-raised w-full rounded-2xl border-0 px-4 py-3 text-sm"
 						/>
+						<div class="space-y-2">
+							<SectionLabel>{$_('invite_rating_label')}</SectionLabel>
+							<RatingPicker compact bind:value={guestRating} disabled={isFull} />
+						</div>
 						<Button
 							type="submit"
-							disabled={joining || !joinName.trim() || isFull}
-							class="bg-surface-raised text-text-secondary hover:text-text-primary h-auto rounded-2xl px-4 text-sm font-semibold shadow-none"
+							disabled={joining || !joinName.trim() || guestRating == null || isFull}
+							class="bg-primary hover:bg-primary-hover h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white shadow-none"
 						>
 							{joining ? '…' : $_('invite_guest_join')}
 						</Button>

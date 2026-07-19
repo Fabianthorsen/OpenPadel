@@ -489,7 +489,7 @@ func TestPlayerJoin_CanJoinInLobby(t *testing.T) {
 	sessID, _ := mustCreateSession(t, srv, "")
 
 	// Player should be able to join in lobby state
-	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Alice"}, "")
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{"name": "Alice", "rating": 3}, "")
 	if res.StatusCode != http.StatusCreated {
 		t.Fatalf("expected 201, got %d", res.StatusCode)
 	}

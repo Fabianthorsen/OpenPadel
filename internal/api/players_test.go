@@ -10,7 +10,8 @@ func TestJoinSession(t *testing.T) {
 	sessID, _ := mustCreateSession(t, srv, "")
 
 	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{
-		"name": "Alice",
+		"name":   "Alice",
+		"rating": 3,
 	}, "")
 	if res.StatusCode != http.StatusCreated {
 		t.Fatalf("expected 201, got %d", res.StatusCode)
@@ -64,6 +65,47 @@ func TestJoinSession_InvalidRating(t *testing.T) {
 		t.Fatalf("expected 400 for out-of-range rating, got %d", res.StatusCode)
 	}
 	_ = res.Body.Close()
+}
+
+func TestJoinSession_GuestMissingRating(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _ := mustCreateSession(t, srv, "")
+
+	// An anonymous guest self-joining by link must pick a skill level (#210).
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{
+		"name": "Alice",
+	}, "")
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400 for guest join without rating, got %d", res.StatusCode)
+	}
+	var body struct {
+		Error string `json:"error"`
+	}
+	decodeBody(t, res, &body)
+	if body.Error != "rating_required" {
+		t.Errorf("expected error 'rating_required', got %q", body.Error)
+	}
+}
+
+func TestJoinSession_AdminGuestWithoutRating(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken := mustCreateSession(t, srv, "")
+
+	// An admin adding a guest by name does not have to supply a rating — the
+	// guest falls back to the median.
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/players", map[string]any{
+		"name": "Alice",
+	}, adminToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("expected 201 for admin-added guest, got %d", res.StatusCode)
+	}
+	var player struct {
+		Rating int `json:"rating"`
+	}
+	decodeBody(t, res, &player)
+	if player.Rating != 3 {
+		t.Errorf("expected median guest rating 3, got %d", player.Rating)
+	}
 }
 
 func TestJoinSession_EmptyName(t *testing.T) {
