@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/api"
 	"github.com/fabianthorsen/openpadel/internal/email"
@@ -30,11 +31,15 @@ func newAPITestStore(t *testing.T) *store.Store {
 	return s
 }
 
+// newAPITestServer spins up a test server with a permissive auth rate limit so
+// unrelated tests never trip it. Tests exercising the limiter itself build a
+// server with newAPITestServerRL.
 func newAPITestServer(t *testing.T) (*httptest.Server, *store.Store) {
 	t.Helper()
 	s := newAPITestStore(t)
 	emailClient := email.NewClient("", "noreply@test.local")
-	handler := api.NewRouter(s, emailClient, "http://localhost", "", "")
+	permissive := api.RateLimitConfig{Requests: 10000, Window: time.Minute}
+	handler := api.NewRouter(s, emailClient, "http://localhost", "", "", permissive)
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
 	return srv, s

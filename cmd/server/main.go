@@ -33,7 +33,7 @@ func main() {
 	defer s.Close()
 
 	emailClient := email.NewClient(resendKey, resendFrom)
-	r := api.NewRouter(s, emailClient, appURL, vapidPrivate, vapidPublic)
+	r := api.NewRouter(s, emailClient, appURL, vapidPrivate, vapidPublic, api.DefaultRateLimit)
 
 	slog.Info("listening", "port", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
