@@ -540,10 +540,16 @@
 				<p class="text-primary text-[11px] font-bold tracking-[0.1em] uppercase">OpenPadel</p>
 				<div class="flex items-start gap-2">
 					<h1 class="text-[28px] leading-tight font-[800]">
-						{#if creatorName}
+						{#if creatorName && session.name}
+							{$_('invite_title_with_creator_named', {
+								values: { creator: creatorName, name: session.name }
+							})}
+						{:else if creatorName}
 							{$_('invite_title_with_creator', {
 								values: { creator: creatorName, mode: gameModeName }
 							})}
+						{:else if session.name}
+							{$_('invite_title_generic_named', { values: { name: session.name } })}
 						{:else}
 							{$_('invite_title_generic', { values: { mode: gameModeName } })}
 						{/if}
@@ -556,9 +562,6 @@
 						<Info size={18} />
 					</button>
 				</div>
-				{#if session.name}
-					<p class="text-text-secondary">{session.name}</p>
-				{/if}
 				<p class="text-text-secondary text-sm">
 					{$_(session.courts === 1 ? 'active_courts_one' : 'active_courts_other', {
 						values: { n: session.courts }
