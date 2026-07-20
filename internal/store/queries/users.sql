@@ -23,13 +23,16 @@ SELECT id, email, display_name, avatar_icon, avatar_color, password_hash, self_r
 FROM users WHERE id = ?;
 
 -- name: CreateAuthToken :exec
-INSERT INTO auth_tokens (token, user_id, created_at) VALUES (?, ?, ?);
+INSERT INTO auth_tokens (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?);
 
--- name: GetUserIDByToken :one
-SELECT user_id FROM auth_tokens WHERE token = ?;
+-- name: GetAuthTokenByHash :one
+SELECT user_id, expires_at FROM auth_tokens WHERE token_hash = ?;
+
+-- name: UpdateAuthTokenExpiry :exec
+UPDATE auth_tokens SET expires_at = ? WHERE token_hash = ?;
 
 -- name: DeleteAuthToken :exec
-DELETE FROM auth_tokens WHERE token = ?;
+DELETE FROM auth_tokens WHERE token_hash = ?;
 
 -- name: DeleteAuthTokensByUserID :exec
 DELETE FROM auth_tokens WHERE user_id = ?;

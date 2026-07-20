@@ -25,7 +25,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) error
 	CurrentRoundAllScored(ctx context.Context, id string) (int64, error)
 	DeactivatePlayer(ctx context.Context, id string) error
-	DeleteAuthToken(ctx context.Context, token string) error
+	DeleteAuthToken(ctx context.Context, tokenHash string) error
 	DeleteAuthTokensByUserID(ctx context.Context, userID string) error
 	DeleteBench(ctx context.Context, sessionID string) error
 	DeleteInvite(ctx context.Context, id string) error
@@ -38,6 +38,7 @@ type Querier interface {
 	DeleteSession(ctx context.Context, id string) error
 	DeleteStalePushSubscription(ctx context.Context, endpoint string) error
 	DeleteUser(ctx context.Context, id string) error
+	GetAuthTokenByHash(ctx context.Context, tokenHash string) (GetAuthTokenByHashRow, error)
 	GetBenchByRoundID(ctx context.Context, roundID string) ([]string, error)
 	// Cross-mode career summary: games played, wins, and mean per-Match point-share.
 	// point_share is the average of yourTeamScore / (yourTeamScore + opponentTeamScore)
@@ -90,7 +91,6 @@ type Querier interface {
 	GetUserAvatarByUserID(ctx context.Context, id string) (GetUserAvatarByUserIDRow, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUserByID(ctx context.Context, id string) (GetUserByIDRow, error)
-	GetUserIDByToken(ctx context.Context, token string) (string, error)
 	GetUserSessions(ctx context.Context, creatorUserID sql.NullString) ([]GetUserSessionsRow, error)
 	IncrementTournamentWinCount(ctx context.Context, id string) error
 	InsertBench(ctx context.Context, arg InsertBenchParams) error
@@ -104,6 +104,7 @@ type Querier interface {
 	StartMexicanoSession(ctx context.Context, arg StartMexicanoSessionParams) error
 	StartSession(ctx context.Context, arg StartSessionParams) error
 	StartTimedAmericanoSession(ctx context.Context, arg StartTimedAmericanoSessionParams) error
+	UpdateAuthTokenExpiry(ctx context.Context, arg UpdateAuthTokenExpiryParams) error
 	UpdateInviteStatus(ctx context.Context, arg UpdateInviteStatusParams) error
 	UpdateMatchLiveScore(ctx context.Context, arg UpdateMatchLiveScoreParams) error
 	UpdateMatchScore(ctx context.Context, arg UpdateMatchScoreParams) error

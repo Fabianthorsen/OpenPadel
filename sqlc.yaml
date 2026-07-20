@@ -12,6 +12,7 @@ sql:
       - "internal/store/migrations/000007_rename_session_states.sql"
       - "internal/store/migrations/000008_player_rating.sql"
       - "internal/store/migrations/000009_player_added_by_admin.sql"
+      - "internal/store/migrations/000010_hash_auth_tokens.sql"
     gen:
       go:
         package: "db"
