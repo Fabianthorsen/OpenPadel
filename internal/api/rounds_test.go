@@ -95,6 +95,40 @@ func TestSubmitScore(t *testing.T) {
 	}
 }
 
+// Score entry is admin-only: a request without the session admin token (or with a
+// wrong one) must be rejected, since final scores feed the leaderboard and career stats.
+func TestSubmitScore_RequiresAdmin(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, adminToken, _ := setupStartedSession(t, srv)
+
+	res := getReq(t, srv, "/api/sessions/"+sessID+"/rounds/current", adminToken)
+	var round struct {
+		Matches []struct {
+			ID string `json:"id"`
+		} `json:"matches"`
+	}
+	decodeBody(t, res, &round)
+	if len(round.Matches) == 0 {
+		t.Fatal("no matches in current round")
+	}
+	matchID := round.Matches[0].ID
+	score := map[string]any{"score_a": 16, "score_b": 8}
+
+	// No token.
+	if got := putReq(t, srv, "/api/sessions/"+sessID+"/matches/"+matchID+"/score", score, "").StatusCode; got != http.StatusForbidden {
+		t.Errorf("no token: expected 403, got %d", got)
+	}
+	// Wrong token.
+	if got := putReq(t, srv, "/api/sessions/"+sessID+"/matches/"+matchID+"/score", score, "tok_wrong").StatusCode; got != http.StatusForbidden {
+		t.Errorf("wrong token: expected 403, got %d", got)
+	}
+	// Live-score endpoint is gated the same way.
+	live := map[string]any{"a": 3, "b": 1, "server": "a"}
+	if got := patchReq(t, srv, "/api/sessions/"+sessID+"/matches/"+matchID+"/score", live, "").StatusCode; got != http.StatusForbidden {
+		t.Errorf("live no token: expected 403, got %d", got)
+	}
+}
+
 func TestSubmitScore_InvalidSum(t *testing.T) {
 	srv, _ := newAPITestServer(t)
 	sessID, adminToken, _ := setupStartedSession(t, srv)
