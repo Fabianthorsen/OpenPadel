@@ -28,7 +28,7 @@ type Handler struct {
 	mexicanoSvc  *gmexicano.Service
 }
 
-func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, vapidPublic string) http.Handler {
+func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, vapidPublic string, rateLimit RateLimitConfig) http.Handler {
 	hub := events.NewHub()
 	h := &Handler{
 		store:        s,
@@ -74,9 +74,13 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 	r.Handle("/*", ui.Handler())
 
 	r.Route("/api", func(r chi.Router) {
-		// Auth
-		r.Post("/auth/register", h.register)
-		r.Post("/auth/login", h.login)
+		// Auth. login/register/forgot/reset are abuse-sensitive (password
+		// brute-force, account/email spam, reset-token guessing), so they share a
+		// single per-client-IP rate limiter — one budget for a client's total auth
+		// traffic, not per endpoint (#239).
+		authLimit := authRateLimiter(rateLimit)
+		r.With(authLimit).Post("/auth/register", h.register)
+		r.With(authLimit).Post("/auth/login", h.login)
 		r.Post("/auth/logout", h.logout)
 		r.With(h.requireAuth).Get("/auth/me", h.me)
 		r.With(h.requireAuth).Get("/auth/profile", h.profile)
@@ -86,8 +90,8 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 		r.With(h.requireAuth).Get("/auth/history", h.history)
 		r.With(h.requireAuth).Get("/auth/sessions", h.getUserSessions)
 		r.With(h.requireAuth).Delete("/auth/account", h.deleteAccount)
-		r.Post("/auth/forgot", h.forgotPassword)
-		r.Post("/auth/reset", h.resetPassword)
+		r.With(authLimit).Post("/auth/forgot", h.forgotPassword)
+		r.With(authLimit).Post("/auth/reset", h.resetPassword)
 
 		// Contacts
 		r.With(h.requireAuth).Get("/contacts", h.getContacts)

@@ -46,6 +46,8 @@ var (
 	ErrAdminRequired     = APIError{"admin_required", http.StatusForbidden}
 	ErrRatingNotEditable = APIError{"rating_not_editable", http.StatusForbidden}
 
+	ErrRateLimited = APIError{"rate_limited", http.StatusTooManyRequests}
+
 	ErrAlreadyInSession       = APIError{"already_in_session", http.StatusConflict}
 	ErrAlreadyContact         = APIError{"already_contact", http.StatusConflict}
 	ErrAlreadyInvited         = APIError{"already_invited", http.StatusConflict}
