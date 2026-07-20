@@ -73,6 +73,13 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrServerError)
 		return
 	}
+	// Score entry is admin-only: final results feed the leaderboard and permanent
+	// career stats, so only the session admin may write them (AdminToken is the
+	// sole authorization gate).
+	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
+		respondAPIError(w, ErrAdminRequired)
+		return
+	}
 	if sess.Status != domain.StatusPlaying {
 		respondAPIError(w, ErrSessionNotActive)
 		return
@@ -142,6 +149,25 @@ func (h *Handler) submitScore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) updateLiveScore(w http.ResponseWriter, r *http.Request) {
+	sessionID := chi.URLParam(r, "id")
+	matchID := chi.URLParam(r, "matchID")
+
+	sess, err := h.store.GetSession(sessionID)
+	if errors.Is(err, store.ErrNotFound) {
+		respondAPIError(w, ErrSessionNotFound)
+		return
+	}
+	if err != nil {
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	// The live scoreboard is admin-driven, same as final score entry: the admin
+	// holds the device and pushes the running tick out to spectators over SSE.
+	if !isAdmin(extractAdminToken(r), sess.AdminToken) {
+		respondAPIError(w, ErrAdminRequired)
+		return
+	}
+
 	var body struct {
 		A      int    `json:"a"`
 		B      int    `json:"b"`
@@ -155,8 +181,6 @@ func (h *Handler) updateLiveScore(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrScoresNegative)
 		return
 	}
-	sessionID := chi.URLParam(r, "id")
-	matchID := chi.URLParam(r, "matchID")
 	h.live.Set(matchID, body.Server, body.A, body.B)
 	h.hub.Emit(sessionID, events.Envelope{
 		Type:    events.EventLiveScore,

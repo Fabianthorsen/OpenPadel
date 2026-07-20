@@ -171,7 +171,12 @@
 			const current = localScores[matchId];
 			if (!current) return;
 			const srv = initialServer[matchId] ?? 'a';
-			await api.scores.updateLive(session.id, matchId, current.a, current.b, srv).catch(() => {});
+			// Score entry (live + final) is admin-only server-side; source the token
+			// at call time like every other admin action in this component.
+			const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
+			await api.scores
+				.updateLive(session.id, matchId, current.a, current.b, srv, adminToken)
+				.catch(() => {});
 		}, 400);
 	}
 
@@ -186,8 +191,9 @@
 		submitting[matchId] = true;
 		const s =
 			scoreA !== undefined && scoreB !== undefined ? { a: scoreA, b: scoreB } : scores[matchId];
+		const adminToken = localStorage.getItem(`admin_token_${session.id}`) ?? '';
 		try {
-			await api.scores.submit(session.id, matchId, s.a, s.b, '');
+			await api.scores.submit(session.id, matchId, s.a, s.b, adminToken);
 			editing[matchId] = false;
 			toast.success($_('toast_score_confirmed'));
 			onRefresh();

@@ -192,8 +192,20 @@ export const api = {
 				},
 				token
 			),
-		updateLive: (sessionId: string, matchId: string, a: number, b: number, server: string) =>
-			request<void>('PATCH', `/sessions/${sessionId}/matches/${matchId}/score`, { a, b, server })
+		updateLive: (
+			sessionId: string,
+			matchId: string,
+			a: number,
+			b: number,
+			server: string,
+			token: string
+		) =>
+			request<void>(
+				'PATCH',
+				`/sessions/${sessionId}/matches/${matchId}/score`,
+				{ a, b, server },
+				token
+			)
 	},
 	leaderboard: {
 		get: (sessionId: string) =>
