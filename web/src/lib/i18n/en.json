@@ -104,8 +104,10 @@
 	"lobby_dev_seed": "[dev] Fill with test players",
 	"lobby_dev_seeding": "Adding…",
 
-	"invite_title_with_creator": "{creator} invited you to this {mode} Tournament",
+	"invite_title_with_creator": "{creator} invited you to their {mode} Tournament",
+	"invite_title_with_creator_named": "{creator} invited you to {name}",
 	"invite_title_generic": "Join this {mode} Tournament",
+	"invite_title_generic_named": "Join {name}",
 	"invite_subtitle": "Join the tournament to track your scores and see your ranking.",
 	"invite_name_label": "Your name",
 	"invite_name_placeholder": "Enter your name",

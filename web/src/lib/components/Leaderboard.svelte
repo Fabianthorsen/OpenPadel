@@ -110,7 +110,11 @@
 	);
 </script>
 
-<main class="mx-auto max-w-[480px] space-y-6 px-4 {inSheet ? 'pb-6' : 'pt-safe-page pb-24'}">
+<main
+	class="mx-auto {complete ? 'max-w-[400px]' : 'max-w-[480px]'} space-y-6 px-4 {inSheet
+		? 'pb-6'
+		: 'pt-safe-page pb-24'}"
+>
 	{#if !leaderboard}
 		<div class="flex flex-col items-center justify-center gap-3 py-12">
 			<Spinner />
