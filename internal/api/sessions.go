@@ -157,6 +157,15 @@ func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 		sess.AdminToken = ""
 	}
 
+	// A club event carries the Club's name so the join screen can frame it as a
+	// club game rather than a personal invite. This is public identity only (it's
+	// on the shareable join screen a Guest sees) — never an authorization signal.
+	if sess.ClubID != "" {
+		if club, err := h.store.GetClub(sess.ClubID); err == nil {
+			sess.ClubName = club.Name
+		}
+	}
+
 	respond(w, http.StatusOK, sess)
 }
 

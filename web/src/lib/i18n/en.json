@@ -111,6 +111,8 @@
 	"invite_title_with_creator_named": "{creator} invited you to {name}",
 	"invite_title_generic": "Join this {mode} Tournament",
 	"invite_title_generic_named": "Join {name}",
+	"invite_title_club_named": "{creator} scheduled a {club} game",
+	"invite_title_club": "Join the {club} game",
 	"invite_subtitle": "Join the tournament to track your scores and see your ranking.",
 	"invite_name_label": "Your name",
 	"invite_name_placeholder": "Enter your name",

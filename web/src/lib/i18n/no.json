@@ -111,6 +111,8 @@
 	"invite_title_with_creator_named": "{creator} har invitert deg til {name}",
 	"invite_title_generic": "Bli med i denne {mode}-turneringen",
 	"invite_title_generic_named": "Bli med i {name}",
+	"invite_title_club_named": "{creator} har satt opp en {club}-kamp",
+	"invite_title_club": "Bli med i {club}-kampen",
 	"invite_subtitle": "Bli med i turneringen for å spore poengene dine og se rangeringen.",
 	"invite_name_label": "Ditt navn",
 	"invite_name_placeholder": "Skriv inn fullt navn",

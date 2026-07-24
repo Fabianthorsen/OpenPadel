@@ -542,7 +542,17 @@
 				<p class="text-primary text-[11px] font-bold tracking-[0.1em] uppercase">OpenPadel</p>
 				<div class="flex items-start gap-2">
 					<h1 class="text-[28px] leading-tight font-[800]">
-						{#if creatorName && session.name}
+						{#if session.club_name}
+							<!-- A club event is a club game, not a personal invite — frame it by
+							     the Club, optionally naming the member who scheduled it. -->
+							{#if creatorName}
+								{$_('invite_title_club_named', {
+									values: { creator: creatorName, club: session.club_name }
+								})}
+							{:else}
+								{$_('invite_title_club', { values: { club: session.club_name } })}
+							{/if}
+						{:else if creatorName && session.name}
 							{$_('invite_title_with_creator_named', {
 								values: { creator: creatorName, name: session.name }
 							})}

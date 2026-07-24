@@ -255,6 +255,7 @@ type Session struct {
 	CreatorPlayerID      string            `json:"creator_player_id,omitempty"`
 	CreatorUserID        string            `json:"-"`
 	ClubID               string            `json:"club_id,omitempty"`
+	ClubName             string            `json:"club_name,omitempty"`
 	IsCreator            bool              `json:"is_creator,omitempty"`
 	ScheduledAt          *time.Time        `json:"scheduled_at,omitempty"`
 	CourtDurationMinutes *int              `json:"court_duration_minutes,omitempty"`
