@@ -171,4 +171,11 @@ func TestGetClubDetail_NotMember(t *testing.T) {
 	if res.StatusCode != http.StatusForbidden {
 		t.Errorf("expected 403 for non-member, got %d", res.StatusCode)
 	}
+	var body struct {
+		Error string `json:"error"`
+	}
+	decodeBody(t, res, &body)
+	if body.Error != "not_club_member" {
+		t.Errorf("expected not_club_member error, got %q", body.Error)
+	}
 }
