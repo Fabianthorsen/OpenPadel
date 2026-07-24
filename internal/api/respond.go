@@ -70,6 +70,7 @@ var (
 	ErrPlayerNotFound  = APIError{"player_not_found", http.StatusNotFound}
 	ErrSessionNotFound = APIError{"session_not_found", http.StatusNotFound}
 	ErrUserNotFound    = APIError{"user_not_found", http.StatusNotFound}
+	ErrClubNotFound    = APIError{"club_not_found", http.StatusNotFound}
 
 	ErrServerError           = APIError{"server_error", http.StatusInternalServerError}
 	ErrCouldNotCreateSession = APIError{"could_not_create_session", http.StatusInternalServerError}

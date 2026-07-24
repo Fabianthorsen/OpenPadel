@@ -398,6 +398,8 @@
 	"api_error_session_full": "Session is full (max 4 players)",
 	"api_error_not_enough_players": "Not enough players to start",
 	"api_error_admin_required": "Admin access required",
+	"api_error_not_club_member": "You are not a member of this club",
+	"api_error_club_not_found": "Club not found",
 	"api_error_rating_not_editable": "You can only edit the rating of guests you added",
 	"api_error_name_required": "Name is required",
 	"api_error_name_taken": "That name is already taken",

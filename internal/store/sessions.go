@@ -12,6 +12,10 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
+// ErrAlreadyMember is returned by JoinClub when the User is already a member of
+// the Club. Callers treat joining as idempotent — no duplicate row is created.
+var ErrAlreadyMember = errors.New("already a member")
+
 func (s *Store) CreateSession(input domain.SessionInput, creatorUserID string) (*domain.Session, error) {
 	now := time.Now().UTC()
 	gameMode := input.GameMode

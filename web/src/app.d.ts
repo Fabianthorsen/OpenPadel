@@ -220,6 +220,13 @@ declare global {
 			roster_count: number;
 		}
 
+		interface ClubJoinPreview {
+			name: string;
+			avatar_icon: string;
+			avatar_color: string;
+			member_count: number;
+		}
+
 		interface ClubDetail {
 			club: Club;
 			members: ClubMember[];

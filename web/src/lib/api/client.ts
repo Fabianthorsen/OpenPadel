@@ -260,6 +260,12 @@ export const api = {
 		) => request<App.Club>('POST', '/clubs', params, token),
 		list: (token: string) => request<App.ClubListItem[]>('GET', '/clubs', undefined, token),
 		detail: (token: string, clubId: string) =>
-			request<App.ClubDetail>('GET', `/clubs/${clubId}`, undefined, token)
+			request<App.ClubDetail>('GET', `/clubs/${clubId}`, undefined, token),
+		joinPreview: (joinCode: string) =>
+			request<App.ClubJoinPreview>('GET', `/clubs/join/${joinCode}`),
+		join: (token: string, joinCode: string) =>
+			request<{ id: string }>('POST', '/clubs/join', { join_code: joinCode }, token),
+		rotateJoinCode: (token: string, clubId: string) =>
+			request<{ join_code: string }>('POST', `/clubs/${clubId}/join-code/rotate`, undefined, token)
 	}
 };
