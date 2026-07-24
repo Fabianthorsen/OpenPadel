@@ -31,6 +31,15 @@ type Club struct {
 	CreatedAt   string
 }
 
+type ClubInvite struct {
+	ID        string
+	ClubID    string
+	InviterID string
+	InviteeID string
+	Status    string
+	CreatedAt string
+}
+
 type ClubMember struct {
 	ClubID   string
 	UserID   string

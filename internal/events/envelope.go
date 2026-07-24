@@ -6,7 +6,9 @@ const (
 	EventLiveScore      = "live_score"
 	EventInviteReceived = "invite_received"
 	EventInviteRevoked  = "invite_revoked"
-	EventTimerSync      = "timer_sync"
+
+	EventClubInviteReceived = "club_invite_received"
+	EventTimerSync          = "timer_sync"
 )
 
 type Envelope struct {

@@ -52,6 +52,8 @@ var (
 	ErrAlreadyInSession       = APIError{"already_in_session", http.StatusConflict}
 	ErrAlreadyContact         = APIError{"already_contact", http.StatusConflict}
 	ErrAlreadyInvited         = APIError{"already_invited", http.StatusConflict}
+	ErrAlreadyClubInvited     = APIError{"already_club_invited", http.StatusConflict}
+	ErrAlreadyClubMember      = APIError{"already_club_member", http.StatusConflict}
 	ErrEmailAlreadyRegistered = APIError{"email_already_registered", http.StatusConflict}
 	ErrNameTaken              = APIError{"name_taken", http.StatusConflict}
 	ErrSessionAlreadyStarted  = APIError{"session_already_started", http.StatusConflict}

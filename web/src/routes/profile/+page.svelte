@@ -44,6 +44,41 @@
 		navigator.clearAppBadge?.().catch(() => {});
 	}
 
+	async function refreshClubInvites() {
+		if (!auth.token) return;
+		try {
+			clubInvites = await api.clubs.invites.list(auth.token);
+		} catch {
+			/* heal on next load */
+		}
+		navigator.clearAppBadge?.().catch(() => {});
+	}
+
+	async function acceptClubInvite(inviteID: string) {
+		if (!auth.token) return;
+		try {
+			const { id } = await api.clubs.invites.accept(auth.token, inviteID);
+			clubInvites = clubInvites.filter((i) => i.id !== inviteID);
+			goto(`/clubs/${id}`);
+		} catch (e) {
+			toast.error(
+				e instanceof Error ? translateApiError(e.message) : translateApiError('server_error')
+			);
+		}
+	}
+
+	async function declineClubInvite(inviteID: string) {
+		if (!auth.token) return;
+		try {
+			await api.clubs.invites.decline(auth.token, inviteID);
+			clubInvites = clubInvites.filter((i) => i.id !== inviteID);
+		} catch (e) {
+			toast.error(
+				e instanceof Error ? translateApiError(e.message) : translateApiError('server_error')
+			);
+		}
+	}
+
 	let showCreateDrawer = $state(false);
 
 	let stats = $state<App.CareerSummary | null>(null);
@@ -63,6 +98,7 @@
 	let showCreateClubDrawer = $state(false);
 
 	let invites = $state<App.Invite[]>([]);
+	let clubInvites = $state<App.ClubInvite[]>([]);
 	let contacts = $state<App.Contact[]>([]);
 	let contactSearch = $state('');
 	let searchResults = $state<App.UserSearchResult[]>([]);
@@ -164,11 +200,12 @@
 	async function load() {
 		if (!auth.token) return;
 		try {
-			const [profileRes, historyRes, contactsRes, invitesRes] = await Promise.all([
+			const [profileRes, historyRes, contactsRes, invitesRes, clubInvitesRes] = await Promise.all([
 				api.auth.profile(auth.token),
 				api.auth.history(auth.token),
 				api.contacts.list(auth.token),
-				api.invites.list(auth.token)
+				api.invites.list(auth.token),
+				api.clubs.invites.list(auth.token)
 			]);
 			stats = profileRes.stats;
 			tournaments = historyRes.tournaments;
@@ -180,6 +217,7 @@
 			});
 			contacts = contactsRes;
 			invites = invitesRes;
+			clubInvites = clubInvitesRes;
 			// Landing on the profile clears any pending-invite app-icon badge.
 			navigator.clearAppBadge?.().catch(() => {});
 			showUpcoming = upcoming.length > 0;
@@ -234,7 +272,8 @@
 
 		offInvite = [
 			stream.onEvent('invite_received', refreshInvites),
-			stream.onEvent('invite_revoked', refreshInvites)
+			stream.onEvent('invite_revoked', refreshInvites),
+			stream.onEvent('club_invite_received', refreshClubInvites)
 		];
 		stream.start();
 	});
@@ -309,6 +348,42 @@
 					</button>
 					<button
 						onclick={() => declineInvite(invite.id)}
+						class="bg-surface text-text-disabled hover:text-destructive border-border flex items-center justify-center rounded-full border p-1.5 transition-colors"
+						aria-label="Decline"
+					>
+						<X size={14} />
+					</button>
+				</div>
+			{/each}
+		</div>
+	{/if}
+
+	<!-- Pending club invites — distinct from Session invites; accepting adds you to a Club roster. -->
+	{#if clubInvites.length > 0}
+		<div class="space-y-2">
+			<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase">
+				Club invites
+			</p>
+			{#each clubInvites as invite}
+				<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3.5">
+					<Avatar
+						icon={invite.club_avatar_icon}
+						color={invite.club_avatar_color}
+						name={invite.club_name}
+						size="sm"
+					/>
+					<div class="min-w-0 flex-1">
+						<p class="truncate text-sm font-semibold">{invite.club_name}</p>
+						<p class="text-text-secondary text-xs">From {invite.inviter_display_name}</p>
+					</div>
+					<button
+						onclick={() => acceptClubInvite(invite.id)}
+						class="bg-primary flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
+					>
+						<Check size={12} /> Join
+					</button>
+					<button
+						onclick={() => declineClubInvite(invite.id)}
 						class="bg-surface text-text-disabled hover:text-destructive border-border flex items-center justify-center rounded-full border p-1.5 transition-colors"
 						aria-label="Decline"
 					>

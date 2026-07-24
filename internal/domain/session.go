@@ -352,6 +352,21 @@ type ClubMember struct {
 	JoinedAt    time.Time `json:"joined_at"`
 }
 
+// ClubInvite is a pending request for a specific registered User to join a Club.
+// It is distinct from an Invite, which targets a Session.
+type ClubInvite struct {
+	ID                 string       `json:"id"`
+	ClubID             string       `json:"club_id"`
+	ClubName           string       `json:"club_name"`
+	ClubAvatarIcon     string       `json:"club_avatar_icon"`
+	ClubAvatarColor    string       `json:"club_avatar_color"`
+	InviterID          string       `json:"inviter_id"`
+	InviterDisplayName string       `json:"inviter_display_name"`
+	InviteeID          string       `json:"invitee_id"`
+	Status             InviteStatus `json:"status"`
+	CreatedAt          time.Time    `json:"created_at"`
+}
+
 type ClubDetail struct {
 	Club        Club         `json:"club"`
 	Members     []ClubMember `json:"members"`

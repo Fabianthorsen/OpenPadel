@@ -19,6 +19,7 @@ type Querier interface {
 	CountUnscored(ctx context.Context, sessionID string) (int64, error)
 	CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams) error
 	CreateClub(ctx context.Context, arg CreateClubParams) error
+	CreateClubInvite(ctx context.Context, arg CreateClubInviteParams) error
 	CreateInvite(ctx context.Context, arg CreateInviteParams) error
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreatePlayer(ctx context.Context, arg CreatePlayerParams) error
@@ -52,6 +53,9 @@ type Querier interface {
 	GetClub(ctx context.Context, id string) (Club, error)
 	GetClubAdminCount(ctx context.Context, clubID string) (int64, error)
 	GetClubByJoinCode(ctx context.Context, joinCode string) (Club, error)
+	GetClubInvite(ctx context.Context, id string) (GetClubInviteRow, error)
+	GetClubInviteByClubAndInvitee(ctx context.Context, arg GetClubInviteByClubAndInviteeParams) (GetClubInviteByClubAndInviteeRow, error)
+	GetClubInvitesByInviteeID(ctx context.Context, inviteeID string) ([]GetClubInvitesByInviteeIDRow, error)
 	GetClubMember(ctx context.Context, arg GetClubMemberParams) (GetClubMemberRow, error)
 	GetClubMemberCount(ctx context.Context, clubID string) (int64, error)
 	GetClubMembers(ctx context.Context, clubID string) ([]GetClubMembersRow, error)
@@ -109,6 +113,7 @@ type Querier interface {
 	InsertMatch(ctx context.Context, arg InsertMatchParams) error
 	InsertRound(ctx context.Context, arg InsertRoundParams) error
 	RemoveContact(ctx context.Context, arg RemoveContactParams) error
+	ResetClubInvite(ctx context.Context, arg ResetClubInviteParams) error
 	SavePushSubscription(ctx context.Context, arg SavePushSubscriptionParams) error
 	SearchUsers(ctx context.Context, arg SearchUsersParams) ([]SearchUsersRow, error)
 	SetCreatorPlayer(ctx context.Context, arg SetCreatorPlayerParams) error
@@ -118,6 +123,7 @@ type Querier interface {
 	StartTimedAmericanoSession(ctx context.Context, arg StartTimedAmericanoSessionParams) error
 	UpdateAuthTokenExpiry(ctx context.Context, arg UpdateAuthTokenExpiryParams) error
 	UpdateClub(ctx context.Context, arg UpdateClubParams) error
+	UpdateClubInviteStatus(ctx context.Context, arg UpdateClubInviteStatusParams) error
 	UpdateClubMemberRole(ctx context.Context, arg UpdateClubMemberRoleParams) error
 	UpdateInviteStatus(ctx context.Context, arg UpdateInviteStatusParams) error
 	UpdateJoinCode(ctx context.Context, arg UpdateJoinCodeParams) error
