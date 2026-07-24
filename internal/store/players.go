@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/subtle"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
@@ -35,6 +37,9 @@ func (s *Store) CreatePlayer(sessionID, name, userID string, addedByAdmin bool) 
 			}
 		}
 	}
+	// Per-player self-removal secret: the raw token goes back to the joining
+	// client, only its hash is stored (#241).
+	rawToken := randString(32)
 	p := &domain.Player{
 		ID:           newID(),
 		SessionID:    sessionID,
@@ -46,6 +51,7 @@ func (s *Store) CreatePlayer(sessionID, name, userID string, addedByAdmin bool) 
 		AddedByAdmin: addedByAdmin,
 		Active:       true,
 		JoinedAt:     now,
+		Token:        rawToken,
 	}
 	var uid sql.NullString
 	if userID != "" {
@@ -61,11 +67,32 @@ func (s *Store) CreatePlayer(sessionID, name, userID string, addedByAdmin bool) 
 		Rating:       int64(p.Rating),
 		AddedByAdmin: boolToInt64(addedByAdmin),
 		JoinedAt:     p.JoinedAt.Format(time.RFC3339),
+		TokenHash:    hashToken(rawToken),
 	})
 	if err != nil {
 		return nil, err
 	}
 	return p, nil
+}
+
+// VerifyPlayerToken reports whether rawToken matches the secret issued to the
+// given player at join time. An empty stored hash (pre-#241 players) never
+// matches, so those players fall back to admin-only removal.
+func (s *Store) VerifyPlayerToken(playerID, rawToken string) (bool, error) {
+	if rawToken == "" {
+		return false, nil
+	}
+	stored, err := s.queries.GetPlayerTokenHash(context.Background(), playerID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if stored == "" {
+		return false, nil
+	}
+	return subtle.ConstantTimeCompare([]byte(stored), []byte(hashToken(rawToken))) == 1, nil
 }
 
 func (s *Store) GetPlayers(sessionID string) ([]domain.Player, error) {

@@ -163,13 +163,13 @@ export const api = {
 				undefined,
 				adminToken ? { 'X-Admin-Token': adminToken } : undefined
 			),
-		leave: (sessionId: string, playerId: string) =>
+		leave: (sessionId: string, playerId: string, playerToken: string) =>
 			request<{ id: string; active: boolean }>(
 				'DELETE',
 				`/sessions/${sessionId}/players/${playerId}`,
 				undefined,
 				undefined,
-				{ 'X-Player-Id': playerId }
+				{ 'X-Player-Token': playerToken }
 			)
 	},
 	rounds: {

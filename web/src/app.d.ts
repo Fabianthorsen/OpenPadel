@@ -99,6 +99,9 @@ declare global {
 			added_by_admin: boolean;
 			active: boolean;
 			joined_at: string;
+			// Per-player self-removal secret, returned only in the join response
+			// (never in the session listing). Stored client-side to self-leave (#241).
+			player_token?: string;
 		}
 
 		interface Round {

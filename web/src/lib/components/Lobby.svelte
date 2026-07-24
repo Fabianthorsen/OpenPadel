@@ -29,6 +29,12 @@
 	import SessionConfig from '$lib/components/SessionConfig.svelte';
 	import RatingPicker from '$lib/components/RatingPicker.svelte';
 	import { calculateAmericanoRounds } from '$lib/americano';
+	import {
+		savePlayerSession,
+		getPlayerId,
+		getPlayerToken,
+		clearPlayerSession
+	} from '$lib/playerSession';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { goto } from '$app/navigation';
@@ -387,9 +393,7 @@
 		activePlayers.find((p) => p.id === session.creator_player_id)?.name ?? ''
 	);
 
-	const myPlayerId = $derived(
-		typeof localStorage !== 'undefined' ? localStorage.getItem(`player_id_${session.id}`) : null
-	);
+	const myPlayerId = $derived(getPlayerId(session.id));
 	const alreadyJoined = $derived(
 		(!!myPlayerId && activePlayers.some((p) => p.id === myPlayerId)) ||
 			(!!auth.user && activePlayers.some((p) => p.user_id === auth.user!.id))
@@ -422,7 +426,7 @@
 				rating
 			);
 			if (!isAdmin) {
-				localStorage.setItem(`player_id_${session.id}`, player.id);
+				savePlayerSession(session.id, player);
 				localStorage.setItem('last_session_id', session.id);
 			}
 			toast.success($_('lobby_player_joined'));
@@ -483,12 +487,12 @@
 				// player id required.
 				await api.sessions.leave(session.id, auth.token);
 			} else if (myPlayerId) {
-				// Guest self-removal via the player id stored at join time.
-				await api.players.leave(session.id, myPlayerId);
+				// Guest self-removal proven by the per-player secret stored at join (#241).
+				await api.players.leave(session.id, myPlayerId, getPlayerToken(session.id));
 			} else {
 				return;
 			}
-			localStorage.removeItem(`player_id_${session.id}`);
+			clearPlayerSession(session.id);
 			toast.success($_('lobby_left'));
 			goto(auth.user ? '/profile' : '/');
 		} catch (e) {

@@ -13,6 +13,7 @@ sql:
       - "internal/store/migrations/000008_player_rating.sql"
       - "internal/store/migrations/000009_player_added_by_admin.sql"
       - "internal/store/migrations/000010_hash_auth_tokens.sql"
+      - "internal/store/migrations/000011_player_self_removal_token.sql"
     gen:
       go:
         package: "db"

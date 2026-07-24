@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { auth } from '$lib/auth.svelte';
 	import { api } from '$lib/api/client';
+	import { clearPlayerSession } from '$lib/playerSession';
 	import { _ } from 'svelte-i18n';
 	import { CalendarDays, Radio, UserPlus, X, Search, Check, Settings } from '@lucide/svelte';
 	import Footer from '$lib/components/Footer.svelte';
@@ -105,7 +106,7 @@
 		try {
 			await api.sessions.leave(sessionID, auth.token);
 			upcoming = upcoming.filter((u) => u.session_id !== sessionID);
-			localStorage.removeItem(`player_id_${sessionID}`);
+			clearPlayerSession(sessionID);
 			toast.success($_('lobby_left'));
 			leaveTarget = null;
 		} catch (e) {

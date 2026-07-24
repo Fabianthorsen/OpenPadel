@@ -11,8 +11,8 @@ import (
 )
 
 const createPlayer = `-- name: CreatePlayer :exec
-INSERT INTO players (id, session_id, user_id, name, avatar_icon, avatar_color, rating, added_by_admin, active, joined_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+INSERT INTO players (id, session_id, user_id, name, avatar_icon, avatar_color, rating, added_by_admin, active, joined_at, token_hash)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
 `
 
 type CreatePlayerParams struct {
@@ -25,6 +25,7 @@ type CreatePlayerParams struct {
 	Rating       int64
 	AddedByAdmin int64
 	JoinedAt     string
+	TokenHash    string
 }
 
 func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) error {
@@ -38,6 +39,7 @@ func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) erro
 		arg.Rating,
 		arg.AddedByAdmin,
 		arg.JoinedAt,
+		arg.TokenHash,
 	)
 	return err
 }
@@ -62,6 +64,17 @@ func (q *Queries) GetCreatorName(ctx context.Context, id string) (string, error)
 	var name string
 	err := row.Scan(&name)
 	return name, err
+}
+
+const getPlayerTokenHash = `-- name: GetPlayerTokenHash :one
+SELECT token_hash FROM players WHERE id = ?
+`
+
+func (q *Queries) GetPlayerTokenHash(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRowContext(ctx, getPlayerTokenHash, id)
+	var token_hash string
+	err := row.Scan(&token_hash)
+	return token_hash, err
 }
 
 const getPlayersBySessionID = `-- name: GetPlayersBySessionID :many
