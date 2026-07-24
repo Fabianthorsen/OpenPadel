@@ -1,5 +1,16 @@
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
+import { cleanup } from '@testing-library/svelte';
+
+// Bits UI's presence layer and body-scroll-lock tear down on a promise/microtask
+// tail that outlives Testing Library's synchronous unmount. If that tail runs
+// after jsdom disposes the environment it throws "document is not defined" as an
+// unhandled error and fails the run. Unmount, then yield a macrotask so the
+// deferred teardown (e.g. resetBodyStyle) settles while `document` still exists.
+afterEach(async () => {
+	cleanup();
+	await new Promise((resolve) => setTimeout(resolve, 0));
+});
 
 // jsdom lacks several browser APIs that Bits UI (Dialog focus scope, presence
 // layer, floating positioning) touches. Stub them so component tests can render

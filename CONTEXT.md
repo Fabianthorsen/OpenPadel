@@ -67,6 +67,21 @@ A saved connection between two Users (added via search), used to streamline send
 **Invite**:
 A request from one User to another to join a specific Session, with a `pending | accepted | declined` status. Distinct from the public join link — Invites target a known User, not an anonymous link.
 
+**Club**:
+A named, persistent group of registered Users who play together. Users-only: Guests may play in a Club's Sessions but are not members and do not accrue on the Club leaderboard. A User may belong to many Clubs.
+_Avoid_: team, group, league.
+
+**Club Admin**:
+A Club member with management rights: edit/delete the Club, manage the roster (remove, promote/demote), manage the join link. Distinct from **Admin** (the session `AdminToken` holder); a Club Admin has no special power over any Session, including the Club's own events.
+_Avoid_: owner, moderator, game master.
+
+**Club event**:
+A Session owned by a Club (`club_id`), created by any Member. Administered like any Session via its `AdminToken`.
+_Avoid_: tournament.
+
+**Club invite**:
+A pending request for a specific User to join a Club (`pending | accepted | declined`). Distinct from **Invite** (which targets a Session) and from the Club join link (which needs no pending state).
+
 ---
 
 ## Components & Design System

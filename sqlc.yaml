@@ -14,6 +14,7 @@ sql:
       - "internal/store/migrations/000009_player_added_by_admin.sql"
       - "internal/store/migrations/000010_hash_auth_tokens.sql"
       - "internal/store/migrations/000011_player_self_removal_token.sql"
+      - "internal/store/migrations/000012_clubs.sql"
     gen:
       go:
         package: "db"

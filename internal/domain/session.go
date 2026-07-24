@@ -331,3 +331,31 @@ type Leaderboard struct {
 	Standings    []Standing    `json:"standings"`
 	UpdatedAt    time.Time     `json:"updated_at"`
 }
+
+type Club struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	AvatarIcon  string    `json:"avatar_icon"`
+	AvatarColor string    `json:"avatar_color"`
+	JoinCode    string    `json:"join_code"`
+	CreatedBy   string    `json:"created_by"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type ClubMember struct {
+	UserID      string    `json:"user_id"`
+	DisplayName string    `json:"display_name"`
+	Role        string    `json:"role"`
+	AvatarIcon  string    `json:"avatar_icon"`
+	AvatarColor string    `json:"avatar_color"`
+	JoinedAt    time.Time `json:"joined_at"`
+}
+
+type ClubDetail struct {
+	Club        Club         `json:"club"`
+	Members     []ClubMember `json:"members"`
+	IsAdmin     bool         `json:"is_admin"`
+	MyRole      string       `json:"my_role,omitempty"`
+	RosterCount int          `json:"roster_count"`
+}

@@ -9,9 +9,12 @@
 	import { CalendarDays, Radio, UserPlus, X, Search, Check, Settings } from '@lucide/svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import CreateDrawer from '$lib/components/CreateDrawer.svelte';
+	import CreateClubDrawer from '$lib/components/CreateClubDrawer.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import RatingGate from '$lib/components/RatingGate.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import ClubCard from '$lib/components/ui/ClubCard.svelte';
 	import { Section } from '$lib/components/ui/section';
 	import { JoinCodeInput } from '$lib/components/ui/join-code-input';
 	import { ExpandableList } from '$lib/components/ui/expandable-list';
@@ -53,6 +56,11 @@
 	let showContacts = $state(false);
 	let showUpcoming = $state(false);
 	let showHistory = $state(false);
+	let showClubs = $state(false);
+
+	let clubs = $state<App.ClubListItem[]>([]);
+	let clubsLoading = $state(false);
+	let showCreateClubDrawer = $state(false);
 
 	let invites = $state<App.Invite[]>([]);
 	let contacts = $state<App.Contact[]>([]);
@@ -176,12 +184,42 @@
 			navigator.clearAppBadge?.().catch(() => {});
 			showUpcoming = upcoming.length > 0;
 			showHistory = tournaments.length > 0;
+		} catch (err) {
+			console.error('Failed to load profile data:', err);
+			toast.error('Failed to load profile');
 		} finally {
 			loading = false;
 		}
 	}
 
+	async function loadClubs() {
+		if (!auth.token) return;
+		clubsLoading = true;
+		try {
+			const result = await api.clubs.list(auth.token);
+			clubs = result ?? [];
+			showClubs = clubs.length > 0;
+		} catch (err) {
+			console.error('Failed to load clubs:', err);
+			clubs = [];
+			toast.error('Failed to load clubs');
+		} finally {
+			clubsLoading = false;
+		}
+	}
+
+	$effect(() => {
+		if (auth.ready && auth.token) {
+			loadClubs();
+		}
+	});
+
 	onMount(async () => {
+		// Wait for auth to be ready before checking token
+		while (!auth.ready) {
+			await new Promise((resolve) => setTimeout(resolve, 10));
+		}
+
 		if (!auth.token) {
 			goto('/auth');
 			return;
@@ -233,29 +271,25 @@
 
 <main class="pt-safe-page mx-auto max-w-[480px] space-y-8 px-6 pb-10">
 	<!-- Header -->
-	<div class="flex items-center justify-between gap-4">
-		<div class="flex min-w-0 items-center gap-4">
-			<Avatar
-				icon={auth.user?.avatar_icon ?? ''}
-				color={auth.user?.avatar_color ?? 'forest'}
-				name={auth.user?.display_name ?? ''}
-				size="lg"
-			/>
-			<div class="min-w-0">
-				<h1 class="truncate text-2xl font-[800]">{auth.user?.display_name}</h1>
-				{#if memberSince}
-					<p class="text-text-secondary text-sm">Member since {memberSince}</p>
-				{/if}
-			</div>
-		</div>
-		<a
-			href="/profile/settings"
-			class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
-			aria-label="Settings"
-		>
-			<Settings size={24} />
-		</a>
-	</div>
+	<PageHeader
+		title={auth.user?.display_name ?? ''}
+		avatar={{
+			icon: auth.user?.avatar_icon ?? '',
+			color: auth.user?.avatar_color ?? 'forest',
+			name: auth.user?.display_name ?? ''
+		}}
+		subtitle={memberSince ? `Member since ${memberSince}` : undefined}
+	>
+		{#snippet action()}
+			<a
+				href="/profile/settings"
+				class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
+				aria-label="Settings"
+			>
+				<Settings size={24} />
+			</a>
+		{/snippet}
+	</PageHeader>
 
 	<!-- Pending invites -->
 	{#if invites.length > 0}
@@ -558,10 +592,35 @@
 		</Section>
 	{/if}
 
+	{#if auth.user}
+		<Section title={`Clubs (${clubs.length})`} bind:open={showClubs}>
+			{#snippet children()}
+				{#if clubsLoading}
+					<div class="flex items-center justify-center py-8">
+						<Spinner label="Loading clubs..." />
+					</div>
+				{:else if clubs.length > 0}
+					<div class="space-y-2">
+						{#each clubs as club}
+							<ClubCard {club} onclick={() => goto(`/clubs/${club.id}`)} />
+						{/each}
+					</div>
+				{/if}
+				<button
+					onclick={() => (showCreateClubDrawer = true)}
+					class="text-primary hover:text-primary-hover w-full rounded-2xl px-4 py-3.5 text-sm font-semibold transition-colors"
+				>
+					+ Create Club
+				</button>
+			{/snippet}
+		</Section>
+	{/if}
+
 	<Footer />
 </main>
 
 <CreateDrawer bind:open={showCreateDrawer} />
+<CreateClubDrawer bind:open={showCreateClubDrawer} />
 
 <!-- Home backfill gate (#213): legacy accounts with a null self_rating must pick a
      level before using the dashboard. Only mounts here on home, never on deep links. -->
