@@ -3,7 +3,7 @@
 	import { api } from '$lib/api/client';
 	import { auth } from '$lib/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import MemberRow from '$lib/components/ui/MemberRow.svelte';
 	import { Section } from '$lib/components/ui/section';
 	import { Spinner } from '$lib/components/ui/spinner';
@@ -14,6 +14,10 @@
 	let club = $state<App.ClubDetail | null>(null);
 	let loading = $state(true);
 	let error = $state('');
+
+	// Derived so the members list doesn't depend on `{#if club}` narrowing, which
+	// TS can't carry into the Section's `children` snippet closure.
+	const members = $derived(club?.members ?? []);
 
 	async function loadClub(clubId: string) {
 		if (!auth.token) {
@@ -60,36 +64,23 @@
 		</div>
 	{:else if club}
 		<!-- Header -->
-		<div class="flex items-center justify-between gap-4">
-			<button
-				onclick={() => goto('/profile')}
-				class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
-				aria-label="Back"
-			>
-				‹
-			</button>
-			<div class="min-w-0 flex-1">
-				<h1 class="truncate text-2xl font-[800]">{club.club.name}</h1>
-			</div>
-			<div class="flex-shrink-0 text-right">
-				<p class="text-text-secondary text-xs font-semibold">{club.roster_count}</p>
-				<p class="text-text-disabled text-[11px]">members</p>
-			</div>
-		</div>
-
-		<!-- Club Info -->
-		{#if club.club.description}
-			<div class="bg-surface-raised space-y-2 rounded-2xl px-4 py-3.5">
-				<p class="text-sm">{club.club.description}</p>
-			</div>
-		{/if}
+		<PageHeader
+			title={club.club.name}
+			backHref="/profile"
+			avatar={{ icon: club.club.avatar_icon, color: club.club.avatar_color, name: club.club.name }}
+			subtitle={`${club.roster_count} ${club.roster_count === 1 ? 'member' : 'members'}`}
+		>
+			{#if club.club.description}
+				<p class="text-text-secondary text-sm leading-relaxed">{club.club.description}</p>
+			{/if}
+		</PageHeader>
 
 		<!-- Members Section -->
 		<Section title={`Members (${club.roster_count})`} collapsible={false}>
 			{#snippet children()}
-				{#if club.members && club.members.length > 0}
+				{#if members.length > 0}
 					<div class="space-y-2">
-						{#each club.members as member}
+						{#each members as member}
 							<MemberRow {member} />
 						{/each}
 					</div>

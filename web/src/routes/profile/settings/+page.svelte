@@ -4,7 +4,7 @@
 	import { auth } from '$lib/auth.svelte';
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
-	import { ChevronLeft } from '@lucide/svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -197,16 +197,7 @@
 
 <main class="pt-safe-page mx-auto max-w-[480px] space-y-8 px-6 pb-10">
 	<!-- Header -->
-	<div class="flex items-center gap-4">
-		<a
-			href="/profile"
-			class="text-text-secondary hover:text-text-primary transition-colors"
-			aria-label="Back"
-		>
-			<ChevronLeft size={24} />
-		</a>
-		<h1 class="text-2xl font-[800]">{$_('settings_title')}</h1>
-	</div>
+	<PageHeader title={$_('settings_title')} backHref="/profile" />
 
 	<!-- Profile section -->
 	<Section title={$_('settings_profile_section')} collapsible={false}>

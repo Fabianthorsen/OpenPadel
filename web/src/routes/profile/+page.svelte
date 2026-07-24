@@ -13,6 +13,7 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import RatingGate from '$lib/components/RatingGate.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import ClubCard from '$lib/components/ui/ClubCard.svelte';
 	import { Section } from '$lib/components/ui/section';
 	import { JoinCodeInput } from '$lib/components/ui/join-code-input';
@@ -270,29 +271,25 @@
 
 <main class="pt-safe-page mx-auto max-w-[480px] space-y-8 px-6 pb-10">
 	<!-- Header -->
-	<div class="flex items-center justify-between gap-4">
-		<div class="flex min-w-0 items-center gap-4">
-			<Avatar
-				icon={auth.user?.avatar_icon ?? ''}
-				color={auth.user?.avatar_color ?? 'forest'}
-				name={auth.user?.display_name ?? ''}
-				size="lg"
-			/>
-			<div class="min-w-0">
-				<h1 class="truncate text-2xl font-[800]">{auth.user?.display_name}</h1>
-				{#if memberSince}
-					<p class="text-text-secondary text-sm">Member since {memberSince}</p>
-				{/if}
-			</div>
-		</div>
-		<a
-			href="/profile/settings"
-			class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
-			aria-label="Settings"
-		>
-			<Settings size={24} />
-		</a>
-	</div>
+	<PageHeader
+		title={auth.user?.display_name ?? ''}
+		avatar={{
+			icon: auth.user?.avatar_icon ?? '',
+			color: auth.user?.avatar_color ?? 'forest',
+			name: auth.user?.display_name ?? ''
+		}}
+		subtitle={memberSince ? `Member since ${memberSince}` : undefined}
+	>
+		{#snippet action()}
+			<a
+				href="/profile/settings"
+				class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
+				aria-label="Settings"
+			>
+				<Settings size={24} />
+			</a>
+		{/snippet}
+	</PageHeader>
 
 	<!-- Pending invites -->
 	{#if invites.length > 0}

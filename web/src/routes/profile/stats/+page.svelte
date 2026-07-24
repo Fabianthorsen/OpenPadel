@@ -4,9 +4,10 @@
 	import { auth } from '$lib/auth.svelte';
 	import { api } from '$lib/api/client';
 	import { _ } from 'svelte-i18n';
-	import { ChevronLeft, Info } from '@lucide/svelte';
+	import { Info } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -80,24 +81,18 @@
 
 <main class="pt-safe-page mx-auto max-w-[480px] space-y-8 px-6 pb-10">
 	<!-- Header -->
-	<div class="flex items-center gap-4">
-		<a
-			href="/profile"
-			class="text-text-secondary hover:text-text-primary transition-colors"
-			aria-label="Back"
-		>
-			<ChevronLeft size={24} />
-		</a>
-		<h1 class="flex-1 text-2xl font-[800]">{$_('stats_page_title')}</h1>
-		<button
-			type="button"
-			class="text-text-secondary hover:text-text-primary transition-colors"
-			aria-label={$_('stats_legend_title')}
-			onclick={() => (showInfo = true)}
-		>
-			<Info size={22} />
-		</button>
-	</div>
+	<PageHeader title={$_('stats_page_title')} backHref="/profile">
+		{#snippet action()}
+			<button
+				type="button"
+				class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
+				aria-label={$_('stats_legend_title')}
+				onclick={() => (showInfo = true)}
+			>
+				<Info size={22} />
+			</button>
+		{/snippet}
+	</PageHeader>
 
 	{#if loading}
 		<div class="flex justify-center py-12">
