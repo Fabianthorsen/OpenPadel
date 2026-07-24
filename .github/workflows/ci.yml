@@ -37,6 +37,12 @@ jobs:
       - name: Test
         run: go test ./...
 
+      # Fails the build on any vulnerability reachable from our code (stdlib or
+      # deps). Reruns as the vuln DB updates, so a newly-disclosed CVE in an
+      # already-used package can flag a PR that didn't introduce it (#242).
+      - name: Vulnerability scan
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
   frontend:
     name: Frontend Lint, Check & Test
     runs-on: ubuntu-latest
