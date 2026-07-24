@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.20.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.19.0...v1.20.0) (2026-07-24)
+
+
+### Features
+
+* **api:** rate-limit auth endpoints per client IP ([#243](https://github.com/Fabianthorsen/OpenPadel/issues/243)) ([c70ddb0](https://github.com/Fabianthorsen/OpenPadel/commit/c70ddb04263cd301faf5f3bde683fb4a8207c1a4)), closes [#239](https://github.com/Fabianthorsen/OpenPadel/issues/239)
+* **store:** hash auth tokens + pin Go 1.26.5 + CI vuln scan ([#244](https://github.com/Fabianthorsen/OpenPadel/issues/244)) ([e5ce821](https://github.com/Fabianthorsen/OpenPadel/commit/e5ce821392923e82cd46c0185f3a9d45dd49bfc3))
+
+
+### Bug Fixes
+
+* **api:** require a per-player secret for guest self-removal ([#245](https://github.com/Fabianthorsen/OpenPadel/issues/245)) ([779c913](https://github.com/Fabianthorsen/OpenPadel/commit/779c91357bc5ea99db2bc722838a238dca282626)), closes [#241](https://github.com/Fabianthorsen/OpenPadel/issues/241)
+* **api:** require admin token for score submission ([#238](https://github.com/Fabianthorsen/OpenPadel/issues/238)) ([22572ab](https://github.com/Fabianthorsen/OpenPadel/commit/22572ab59a305fd5a16bcd8e4ff2ffcd214b8417))
+* leaderboard width and invite text ([#236](https://github.com/Fabianthorsen/OpenPadel/issues/236)) ([46fa000](https://github.com/Fabianthorsen/OpenPadel/commit/46fa0001d80c4156f011d86df4a9ac55823588dd))
+
 ## [1.19.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.18.2...v1.19.0) (2026-07-19)
 
 
