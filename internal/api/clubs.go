@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -10,6 +11,35 @@ import (
 	"github.com/fabianthorsen/openpadel/internal/domain"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
+
+// requireClubAdmin resolves the caller's Club membership and confirms they hold
+// the admin role. On failure it writes the appropriate error (401 when not
+// authenticated, 403 not_club_member when not a member, 403 admin_required
+// otherwise) and returns ok=false. This gate is account-scoped Club authz and is
+// deliberately separate from Session AdminToken authz — the two never bridge.
+func (h *Handler) requireClubAdmin(w http.ResponseWriter, r *http.Request, clubID string) bool {
+	user := userFromContext(r)
+	if user == nil {
+		respondAPIError(w, ErrNotAuthenticated)
+		return false
+	}
+
+	member, err := h.store.GetClubMember(clubID, user.ID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			respondAPIError(w, ErrNotClubMember)
+			return false
+		}
+		slog.Error("requireClubAdmin: GetClubMember", "err", err)
+		respondAPIError(w, ErrServerError)
+		return false
+	}
+	if member.Role != "admin" {
+		respondAPIError(w, ErrAdminRequired)
+		return false
+	}
+	return true
+}
 
 func (h *Handler) createClub(w http.ResponseWriter, r *http.Request) {
 	user := userFromContext(r)
@@ -224,24 +254,7 @@ func (h *Handler) joinClub(w http.ResponseWriter, r *http.Request) {
 // invalidating any previously shared link. Club Admins only.
 func (h *Handler) rotateClubJoinCode(w http.ResponseWriter, r *http.Request) {
 	clubID := chi.URLParam(r, "id")
-	user := userFromContext(r)
-	if user == nil {
-		respondAPIError(w, ErrNotAuthenticated)
-		return
-	}
-
-	member, err := h.store.GetClubMember(clubID, user.ID)
-	if err != nil {
-		if err == store.ErrNotFound {
-			respondAPIError(w, ErrNotClubMember)
-			return
-		}
-		slog.Error("rotateClubJoinCode: GetClubMember", "err", err)
-		respondAPIError(w, ErrServerError)
-		return
-	}
-	if member.Role != "admin" {
-		respondAPIError(w, ErrAdminRequired)
+	if !h.requireClubAdmin(w, r, clubID) {
 		return
 	}
 
@@ -253,4 +266,141 @@ func (h *Handler) rotateClubJoinCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond(w, http.StatusOK, map[string]string{"join_code": newCode})
+}
+
+// updateClub edits the Club's name/description/avatar. Club Admins only.
+func (h *Handler) updateClub(w http.ResponseWriter, r *http.Request) {
+	clubID := chi.URLParam(r, "id")
+	if !h.requireClubAdmin(w, r, clubID) {
+		return
+	}
+
+	var body struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		AvatarIcon  string `json:"avatar_icon"`
+		AvatarColor string `json:"avatar_color"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondAPIError(w, ErrInvalidRequestBody)
+		return
+	}
+	if body.Name == "" {
+		respondAPIError(w, ErrInvalidRequestBody)
+		return
+	}
+
+	if err := h.store.UpdateClub(clubID, body.Name, body.Description, body.AvatarIcon, body.AvatarColor); err != nil {
+		slog.Error("updateClub", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+
+	club, err := h.store.GetClub(clubID)
+	if err != nil {
+		slog.Error("updateClub: GetClub", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, club)
+}
+
+// deleteClub hard-deletes the Club (Club Admins only). club_members and
+// club_invites cascade; sessions.club_id is unset via ON DELETE SET NULL so past
+// games survive as ordinary Sessions.
+func (h *Handler) deleteClub(w http.ResponseWriter, r *http.Request) {
+	clubID := chi.URLParam(r, "id")
+	if !h.requireClubAdmin(w, r, clubID) {
+		return
+	}
+
+	if err := h.store.DeleteClub(clubID); err != nil {
+		slog.Error("deleteClub", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+// removeClubMember lets a Member leave (self-removal) or a Club Admin remove
+// another member. The sole Admin is blocked from leaving — a Club always keeps
+// ≥1 Admin while it exists.
+func (h *Handler) removeClubMember(w http.ResponseWriter, r *http.Request) {
+	clubID := chi.URLParam(r, "id")
+	targetID := chi.URLParam(r, "userID")
+	user := userFromContext(r)
+	if user == nil {
+		respondAPIError(w, ErrNotAuthenticated)
+		return
+	}
+
+	caller, err := h.store.GetClubMember(clubID, user.ID)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			respondAPIError(w, ErrNotClubMember)
+			return
+		}
+		slog.Error("removeClubMember: GetClubMember", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	// A plain Member may remove only themselves; removing anyone else needs admin.
+	if targetID != user.ID && caller.Role != "admin" {
+		respondAPIError(w, ErrAdminRequired)
+		return
+	}
+
+	err = h.store.RemoveClubMember(clubID, targetID)
+	if errors.Is(err, store.ErrNotFound) {
+		respondAPIError(w, ErrNotClubMember)
+		return
+	}
+	if errors.Is(err, store.ErrLastAdmin) {
+		respondAPIError(w, ErrLastAdmin)
+		return
+	}
+	if err != nil {
+		slog.Error("removeClubMember", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, map[string]string{"status": "removed"})
+}
+
+// updateClubMemberRole promotes or demotes a member (Club Admins only). Demoting
+// the sole Admin is blocked so the Club always keeps ≥1 Admin.
+func (h *Handler) updateClubMemberRole(w http.ResponseWriter, r *http.Request) {
+	clubID := chi.URLParam(r, "id")
+	targetID := chi.URLParam(r, "userID")
+	if !h.requireClubAdmin(w, r, clubID) {
+		return
+	}
+
+	var body struct {
+		Role string `json:"role"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		respondAPIError(w, ErrInvalidRequestBody)
+		return
+	}
+	if body.Role != "admin" && body.Role != "member" {
+		respondAPIError(w, ErrInvalidRequestBody)
+		return
+	}
+
+	err := h.store.UpdateClubMemberRole(clubID, targetID, body.Role)
+	if errors.Is(err, store.ErrNotFound) {
+		respondAPIError(w, ErrNotClubMember)
+		return
+	}
+	if errors.Is(err, store.ErrLastAdmin) {
+		respondAPIError(w, ErrLastAdmin)
+		return
+	}
+	if err != nil {
+		slog.Error("updateClubMemberRole", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, map[string]string{"status": "updated"})
 }

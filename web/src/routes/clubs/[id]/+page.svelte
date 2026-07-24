@@ -9,16 +9,18 @@
 	import { Section } from '$lib/components/ui/section';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import Footer from '$lib/components/Footer.svelte';
+	import ClubAdminDrawer from '$lib/components/ClubAdminDrawer.svelte';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { onMount } from 'svelte';
-	import { Check, Copy, RefreshCw, Search, UserPlus } from '@lucide/svelte';
+	import { Check, Copy, RefreshCw, Search, Settings, UserPlus } from '@lucide/svelte';
 
 	let club = $state<App.ClubDetail | null>(null);
 	let loading = $state(true);
 	let error = $state('');
 	let linkCopied = $state(false);
 	let rotating = $state(false);
+	let adminDrawerOpen = $state(false);
 
 	// The Club invite link uses the distinct /c/join/:code path — never the club id —
 	// so it can't be confused with a Session join link.
@@ -103,7 +105,9 @@
 		}
 	}
 
-	async function loadClub(clubId: string) {
+	let clubId = $state('');
+
+	async function loadClub(id: string) {
 		if (!auth.token) {
 			goto('/auth');
 			return;
@@ -111,7 +115,7 @@
 
 		try {
 			loading = true;
-			club = await api.clubs.detail(auth.token, clubId);
+			club = await api.clubs.detail(auth.token, id);
 		} catch (err: any) {
 			if (err.status === 403) {
 				error = 'You are not a member of this club';
@@ -126,8 +130,19 @@
 		}
 	}
 
+	// reloadClub refetches without toggling the page spinner, so the admin drawer
+	// stays mounted while roster/detail changes land.
+	async function reloadClub() {
+		if (!auth.token || !clubId) return;
+		try {
+			club = await api.clubs.detail(auth.token, clubId);
+		} catch {
+			// A stale drawer isn't worth a hard error; the next open reloads.
+		}
+	}
+
 	onMount(() => {
-		const clubId = window.location.pathname.split('/')[2];
+		clubId = window.location.pathname.split('/')[2];
 		if (clubId) {
 			loadClub(clubId);
 		}
@@ -154,6 +169,17 @@
 			avatar={{ icon: club.club.avatar_icon, color: club.club.avatar_color, name: club.club.name }}
 			subtitle={`${club.roster_count} ${club.roster_count === 1 ? 'member' : 'members'}`}
 		>
+			{#snippet action()}
+				{#if isAdmin}
+					<button
+						onclick={() => (adminDrawerOpen = true)}
+						class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
+						aria-label="Manage club"
+					>
+						<Settings size={22} />
+					</button>
+				{/if}
+			{/snippet}
 			{#if club.club.description}
 				<p class="text-text-secondary text-sm leading-relaxed">{club.club.description}</p>
 			{/if}
@@ -272,6 +298,15 @@
 				{/if}
 			{/snippet}
 		</Section>
+
+		{#if isAdmin}
+			<ClubAdminDrawer
+				bind:open={adminDrawerOpen}
+				{club}
+				onchanged={reloadClub}
+				ondeleted={() => goto('/profile')}
+			/>
+		{/if}
 	{/if}
 
 	<Footer />
