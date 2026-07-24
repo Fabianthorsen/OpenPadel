@@ -274,6 +274,10 @@ type Player struct {
 	AddedByAdmin bool      `json:"added_by_admin"`
 	Active       bool      `json:"active"`
 	JoinedAt     time.Time `json:"joined_at"`
+	// Token is the per-player secret returned only to the joining client (in the
+	// join response), required to self-remove a guest (#241). It is never loaded
+	// into the shared session listing, so it stays empty (and omitted) there.
+	Token string `json:"player_token,omitempty"`
 }
 
 type Round struct {

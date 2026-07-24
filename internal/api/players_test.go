@@ -351,17 +351,65 @@ func TestDeactivatePlayer_RequiresAdmin(t *testing.T) {
 
 func TestDeactivatePlayer_SelfRemoval(t *testing.T) {
 	srv, _ := newAPITestServer(t)
-	sessID, adminToken := mustCreateSession(t, srv, "")
-	playerID := mustJoinSession(t, srv, sessID, "Alice", adminToken)
+	sessID, _ := mustCreateSession(t, srv, "")
+	playerID, playerToken := mustJoinSessionWithToken(t, srv, sessID, "Alice")
 
-	// Self-removal via X-Player-Id header (no admin token needed)
+	// Self-removal proven by the per-player secret (no admin token needed).
 	res := doRequest(t, srv, http.MethodDelete, "/api/sessions/"+sessID+"/players/"+playerID, nil, "", map[string]string{
-		"X-Player-Id": playerID,
+		"X-Player-Token": playerToken,
 	})
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 for self-removal, got %d", res.StatusCode)
 	}
 	res.Body.Close()
+}
+
+// The player id must not authorize removal — it's visible to everyone in the
+// lobby. Only the per-player secret (or an admin token) may deactivate (#241).
+func TestDeactivatePlayer_SelfRemoval_RejectsSpoofedID(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _ := mustCreateSession(t, srv, "")
+	playerID, playerToken := mustJoinSessionWithToken(t, srv, sessID, "Alice")
+
+	// The old spoofable header (the player id) must no longer grant removal.
+	res := doRequest(t, srv, http.MethodDelete, "/api/sessions/"+sessID+"/players/"+playerID, nil, "", map[string]string{
+		"X-Player-Id": playerID,
+	})
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 for spoofed player id, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+
+	// A wrong secret is likewise rejected.
+	res = doRequest(t, srv, http.MethodDelete, "/api/sessions/"+sessID+"/players/"+playerID, nil, "", map[string]string{
+		"X-Player-Token": playerToken + "x",
+	})
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403 for wrong token, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+// The self-removal secret must never appear in the shared session listing —
+// only in the join response for the joining client (#241).
+func TestGetSession_OmitsPlayerToken(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	sessID, _ := mustCreateSession(t, srv, "")
+	mustJoinSessionWithToken(t, srv, sessID, "Alice")
+
+	res := getReq(t, srv, "/api/sessions/"+sessID, "")
+	var sess struct {
+		Players []map[string]any `json:"players"`
+	}
+	decodeBody(t, res, &sess)
+	if len(sess.Players) == 0 {
+		t.Fatal("expected at least one player")
+	}
+	for _, p := range sess.Players {
+		if _, ok := p["player_token"]; ok {
+			t.Errorf("player_token leaked in session listing: %v", p["player_token"])
+		}
+	}
 }
 
 // countActivePlayers reads the session and returns how many of its players are

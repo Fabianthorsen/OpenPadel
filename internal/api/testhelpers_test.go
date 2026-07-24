@@ -168,6 +168,22 @@ func mustJoinSession(t *testing.T, srv *httptest.Server, sessionID, name, token 
 	return body.ID
 }
 
+// mustJoinSessionWithToken joins as a guest and returns the player id plus the
+// per-player self-removal secret from the join response (#241).
+func mustJoinSessionWithToken(t *testing.T, srv *httptest.Server, sessionID, name string) (id, playerToken string) {
+	t.Helper()
+	res := postReq(t, srv, "/api/sessions/"+sessionID+"/players", map[string]any{"name": name, "rating": 3}, "")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("joinSession(%q): expected 201, got %d", name, res.StatusCode)
+	}
+	var body struct {
+		ID          string `json:"id"`
+		PlayerToken string `json:"player_token"`
+	}
+	decodeBody(t, res, &body)
+	return body.ID, body.PlayerToken
+}
+
 // mustStartSession starts a session (requires admin token and 4+ players already joined).
 func mustStartSession(t *testing.T, srv *httptest.Server, sessionID, adminToken string) {
 	t.Helper()

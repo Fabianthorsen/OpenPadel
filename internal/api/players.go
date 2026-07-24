@@ -116,9 +116,19 @@ func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrServerError)
 		return
 	}
-	// Allow admin OR the player removing themselves (via their player token stored in localStorage key).
-	// We identify self-removal by a "Player-Id" header matching the target player ID.
-	selfRemoval := r.Header.Get("X-Player-Id") == playerID && playerID != ""
+	// Allow admin OR the player removing themselves. Self-removal is proven by the
+	// per-player secret issued at join (X-Player-Token), not by the target player
+	// id — the id is visible to everyone in the lobby and must not grant removal
+	// rights (#241).
+	selfRemoval := false
+	if token := r.Header.Get("X-Player-Token"); token != "" {
+		ok, err := h.store.VerifyPlayerToken(playerID, token)
+		if err != nil {
+			respondAPIError(w, ErrServerError)
+			return
+		}
+		selfRemoval = ok
+	}
 	if !isAdmin(extractAdminToken(r), sess.AdminToken) && !selfRemoval {
 		respondAPIError(w, ErrAdminRequired)
 		return
@@ -144,8 +154,8 @@ func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 // joined. Membership is resolved server-side by matching the caller's user_id
 // against the session's Player rows, so it works retroactively for any session —
 // including ones joined before self-leave existed, and from a device that never
-// stored a client-side player id. Guests (no account) still self-remove via the
-// X-Player-Id path in deactivatePlayer.
+// stored a client-side player id. Guests (no account) self-remove via the
+// per-player X-Player-Token secret in deactivatePlayer instead (#241).
 func (h *Handler) leaveSession(w http.ResponseWriter, r *http.Request) {
 	sessionID := chi.URLParam(r, "id")
 	user := userFromContext(r)

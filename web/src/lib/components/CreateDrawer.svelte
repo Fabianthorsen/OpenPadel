@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { api, ApiError } from '$lib/api/client';
+	import { savePlayerSession } from '$lib/playerSession';
 	import { auth } from '$lib/auth.svelte';
 	import { _ } from 'svelte-i18n';
 	import { translateApiError } from '$lib/i18n/errors';
@@ -50,7 +51,7 @@
 				auth.token ?? undefined,
 				adminToken
 			);
-			localStorage.setItem(`player_id_${session.id}`, player.id);
+			savePlayerSession(session.id, player);
 			localStorage.setItem('last_session_id', session.id);
 			open = false;
 			goto(`/s/${session.id}?token=${adminToken}`);

@@ -67,6 +67,7 @@ type Player struct {
 	AvatarColor  string
 	Rating       int64
 	AddedByAdmin int64
+	TokenHash    string
 }
 
 type PushSubscription struct {

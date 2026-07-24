@@ -76,6 +76,7 @@ type Querier interface {
 	GetModeStats(ctx context.Context, userID sql.NullString) ([]GetModeStatsRow, error)
 	GetPasswordResetToken(ctx context.Context, tokenHash string) (GetPasswordResetTokenRow, error)
 	GetPendingInvitesBySessionID(ctx context.Context, sessionID string) ([]GetPendingInvitesBySessionIDRow, error)
+	GetPlayerTokenHash(ctx context.Context, id string) (string, error)
 	GetPlayersBySessionID(ctx context.Context, sessionID string) ([]GetPlayersBySessionIDRow, error)
 	GetPushSubscriptionsByUserID(ctx context.Context, userID string) ([]PushSubscription, error)
 	GetPushSubscriptionsForSession(ctx context.Context, sessionID string) ([]GetPushSubscriptionsForSessionRow, error)
