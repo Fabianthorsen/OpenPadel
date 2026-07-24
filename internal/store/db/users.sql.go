@@ -11,17 +11,23 @@ import (
 )
 
 const createAuthToken = `-- name: CreateAuthToken :exec
-INSERT INTO auth_tokens (token, user_id, created_at) VALUES (?, ?, ?)
+INSERT INTO auth_tokens (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)
 `
 
 type CreateAuthTokenParams struct {
-	Token     string
+	TokenHash string
 	UserID    string
 	CreatedAt string
+	ExpiresAt string
 }
 
 func (q *Queries) CreateAuthToken(ctx context.Context, arg CreateAuthTokenParams) error {
-	_, err := q.db.ExecContext(ctx, createAuthToken, arg.Token, arg.UserID, arg.CreatedAt)
+	_, err := q.db.ExecContext(ctx, createAuthToken,
+		arg.TokenHash,
+		arg.UserID,
+		arg.CreatedAt,
+		arg.ExpiresAt,
+	)
 	return err
 }
 
@@ -71,11 +77,11 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 }
 
 const deleteAuthToken = `-- name: DeleteAuthToken :exec
-DELETE FROM auth_tokens WHERE token = ?
+DELETE FROM auth_tokens WHERE token_hash = ?
 `
 
-func (q *Queries) DeleteAuthToken(ctx context.Context, token string) error {
-	_, err := q.db.ExecContext(ctx, deleteAuthToken, token)
+func (q *Queries) DeleteAuthToken(ctx context.Context, tokenHash string) error {
+	_, err := q.db.ExecContext(ctx, deleteAuthToken, tokenHash)
 	return err
 }
 
@@ -113,6 +119,22 @@ DELETE FROM users WHERE id = ?
 func (q *Queries) DeleteUser(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteUser, id)
 	return err
+}
+
+const getAuthTokenByHash = `-- name: GetAuthTokenByHash :one
+SELECT user_id, expires_at FROM auth_tokens WHERE token_hash = ?
+`
+
+type GetAuthTokenByHashRow struct {
+	UserID    string
+	ExpiresAt string
+}
+
+func (q *Queries) GetAuthTokenByHash(ctx context.Context, tokenHash string) (GetAuthTokenByHashRow, error) {
+	row := q.db.QueryRowContext(ctx, getAuthTokenByHash, tokenHash)
+	var i GetAuthTokenByHashRow
+	err := row.Scan(&i.UserID, &i.ExpiresAt)
+	return i, err
 }
 
 const getCareerSummary = `-- name: GetCareerSummary :one
@@ -524,23 +546,26 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, e
 	return i, err
 }
 
-const getUserIDByToken = `-- name: GetUserIDByToken :one
-SELECT user_id FROM auth_tokens WHERE token = ?
-`
-
-func (q *Queries) GetUserIDByToken(ctx context.Context, token string) (string, error) {
-	row := q.db.QueryRowContext(ctx, getUserIDByToken, token)
-	var user_id string
-	err := row.Scan(&user_id)
-	return user_id, err
-}
-
 const incrementTournamentWinCount = `-- name: IncrementTournamentWinCount :exec
 UPDATE users SET win_count = win_count + 1 WHERE id = ?
 `
 
 func (q *Queries) IncrementTournamentWinCount(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, incrementTournamentWinCount, id)
+	return err
+}
+
+const updateAuthTokenExpiry = `-- name: UpdateAuthTokenExpiry :exec
+UPDATE auth_tokens SET expires_at = ? WHERE token_hash = ?
+`
+
+type UpdateAuthTokenExpiryParams struct {
+	ExpiresAt string
+	TokenHash string
+}
+
+func (q *Queries) UpdateAuthTokenExpiry(ctx context.Context, arg UpdateAuthTokenExpiryParams) error {
+	_, err := q.db.ExecContext(ctx, updateAuthTokenExpiry, arg.ExpiresAt, arg.TokenHash)
 	return err
 }
 

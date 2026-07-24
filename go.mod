@@ -2,6 +2,8 @@ module github.com/fabianthorsen/openpadel
 
 go 1.25.0
 
+toolchain go1.26.5
+
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/go-chi/chi/v5 v5.2.5

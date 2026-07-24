@@ -9,9 +9,10 @@ import (
 )
 
 type AuthToken struct {
-	Token     string
+	TokenHash string
 	UserID    string
 	CreatedAt string
+	ExpiresAt string
 }
 
 type Bench struct {

@@ -112,33 +112,74 @@ func (s *Store) AuthenticateUser(email, password string) (*domain.User, error) {
 	return user, nil
 }
 
+// authTokenTTL is how long an auth token stays valid without use. Expiry is
+// sliding (extended on use, see GetUserByToken), so an actively-used token never
+// expires; an idle one dies after this window. authTokenRefreshInterval throttles
+// how often the sliding expiry is rewritten, so a busy client (SSE/polling)
+// doesn't trigger a DB write on every request (#240).
+const (
+	authTokenTTL             = 30 * 24 * time.Hour
+	authTokenRefreshInterval = 24 * time.Hour
+)
+
+// hashToken derives the at-rest identifier for a bearer/reset token. Only the
+// hash is stored, so a database leak never exposes usable tokens.
+func hashToken(raw string) string {
+	sum := sha256.Sum256([]byte(raw))
+	return hex.EncodeToString(sum[:])
+}
+
 func (s *Store) CreateAuthToken(userID string) (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
-	token := hex.EncodeToString(b)
+	raw := hex.EncodeToString(b)
+	now := time.Now().UTC()
 	err := s.queries.CreateAuthToken(context.Background(), db.CreateAuthTokenParams{
-		Token:     token,
+		TokenHash: hashToken(raw),
 		UserID:    userID,
-		CreatedAt: time.Now().UTC().Format(time.RFC3339),
+		CreatedAt: now.Format(time.RFC3339),
+		ExpiresAt: now.Add(authTokenTTL).Format(time.RFC3339),
 	})
-	return token, err
+	return raw, err
 }
 
 func (s *Store) GetUserByToken(token string) (*domain.User, error) {
-	userID, err := s.queries.GetUserIDByToken(context.Background(), token)
+	tokenHash := hashToken(token)
+	row, err := s.queries.GetAuthTokenByHash(context.Background(), tokenHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	return s.GetUserByID(userID)
+
+	expiresAt, err := time.Parse(time.RFC3339, row.ExpiresAt)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now().UTC()
+	if now.After(expiresAt) {
+		// Expired: drop it so it can't be reused and reads as an unknown token.
+		s.queries.DeleteAuthToken(context.Background(), tokenHash) //nolint:errcheck
+		return nil, ErrNotFound
+	}
+
+	// Sliding expiry: extend on use, but only once the token has drifted more
+	// than authTokenRefreshInterval from a full TTL, to avoid a write per request.
+	if time.Until(expiresAt) < authTokenTTL-authTokenRefreshInterval {
+		s.queries.UpdateAuthTokenExpiry(context.Background(), db.UpdateAuthTokenExpiryParams{ //nolint:errcheck
+			ExpiresAt: now.Add(authTokenTTL).Format(time.RFC3339),
+			TokenHash: tokenHash,
+		})
+	}
+
+	return s.GetUserByID(row.UserID)
 }
 
 func (s *Store) DeleteAuthToken(token string) error {
-	return s.queries.DeleteAuthToken(context.Background(), token)
+	return s.queries.DeleteAuthToken(context.Background(), hashToken(token))
 }
 
 // GetCareerSummary returns the cross-mode profile headline (Point Win %, winrate,
@@ -304,8 +345,7 @@ func (s *Store) CreatePasswordResetToken(email string) (rawToken string, err err
 		return "", err
 	}
 	raw := hex.EncodeToString(b)
-	hash := sha256.Sum256([]byte(raw))
-	tokenHash := hex.EncodeToString(hash[:])
+	tokenHash := hashToken(raw)
 	expiresAt := time.Now().UTC().Add(time.Hour).Format(time.RFC3339)
 
 	// Delete any existing token for this user first
@@ -321,8 +361,7 @@ func (s *Store) CreatePasswordResetToken(email string) (rawToken string, err err
 
 // RedeemPasswordResetToken validates the raw token and updates the user's password.
 func (s *Store) RedeemPasswordResetToken(rawToken, newPassword string) error {
-	hash := sha256.Sum256([]byte(rawToken))
-	tokenHash := hex.EncodeToString(hash[:])
+	tokenHash := hashToken(rawToken)
 
 	row, err := s.queries.GetPasswordResetToken(context.Background(), tokenHash)
 	if errors.Is(err, sql.ErrNoRows) {
