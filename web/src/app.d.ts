@@ -168,6 +168,19 @@ declare global {
 			created_at: string;
 		}
 
+		interface ClubInvite {
+			id: string;
+			club_id: string;
+			club_name: string;
+			club_avatar_icon: string;
+			club_avatar_color: string;
+			inviter_id: string;
+			inviter_display_name: string;
+			invitee_id: string;
+			status: 'pending' | 'accepted' | 'declined';
+			created_at: string;
+		}
+
 		interface Contact {
 			user_id: string;
 			display_name: string;

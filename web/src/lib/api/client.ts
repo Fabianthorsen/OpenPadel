@@ -266,6 +266,20 @@ export const api = {
 		join: (token: string, joinCode: string) =>
 			request<{ id: string }>('POST', '/clubs/join', { join_code: joinCode }, token),
 		rotateJoinCode: (token: string, clubId: string) =>
-			request<{ join_code: string }>('POST', `/clubs/${clubId}/join-code/rotate`, undefined, token)
+			request<{ join_code: string }>('POST', `/clubs/${clubId}/join-code/rotate`, undefined, token),
+		invites: {
+			list: (token: string) => request<App.ClubInvite[]>('GET', '/clubs/invites', undefined, token),
+			send: (token: string, clubId: string, toUserId: string) =>
+				request<App.ClubInvite>(
+					'POST',
+					`/clubs/${clubId}/invites`,
+					{ to_user_id: toUserId },
+					token
+				),
+			accept: (token: string, inviteId: string) =>
+				request<{ id: string }>('PUT', `/clubs/invites/${inviteId}/accept`, undefined, token),
+			decline: (token: string, inviteId: string) =>
+				request<{ status: string }>('PUT', `/clubs/invites/${inviteId}/decline`, undefined, token)
+		}
 	}
 };

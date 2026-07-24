@@ -110,8 +110,14 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 		r.With(h.requireAuth).Get("/clubs", h.getMyClubs)
 		r.Get("/clubs/join/{join_code}", h.previewClubJoin) // no-auth preview
 		r.With(h.requireAuth).Post("/clubs/join", h.joinClub)
+		// Club invites — static /clubs/invites paths are registered before the
+		// /clubs/{id} param route so "invites" isn't captured as a club id.
+		r.With(h.requireAuth).Get("/clubs/invites", h.getMyClubInvites)
+		r.With(h.requireAuth).Put("/clubs/invites/{inviteID}/accept", h.acceptClubInvite)
+		r.With(h.requireAuth).Put("/clubs/invites/{inviteID}/decline", h.declineClubInvite)
 		r.With(h.requireAuth).Get("/clubs/{id}", h.getClub)
 		r.With(h.requireAuth).Post("/clubs/{id}/join-code/rotate", h.rotateClubJoinCode)
+		r.With(h.requireAuth).Post("/clubs/{id}/invites", h.sendClubInvite)
 
 		r.Get("/push/vapid-public-key", h.vapidPublicKey)
 		r.With(h.requireAuth).Post("/push/subscribe", h.subscribePush)
