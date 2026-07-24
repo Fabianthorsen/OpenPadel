@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
@@ -191,7 +190,7 @@ func (s *Store) JoinClub(clubID, userID string) error {
 
 	existingMember, err := s.GetClubMember(clubID, userID)
 	if existingMember != nil {
-		return errors.New("user is already a member of this club")
+		return ErrAlreadyMember
 	}
 	if err != ErrNotFound && err != nil {
 		return err
