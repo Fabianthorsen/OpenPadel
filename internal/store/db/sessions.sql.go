@@ -46,8 +46,8 @@ func (q *Queries) CompleteSession(ctx context.Context, arg CompleteSessionParams
 }
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, total_duration_minutes, creator_user_id, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO sessions (id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, scheduled_at, court_duration_minutes, total_duration_minutes, creator_user_id, club_id, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateSessionParams struct {
@@ -65,6 +65,7 @@ type CreateSessionParams struct {
 	CourtDurationMinutes sql.NullInt64
 	TotalDurationMinutes sql.NullInt64
 	CreatorUserID        sql.NullString
+	ClubID               sql.NullString
 	CreatedAt            string
 	UpdatedAt            string
 }
@@ -85,6 +86,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 		arg.CourtDurationMinutes,
 		arg.TotalDurationMinutes,
 		arg.CreatorUserID,
+		arg.ClubID,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 	)
@@ -151,7 +153,7 @@ func (q *Queries) DeleteSession(ctx context.Context, id string) error {
 }
 
 const getSession = `-- name: GetSession :one
-SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, round_duration_seconds, round_started_at, created_at, updated_at
+SELECT id, admin_token, status, name, game_mode, sets_to_win, games_per_set, courts, points, rounds_total, creator_player_id, creator_user_id, club_id, current_round, scheduled_at, court_duration_minutes, ends_at, total_duration_minutes, round_duration_seconds, round_started_at, created_at, updated_at
 FROM sessions WHERE id = ?
 `
 
@@ -168,6 +170,7 @@ type GetSessionRow struct {
 	RoundsTotal          sql.NullInt64
 	CreatorPlayerID      sql.NullString
 	CreatorUserID        sql.NullString
+	ClubID               sql.NullString
 	CurrentRound         int64
 	ScheduledAt          sql.NullString
 	CourtDurationMinutes sql.NullInt64
@@ -195,6 +198,7 @@ func (q *Queries) GetSession(ctx context.Context, id string) (GetSessionRow, err
 		&i.RoundsTotal,
 		&i.CreatorPlayerID,
 		&i.CreatorUserID,
+		&i.ClubID,
 		&i.CurrentRound,
 		&i.ScheduledAt,
 		&i.CourtDurationMinutes,

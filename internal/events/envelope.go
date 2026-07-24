@@ -8,6 +8,7 @@ const (
 	EventInviteRevoked  = "invite_revoked"
 
 	EventClubInviteReceived = "club_invite_received"
+	EventClubEventCreated   = "club_event_created"
 	EventTimerSync          = "timer_sync"
 )
 

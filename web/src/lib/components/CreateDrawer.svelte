@@ -9,8 +9,12 @@
 	import { Input } from '$lib/components/ui/input';
 	import { SegmentedControl, type SegmentedOption } from '$lib/components/ui/segmented-control';
 	import * as Drawer from '$lib/components/ui/drawer';
+	import { Users } from '@lucide/svelte';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
+	let {
+		open = $bindable(false),
+		club = null
+	}: { open?: boolean; club?: { id: string; name: string } | null } = $props();
 
 	let gameMode = $state<'americano' | 'mexicano'>('americano');
 	let name = $state('');
@@ -39,7 +43,8 @@
 				{
 					game_mode: gameMode,
 					name: name.trim(),
-					...defaults
+					...defaults,
+					...(club ? { club_id: club.id } : {})
 				},
 				auth.token ?? undefined
 			);
@@ -67,7 +72,10 @@
 	<Drawer.Content class="mx-auto w-full max-w-[480px] overflow-hidden">
 		<Drawer.Header>
 			<div class="flex w-full items-center justify-between">
-				<h2 class="text-lg font-[800]">{$_('create_title_line1')} {$_('create_title_line2')}</h2>
+				<h2 class="text-lg font-[800]">
+					{#if club}{$_('create_club_event_title')}{:else}{$_('create_title_line1')}
+						{$_('create_title_line2')}{/if}
+				</h2>
 				<Drawer.Close
 					class="bg-surface-raised text-text-secondary hover:bg-border hidden h-8 w-8 items-center justify-center rounded-full text-xl leading-none transition-colors md:flex"
 					>×</Drawer.Close
@@ -76,6 +84,17 @@
 		</Drawer.Header>
 
 		<div class="flex-1 space-y-6 overflow-y-auto px-6 pb-8">
+			{#if club}
+				<!-- Club preset: this game will be owned by the Club and the whole roster
+				     is told about it automatically — no personal invites needed. -->
+				<div class="bg-primary/10 text-primary flex items-center gap-2 rounded-2xl px-4 py-3">
+					<Users size={16} class="shrink-0" />
+					<p class="text-sm font-semibold">
+						{$_('create_club_event_banner', { values: { club: club.name } })}
+					</p>
+				</div>
+			{/if}
+
 			<!-- Game mode -->
 			<div class="space-y-3">
 				<SegmentedControl
@@ -107,7 +126,9 @@
 			{/if}
 
 			<Button onclick={create} disabled={creating} size="cta" variant="default">
-				{creating ? $_('create_button_loading') : $_('create_button')}
+				{#if creating}{$_('create_button_loading')}{:else if club}{$_(
+						'create_club_event_button'
+					)}{:else}{$_('create_button')}{/if}
 			</Button>
 		</div>
 	</Drawer.Content>

@@ -94,6 +94,7 @@ export const api = {
 				court_duration_minutes?: number;
 				total_duration_minutes?: number;
 				interval_between_rounds_minutes?: number;
+				club_id?: string;
 			},
 			token?: string
 		) => {
@@ -103,6 +104,7 @@ export const api = {
 				name: params.name,
 				game_mode: params.game_mode
 			};
+			if (params.club_id) body.club_id = params.club_id;
 			if (params.scheduled_at) body.scheduled_at = params.scheduled_at;
 			if (params.rounds_total) body.rounds_total = params.rounds_total;
 			if (params.court_duration_minutes)
@@ -261,6 +263,8 @@ export const api = {
 		list: (token: string) => request<App.ClubListItem[]>('GET', '/clubs', undefined, token),
 		detail: (token: string, clubId: string) =>
 			request<App.ClubDetail>('GET', `/clubs/${clubId}`, undefined, token),
+		events: (token: string, clubId: string) =>
+			request<App.UpcomingEntry[]>('GET', `/clubs/${clubId}/events`, undefined, token),
 		joinPreview: (joinCode: string) =>
 			request<App.ClubJoinPreview>('GET', `/clubs/join/${joinCode}`),
 		join: (token: string, joinCode: string) =>

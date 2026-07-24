@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/fabianthorsen/openpadel/internal/domain"
@@ -286,6 +287,33 @@ func (s *Store) GetClubAdminCount(clubID string) (int, error) {
 		return 0, err
 	}
 	return int(count), nil
+}
+
+// GetClubEvents returns the Club's upcoming events — Sessions owned by the Club
+// that are still in lobby or playing — newest-relevant first (playing before
+// lobby, then by scheduled/created time). Done Sessions are excluded; this is the
+// "what's coming up" feed for the Club home, not a history.
+func (s *Store) GetClubEvents(clubID string) ([]domain.UpcomingEntry, error) {
+	rows, err := s.queries.GetClubEvents(context.Background(), sql.NullString{String: clubID, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+	events := make([]domain.UpcomingEntry, 0, len(rows))
+	for _, row := range rows {
+		e := domain.UpcomingEntry{
+			SessionID:   row.ID,
+			Name:        row.Name,
+			Status:      row.Status,
+			GameMode:    domain.GameMode(row.GameMode),
+			Courts:      int(row.Courts),
+			PlayerCount: int(row.PlayerCount),
+		}
+		if row.ScheduledAt.Valid {
+			e.ScheduledAt = parseTimePtr(row.ScheduledAt.String)
+		}
+		events = append(events, e)
+	}
+	return events, nil
 }
 
 func (s *Store) getClubByID(clubID string) (*domain.Club, error) {

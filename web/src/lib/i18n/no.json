@@ -13,6 +13,9 @@
 
 	"create_title_line1": "Opprett ny",
 	"create_title_line2": "Turnering",
+	"create_club_event_banner": "Planlegger for {club} — hele klubben blir varslet.",
+	"create_club_event_title": "Planlegg en klubbkamp",
+	"create_club_event_button": "Opprett og varsle klubben →",
 	"create_subtitle": "Sett scenen for din neste Padel-turnering.",
 	"create_game_mode_label": "Spillmodus",
 	"create_game_mode_hint": "Americano er for øyeblikket den eneste støttede modusen.",

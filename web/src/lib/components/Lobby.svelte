@@ -359,9 +359,7 @@
 	);
 
 	const isMexicano = $derived(session.game_mode === 'mexicano');
-	const gameModeName = $derived(
-		session.game_mode === 'mexicano' ? $_('create_mexicano_soon') : 'Americano'
-	);
+	const gameModeName = $derived(session.game_mode === 'mexicano' ? 'Mexicano' : 'Americano');
 	let showRules = $state(false);
 	const activePlayers = $derived(session.players.filter((p) => p.active));
 

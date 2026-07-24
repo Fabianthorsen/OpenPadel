@@ -41,6 +41,28 @@ func (h *Handler) requireClubAdmin(w http.ResponseWriter, r *http.Request, clubI
 	return true
 }
 
+// requireClubMember resolves the caller's Club membership (any role). On failure
+// it writes the appropriate error (401 when not authenticated, 403
+// not_club_member otherwise) and returns ok=false. Like requireClubAdmin this is
+// account-scoped Club authz, never a Session AdminToken check.
+func (h *Handler) requireClubMember(w http.ResponseWriter, r *http.Request, clubID string) bool {
+	user := userFromContext(r)
+	if user == nil {
+		respondAPIError(w, ErrNotAuthenticated)
+		return false
+	}
+	if _, err := h.store.GetClubMember(clubID, user.ID); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			respondAPIError(w, ErrNotClubMember)
+			return false
+		}
+		slog.Error("requireClubMember: GetClubMember", "err", err)
+		respondAPIError(w, ErrServerError)
+		return false
+	}
+	return true
+}
+
 func (h *Handler) createClub(w http.ResponseWriter, r *http.Request) {
 	user := userFromContext(r)
 	if user == nil {
@@ -169,6 +191,25 @@ func (h *Handler) getClub(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond(w, http.StatusOK, detail)
+}
+
+// getClubEvents returns the Club's upcoming events (lobby|playing), ordered so
+// the soonest/most-active is first. Members only — the events feed is part of the
+// Club home, which is member-gated. Guests reach an individual event via its
+// public Session join link, not through this list.
+func (h *Handler) getClubEvents(w http.ResponseWriter, r *http.Request) {
+	clubID := chi.URLParam(r, "id")
+	if !h.requireClubMember(w, r, clubID) {
+		return
+	}
+
+	events, err := h.store.GetClubEvents(clubID)
+	if err != nil {
+		slog.Error("getClubEvents", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, events)
 }
 
 // previewClubJoin returns a no-auth preview of a Club behind a join link so a
