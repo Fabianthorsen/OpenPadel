@@ -267,6 +267,22 @@ export const api = {
 			request<{ id: string }>('POST', '/clubs/join', { join_code: joinCode }, token),
 		rotateJoinCode: (token: string, clubId: string) =>
 			request<{ join_code: string }>('POST', `/clubs/${clubId}/join-code/rotate`, undefined, token),
+		update: (
+			token: string,
+			clubId: string,
+			params: {
+				name: string;
+				description: string;
+				avatar_icon: string;
+				avatar_color: string;
+			}
+		) => request<App.Club>('PATCH', `/clubs/${clubId}`, params, token),
+		remove: (token: string, clubId: string) =>
+			request<{ status: string }>('DELETE', `/clubs/${clubId}`, undefined, token),
+		removeMember: (token: string, clubId: string, userId: string) =>
+			request<{ status: string }>('DELETE', `/clubs/${clubId}/members/${userId}`, undefined, token),
+		setMemberRole: (token: string, clubId: string, userId: string, role: 'admin' | 'member') =>
+			request<{ status: string }>('PATCH', `/clubs/${clubId}/members/${userId}`, { role }, token),
 		invites: {
 			list: (token: string) => request<App.ClubInvite[]>('GET', '/clubs/invites', undefined, token),
 			send: (token: string, clubId: string, toUserId: string) =>

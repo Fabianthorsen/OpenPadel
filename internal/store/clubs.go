@@ -181,8 +181,32 @@ func (s *Store) UpdateClubJoinCode(clubID string) (string, error) {
 	return newCode, nil
 }
 
+// DeleteClub hard-deletes a Club and unwinds its dependents in one transaction.
+// FK actions are not enforced on our SQLite connection, so the cascade is done
+// explicitly here rather than left to ON DELETE clauses: past Sessions are
+// detached (club_id set NULL) so they survive as ordinary Sessions, while
+// membership and invite rows are removed with the Club.
 func (s *Store) DeleteClub(clubID string) error {
-	return s.queries.DeleteClub(context.Background(), clubID)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.Exec("UPDATE sessions SET club_id = NULL WHERE club_id = ?", clubID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("DELETE FROM club_invites WHERE club_id = ?", clubID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("DELETE FROM club_members WHERE club_id = ?", clubID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("DELETE FROM clubs WHERE id = ?", clubID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *Store) JoinClub(clubID, userID string) error {
@@ -204,19 +228,56 @@ func (s *Store) JoinClub(clubID, userID string) error {
 	})
 }
 
+// RemoveClubMember removes a member from the Club. Removing the sole Admin is
+// refused with ErrLastAdmin so the Club never drops to zero Admins; a non-member
+// target yields ErrNotFound.
 func (s *Store) RemoveClubMember(clubID, userID string) error {
+	member, err := s.GetClubMember(clubID, userID)
+	if err != nil {
+		return err
+	}
+	// Leaving would drop the last Admin.
+	if err := s.guardLastAdmin(clubID, member.Role, "member"); err != nil {
+		return err
+	}
 	return s.queries.DeleteClubMember(context.Background(), db.DeleteClubMemberParams{
 		ClubID: clubID,
 		UserID: userID,
 	})
 }
 
+// UpdateClubMemberRole promotes or demotes a member. Demoting the sole Admin is
+// refused with ErrLastAdmin; a non-member target yields ErrNotFound.
 func (s *Store) UpdateClubMemberRole(clubID, userID, role string) error {
+	member, err := s.GetClubMember(clubID, userID)
+	if err != nil {
+		return err
+	}
+	if err := s.guardLastAdmin(clubID, member.Role, role); err != nil {
+		return err
+	}
 	return s.queries.UpdateClubMemberRole(context.Background(), db.UpdateClubMemberRoleParams{
 		ClubID: clubID,
 		UserID: userID,
 		Role:   role,
 	})
+}
+
+// guardLastAdmin returns ErrLastAdmin when a member's role transition from
+// currentRole to newRole would strip the Club of its final Admin — i.e. an Admin
+// being demoted or removed (newRole != "admin") while no other Admin remains.
+func (s *Store) guardLastAdmin(clubID, currentRole, newRole string) error {
+	if currentRole != "admin" || newRole == "admin" {
+		return nil
+	}
+	count, err := s.GetClubAdminCount(clubID)
+	if err != nil {
+		return err
+	}
+	if count <= 1 {
+		return ErrLastAdmin
+	}
+	return nil
 }
 
 func (s *Store) GetClubAdminCount(clubID string) (int, error) {

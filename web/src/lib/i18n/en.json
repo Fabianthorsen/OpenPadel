@@ -400,6 +400,7 @@
 	"api_error_admin_required": "Admin access required",
 	"api_error_not_club_member": "You are not a member of this club",
 	"api_error_club_not_found": "Club not found",
+	"api_error_last_admin": "A club must keep at least one admin — promote another member first",
 	"api_error_rating_not_editable": "You can only edit the rating of guests you added",
 	"api_error_name_required": "Name is required",
 	"api_error_name_taken": "That name is already taken",

@@ -377,6 +377,364 @@ func TestClubJoinCodeRotate_NonAdmin(t *testing.T) {
 	}
 }
 
+// mustJoinClub has Bob join the club via its current join code and returns his
+// user id (read back from the roster).
+func mustJoinClub(t *testing.T, srv *httptest.Server, adminToken, joinerToken, clubID string) string {
+	t.Helper()
+	joinCode := clubJoinCode(t, srv, adminToken, clubID)
+	res := postReq(t, srv, "/api/clubs/join", map[string]any{"join_code": joinCode}, joinerToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("join club: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+	return memberIDByRole(t, srv, adminToken, clubID, "member")
+}
+
+// joinClub has a user join the club via its current join code without reading
+// back an id — use when the roster has several members and a role lookup would be
+// ambiguous.
+func joinClub(t *testing.T, srv *httptest.Server, adminToken, joinerToken, clubID string) {
+	t.Helper()
+	joinCode := clubJoinCode(t, srv, adminToken, clubID)
+	res := postReq(t, srv, "/api/clubs/join", map[string]any{"join_code": joinCode}, joinerToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("join club: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+// memberIDByName returns the user_id of the roster member with the given display name.
+func memberIDByName(t *testing.T, srv *httptest.Server, token, clubID, name string) string {
+	t.Helper()
+	res := getReq(t, srv, "/api/clubs/"+clubID, token)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("memberIDByName: detail expected 200, got %d", res.StatusCode)
+	}
+	var detail struct {
+		Members []struct {
+			UserID      string `json:"user_id"`
+			DisplayName string `json:"display_name"`
+		} `json:"members"`
+	}
+	decodeBody(t, res, &detail)
+	for _, m := range detail.Members {
+		if m.DisplayName == name {
+			return m.UserID
+		}
+	}
+	t.Fatalf("memberIDByName: no member named %q", name)
+	return ""
+}
+
+// memberIDByRole returns the user_id of the first roster member with the given role.
+func memberIDByRole(t *testing.T, srv *httptest.Server, token, clubID, role string) string {
+	t.Helper()
+	res := getReq(t, srv, "/api/clubs/"+clubID, token)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("memberIDByRole: detail expected 200, got %d", res.StatusCode)
+	}
+	var detail struct {
+		Members []struct {
+			UserID string `json:"user_id"`
+			Role   string `json:"role"`
+		} `json:"members"`
+	}
+	decodeBody(t, res, &detail)
+	for _, m := range detail.Members {
+		if m.Role == role {
+			return m.UserID
+		}
+	}
+	t.Fatalf("memberIDByRole: no member with role %q", role)
+	return ""
+}
+
+func TestUpdateClub(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	adminToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	clubID := mustCreateClub(t, srv, adminToken, "Old Name")
+
+	res := patchReq(t, srv, "/api/clubs/"+clubID, map[string]any{
+		"name":         "New Name",
+		"description":  "Updated description",
+		"avatar_icon":  "Trophy",
+		"avatar_color": "ocean",
+	}, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("update: expected 200, got %d", res.StatusCode)
+	}
+	var body struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		AvatarIcon  string `json:"avatar_icon"`
+		AvatarColor string `json:"avatar_color"`
+	}
+	decodeBody(t, res, &body)
+	if body.Name != "New Name" || body.Description != "Updated description" {
+		t.Errorf("update: unexpected body %+v", body)
+	}
+	if body.AvatarIcon != "Trophy" || body.AvatarColor != "ocean" {
+		t.Errorf("update: avatar not persisted %+v", body)
+	}
+}
+
+func TestUpdateClub_NonAdmin(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	adminToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	memberToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	clubID := mustCreateClub(t, srv, adminToken, "Club A")
+	mustJoinClub(t, srv, adminToken, memberToken, clubID)
+
+	// A plain member cannot edit the club.
+	res := patchReq(t, srv, "/api/clubs/"+clubID, map[string]any{"name": "Hijacked"}, memberToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("member update: expected 403, got %d", res.StatusCode)
+	}
+	assertErrorCode(t, res, "admin_required")
+
+	// A non-member is refused too.
+	strangerToken := mustRegister(t, srv, "carol@test.local", "Carol", "password123")
+	res = patchReq(t, srv, "/api/clubs/"+clubID, map[string]any{"name": "Hijacked"}, strangerToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("stranger update: expected 403, got %d", res.StatusCode)
+	}
+	assertErrorCode(t, res, "not_club_member")
+}
+
+// TestDeleteClub_CascadesMembership covers the API delete path and the
+// club_members cascade. The sessions.club_id SET NULL survival behaviour is
+// exercised at the store layer in TestDeleteClub_UnlinksSessions, since no API
+// path attaches a Session to a Club yet.
+func TestDeleteClub_CascadesMembership(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	adminToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	memberToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	clubID := mustCreateClub(t, srv, adminToken, "Doomed Club")
+	mustJoinClub(t, srv, adminToken, memberToken, clubID)
+
+	res := deleteReq(t, srv, "/api/clubs/"+clubID, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("delete: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+
+	// The club is gone.
+	res = getReq(t, srv, "/api/clubs/"+clubID, adminToken)
+	if res.StatusCode != http.StatusForbidden && res.StatusCode != http.StatusNotFound {
+		t.Errorf("get after delete: expected 403/404, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+
+	// Membership cascaded away — the former member has no clubs.
+	res = getReq(t, srv, "/api/clubs", memberToken)
+	var clubs []struct{}
+	decodeBody(t, res, &clubs)
+	if len(clubs) != 0 {
+		t.Errorf("expected 0 clubs after delete, got %d", len(clubs))
+	}
+}
+
+func TestDeleteClub_NonAdmin(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	adminToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	memberToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	clubID := mustCreateClub(t, srv, adminToken, "Club A")
+	mustJoinClub(t, srv, adminToken, memberToken, clubID)
+
+	res := deleteReq(t, srv, "/api/clubs/"+clubID, memberToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("member delete: expected 403, got %d", res.StatusCode)
+	}
+	assertErrorCode(t, res, "admin_required")
+}
+
+func TestPromoteAndDemoteMember(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	adminToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	memberToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	clubID := mustCreateClub(t, srv, adminToken, "Club A")
+	bobID := mustJoinClub(t, srv, adminToken, memberToken, clubID)
+
+	// Promote Bob to admin.
+	res := patchReq(t, srv, "/api/clubs/"+clubID+"/members/"+bobID, map[string]any{"role": "admin"}, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("promote: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+	if got := memberRole(t, srv, adminToken, clubID, bobID); got != "admin" {
+		t.Errorf("promote: expected role admin, got %q", got)
+	}
+
+	// Bob (now admin) can demote himself back to member since Alice remains admin.
+	res = patchReq(t, srv, "/api/clubs/"+clubID+"/members/"+bobID, map[string]any{"role": "member"}, memberToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("demote: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+	if got := memberRole(t, srv, adminToken, clubID, bobID); got != "member" {
+		t.Errorf("demote: expected role member, got %q", got)
+	}
+}
+
+func TestPromoteDemote_NonAdmin(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	adminToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	memberToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	clubID := mustCreateClub(t, srv, adminToken, "Club A")
+	bobID := mustJoinClub(t, srv, adminToken, memberToken, clubID)
+	adminID := memberIDByRole(t, srv, adminToken, clubID, "admin")
+
+	// A plain member cannot promote themselves.
+	res := patchReq(t, srv, "/api/clubs/"+clubID+"/members/"+bobID, map[string]any{"role": "admin"}, memberToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("member promote self: expected 403, got %d", res.StatusCode)
+	}
+	assertErrorCode(t, res, "admin_required")
+
+	// Nor demote the admin.
+	res = patchReq(t, srv, "/api/clubs/"+clubID+"/members/"+adminID, map[string]any{"role": "member"}, memberToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("member demote admin: expected 403, got %d", res.StatusCode)
+	}
+	assertErrorCode(t, res, "admin_required")
+}
+
+func TestRemoveMember_AdminRemovesOther(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	adminToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	memberToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	clubID := mustCreateClub(t, srv, adminToken, "Club A")
+	bobID := mustJoinClub(t, srv, adminToken, memberToken, clubID)
+
+	res := deleteReq(t, srv, "/api/clubs/"+clubID+"/members/"+bobID, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("admin remove member: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+
+	// Bob is no longer a member.
+	res = getReq(t, srv, "/api/clubs/"+clubID, memberToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Errorf("removed member view: expected 403, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+func TestRemoveMember_MemberLeaves(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	adminToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	memberToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	clubID := mustCreateClub(t, srv, adminToken, "Club A")
+	bobID := mustJoinClub(t, srv, adminToken, memberToken, clubID)
+
+	// Bob removes himself (leave).
+	res := deleteReq(t, srv, "/api/clubs/"+clubID+"/members/"+bobID, memberToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("self-leave: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+
+	// A plain member cannot remove someone else. Carol and Dave both join; Carol
+	// (a member) tries to remove Dave.
+	carolToken := mustRegister(t, srv, "carol@test.local", "Carol", "password123")
+	joinClub(t, srv, adminToken, carolToken, clubID)
+	daveToken := mustRegister(t, srv, "dave@test.local", "Dave", "password123")
+	joinClub(t, srv, adminToken, daveToken, clubID)
+	daveID := memberIDByName(t, srv, adminToken, clubID, "Dave")
+
+	res = deleteReq(t, srv, "/api/clubs/"+clubID+"/members/"+daveID, carolToken)
+	if res.StatusCode != http.StatusForbidden {
+		t.Fatalf("member removes other: expected 403, got %d", res.StatusCode)
+	}
+	assertErrorCode(t, res, "admin_required")
+}
+
+func TestSoleAdminBlocked(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	adminToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	memberToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	clubID := mustCreateClub(t, srv, adminToken, "Club A")
+	mustJoinClub(t, srv, adminToken, memberToken, clubID)
+	adminID := memberIDByRole(t, srv, adminToken, clubID, "admin")
+
+	// The sole admin cannot self-demote.
+	res := patchReq(t, srv, "/api/clubs/"+clubID+"/members/"+adminID, map[string]any{"role": "member"}, adminToken)
+	if res.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("sole admin demote: expected 422, got %d", res.StatusCode)
+	}
+	assertErrorCode(t, res, "last_admin")
+
+	// Nor leave.
+	res = deleteReq(t, srv, "/api/clubs/"+clubID+"/members/"+adminID, adminToken)
+	if res.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("sole admin leave: expected 422, got %d", res.StatusCode)
+	}
+	assertErrorCode(t, res, "last_admin")
+
+	// After promoting Bob, Alice may leave.
+	bobID := memberIDByRole(t, srv, adminToken, clubID, "member")
+	res = patchReq(t, srv, "/api/clubs/"+clubID+"/members/"+bobID, map[string]any{"role": "admin"}, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("promote bob: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+	res = deleteReq(t, srv, "/api/clubs/"+clubID+"/members/"+adminID, adminToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("admin leave after promote: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+}
+
+// memberRole reads a specific member's role from the roster.
+func memberRole(t *testing.T, srv *httptest.Server, token, clubID, userID string) string {
+	t.Helper()
+	res := getReq(t, srv, "/api/clubs/"+clubID, token)
+	var detail struct {
+		Members []struct {
+			UserID string `json:"user_id"`
+			Role   string `json:"role"`
+		} `json:"members"`
+	}
+	decodeBody(t, res, &detail)
+	for _, m := range detail.Members {
+		if m.UserID == userID {
+			return m.Role
+		}
+	}
+	t.Fatalf("memberRole: user %q not on roster", userID)
+	return ""
+}
+
+// assertErrorCode decodes the response and asserts its error code.
+func assertErrorCode(t *testing.T, res *http.Response, want string) {
+	t.Helper()
+	var body struct {
+		Error string `json:"error"`
+	}
+	decodeBody(t, res, &body)
+	if body.Error != want {
+		t.Errorf("expected error %q, got %q", want, body.Error)
+	}
+}
+
 func TestGetClubDetail_NotMember(t *testing.T) {
 	srv, s := newAPITestServer(t)
 	defer func() { _ = s.Close() }()

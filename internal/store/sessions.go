@@ -16,6 +16,10 @@ var ErrNotFound = errors.New("not found")
 // the Club. Callers treat joining as idempotent — no duplicate row is created.
 var ErrAlreadyMember = errors.New("already a member")
 
+// ErrLastAdmin is returned when removing or demoting a member would leave the
+// Club with zero Admins. A Club must always keep ≥1 Admin while it exists.
+var ErrLastAdmin = errors.New("cannot remove or demote the last admin")
+
 func (s *Store) CreateSession(input domain.SessionInput, creatorUserID string) (*domain.Session, error) {
 	now := time.Now().UTC()
 	gameMode := input.GameMode
