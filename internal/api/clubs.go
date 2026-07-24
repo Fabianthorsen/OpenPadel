@@ -115,7 +115,7 @@ func (h *Handler) getClub(w http.ResponseWriter, r *http.Request) {
 	member, err := h.store.GetClubMember(clubID, user.ID)
 	if err != nil {
 		if err == store.ErrNotFound {
-			respondAPIError(w, ErrAdminRequired)
+			respondAPIError(w, ErrNotClubMember)
 			return
 		}
 		slog.Error("getClub: GetClubMember", "err", err)

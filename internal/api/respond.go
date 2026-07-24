@@ -45,6 +45,7 @@ var (
 
 	ErrAdminRequired     = APIError{"admin_required", http.StatusForbidden}
 	ErrRatingNotEditable = APIError{"rating_not_editable", http.StatusForbidden}
+	ErrNotClubMember     = APIError{"not_club_member", http.StatusForbidden}
 
 	ErrRateLimited = APIError{"rate_limited", http.StatusTooManyRequests}
 
