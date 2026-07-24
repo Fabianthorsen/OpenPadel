@@ -9,7 +9,8 @@
 		Clock,
 		Info,
 		Settings,
-		Pencil
+		Pencil,
+		Users
 	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { sessionName } from '$lib/utils';
@@ -678,6 +679,14 @@
 {:else}
 	<main class="pt-safe-page mx-auto w-full max-w-[480px] space-y-6 px-4 pb-6">
 		<nav class="space-y-1">
+			<!-- Club badge — marks this as a club game (not a one-off) for everyone who
+			     opens it, so a member arriving from the Club home keeps that context. -->
+			{#if session.club_name}
+				<div class="text-primary flex items-center gap-1.5 text-xs font-bold">
+					<Users size={13} class="shrink-0" />
+					<span class="truncate tracking-[0.02em] uppercase">{session.club_name}</span>
+				</div>
+			{/if}
 			<!-- Status -->
 			<p class="text-text-disabled text-[11px] font-bold tracking-[0.12em] uppercase">
 				{#if session.scheduled_at}
