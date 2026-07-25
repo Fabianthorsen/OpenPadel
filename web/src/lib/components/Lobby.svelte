@@ -806,7 +806,7 @@
 						}}
 					>
 						<span class="text-text-primary min-w-0 truncate text-2xl font-[800]">
-							{session.name || $_('lobby_name_placeholder')}
+							{sessionName(session)}
 						</span>
 						<Pencil
 							size={15}

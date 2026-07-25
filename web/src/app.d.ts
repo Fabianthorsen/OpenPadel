@@ -140,6 +140,8 @@ declare global {
 		interface TournamentEntry {
 			session_id: string;
 			name: string;
+			club_name?: string;
+			game_mode?: 'americano' | 'mexicano';
 			status: string;
 			played_at: string;
 			rank: number;
@@ -151,6 +153,7 @@ declare global {
 		interface UpcomingEntry {
 			session_id: string;
 			name: string;
+			club_name?: string;
 			status: 'lobby' | 'playing';
 			game_mode: 'americano' | 'mexicano';
 			courts: number;

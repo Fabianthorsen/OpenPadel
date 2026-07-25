@@ -365,13 +365,16 @@ func (q *Queries) GetPasswordResetToken(ctx context.Context, tokenHash string) (
 const getTournamentHistorySessions = `-- name: GetTournamentHistorySessions :many
 SELECT
     s.id,
-    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
+    CAST(s.name AS TEXT) AS name,
+    s.game_mode,
+    CAST(COALESCE(c.name, '') AS TEXT) AS club_name,
     s.status,
     s.created_at,
     COALESCE(s.ended_early, 0) AS ended_early,
     CAST(MAX(CASE WHEN m.score_a IS NOT NULL THEN 1 ELSE 0 END) AS INTEGER) AS scored
 FROM players p
 JOIN sessions s ON s.id = p.session_id
+LEFT JOIN clubs c ON c.id = s.club_id
 LEFT JOIN rounds r ON r.session_id = p.session_id
 LEFT JOIN matches m ON m.round_id = r.id
     AND (m.p1 = p.id OR m.p2 = p.id OR m.p3 = p.id OR m.p4 = p.id)
@@ -383,6 +386,8 @@ ORDER BY s.created_at DESC
 type GetTournamentHistorySessionsRow struct {
 	ID         string
 	Name       string
+	GameMode   string
+	ClubName   string
 	Status     string
 	CreatedAt  string
 	EndedEarly int64
@@ -394,6 +399,8 @@ type GetTournamentHistorySessionsRow struct {
 // user has at least one fully-scored Match in the Session, so placement can
 // ignore ended-early Sessions the user never actually finished a game in; the
 // finishing rank itself is resolved from the leaderboard in Go.
+// name is returned raw (may be empty); the display fallback (club-aware) lives
+// in the frontend sessionName() so there is a single source of truth.
 func (q *Queries) GetTournamentHistorySessions(ctx context.Context, userID sql.NullString) ([]GetTournamentHistorySessionsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getTournamentHistorySessions, userID)
 	if err != nil {
@@ -406,6 +413,8 @@ func (q *Queries) GetTournamentHistorySessions(ctx context.Context, userID sql.N
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
+			&i.GameMode,
+			&i.ClubName,
 			&i.Status,
 			&i.CreatedAt,
 			&i.EndedEarly,
@@ -427,7 +436,8 @@ func (q *Queries) GetTournamentHistorySessions(ctx context.Context, userID sql.N
 const getUpcomingTournaments = `-- name: GetUpcomingTournaments :many
 SELECT
     s.id,
-    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
+    CAST(s.name AS TEXT) AS name,
+    CAST(COALESCE(c.name, '') AS TEXT) AS club_name,
     s.status,
     s.game_mode,
     s.courts,
@@ -435,6 +445,7 @@ SELECT
     s.scheduled_at
 FROM players p
 JOIN sessions s ON s.id = p.session_id
+LEFT JOIN clubs c ON c.id = s.club_id
 LEFT JOIN players p2 ON p2.session_id = s.id AND p2.active = 1
 WHERE p.user_id = ? AND p.active = 1 AND s.status IN ('lobby', 'playing')
 GROUP BY s.id
@@ -444,6 +455,7 @@ ORDER BY s.status DESC, COALESCE(s.scheduled_at, s.created_at) ASC
 type GetUpcomingTournamentsRow struct {
 	ID          string
 	Name        string
+	ClubName    string
 	Status      string
 	GameMode    string
 	Courts      int64
@@ -451,6 +463,8 @@ type GetUpcomingTournamentsRow struct {
 	ScheduledAt sql.NullString
 }
 
+// name is returned raw (may be empty); the club-aware display fallback lives in
+// the frontend sessionName().
 func (q *Queries) GetUpcomingTournaments(ctx context.Context, userID sql.NullString) ([]GetUpcomingTournamentsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getUpcomingTournaments, userID)
 	if err != nil {
@@ -463,6 +477,7 @@ func (q *Queries) GetUpcomingTournaments(ctx context.Context, userID sql.NullStr
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
+			&i.ClubName,
 			&i.Status,
 			&i.GameMode,
 			&i.Courts,
