@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -25,10 +26,22 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		RoundsTotal          *int    `json:"rounds_total"`
 		CourtDurationMinutes *int    `json:"court_duration_minutes"`
 		TotalDurationMinutes *int    `json:"total_duration_minutes"`
+		ClubID               string  `json:"club_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		respondAPIError(w, ErrInvalidRequestBody)
 		return
+	}
+
+	// A club event may only be created by a Member of that Club. Owning a Club
+	// role grants no authority over the resulting Session — this is just the gate
+	// on who may attach a Session to a Club.
+	var clubID *string
+	if body.ClubID != "" {
+		if !h.requireClubMember(w, r, body.ClubID) {
+			return
+		}
+		clubID = &body.ClubID
 	}
 
 	var scheduledAt *time.Time
@@ -54,6 +67,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		RoundsTotal:          body.RoundsTotal,
 		ScheduledAt:          scheduledAt,
 		CourtDurationMinutes: body.CourtDurationMinutes,
+		ClubID:               clubID,
 	}
 
 	validationErrs := input.Validate()
@@ -75,7 +89,41 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrCouldNotCreateSession)
 		return
 	}
+
+	// A club event tells the whole Club automatically — no personal invite needed.
+	// Fan out over the Club roster via user-SSE + web-push. The global home feed
+	// (GetUpcomingTournaments) is deliberately left untouched.
+	if clubID != nil {
+		go h.notifyClubEventCreated(*clubID, sess.ID, creatorUserID)
+	}
+
 	respond(w, http.StatusCreated, sess)
+}
+
+// notifyClubEventCreated fans a new club event out to the Club's roster: a live
+// user-SSE nudge so open clients refresh, plus a web-push so members hear about
+// it when the app is closed. The creator (creatorUserID) is skipped — they just
+// made it. Runs in its own goroutine; failures are logged, never surfaced.
+func (h *Handler) notifyClubEventCreated(clubID, sessionID, creatorUserID string) {
+	club, err := h.store.GetClub(clubID)
+	if err != nil {
+		slog.Error("notifyClubEventCreated: GetClub", "err", err)
+		return
+	}
+	members, err := h.store.GetClubMembers(clubID)
+	if err != nil {
+		slog.Error("notifyClubEventCreated: GetClubMembers", "err", err)
+		return
+	}
+	title := "New " + club.Name + " game"
+	notifBody := "A new game was scheduled in " + club.Name + " — tap to join."
+	for _, m := range members {
+		if m.UserID == creatorUserID {
+			continue
+		}
+		h.hub.EmitToUser(m.UserID, events.Envelope{Type: events.EventClubEventCreated})
+		h.sendPushToUser(m.UserID, title, notifBody, "/s/"+sessionID)
+	}
 }
 
 func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
@@ -107,6 +155,15 @@ func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 		sess.IsCreator = true
 	} else if !isAdmin(extractAdminToken(r), sess.AdminToken) {
 		sess.AdminToken = ""
+	}
+
+	// A club event carries the Club's name so the join screen can frame it as a
+	// club game rather than a personal invite. This is public identity only (it's
+	// on the shareable join screen a Guest sees) — never an authorization signal.
+	if sess.ClubID != "" {
+		if club, err := h.store.GetClub(sess.ClubID); err == nil {
+			sess.ClubName = club.Name
+		}
 	}
 
 	respond(w, http.StatusOK, sess)

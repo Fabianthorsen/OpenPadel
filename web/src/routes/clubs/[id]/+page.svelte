@@ -10,10 +10,23 @@
 	import { Spinner } from '$lib/components/ui/spinner';
 	import Footer from '$lib/components/Footer.svelte';
 	import ClubAdminDrawer from '$lib/components/ClubAdminDrawer.svelte';
+	import CreateDrawer from '$lib/components/CreateDrawer.svelte';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
-	import { onMount } from 'svelte';
-	import { Check, Copy, RefreshCw, Search, Settings, UserPlus } from '@lucide/svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { userStream, type UserStream } from '$lib/stores/userStream.svelte';
+	import {
+		CalendarDays,
+		Check,
+		Copy,
+		Plus,
+		Radio,
+		RefreshCw,
+		Search,
+		Settings,
+		UserPlus,
+		Users
+	} from '@lucide/svelte';
 
 	let club = $state<App.ClubDetail | null>(null);
 	let loading = $state(true);
@@ -21,6 +34,17 @@
 	let linkCopied = $state(false);
 	let rotating = $state(false);
 	let adminDrawerOpen = $state(false);
+
+	// Club events (upcoming games owned by the Club). The first is the "Next up"
+	// hero; the rest fall into a compact list below.
+	let events = $state<App.UpcomingEntry[]>([]);
+	let createOpen = $state(false);
+	const nextEvent = $derived(events[0] ?? null);
+	const laterEvents = $derived(events.slice(1));
+
+	// A club event is a normal Session — created via the shared create flow with the
+	// Club preset, so members hear about it automatically (push + this live feed).
+	const stream: UserStream = userStream(() => auth.token);
 
 	// The Club invite link uses the distinct /c/join/:code path — never the club id —
 	// so it can't be confused with a Session join link.
@@ -141,12 +165,41 @@
 		}
 	}
 
+	// Compact "Mon 14:30"-style label for a scheduled event; falls back silently
+	// on an unparseable value rather than showing "Invalid Date".
+	function formatEventTime(iso: string): string {
+		const d = new Date(iso);
+		if (isNaN(d.getTime())) return '';
+		return d.toLocaleString(undefined, {
+			weekday: 'short',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
+	async function loadEvents() {
+		if (!auth.token || !clubId) return;
+		try {
+			events = await api.clubs.events(auth.token, clubId);
+		} catch {
+			// The events feed is secondary to the roster; a fetch blip just leaves
+			// the last-known list in place rather than erroring the whole page.
+		}
+	}
+
 	onMount(() => {
 		clubId = window.location.pathname.split('/')[2];
 		if (clubId) {
 			loadClub(clubId);
+			loadEvents();
 		}
+		// A new club event anywhere in a Club we're a member of pushes a live nudge;
+		// refresh the feed so the "Next up" hero reflects it without a reload.
+		stream.start();
+		stream.onEvent('club_event_created', loadEvents);
 	});
+
+	onDestroy(() => stream.close());
 </script>
 
 <main class="pt-safe-page mx-auto max-w-[480px] space-y-8 px-6 pb-10">
@@ -184,6 +237,74 @@
 				<p class="text-text-secondary text-sm leading-relaxed">{club.club.description}</p>
 			{/if}
 		</PageHeader>
+
+		<!-- Club games — the primary thing: getting the crowd into a game. Any member
+		     can schedule one (Club preset), and the "Next up" hero foregrounds the
+		     soonest game so it's the first thing a member sees. -->
+		<section class="space-y-3">
+			<div class="flex items-center justify-between">
+				<h2 class="text-text-primary text-sm font-[800]">Club games</h2>
+				<Button onclick={() => (createOpen = true)} size="sm" variant="default">
+					<Plus size={16} />
+					Schedule
+				</Button>
+			</div>
+
+			{#if nextEvent}
+				<a
+					href={`/s/${nextEvent.session_id}`}
+					class="bg-primary-muted hover:bg-primary/15 block rounded-2xl p-4 transition-colors"
+				>
+					<div class="flex items-center gap-2">
+						<span class="text-primary text-[11px] font-bold tracking-[0.1em] uppercase">
+							{nextEvent.status === 'playing' ? 'Live now' : 'Next up'}
+						</span>
+						{#if nextEvent.status === 'playing'}
+							<Radio size={14} class="text-primary" />
+						{/if}
+					</div>
+					<p class="text-text-primary mt-1 truncate text-base font-[800]">{nextEvent.name}</p>
+					<p class="text-text-secondary mt-0.5 text-xs">
+						{nextEvent.player_count}
+						players
+						{#if nextEvent.scheduled_at}· {formatEventTime(nextEvent.scheduled_at)}{/if}
+					</p>
+				</a>
+
+				{#if laterEvents.length > 0}
+					<!-- Below the hero, events collapse to compact single-line rows: a small
+					     status dot, the name, then meta (players · time) right-aligned. -->
+					<div class="divide-border bg-surface-raised divide-y overflow-hidden rounded-2xl">
+						{#each laterEvents as ev}
+							<a
+								href={`/s/${ev.session_id}`}
+								class="hover:bg-border flex items-center gap-3 px-4 py-2.5 transition-colors"
+							>
+								{#if ev.status === 'playing'}
+									<Radio size={14} class="text-primary shrink-0" />
+								{:else}
+									<CalendarDays size={14} class="text-text-disabled shrink-0" />
+								{/if}
+								<p class="text-text-primary min-w-0 flex-1 truncate text-sm font-semibold">
+									{ev.name}
+								</p>
+								<span class="text-text-secondary flex shrink-0 items-center gap-1 text-xs">
+									<Users size={12} class="text-text-disabled" />
+									{ev.player_count}
+									{#if ev.scheduled_at}· {formatEventTime(ev.scheduled_at)}{/if}
+								</span>
+							</a>
+						{/each}
+					</div>
+				{/if}
+			{:else}
+				<div class="bg-surface-raised rounded-2xl px-4 py-6 text-center">
+					<p class="text-text-secondary text-sm">
+						No upcoming games. Schedule one — the whole club will be notified.
+					</p>
+				</div>
+			{/if}
+		</section>
 
 		<!-- Invite members — invite a registered User by name (a Club invite that adds
 		     them to the roster). Falling back below the "or" divider is the shareable
@@ -298,6 +419,8 @@
 				{/if}
 			{/snippet}
 		</Section>
+
+		<CreateDrawer bind:open={createOpen} club={{ id: club.club.id, name: club.club.name }} />
 
 		{#if isAdmin}
 			<ClubAdminDrawer

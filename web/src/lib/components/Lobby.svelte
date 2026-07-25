@@ -9,7 +9,8 @@
 		Clock,
 		Info,
 		Settings,
-		Pencil
+		Pencil,
+		Users
 	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { sessionName } from '$lib/utils';
@@ -359,9 +360,7 @@
 	);
 
 	const isMexicano = $derived(session.game_mode === 'mexicano');
-	const gameModeName = $derived(
-		session.game_mode === 'mexicano' ? $_('create_mexicano_soon') : 'Americano'
-	);
+	const gameModeName = $derived(session.game_mode === 'mexicano' ? 'Mexicano' : 'Americano');
 	let showRules = $state(false);
 	const activePlayers = $derived(session.players.filter((p) => p.active));
 
@@ -544,7 +543,17 @@
 				<p class="text-primary text-[11px] font-bold tracking-[0.1em] uppercase">OpenPadel</p>
 				<div class="flex items-start gap-2">
 					<h1 class="text-[28px] leading-tight font-[800]">
-						{#if creatorName && session.name}
+						{#if session.club_name}
+							<!-- A club event is a club game, not a personal invite — frame it by
+							     the Club, optionally naming the member who scheduled it. -->
+							{#if creatorName}
+								{$_('invite_title_club_named', {
+									values: { creator: creatorName, club: session.club_name }
+								})}
+							{:else}
+								{$_('invite_title_club', { values: { club: session.club_name } })}
+							{/if}
+						{:else if creatorName && session.name}
 							{$_('invite_title_with_creator_named', {
 								values: { creator: creatorName, name: session.name }
 							})}
@@ -670,6 +679,14 @@
 {:else}
 	<main class="pt-safe-page mx-auto w-full max-w-[480px] space-y-6 px-4 pb-6">
 		<nav class="space-y-1">
+			<!-- Club badge — marks this as a club game (not a one-off) for everyone who
+			     opens it, so a member arriving from the Club home keeps that context. -->
+			{#if session.club_name}
+				<div class="text-primary flex items-center gap-1.5 text-xs font-bold">
+					<Users size={13} class="shrink-0" />
+					<span class="truncate tracking-[0.02em] uppercase">{session.club_name}</span>
+				</div>
+			{/if}
 			<!-- Status -->
 			<p class="text-text-disabled text-[11px] font-bold tracking-[0.12em] uppercase">
 				{#if session.scheduled_at}

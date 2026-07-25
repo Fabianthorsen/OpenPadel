@@ -77,6 +77,8 @@ declare global {
 			rounds_total?: number;
 			current_round?: number;
 			creator_player_id?: string;
+			club_id?: string;
+			club_name?: string;
 			is_creator?: boolean;
 			can_start?: boolean;
 			validation_errors?: ValidationError[];

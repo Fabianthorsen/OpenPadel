@@ -58,6 +58,11 @@ func (s *Store) CreateSession(input domain.SessionInput, creatorUserID string) (
 	if creatorUserID != "" {
 		creatorUserIDVal = sql.NullString{String: creatorUserID, Valid: true}
 	}
+	var clubIDVal sql.NullString
+	if input.ClubID != nil && *input.ClubID != "" {
+		clubIDVal = sql.NullString{String: *input.ClubID, Valid: true}
+		sess.ClubID = *input.ClubID
+	}
 	err := s.queries.CreateSession(context.Background(), db.CreateSessionParams{
 		ID:                   sess.ID,
 		AdminToken:           sess.AdminToken,
@@ -72,6 +77,7 @@ func (s *Store) CreateSession(input domain.SessionInput, creatorUserID string) (
 		ScheduledAt:          scheduledAtStr,
 		CourtDurationMinutes: courtDurationMinutesVal,
 		CreatorUserID:        creatorUserIDVal,
+		ClubID:               clubIDVal,
 		CreatedAt:            sess.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:            sess.UpdatedAt.Format(time.RFC3339),
 	})
@@ -200,6 +206,9 @@ func rowToSession(row db.GetSessionRow) *domain.Session {
 	}
 	if row.CreatorUserID.Valid {
 		sess.CreatorUserID = row.CreatorUserID.String
+	}
+	if row.ClubID.Valid {
+		sess.ClubID = row.ClubID.String
 	}
 	if row.ScheduledAt.Valid {
 		sess.ScheduledAt = parseTimePtr(row.ScheduledAt.String)

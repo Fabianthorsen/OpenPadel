@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createClub = `-- name: CreateClub :exec
@@ -113,6 +114,63 @@ func (q *Queries) GetClubByJoinCode(ctx context.Context, joinCode string) (Club,
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getClubEvents = `-- name: GetClubEvents :many
+SELECT
+    s.id,
+    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
+    s.status,
+    s.game_mode,
+    s.courts,
+    COUNT(p.id) AS player_count,
+    s.scheduled_at
+FROM sessions s
+LEFT JOIN players p ON p.session_id = s.id AND p.active = 1
+WHERE s.club_id = ? AND s.status IN ('lobby', 'playing')
+GROUP BY s.id
+ORDER BY COALESCE(s.scheduled_at, s.created_at) ASC
+`
+
+type GetClubEventsRow struct {
+	ID          string
+	Name        string
+	Status      string
+	GameMode    string
+	Courts      int64
+	PlayerCount int64
+	ScheduledAt sql.NullString
+}
+
+func (q *Queries) GetClubEvents(ctx context.Context, clubID sql.NullString) ([]GetClubEventsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClubEvents, clubID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetClubEventsRow{}
+	for rows.Next() {
+		var i GetClubEventsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Status,
+			&i.GameMode,
+			&i.Courts,
+			&i.PlayerCount,
+			&i.ScheduledAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getClubMember = `-- name: GetClubMember :one

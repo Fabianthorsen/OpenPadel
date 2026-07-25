@@ -13,6 +13,9 @@
 
 	"create_title_line1": "Create New",
 	"create_title_line2": "Tournament",
+	"create_club_event_banner": "Scheduling for {club} — the whole club will be notified.",
+	"create_club_event_title": "Schedule a Club Game",
+	"create_club_event_button": "Create & Notify Club →",
 	"create_subtitle": "Set the stage for your next Padel tournament.",
 	"create_game_mode_label": "Game Mode",
 	"create_game_mode_hint": "Americano is currently the only supported mode.",
@@ -108,6 +111,8 @@
 	"invite_title_with_creator_named": "{creator} invited you to {name}",
 	"invite_title_generic": "Join this {mode} Tournament",
 	"invite_title_generic_named": "Join {name}",
+	"invite_title_club_named": "{creator} scheduled a {club} game",
+	"invite_title_club": "Join the {club} game",
 	"invite_subtitle": "Join the tournament to track your scores and see your ranking.",
 	"invite_name_label": "Your name",
 	"invite_name_placeholder": "Enter your name",

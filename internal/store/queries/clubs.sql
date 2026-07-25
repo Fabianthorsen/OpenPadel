@@ -54,3 +54,18 @@ UPDATE club_members SET role = ? WHERE club_id = ? AND user_id = ?;
 
 -- name: GetClubAdminCount :one
 SELECT COUNT(*) FROM club_members WHERE club_id = ? AND role = 'admin';
+
+-- name: GetClubEvents :many
+SELECT
+    s.id,
+    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
+    s.status,
+    s.game_mode,
+    s.courts,
+    COUNT(p.id) AS player_count,
+    s.scheduled_at
+FROM sessions s
+LEFT JOIN players p ON p.session_id = s.id AND p.active = 1
+WHERE s.club_id = ? AND s.status IN ('lobby', 'playing')
+GROUP BY s.id
+ORDER BY COALESCE(s.scheduled_at, s.created_at) ASC;

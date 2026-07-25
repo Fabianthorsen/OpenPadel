@@ -53,6 +53,7 @@ type Querier interface {
 	GetClub(ctx context.Context, id string) (Club, error)
 	GetClubAdminCount(ctx context.Context, clubID string) (int64, error)
 	GetClubByJoinCode(ctx context.Context, joinCode string) (Club, error)
+	GetClubEvents(ctx context.Context, clubID sql.NullString) ([]GetClubEventsRow, error)
 	GetClubInvite(ctx context.Context, id string) (GetClubInviteRow, error)
 	GetClubInviteByClubAndInvitee(ctx context.Context, arg GetClubInviteByClubAndInviteeParams) (GetClubInviteByClubAndInviteeRow, error)
 	GetClubInvitesByInviteeID(ctx context.Context, inviteeID string) ([]GetClubInvitesByInviteeIDRow, error)

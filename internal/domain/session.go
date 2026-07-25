@@ -192,6 +192,10 @@ type SessionInput struct {
 	RoundsTotal          *int
 	ScheduledAt          *time.Time
 	CourtDurationMinutes *int
+	// ClubID, when set, marks the Session as a club event owned by that Club. It
+	// is identity/ownership metadata only — it grants no authority over the
+	// Session, which stays governed by the AdminToken like any other.
+	ClubID *string
 }
 
 func (si SessionInput) Validate() []ValidationError {
@@ -250,6 +254,8 @@ type Session struct {
 	CurrentRound         *int              `json:"current_round,omitempty"`
 	CreatorPlayerID      string            `json:"creator_player_id,omitempty"`
 	CreatorUserID        string            `json:"-"`
+	ClubID               string            `json:"club_id,omitempty"`
+	ClubName             string            `json:"club_name,omitempty"`
 	IsCreator            bool              `json:"is_creator,omitempty"`
 	ScheduledAt          *time.Time        `json:"scheduled_at,omitempty"`
 	CourtDurationMinutes *int              `json:"court_duration_minutes,omitempty"`
