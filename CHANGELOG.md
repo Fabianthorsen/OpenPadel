@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.22.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.22.0...v1.22.1) (2026-07-25)
+
+
+### Bug Fixes
+
+* **store:** enforce SQLite foreign keys at runtime ([#249](https://github.com/Fabianthorsen/OpenPadel/issues/249)) ([#258](https://github.com/Fabianthorsen/OpenPadel/issues/258)) ([5ac9a46](https://github.com/Fabianthorsen/OpenPadel/commit/5ac9a4662c2afb60185e7f4ff958a17ae83be5ee))
+* **web:** release leaked bits-ui body lock when a modal closes ([#260](https://github.com/Fabianthorsen/OpenPadel/issues/260)) ([9334b8f](https://github.com/Fabianthorsen/OpenPadel/commit/9334b8f71d0cee77822a8461936225e13c701668))
+* **web:** stop registered user's session resuming after logout ([#252](https://github.com/Fabianthorsen/OpenPadel/issues/252)) ([#261](https://github.com/Fabianthorsen/OpenPadel/issues/261)) ([2e7392a](https://github.com/Fabianthorsen/OpenPadel/commit/2e7392aa1a199d52653eb6f8cb2a76828edd41b9))
+
 ## [1.22.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.21.0...v1.22.0) (2026-07-25)
 
 
