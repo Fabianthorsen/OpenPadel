@@ -20,7 +20,7 @@ func main() {
 	dbPath := flag.String("db", "openpadel.db", "database path")
 	flag.Parse()
 
-	db, err := sql.Open("sqlite", *dbPath+"?_journal_mode=WAL&_foreign_keys=on")
+	db, err := sql.Open("sqlite", *dbPath+"?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)")
 	if err != nil {
 		log.Fatalf("open db: %v", err)
 	}

@@ -263,13 +263,36 @@ func (s *Store) UpdateSessionConfig(id string, input domain.SessionInput) error 
 	})
 }
 
+// DeleteSession hard-deletes a Session and its subtree. FK enforcement is on
+// (#249) and none of these child tables declare ON DELETE actions, so the rows
+// are removed by hand in dependency order (bench/matches → rounds → players →
+// session) inside one transaction; pending session invites cascade away via
+// invites.session_id ON DELETE CASCADE.
 func (s *Store) DeleteSession(id string) error {
-	// Delete in dependency order due to foreign keys.
-	s.queries.DeleteBench(context.Background(), id)
-	s.queries.DeleteMatches(context.Background(), id)
-	s.queries.DeleteRounds(context.Background(), id)
-	s.queries.DeletePlayers(context.Background(), id)
-	return s.queries.DeleteSession(context.Background(), id)
+	ctx := context.Background()
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := s.queries.WithTx(tx)
+	if err := qtx.DeleteBench(ctx, id); err != nil {
+		return err
+	}
+	if err := qtx.DeleteMatches(ctx, id); err != nil {
+		return err
+	}
+	if err := qtx.DeleteRounds(ctx, id); err != nil {
+		return err
+	}
+	if err := qtx.DeletePlayers(ctx, id); err != nil {
+		return err
+	}
+	if err := qtx.DeleteSession(ctx, id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (s *Store) GetUserSessions(userID string) ([]*domain.Session, error) {

@@ -494,24 +494,150 @@ func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, e
 	return entries, nil
 }
 
+// DeleteUser hard-deletes a User account and detaches or removes everything that
+// references it, in one transaction, so FK enforcement (#249) never blocks the
+// delete and no row is left dangling:
+//   - Clubs the User belongs to are rehomed (see rehomeClubsForUserDelete) so a
+//     Club is never left ownerless or adminless.
+//   - Sessions survive with creator_user_id cleared; Player rows survive with
+//     user_id NULL — history outlives the account.
+//   - Auth/reset tokens and any remaining Club invites are deleted outright.
+//   - push_subscriptions, contacts and session invites cascade via their
+//     ON DELETE CASCADE clauses when the User row goes.
 func (s *Store) DeleteUser(userID string) error {
+	ctx := context.Background()
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
+
+	if err := rehomeClubsForUserDelete(ctx, tx, userID); err != nil {
+		return err
+	}
+
+	// creator_user_id and club_invites have no generated query; the rest lean on
+	// the sqlc queries the rest of the package uses.
+	if _, err := tx.ExecContext(ctx, `UPDATE sessions SET creator_user_id = NULL WHERE creator_user_id = ?`, userID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM club_invites WHERE inviter_id = ? OR invitee_id = ?`, userID, userID); err != nil {
+		return err
+	}
 
 	qtx := s.queries.WithTx(tx)
-	if err := qtx.DeleteAuthTokensByUserID(context.Background(), userID); err != nil {
+	if err := qtx.UpdatePlayerUserIDToNull(ctx, sql.NullString{String: userID, Valid: true}); err != nil {
 		return err
 	}
-	if err := qtx.UpdatePlayerUserIDToNull(context.Background(), sql.NullString{String: userID, Valid: true}); err != nil {
+	if err := qtx.DeleteAuthTokensByUserID(ctx, userID); err != nil {
 		return err
 	}
-	if err := qtx.DeleteUser(context.Background(), userID); err != nil {
+	if err := qtx.DeletePasswordResetTokensByUserID(ctx, userID); err != nil {
+		return err
+	}
+	if err := qtx.DeleteUser(ctx, userID); err != nil {
 		return err
 	}
 	return tx.Commit()
+}
+
+// rehomeClubsForUserDelete rehomes every Club the departing User owns or belongs
+// to so account deletion never orphans a Club. For each such Club: if no other
+// member remains the Club is deleted outright (members and invites cascade);
+// otherwise a remaining member is promoted to Admin when the User was the last
+// Admin, created_by is handed to a remaining Admin when the User was the creator,
+// and the User's own membership is removed.
+func rehomeClubsForUserDelete(ctx context.Context, tx *sql.Tx, userID string) error {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id FROM clubs WHERE created_by = ?
+		UNION
+		SELECT club_id FROM club_members WHERE user_id = ?`, userID, userID)
+	if err != nil {
+		return err
+	}
+	var clubIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		clubIDs = append(clubIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return err
+	}
+	_ = rows.Close()
+
+	for _, clubID := range clubIDs {
+		if err := rehomeClub(ctx, tx, clubID, userID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func rehomeClub(ctx context.Context, tx *sql.Tx, clubID, userID string) error {
+	// Members that remain once the departing User is gone, Admins first, then by
+	// join order — the natural successor for ownership and the Admin role.
+	rows, err := tx.QueryContext(ctx, `
+		SELECT user_id, role FROM club_members
+		WHERE club_id = ? AND user_id != ?
+		ORDER BY (role = 'admin') DESC, joined_at ASC`, clubID, userID)
+	if err != nil {
+		return err
+	}
+	type member struct {
+		id   string
+		role string
+	}
+	var remaining []member
+	for rows.Next() {
+		var m member
+		if err := rows.Scan(&m.id, &m.role); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		remaining = append(remaining, m)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return err
+	}
+	_ = rows.Close()
+
+	// Nobody left to inherit the Club — delete it; club_members and club_invites
+	// cascade, and any Sessions detach via ON DELETE SET NULL.
+	if len(remaining) == 0 {
+		_, err := tx.ExecContext(ctx, `DELETE FROM clubs WHERE id = ?`, clubID)
+		return err
+	}
+
+	// Ordered Admins-first, so remaining[0] is the successor. Promote it when the
+	// Club would otherwise be left without an Admin.
+	successor := remaining[0]
+	if successor.role != "admin" {
+		if _, err := tx.ExecContext(ctx, `UPDATE club_members SET role = 'admin' WHERE club_id = ? AND user_id = ?`, clubID, successor.id); err != nil {
+			return err
+		}
+	}
+
+	// Hand ownership to the successor if the departing User was the creator.
+	var createdBy string
+	if err := tx.QueryRowContext(ctx, `SELECT created_by FROM clubs WHERE id = ?`, clubID).Scan(&createdBy); err != nil {
+		return err
+	}
+	if createdBy == userID {
+		if _, err := tx.ExecContext(ctx, `UPDATE clubs SET created_by = ? WHERE id = ?`, successor.id, clubID); err != nil {
+			return err
+		}
+	}
+
+	// Finally drop the departing User's own membership (a no-op if they only
+	// owned the Club without being a member).
+	_, err = tx.ExecContext(ctx, `DELETE FROM club_members WHERE club_id = ? AND user_id = ?`, clubID, userID)
+	return err
 }
 
 func rowToUserEmail(row db.GetUserByEmailRow) *domain.User {
