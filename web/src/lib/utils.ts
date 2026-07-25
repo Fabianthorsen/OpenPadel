@@ -6,6 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
+/**
+ * Formats a Club-leaderboard form value (a normalized point-margin in [-1, +1])
+ * as a signed score out of ±100, so it reads like a rating: 0 = even, positive
+ * = winning by a wider margin than you concede. "+32", "0", "-15".
+ */
+export function formScore(form: number): string {
+	const n = Math.round(form * 100);
+	return n > 0 ? `+${n}` : `${n}`;
+}
+
 /** Returns "Firstname L." for multi-word names, or just the name if single word. "Fabian Thorsen" → "Fabian T." */
 export function shortName(name: string): string {
 	const words = name.trim().split(/\s+/).filter(Boolean);

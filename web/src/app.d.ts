@@ -252,6 +252,34 @@ declare global {
 			my_role: string;
 			roster_count: number;
 		}
+
+		interface ClubRankEntry {
+			rank: number;
+			user_id: string;
+			name: string;
+			avatar_icon: string;
+			avatar_color: string;
+			form: number;
+			games_played: number;
+			wins: number;
+			draws: number;
+			losses: number;
+		}
+
+		interface ClubProvisionalEntry {
+			user_id: string;
+			name: string;
+			avatar_icon: string;
+			avatar_color: string;
+			games_played: number;
+			games_to_go: number;
+		}
+
+		interface ClubLeaderboard {
+			ranked: ClubRankEntry[];
+			provisional: ClubProvisionalEntry[];
+			min_games: number;
+		}
 	}
 }
 

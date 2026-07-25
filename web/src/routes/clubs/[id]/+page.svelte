@@ -15,15 +15,18 @@
 	import { translateApiError } from '$lib/i18n/errors';
 	import { onMount, onDestroy } from 'svelte';
 	import { userStream, type UserStream } from '$lib/stores/userStream.svelte';
+	import { shortName, formScore, sessionName } from '$lib/utils';
 	import {
 		CalendarDays,
 		Check,
+		ChevronRight,
 		Copy,
 		Plus,
 		Radio,
 		RefreshCw,
 		Search,
 		Settings,
+		Trophy,
 		UserPlus,
 		Users
 	} from '@lucide/svelte';
@@ -41,6 +44,17 @@
 	let createOpen = $state(false);
 	const nextEvent = $derived(events[0] ?? null);
 	const laterEvents = $derived(events.slice(1));
+
+	// Club leaderboard — the top three ranked members shown as a glanceable
+	// preview on the home, deep-linking to the full board.
+	let leaderboard = $state<App.ClubLeaderboard | null>(null);
+	const topThree = $derived(leaderboard?.ranked.slice(0, 3) ?? []);
+
+	// An unnamed club event shows "<Club> <Mode>" rather than the generic default;
+	// the server returns the raw (possibly empty) name and the fallback is built here.
+	function eventName(ev: App.UpcomingEntry): string {
+		return sessionName({ name: ev.name, club_name: club?.club.name, game_mode: ev.game_mode });
+	}
 
 	// A club event is a normal Session — created via the shared create flow with the
 	// Club preset, so members hear about it automatically (push + this live feed).
@@ -187,11 +201,22 @@
 		}
 	}
 
+	async function loadLeaderboard() {
+		if (!auth.token || !clubId) return;
+		try {
+			leaderboard = await api.clubs.leaderboard(auth.token, clubId);
+		} catch {
+			// The leaderboard preview is secondary to the roster; a fetch blip just
+			// leaves the last-known top-3 in place rather than erroring the page.
+		}
+	}
+
 	onMount(() => {
 		clubId = window.location.pathname.split('/')[2];
 		if (clubId) {
 			loadClub(clubId);
 			loadEvents();
+			loadLeaderboard();
 		}
 		// A new club event anywhere in a Club we're a member of pushes a live nudge;
 		// refresh the feed so the "Next up" hero reflects it without a reload.
@@ -263,7 +288,7 @@
 							<Radio size={14} class="text-primary" />
 						{/if}
 					</div>
-					<p class="text-text-primary mt-1 truncate text-base font-[800]">{nextEvent.name}</p>
+					<p class="text-text-primary mt-1 truncate text-base font-[800]">{eventName(nextEvent)}</p>
 					<p class="text-text-secondary mt-0.5 text-xs">
 						{nextEvent.player_count}
 						players
@@ -286,7 +311,7 @@
 									<CalendarDays size={14} class="text-text-disabled shrink-0" />
 								{/if}
 								<p class="text-text-primary min-w-0 flex-1 truncate text-sm font-semibold">
-									{ev.name}
+									{eventName(ev)}
 								</p>
 								<span class="text-text-secondary flex shrink-0 items-center gap-1 text-xs">
 									<Users size={12} class="text-text-disabled" />
@@ -303,6 +328,64 @@
 						No upcoming games. Schedule one — the whole club will be notified.
 					</p>
 				</div>
+			{/if}
+		</section>
+
+		<!-- Leaderboard — a glanceable top-3 preview of the club's current-form board.
+		     The whole header is the deep-link to the full leaderboard. -->
+		<section class="space-y-3">
+			<a href={`/clubs/${clubId}/leaderboard`} class="group flex items-center justify-between">
+				<h2 class="text-text-primary flex items-center gap-1.5 text-sm font-[800]">
+					<Trophy size={15} class="text-primary" />
+					Leaderboard
+				</h2>
+				<span
+					class="text-text-secondary group-hover:text-text-primary flex items-center gap-0.5 text-xs transition-colors"
+				>
+					View all
+					<ChevronRight size={14} />
+				</span>
+			</a>
+
+			{#if topThree.length > 0}
+				<a
+					href={`/clubs/${clubId}/leaderboard`}
+					class="divide-border bg-surface-raised hover:bg-border block divide-y overflow-hidden rounded-2xl transition-colors"
+				>
+					{#each topThree as e (e.user_id)}
+						{@const isRank1 = e.rank === 1}
+						<div class="flex items-center gap-3 px-4 py-2.5">
+							<span
+								class="w-4 text-sm font-[800] tabular-nums {isRank1
+									? 'text-primary'
+									: 'text-text-disabled'}"
+							>
+								{e.rank}
+							</span>
+							<Avatar icon={e.avatar_icon} color={e.avatar_color} name={e.name} size="sm" />
+							<span
+								class="min-w-0 flex-1 truncate text-sm {isRank1
+									? 'text-primary font-bold'
+									: 'text-text-primary font-semibold'}"
+							>
+								{shortName(e.name)}
+							</span>
+							<span class="text-text-primary text-sm font-[800] tabular-nums">
+								{formScore(e.form)}
+							</span>
+						</div>
+					{/each}
+				</a>
+			{:else}
+				<a
+					href={`/clubs/${clubId}/leaderboard`}
+					class="bg-surface-raised hover:bg-border block rounded-2xl px-4 py-6 text-center transition-colors"
+				>
+					<p class="text-text-secondary text-sm">
+						Play club games to build the leaderboard — members rank once they've played {leaderboard?.min_games ??
+							5}.
+					</p>
+				</a>
 			{/if}
 		</section>
 

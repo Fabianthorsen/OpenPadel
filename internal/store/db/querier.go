@@ -53,6 +53,9 @@ type Querier interface {
 	GetClub(ctx context.Context, id string) (Club, error)
 	GetClubAdminCount(ctx context.Context, clubID string) (int64, error)
 	GetClubByJoinCode(ctx context.Context, joinCode string) (Club, error)
+	// Returns the raw session name (empty when unset); the client fills the display
+	// fallback ("<Club> <Mode>") via sessionName(), so an unnamed club event never
+	// shows the generic "OpenPadel" default.
 	GetClubEvents(ctx context.Context, clubID sql.NullString) ([]GetClubEventsRow, error)
 	GetClubInvite(ctx context.Context, id string) (GetClubInviteRow, error)
 	GetClubInviteByClubAndInvitee(ctx context.Context, arg GetClubInviteByClubAndInviteeParams) (GetClubInviteByClubAndInviteeRow, error)

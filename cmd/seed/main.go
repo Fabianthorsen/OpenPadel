@@ -85,7 +85,7 @@ var seedClubs = []seedClub{
 		AvatarIcon:  "Swords",
 		AvatarColor: "forest",
 		Admin:       "erik",
-		Members:     []string{"fiona", "grace"},
+		Members:     []string{"fiona", "grace", "henry"},
 	},
 }
 
@@ -124,6 +124,10 @@ func main() {
 
 	if err := ensureHistory(s, ids); err != nil {
 		log.Fatalf("seed history: %v", err)
+	}
+
+	if err := ensureClubHistory(s, ids); err != nil {
+		log.Fatalf("seed club history: %v", err)
 	}
 
 	fmt.Print(summary())
@@ -225,7 +229,7 @@ func ensureHistory(s *store.Store, ids map[string]string) error {
 	}
 
 	for i, lineup := range historyLineups {
-		if err := seedTournament(s, ids, lineup); err != nil {
+		if err := seedTournament(s, ids, lineup, ""); err != nil {
 			return fmt.Errorf("tournament %d: %w", i+1, err)
 		}
 	}
@@ -233,21 +237,122 @@ func ensureHistory(s *store.Store, ids map[string]string) error {
 	return nil
 }
 
-// seedTournament runs one Americano to completion with random scores.
-func seedTournament(s *store.Store, ids map[string]string, lineup []string) error {
+// seedClubHistory is a Club's set of past club events (Americanos owned by the
+// Club). Lineups are resolved like historyLineups; a "guest:Name" entry joins as
+// a Guest. Admin is the club-owner handle used to locate the Club id.
+type seedClubHistory struct {
+	Club    string
+	Admin   string
+	Lineups [][]string
+}
+
+// seedClubHistories plays out enough club games that members clear the leaderboard's
+// MinGames gate and rank, while leaving a couple of illustrative edge cases:
+//   - Bouvet: all four members rank; a Guest ("Visitor") plays but never accrues.
+//   - Oslo: erik/fiona/grace rank, but henry appears in only one event, so he
+//     stays provisional ("2 more to rank"); a Guest ("Newcomer") is excluded.
+//
+// Each Americano is 3 rounds (4 players, 1 court), so a member in two events has
+// 6 games — comfortably past MinGames.
+var seedClubHistories = []seedClubHistory{
+	{
+		Club:  "Bouvet Padel",
+		Admin: "alice",
+		Lineups: [][]string{
+			{"alice", "bob", "carol", "dave"},
+			{"alice", "bob", "carol", "dave"},
+			{"alice", "bob", "dave", "guest:Visitor"},
+		},
+	},
+	{
+		Club:  "Oslo Smashers",
+		Admin: "erik",
+		Lineups: [][]string{
+			{"erik", "fiona", "grace", "henry"},
+			{"erik", "fiona", "grace", "guest:Newcomer"},
+		},
+	},
+}
+
+// ensureClubHistory plays out the seeded club events so each Club's leaderboard
+// has real form data. Idempotent per-Club: if a Club's board already has any
+// rows, its games are assumed present and skipped. Runs after ensureHistory so
+// that function's "does alice have any history yet" guard still fires on a fresh
+// database (club games would otherwise satisfy it prematurely).
+func ensureClubHistory(s *store.Store, ids map[string]string) error {
+	for _, ch := range seedClubHistories {
+		adminID, ok := ids[ch.Admin]
+		if !ok {
+			return fmt.Errorf("unknown admin handle %q", ch.Admin)
+		}
+		clubID, err := findClubByName(s, adminID, ch.Club)
+		if err != nil {
+			return err
+		}
+		if clubID == "" {
+			return fmt.Errorf("club %q not found for history seeding", ch.Club)
+		}
+
+		board, err := s.GetClubLeaderboard(clubID)
+		if err != nil {
+			return err
+		}
+		if len(board.Ranked)+len(board.Provisional) > 0 {
+			fmt.Printf("club history %q: already present, skipping\n", ch.Club)
+			continue
+		}
+
+		for i, lineup := range ch.Lineups {
+			if err := seedTournament(s, ids, lineup, clubID); err != nil {
+				return fmt.Errorf("club %q event %d: %w", ch.Club, i+1, err)
+			}
+		}
+		fmt.Printf("club history %q: seeded %d club games\n", ch.Club, len(ch.Lineups))
+	}
+	return nil
+}
+
+// guestPrefix marks a lineup entry as a Guest (no account): "guest:Visitor"
+// joins a Player named "Visitor" with no UserID. Guests play and score like
+// anyone but never accrue on a Club leaderboard, so seeding a couple exercises
+// that path in dev.
+const guestPrefix = "guest:"
+
+// seedTournament runs one Americano to completion with random scores. When
+// clubID is non-empty the Session is owned by that Club (a club event), so its
+// games feed the Club leaderboard.
+func seedTournament(s *store.Store, ids map[string]string, lineup []string, clubID string) error {
 	const points = 24
+	var clubPtr *string
+	if clubID != "" {
+		clubPtr = &clubID
+	}
+	// The creator is the first registered player in the lineup (a Guest can't
+	// own a Session).
+	creatorID := ""
+	for _, key := range lineup {
+		if !strings.HasPrefix(key, guestPrefix) {
+			creatorID = ids[key]
+			break
+		}
+	}
 	sess, err := s.CreateSession(domain.SessionInput{
 		Courts:   1,
 		Points:   points,
 		GameMode: domain.ModeAmericano,
-	}, ids[lineup[0]])
+		ClubID:   clubPtr,
+	}, creatorID)
 	if err != nil {
 		return err
 	}
 
 	players := make([]domain.Player, 0, len(lineup))
 	for _, key := range lineup {
-		p, err := s.CreatePlayer(sess.ID, titleCase(key), ids[key], false)
+		name, userID := titleCase(key), ids[key]
+		if guestName, isGuest := strings.CutPrefix(key, guestPrefix); isGuest {
+			name, userID = guestName, ""
+		}
+		p, err := s.CreatePlayer(sess.ID, name, userID, false)
 		if err != nil {
 			return err
 		}
