@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.2](https://github.com/Fabianthorsen/OpenPadel/compare/v1.22.1...v1.22.2) (2026-07-25)
+
+
+### Bug Fixes
+
+* **web:** stop clubless user's create drawer freezing the page ([#262](https://github.com/Fabianthorsen/OpenPadel/issues/262)) ([037aefc](https://github.com/Fabianthorsen/OpenPadel/commit/037aefc84b19bb19c64b87de5b7243d155be2a8a))
+
 ## [1.22.1](https://github.com/Fabianthorsen/OpenPadel/compare/v1.22.0...v1.22.1) (2026-07-25)
 
 
