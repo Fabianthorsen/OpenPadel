@@ -47,7 +47,7 @@ describe('CreateDrawer — club preset', () => {
 	it('stays the ordinary tournament-create drawer with no club prop', () => {
 		render(CreateDrawer, { open: true });
 
-		expect(screen.getByRole('heading', { name: /create new tournament/i })).toBeInTheDocument();
+		expect(screen.getByRole('heading', { name: /create new session/i })).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: /invite link/i })).toBeInTheDocument();
 		// No club banner / club CTA when the drawer isn't club-scoped.
 		expect(screen.queryByText(/whole club will be notified/i)).not.toBeInTheDocument();
