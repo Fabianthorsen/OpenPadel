@@ -14,6 +14,8 @@
 	"create_title_line1": "Opprett ny",
 	"create_title_line2": "Turnering",
 	"create_club_event_banner": "Planlegger for {club} — hele klubben blir varslet.",
+	"create_attach_club_label": "Knytt til en klubb (valgfritt)",
+	"create_attach_club_none": "Ingen — personlig spill",
 	"create_club_event_title": "Planlegg en klubbkamp",
 	"create_club_event_button": "Opprett og varsle klubben →",
 	"create_subtitle": "Sett scenen for din neste Padel-turnering.",
