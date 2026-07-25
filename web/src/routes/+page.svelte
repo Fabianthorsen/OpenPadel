@@ -63,7 +63,7 @@
 		<div class="flex flex-1 flex-col justify-center space-y-12">
 			<!-- Brand -->
 			<div class="space-y-1">
-				<h1 class="text-primary text-[28px] font-[800]">OpenPadel</h1>
+				<h1 class="font-display text-primary text-[28px] font-[800]">OpenPadel</h1>
 				<p class="text-text-secondary">{$_('home_tagline')}</p>
 			</div>
 

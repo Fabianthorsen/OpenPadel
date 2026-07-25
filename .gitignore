@@ -26,3 +26,9 @@ internal/ui/build/*
 server
 .scratch/
 api.log
+
+# Impeccable design skill — local tooling & artifacts
+.impeccable/
+.claude/skills/
+.github/hooks/
+.github/skills/

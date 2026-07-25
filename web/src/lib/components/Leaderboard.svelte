@@ -63,7 +63,7 @@
 	}
 
 	async function shareResults() {
-		const text = `${sessionName || 'Tournament results'} ${window.location.href}`;
+		const text = `${sessionName || 'Session results'} ${window.location.href}`;
 		if (navigator.share) {
 			try {
 				await navigator.share({ title: sessionName, text });
@@ -129,7 +129,7 @@
 				{$_('leaderboard_final')}
 			</p>
 			{#if sessionName}
-				<p class="text-xl font-[800]">{sessionName}</p>
+				<p class="font-display text-xl font-[800]">{sessionName}</p>
 			{/if}
 		</div>
 
@@ -182,7 +182,7 @@
 					</div>
 
 					<p
-						class="mt-1.5 w-full truncate text-center text-sm font-[800] {isFirst
+						class="font-display mt-1.5 w-full truncate text-center text-sm font-[800] {isFirst
 							? 'text-text-primary'
 							: 'text-text-secondary'}"
 					>

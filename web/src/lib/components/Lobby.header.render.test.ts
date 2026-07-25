@@ -138,7 +138,7 @@ describe('Lobby header — admin', () => {
 
 		// Entering edit mode swaps the title for a text input. It must shrink to
 		// share the row with the action icons — `w-full` would overflow by their width.
-		const input = screen.getByPlaceholderText(/tournament name/i);
+		const input = screen.getByPlaceholderText(/session name/i);
 		expect(input.className).toContain('flex-1');
 		expect(input.className).toContain('min-w-0');
 		expect(input.className).not.toContain('w-full');

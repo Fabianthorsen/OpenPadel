@@ -60,7 +60,8 @@ export const tokens = {
 	},
 
 	fonts: {
-		sans: 'var(--font-sans)'
+		sans: 'var(--font-sans)',
+		display: 'var(--font-display)'
 	},
 
 	shadows: {
