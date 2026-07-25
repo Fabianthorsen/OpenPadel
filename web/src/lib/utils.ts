@@ -13,9 +13,21 @@ export function shortName(name: string): string {
 	return `${words[0]} ${words[words.length - 1][0].toUpperCase()}.`;
 }
 
-/** Returns a display name for a session, falling back to a mode-aware default. */
-export function sessionName(session: { name?: string; game_mode?: string }): string {
+/**
+ * Returns a display name for a session. An explicit name always wins; otherwise
+ * a club event falls back to a name tied to its Club ("<Club> <Mode>"), and a
+ * plain session to the generic default.
+ */
+export function sessionName(session: {
+	name?: string;
+	club_name?: string;
+	game_mode?: string;
+}): string {
 	if (session.name) return session.name;
+	if (session.club_name) {
+		const mode = session.game_mode === 'mexicano' ? 'Mexicano' : 'Americano';
+		return `${session.club_name} ${mode}`;
+	}
 	return 'OpenPadel Americano';
 }
 
