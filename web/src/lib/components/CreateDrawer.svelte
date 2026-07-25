@@ -9,8 +9,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { SegmentedControl, type SegmentedOption } from '$lib/components/ui/segmented-control';
 	import * as Drawer from '$lib/components/ui/drawer';
-	import Avatar from '$lib/components/ui/Avatar.svelte';
-	import { Users, Check } from '@lucide/svelte';
+	import { Select, type SelectOption } from '$lib/components/ui/select';
+	import { Users } from '@lucide/svelte';
 
 	let {
 		open = $bindable(false),
@@ -44,6 +44,18 @@
 				.catch(() => {});
 		}
 	});
+
+	// Dropdown options for the club picker: a "none" default (personal game) first,
+	// then each club the caller belongs to, with its avatar.
+	const clubOptions = $derived<SelectOption[]>([
+		{ value: '', label: $_('create_attach_club_none') },
+		...myClubs.map((c) => ({
+			value: c.id,
+			label: c.name,
+			icon: c.avatar_icon,
+			color: c.avatar_color
+		}))
+	]);
 
 	// The club the new session will belong to: a preset always wins, else the
 	// picked club, else none (personal).
@@ -132,35 +144,11 @@
 					<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
 						{$_('create_attach_club_label')}
 					</p>
-					<div class="space-y-1.5">
-						<button
-							type="button"
-							onclick={() => (selectedClubId = '')}
-							aria-pressed={selectedClubId === ''}
-							class="flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors {selectedClubId ===
-							''
-								? 'border-primary bg-primary/5'
-								: 'border-border bg-surface-raised'}"
-						>
-							<span class="flex-1 text-sm font-semibold">{$_('create_attach_club_none')}</span>
-							{#if selectedClubId === ''}<Check size={16} class="text-primary shrink-0" />{/if}
-						</button>
-						{#each myClubs as c (c.id)}
-							<button
-								type="button"
-								onclick={() => (selectedClubId = c.id)}
-								aria-pressed={selectedClubId === c.id}
-								class="flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors {selectedClubId ===
-								c.id
-									? 'border-primary bg-primary/5'
-									: 'border-border bg-surface-raised'}"
-							>
-								<Avatar icon={c.avatar_icon} color={c.avatar_color} name={c.name} size="sm" />
-								<span class="flex-1 truncate text-sm font-semibold">{c.name}</span>
-								{#if selectedClubId === c.id}<Check size={16} class="text-primary shrink-0" />{/if}
-							</button>
-						{/each}
-					</div>
+					<Select
+						options={clubOptions}
+						bind:value={selectedClubId}
+						ariaLabel={$_('create_attach_club_label')}
+					/>
 				</div>
 			{/if}
 

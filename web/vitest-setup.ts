@@ -37,6 +37,12 @@ window.IntersectionObserver ??= ObserverStub as unknown as typeof IntersectionOb
 
 Element.prototype.scrollIntoView ??= vi.fn();
 
+// Pointer capture — jsdom has no PointerEvent capture model; Bits UI's Select
+// trigger calls these on pointerdown. No-op shims let the dropdown open in tests.
+Element.prototype.hasPointerCapture ??= vi.fn().mockReturnValue(false);
+Element.prototype.setPointerCapture ??= vi.fn();
+Element.prototype.releasePointerCapture ??= vi.fn();
+
 // Web Animations API — jsdom has no implementation; Bits UI's presence layer
 // probes for running animations before unmounting.
 Element.prototype.animate ??= vi.fn().mockReturnValue({
