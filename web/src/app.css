@@ -20,7 +20,7 @@
 	   focus. No second blue, no ambient blue tint in the chrome. Scores and points
 	   read as near-black on neutral tiles; the join code is the one solid-cobalt
 	   moment. Light mode only. Type stays Geist + Schibsted. Every colour is a
-	   token — no component hardcodes a hex. See DESIGN.md. */
+	   token — no component hardcodes a hex. See CONTEXT.md § Visual Language. */
 
 	/* Surfaces — quiet, faintly-cool neutral greys (tinted, not blue). */
 	--color-background: #f8f8fa;

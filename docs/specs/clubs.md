@@ -10,8 +10,7 @@ made across the *Clubs — wayfinder map* (#113); no code is shipped yet.
 **Decision record this spec is built from:**
 
 - Foundation — membership, roles, joining: #114
-- Leaderboard metric: #116 → [`docs/adr/0005-club-leaderboard-metric.md`](../adr/0005-club-leaderboard-metric.md)
-- Ranking-metric research: #115 → [`docs/research/clubs-leaderboard-ranking-metrics.md`](../research/clubs-leaderboard-ranking-metrics.md)
+- Leaderboard metric: #116 → [`docs/adr/0005-club-leaderboard-metric.md`](../adr/0005-club-leaderboard-metric.md) (folds in the #115 ranking-metric research)
 - Club-scoped invites: #117
 - Club events: #118
 - UI shape (prototype): #119
@@ -150,7 +149,7 @@ member played in a qualifying club event, `margin = (memberTeamPoints − oppone
 
 ## Screens
 
-Visual language per `DESIGN.md`. UI shape chosen in #119 — prototype:
+Visual language per `CONTEXT.md § Visual Language`. UI shape chosen in #119 — prototype:
 <https://claude.ai/code/artifact/a4fca59f-0974-4874-88ef-7dd13b7799d1>.
 
 ### Club home — "action dashboard" (Variant C)

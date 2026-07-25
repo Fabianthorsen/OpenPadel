@@ -97,23 +97,23 @@ must use those terms and avoid the listed synonyms (e.g. never "tournament",
   core play behind signup.
 - **Bilingual EN + NO** — all user-facing copy ships in English and Norwegian
   (`web/src/lib/i18n`).
-- **Light-mode only** — an intentional stance (per DESIGN.md), not a temporary
-  state; do not introduce a dark theme without an explicit decision.
+- **Light-mode only** — an intentional stance (per `CONTEXT.md § Visual Language`), not a
+  temporary state; do not introduce a dark theme without an explicit decision.
 - **Single-binary, self-hostable** — the whole product ships as one Go binary
   embedding the SvelteKit build; open and self-hostable deploy is part of the
   identity.
-- Voice and visual language live in `DESIGN.md` ("Calm by default, bold when we
-  celebrate"); treat expressive treatments as celebratory-only.
+- Voice and visual language live in `CONTEXT.md § Visual Language` ("Calm by default, bold when
+  we celebrate"); treat expressive treatments as celebratory-only.
 
 ## Evidence on Hand
 
 - `CONTEXT.md` — domain glossary / ubiquitous language (source of truth for
   terms).
-- `DESIGN.md` + `docs/specs/redesign-rubric.md` — visual north-star and the
-  per-screen redesign rubric.
+- `CONTEXT.md § Visual Language` + `docs/specs/redesign-rubric.md` — visual north-star and
+  the per-screen redesign rubric.
 - `docs/adr/` — hard-to-reverse decisions (e.g. removing Timed Americano;
   rating balances match-ups not partnerships; Career Stats redesign).
-- `docs/research/ui-audit.md` — the audit that reconciled DESIGN.md with the
+- `docs/research/ui-audit.md` — the audit that reconciled the visual language with the
   shipped app.
 - `README.md` — stack and run instructions.
 - No customer testimonials, usage benchmarks, pricing, or press exist; future
@@ -136,4 +136,4 @@ must use those terms and avoid the listed synonyms (e.g. never "tournament",
 
 No formal external standard is mandated. The durable, product-specific
 requirement is courtside usability: large tap targets and sunlight-legible
-contrast/typography on every working screen, per the DESIGN.md principles.
+contrast/typography on every working screen, per the visual-language principles (`CONTEXT.md`).

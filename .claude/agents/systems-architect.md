@@ -24,7 +24,7 @@ When given a feature request or technical change, you will:
    - Backend API changes (new endpoints, modified handlers, business logic in `internal/`)
    - Frontend changes (new Svelte components, stores, pages)
    - Testing requirements (unit tests, integration tests, regression tests per CLAUDE.md)
-   - Documentation updates (ARCHITECTURE.md, CONTEXT.md)
+   - Documentation updates (CONTEXT.md, docs/adr/, CLAUDE.md Invariants)
 
 3. **Examine Existing Patterns**: Reference established patterns in the codebase:
    - Store functions follow patterns in `internal/store/`
@@ -65,7 +65,7 @@ Example structure:
 - [ ] **internal/store/tournament_test.go** — Test CreateTournament error cases and data retrieval
 
 ## Documentation
-- [ ] **ARCHITECTURE.md** — Add Tournament Store section and API endpoints
+- [ ] **docs/adr/** — record any hard-to-reverse decision; **CONTEXT.md** for new domain terms
 ```
 
 **Special Considerations for OpenPadel:**

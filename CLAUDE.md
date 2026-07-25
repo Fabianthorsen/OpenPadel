@@ -23,15 +23,20 @@ OpenPadel — Go + SQLite backend, SvelteKit 5 frontend, single binary deploy to
 - **AdminToken is the only authorization gate**, checked via `isAdmin()`. `CreatorUserID` /
   `CreatorPlayerID` is identity metadata for UI display only — never treat it as an auth check.
 - **Live updates are SSE-first**, with a 30s poll as fallback insurance for buffering proxies —
-  don't "simplify" by ripping out the poll or by replacing SSE with polling.
+  don't "simplify" by ripping out the poll or by replacing SSE with polling. The mechanics are
+  load-bearing: a 20s `:ping` heartbeat keeps the connection under Fly's 60s idle timeout; the
+  SSE fan-out is drop-oldest so it can never back-pressure the single SQLite writer; the browser
+  closes the `EventSource` on tab-hide to free Fly's ~80-connection/machine limit.
 
 ## Docs
 
-- `CONTEXT.md` — domain glossary (terms to use, terms to avoid)
-- `ARCHITECTURE.md` — system design, API surface, data model
-- `DESIGN.md` — visual/UX language
-- `docs/adr/` — hard-to-reverse decisions and why
+- `CONTEXT.md` — domain glossary (terms to use, terms to avoid) + visual language
+- `PRODUCT.md` — product brief: users, purpose, principles
+- `docs/adr/` — hard-to-reverse decisions and why (incl. sqlite + litestream deploy)
 - `docs/specs/` — per-screen UI specs
+
+System design lives in the code (the router, migrations, and `internal/*` are the source of truth);
+the non-obvious *why* — real-time/SSE, deploy — is captured in the Invariants above and `docs/adr/`.
 
 ## Agent skills
 

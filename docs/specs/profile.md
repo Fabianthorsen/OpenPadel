@@ -61,7 +61,7 @@ Composes `Collapsible` + `SectionLabel` + chevron; lives in `web/src/lib/compone
 
 ---
 
-## Live indicator (decision, recorded in DESIGN.md)
+## Live indicator (decision, recorded in CONTEXT.md § Visual Language)
 
 A "live/playing" session is signalled with **`--color-primary`** — a pulsing dot + `primary-muted` tint — consistent with the active-round live-court tint (#170) and the leaderboard live dot (#172). No `emerald-*`, no new token.
 

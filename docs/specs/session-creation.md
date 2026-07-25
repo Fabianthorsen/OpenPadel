@@ -1,7 +1,7 @@
 # Session creation — redesign spec
 
 **Ticket:** [Redesign spec: Session creation (CreateDrawer)](https://github.com/Fabianthorsen/OpenPadel/issues/175) (#175)
-**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [DESIGN.md](../../DESIGN.md) §2 · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md) · **Drawer primitive:** [drawer-design.md](drawer-design.md)
+**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [visual language](../../CONTEXT.md#visual-language) · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md) · **Drawer primitive:** [drawer-design.md](drawer-design.md)
 **Surfaces:** `web/src/lib/components/CreateDrawer.svelte`; the home entry in `web/src/routes/+page.svelte` (**remove** its inline setup step).
 
 > Register: **working screen → calm.** A bottom-sheet `Drawer`, opened from Home's "Start session". Login-gated (the creator auto-joins using their account name) — the signed-out → sign-in entry is Home's job (#176).

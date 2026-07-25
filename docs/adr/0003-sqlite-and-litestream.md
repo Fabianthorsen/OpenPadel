@@ -7,7 +7,7 @@ Accepted
 ## Context
 
 OpenPadel needs durable storage for Sessions, Players, Rounds, and Users, deployed as a single
-Fly.io machine (see `ARCHITECTURE.md`). A managed Postgres/MySQL instance would give built-in
+Fly.io machine. A managed Postgres/MySQL instance would give built-in
 replication, backups, and horizontal scale; SQLite on local disk is a single file with none of that
 built in.
 
@@ -33,3 +33,11 @@ otherwise have (machine loss, volume corruption).
   discrete backup files to manage.
 - This choice trades managed-DB conveniences (built-in HA, dashboards, connection pooling) for
   single-binary deploy simplicity. Revisit only if a concrete scale or multi-writer need appears.
+
+## Deployment shape
+
+This ADR's single-file DB is what makes the whole product deploy as **one Go binary**. A two-stage
+Docker build has Bun compile the SvelteKit frontend, which Go then embeds (`//go:embed all:build`
+in `internal/ui/`) and compiles into a single static binary on Alpine (~20 MB). `fly deploy` ships
+it to Fly.io (Stockholm / `arn`); the SQLite file lives on a persistent Fly volume at
+`/data/openpadel.db`. No separate web server or database service to run.

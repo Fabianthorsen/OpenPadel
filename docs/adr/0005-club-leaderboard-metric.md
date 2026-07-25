@@ -11,7 +11,7 @@ registered **Users**; the club leaderboard ranks members across the club's sessi
 cross-session rating exists today — within-session `Standing` ranks Players by cumulative points,
 and that's it.
 
-The ranking-metrics research (`docs/research/clubs-leaderboard-ranking-metrics.md`, cited to
+The ranking-metrics research (cited to
 Glickman's Glicko papers, FIDE, TrueSkill, and the FIP padel ladder) surveyed **Elo, Glicko-2,
 cumulative points, win-rate, and average points-difference** against OpenPadel's realities:
 rotating partners (Americano), standings-adaptive pairings (Mexicano), variable point targets

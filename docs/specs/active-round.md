@@ -1,7 +1,7 @@
 # Active round view — redesign spec
 
 **Ticket:** [Redesign spec: Active round view](https://github.com/Fabianthorsen/OpenPadel/issues/170) (#170)
-**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [DESIGN.md](../../DESIGN.md) §4 · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
+**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [visual language](../../CONTEXT.md#visual-language) · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
 **Surfaces:** `web/src/lib/components/ActiveSession.svelte` (scoring/round portion), `RoundIndicator.svelte`, `web/src/routes/s/[id]/+page.svelte`
 **Prototype:** `web/src/routes/prototype/active-round/` (throwaway; variants A/B/C — see bottom)
 

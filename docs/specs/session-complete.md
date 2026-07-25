@@ -1,7 +1,7 @@
 # Session complete — redesign spec
 
 **Ticket:** [Redesign spec: Session complete](https://github.com/Fabianthorsen/OpenPadel/issues/174) (#174)
-**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [DESIGN.md](../../DESIGN.md) §7 · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
+**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [visual language](../../CONTEXT.md#visual-language) · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
 **Surfaces:** the `complete` branch of `web/src/lib/components/Leaderboard.svelte` (rendered by `s/[id]` when `status === 'done'`).
 
 > Register: **the celebratory surface.** This is the one screen where bold is sanctioned (the live leaderboard #172 handed its drama here). **Terminal** — the session is over, so there's no session nav / Standings peek. Shares the standings-row markup with the live leaderboard (#172); coordinate.

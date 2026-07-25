@@ -21,7 +21,7 @@ You are a Senior Documentation Engineer specializing in technical synchronizatio
    - /docs/* files (guides, reference, architecture)
    - /docs/api/* (API endpoint specs)
    - /docs/cli/* (command reference)
-   - ARCHITECTURE.md (if architectural patterns changed)
+   - docs/adr/ + CLAUDE.md Invariants (if a hard-to-reverse decision or documented invariant changed)
    - Any inline code comments or examples in the codebase
 
 3. **Apply Diátaxis Framework**:
@@ -69,7 +69,7 @@ You are a Senior Documentation Engineer specializing in technical synchronizatio
 
 9. **Alignment with OpenPadel Standards**:
    - Follow the Git workflow and documentation update policies in CLAUDE.md
-   - When changes affect API endpoints, database schema, or deployment setup, flag that ARCHITECTURE.md should be updated
+   - When changes affect deployment setup or a documented invariant, flag that the relevant `docs/adr/` entry or CLAUDE.md Invariants should be updated (API/schema shape lives in the code, not a doc)
    - When new game modes or major features are involved, note that CONTEXT.md may need updates
    - Ensure all code examples use the correct tooling references (bun for frontend, go test for backend)
 

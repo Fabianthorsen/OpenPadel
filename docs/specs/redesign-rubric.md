@@ -4,8 +4,8 @@
 **Map:** [UI improvement: redesign every page](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167)
 
 The shared checklist **every per-page spec and implementation applies.** Read this + the relevant
-section of the [UI audit](../research/ui-audit.md) before speccing a page. North-star lives in
-[`DESIGN.md`](../../DESIGN.md).
+section of the [UI audit](../research/ui-audit.md) before speccing a page. North-star (principles +
+visual language) lives in [`PRODUCT.md`](../../PRODUCT.md) and [`CONTEXT.md § Visual Language`](../../CONTEXT.md#visual-language).
 
 ---
 
@@ -60,7 +60,7 @@ the shared layer.
 - [ ] Every state specified: **empty / loading / live / error** (loading must not be a blank screen or
       bare "Loading…" — use a shared spinner/skeleton).
 
-### 3. Visual polish (per DESIGN.md)
+### 3. Visual polish (per CONTEXT.md § Visual Language)
 - [ ] Correct register: working screen = calm; celebratory = expressive. No expressive treatment
       leaking onto a working screen.
 - [ ] Typographic hierarchy from the scale; `tabular-nums` on all scores/points.

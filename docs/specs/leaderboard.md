@@ -1,7 +1,7 @@
 # Live leaderboard — redesign spec
 
 **Ticket:** [Redesign spec: Live leaderboard](https://github.com/Fabianthorsen/OpenPadel/issues/172) (#172)
-**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [DESIGN.md](../../DESIGN.md) §6 · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
+**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [visual language](../../CONTEXT.md#visual-language) · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
 **Surfaces:** `web/src/lib/components/Leaderboard.svelte` (the `!complete` branch), rendered standalone and inside the round-first **Standings peek** (#170).
 
 > **Scope:** this spec covers the **live standings** view only. The **final podium / celebration** (the `complete` branch — trophy, podium bars, add-contact, close) belongs to **Session complete (#174)**. `Leaderboard.svelte` stays one component branching on `complete`; the two specs coordinate on the shared standings-row markup.
@@ -12,7 +12,7 @@
 
 Live standings are **calm & glanceable**, not celebratory (the celebration is the finale, #174 — north-star updated to say so):
 
-1. **Density: rank · name · points (lean).** No Games column, no W-D-L in the default row (DESIGN.md §6 "read the standings in under 2 seconds"). W-D-L/games detail is a nice-to-have on tap (optional), not a default column.
+1. **Density: rank · name · points (lean).** No Games column, no W-D-L in the default row (the north-star: "read the standings in under 2 seconds"). W-D-L/games detail is a nice-to-have on tap (optional), not a default column.
 2. **Emphasis: subtle.** **No leader hero card, no colored top-3 rows, no court-line motif.** Rank 1 gets `--color-primary` on its rank number (and name) — the single subtle distinction. Everyone else neutral.
 
 ---
@@ -46,7 +46,7 @@ The same lean list rendered in a **bottom sheet** opened by the round view's flo
 
 ## Interaction & flow
 
-- **Live refresh** — reload on the `round_updated` SSE event via `stream.onEvent` (keep; no in-component polling — the page-level 30s fallback covers buffering proxies, per ARCHITECTURE.md / CLAUDE.md).
+- **Live refresh** — reload on the `round_updated` SSE event via `stream.onEvent` (keep; no in-component polling — the page-level 30s fallback covers buffering proxies, per CLAUDE.md Invariants).
 - **Re-sort** — when standings change, rows animate to new positions (optional 150ms ease-out; nice-to-have, not required).
 - **Ties** — display the rank the backend assigns; if two players share points, show them at the same rank number (or a subtle `T`), rather than arbitrary insertion order. (Resolves an open question from the old spec.)
 - Read-only for everyone (no admin controls here).

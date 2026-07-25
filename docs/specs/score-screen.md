@@ -1,7 +1,7 @@
 # Score entry — redesign spec
 
 **Ticket:** [Redesign spec: Score entry](https://github.com/Fabianthorsen/OpenPadel/issues/171) (#171)
-**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [DESIGN.md](../../DESIGN.md) §5 · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
+**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [visual language](../../CONTEXT.md#visual-language) · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
 **Surfaces:** score flow in `web/src/lib/components/ActiveSession.svelte`, the numpad in `web/src/routes/s/[id]/+page.svelte`, `web/src/lib/stores/numpad.ts`
 
 > Register: **working screen → calm.** Reached from the Active round view (#170): admin taps a court → this entry surface. Big scores are *functional* emphasis (kept prominent), not decoration. Auto-complement is canonical (#169). The old immersive dark-green unified card + court tabs + NET divider + service/receive + 4-tab nav from the previous draft of this file are **superseded** by the north-star and #170.

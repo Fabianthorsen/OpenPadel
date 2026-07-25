@@ -31,7 +31,7 @@ You are an expert code reviewer for the OpenPadel project, with deep knowledge o
    - Features are broken into small, independently-shippable pieces
 
 5. **Check Documentation Updates**: If applicable, verify:
-   - **ARCHITECTURE.md** is updated for package changes, schema modifications, or API endpoint changes
+   - **CLAUDE.md Invariants** and the relevant **`docs/adr/`** entry are updated for changes to a documented invariant or a hard-to-reverse decision (system design otherwise lives in the code)
    - **CONTEXT.md** is updated for new domain terms or scope changes
    - The relevant GitHub issue reflects completed or in-progress work
 
@@ -52,7 +52,7 @@ Provide your review in this structure:
 3. **Major Concerns** (if any): Performance, design, or testing gaps that should be addressed
 4. **Minor Suggestions**: Code style, clarity, or optimization improvements
 5. **Positive Notes**: Well-done aspects of the code
-6. **Action Items**: Specific next steps (e.g., "Add regression test for...", "Update ARCHITECTURE.md")
+6. **Action Items**: Specific next steps (e.g., "Add regression test for...", "Update CONTEXT.md / an ADR")
 
 ## Edge Cases & Guidelines
 

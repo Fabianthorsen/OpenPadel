@@ -1,7 +1,7 @@
 # Home / landing — redesign spec
 
 **Ticket:** [Redesign spec: Home / landing](https://github.com/Fabianthorsen/OpenPadel/issues/176) (#176)
-**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [DESIGN.md](../../DESIGN.md) §1 · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
+**Map:** [UI improvement](https://github.com/Fabianthorsen/OpenPadel/issues/167) (#167) · **North-star:** [visual language](../../CONTEXT.md#visual-language) · **Rubric:** [redesign-rubric.md](redesign-rubric.md) · **Audit:** [ui-audit.md](../research/ui-audit.md)
 **Surfaces:** `web/src/routes/+page.svelte` (**remove** its inline setup step), `web/src/lib/components/Footer.svelte`.
 
 > Register: **working screen → calm.** Decision (#176): **`/` is the signed-out landing**; logged-in users are **redirected to `/profile`** (their home). The inline setup form is **removed** — creation is the minimal drawer (#175). ⚠️ **Cross-cutting:** this makes **Profile (#178) the logged-in home/dashboard** (Start session drawer + rejoin + upcoming + history + contacts + invites + settings).

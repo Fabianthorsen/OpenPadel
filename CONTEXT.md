@@ -171,4 +171,30 @@ Before creating a new component, ask: **Can I extend an existing one?**
 - **Different props** → Consider composition with existing components
 - **Fundamentally different behavior** → Create custom component (e.g., Drawer required custom implementation; Dialog is for centered modals)
 
-See `docs/guides/component-patterns.md` for the full decision tree.
+The living reference is the vendored primitives themselves — `web/src/lib/components/ui/*` (the `tv()` + JSDoc pattern) plus the component tables above.
+
+---
+
+## Visual Language
+
+Design *principles* (courtside-first, ~3-tap scoring, glanceable leaderboard, "calm by default, bold only to celebrate") live in `PRODUCT.md`. This section is the durable *visual* rulebook; per-screen intent lives in `docs/specs/`, and design tokens are source-of-truth in `web/src/app.css` (`@theme`), mirrored in `web/src/lib/design-tokens.ts`.
+
+**Two registers.** The UI switches deliberately between them:
+
+- **Working screens** (Home, session creation, lobby & join, active round, score entry, auth, profile) — *Nordic restraint*: muted surfaces, one accent (`--color-primary`) used sparingly, typographic hierarchy, functional icons only, no decorative motifs.
+- **Celebratory surfaces** (the Session-complete finale, winner moment) — allowed to feel like a win: podium, medal colours, larger display type, decorative motifs (court-line SVG, trophy). The **live** leaderboard, despite showing standings, stays *calm* — it's read repeatedly mid-Session.
+
+The rule: **expressive == celebratory-only.** When in doubt, a screen is a working screen. The failure mode to avoid is expressive treatments leaking into working screens.
+
+**Typography — two families** (self-hosted via `@fontsource`, no Google Fonts request):
+
+- **Geist Sans** (`--font-sans`) — everything: body, labels, and all numeric/data (scores, standings use `tabular-nums`).
+- **Schibsted Grotesk** (`--font-display`, via the `font-display` utility) — celebratory display face, **only** on the OpenPadel wordmark and the Session-complete finale. Never on working-screen titles or score numerals.
+
+**What this is not:**
+
+- **Light-mode only** in V1 — no dark palette. Vendored components leak `dark:` utilities that activate via `prefers-color-scheme`; strip that leakage so light renders consistently. A real dark theme is a future, explicit decision.
+- **No emojis** — use `@lucide/svelte` icons. Functional icons are allowed app-wide; *decorative* treatments (court-line SVG, trophy flourishes) are celebratory-surface only.
+- **No gradients.**
+- **Shadows subtle and reserved** — `--shadow-sm` for resting cards; `--shadow-md/lg` only for lifted/celebratory chrome (bottom nav, drawers, winner card).
+- **Use tokens, never literal hex.** `--color-primary` is the only green on working screens.
