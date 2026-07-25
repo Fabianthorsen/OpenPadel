@@ -148,7 +148,7 @@
 				>
 					<!-- Trophy for winner -->
 					{#if isFirst}
-						<div class="text-primary mb-1"><Trophy size={28} /></div>
+						<div class="mb-1 text-[var(--color-medal-gold)]"><Trophy size={28} /></div>
 					{/if}
 
 					<!-- Avatar with badge -->
@@ -284,7 +284,9 @@
 								>{(s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0)}L</span
 							>
 						</div>
-						<span class="text-base font-[800] tabular-nums">{s.points}</span>
+						<span class="tile min-w-[2.25rem] rounded-md px-2 py-1 text-center text-base font-[800]"
+							>{s.points}</span
+						>
 						<span class="text-text-disabled text-[10px] font-bold tracking-widest uppercase"
 							>{$_('leaderboard_pts')}</span
 						>
@@ -329,7 +331,7 @@
 									: $_('active_round_open', { values: { current: leaderboard.current_round } })}
 							</span>
 							<span class="flex items-center gap-1">
-								<span class="bg-primary inline-block h-1.5 w-1.5 animate-pulse rounded-full"></span>
+								<span class="bg-signal inline-block h-1.5 w-1.5 animate-pulse rounded-full"></span>
 								{$_('leaderboard_live')}
 							</span>
 						</div>
@@ -342,14 +344,14 @@
 				{#each leaderboard.standings as s (s.player_id)}
 					{@const isRank1 = s.rank === 1}
 					<div
-						class="bg-surface flex items-center gap-3 rounded-2xl px-4 py-3.5"
+						class="bg-surface border-border/60 flex items-center gap-3 rounded-2xl border px-4 py-3.5 shadow-sm"
 						aria-live="polite"
 						aria-label="{s.rank}. {s.name}: {s.points} points"
 					>
-						<!-- Rank number: rank 1 in primary, others disabled -->
+						<!-- Rank number: rank 1 lit amber, others disabled -->
 						<span
 							class="w-6 text-sm font-[800] tabular-nums {isRank1
-								? 'text-primary'
+								? 'text-text-primary'
 								: 'text-text-disabled'}"
 						>
 							{s.rank}
@@ -366,7 +368,7 @@
 							/>
 							<span
 								class="truncate text-sm {isRank1
-									? 'text-primary font-bold'
+									? 'text-text-primary font-bold'
 									: 'text-text-primary font-semibold'}"
 							>
 								{shortName(s.name)}
@@ -376,8 +378,12 @@
 							{/if}
 						</div>
 
-						<!-- Points: right-aligned, the ranking metric -->
-						<span class="text-text-primary text-base font-[800] tabular-nums">{s.points}</span>
+						<!-- Points: the ranking metric, on its own glazed tile -->
+						<span
+							class="tile min-w-[2.25rem] rounded-md px-2 py-1 text-center text-base font-[800] {isRank1
+								? 'ring-primary/60 ring-2'
+								: ''}">{s.points}</span
+						>
 					</div>
 				{/each}
 			</div>

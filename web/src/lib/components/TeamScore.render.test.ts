@@ -33,7 +33,7 @@ describe('TeamScore', () => {
 		const { unmount } = render(TeamScore, {
 			props: { score: 16, opponentScore: 8, scored: true }
 		});
-		expect(screen.getByText('16')).toHaveClass('text-primary', 'font-bold');
+		expect(screen.getByText('16')).toHaveClass('text-text-primary', 'font-bold');
 		unmount();
 
 		render(TeamScore, { props: { score: 8, opponentScore: 16, scored: true } });

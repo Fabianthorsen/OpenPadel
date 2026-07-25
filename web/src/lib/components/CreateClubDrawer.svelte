@@ -30,7 +30,7 @@
 				name: name.trim(),
 				description: description.trim(),
 				avatar_icon: 'Star',
-				avatar_color: 'forest'
+				avatar_color: 'sky'
 			});
 			toast.success(`Club "${club.name}" created!`);
 			open = false;

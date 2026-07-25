@@ -291,7 +291,9 @@
 				<!-- Mexicano lets the admin pick the count. Americano's is derived by the
 				     backend from the roster and shown in the lobby header, not here. -->
 				{#if roundsMode === 'fixed' && configMode === 'mexicano'}
-					<div class="bg-surface flex items-center justify-between rounded-xl px-4 py-2.5">
+					<div
+						class="bg-surface border-border flex items-center justify-between rounded-xl border px-4 py-2.5"
+					>
 						<span class="text-text-secondary text-sm">{$_('lobby_rounds_label')}</span>
 						<Stepper
 							bind:value={configRounds}
@@ -325,13 +327,17 @@
 					<div class="space-y-4">
 						<Calendar bind:value={calendarDate} onchange={commitScheduleTime} />
 						<div class="grid grid-cols-2 gap-3">
-							<div class="bg-surface flex items-center justify-between rounded-xl px-4 py-2.5">
+							<div
+								class="bg-surface border-border flex items-center justify-between rounded-xl border px-4 py-2.5"
+							>
 								<span class="text-text-secondary text-xs font-semibold">
 									{$_('schedule_hour_label')}
 								</span>
 								<Stepper value={timeHour} onchange={onHourChange} min={8} max={21} step={1} />
 							</div>
-							<div class="bg-surface flex items-center justify-between rounded-xl px-4 py-2.5">
+							<div
+								class="bg-surface border-border flex items-center justify-between rounded-xl border px-4 py-2.5"
+							>
 								<span class="text-text-secondary text-xs font-semibold">
 									{$_('schedule_minute_label')}
 								</span>

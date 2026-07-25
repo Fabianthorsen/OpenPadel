@@ -18,7 +18,7 @@
 				{$_('numpad_target', { values: { points: $numpad?.targetPoints ?? 0 } })}
 			</p>
 			<p
-				class="mb-6 text-center text-[64px] leading-none font-[800] tabular-nums transition-transform
+				class="tile mx-auto mb-6 inline-flex min-w-[7rem] items-center justify-center rounded-3xl px-8 py-3 text-center text-[64px] leading-none font-[800] tabular-nums transition-transform
         {$numpad?.shaking ? 'animate-[shake_0.4s_ease-in-out]' : ''}"
 			>
 				{$numpad?.value || '0'}

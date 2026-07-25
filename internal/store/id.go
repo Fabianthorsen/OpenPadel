@@ -17,8 +17,17 @@ func randomAvatarIcon() string {
 	return avatarIcons[idx.Int64()]
 }
 
+// avatarColors is the auto-assigned identity palette (users don't pick it).
+// Deliberately no greens, to match the blue-white theme; each reads well as a
+// white-on-colour circle. See web Avatar colorMap for the rendered hexes.
+var avatarColors = []string{"sky", "orange", "coral", "gold", "slate", "rose", "charcoal"}
+
 func randomAvatarColor() string {
-	return "forest"
+	idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(avatarColors))))
+	if err != nil {
+		return "sky"
+	}
+	return avatarColors[idx.Int64()]
 }
 
 // codeAlpha is uppercase + digits with visually ambiguous chars removed

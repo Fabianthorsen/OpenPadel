@@ -680,7 +680,9 @@
 			<div class="space-y-4">
 				{#if auth.user}
 					<!-- Logged in: show account card + join -->
-					<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3.5">
+					<div
+						class="bg-surface-raised border-border flex items-center gap-3 rounded-2xl border px-4 py-3.5"
+					>
 						<Avatar
 							icon={auth.user.avatar_icon}
 							color={auth.user.avatar_color}
@@ -854,18 +856,18 @@
 		</nav>
 
 		<!-- Join code + share -->
-		<div class="bg-surface-raised space-y-3 rounded-2xl px-5 py-4">
+		<div class="bg-surface border-border/60 space-y-3 rounded-2xl border px-5 py-4 shadow-sm">
 			<SectionLabel>{$_('lobby_join_code')}</SectionLabel>
 			<div class="flex gap-2">
 				{#each session.id.split('') as char}
 					<div
-						class="bg-surface text-text-primary flex flex-1 items-center justify-center rounded-xl py-3 font-mono text-2xl font-[700]"
+						class="tile tile-cobalt flex flex-1 items-center justify-center rounded-xl py-3 font-mono text-2xl font-[700] uppercase"
 					>
 						{char}
 					</div>
 				{/each}
 			</div>
-			<div class="bg-surface flex items-center gap-2 rounded-xl px-3 py-2.5">
+			<div class="bg-surface border-border flex items-center gap-2 rounded-xl border px-3 py-2.5">
 				<span class="text-text-secondary flex-1 truncate text-xs">{joinUrl}</span>
 				<Button
 					onclick={copyLink}
@@ -903,7 +905,9 @@
 					{#if invitableClubMembers.length > 0}
 						<div class="space-y-1.5">
 							{#each invitableClubMembers as m (m.user_id)}
-								<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
+								<div
+									class="bg-surface-raised border-border flex items-center gap-3 rounded-2xl border px-4 py-3"
+								>
 									<Avatar
 										icon={m.avatar_icon}
 										color={m.avatar_color}
@@ -955,7 +959,9 @@
 					{#if playerResults.length > 0}
 						<div class="space-y-1.5">
 							{#each playerResults as result}
-								<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
+								<div
+									class="bg-surface-raised border-border flex items-center gap-3 rounded-2xl border px-4 py-3"
+								>
 									<Avatar
 										icon={result.avatar_icon}
 										color={result.avatar_color}
@@ -1154,7 +1160,7 @@
 			</div>
 		{:else}
 			<div class="space-y-2">
-				<div class="bg-surface-raised rounded-2xl px-4 py-3 text-center">
+				<div class="bg-surface-raised border-border rounded-2xl border px-4 py-3 text-center">
 					<p class="text-text-secondary text-sm">{$_('lobby_waiting_admin')}</p>
 				</div>
 				{#if alreadyJoined && !session.is_creator}

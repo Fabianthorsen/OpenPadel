@@ -211,7 +211,7 @@
 						<div class="col-span-2 row-span-2 flex items-center justify-center">
 							<Avatar
 								icon={pickerIcon}
-								color={auth.user?.avatar_color ?? 'forest'}
+								color={auth.user?.avatar_color ?? 'sky'}
 								name={displayName}
 								size="lg"
 							/>
@@ -220,14 +220,14 @@
 							onclick={() => (pickerIcon = '')}
 							class="flex items-center justify-center rounded-lg p-2 transition-colors {pickerIcon ===
 							''
-								? 'bg-primary/15 ring-primary ring-2'
+								? 'bg-primary/10 ring-primary ring-2'
 								: 'bg-surface-raised hover:bg-border'}"
 							aria-label="Use initials"
 							title="Initials"
 						>
 							<Avatar
 								icon=""
-								color={auth.user?.avatar_color ?? 'forest'}
+								color={auth.user?.avatar_color ?? 'sky'}
 								name={displayName}
 								size="sm"
 							/>
@@ -237,12 +237,12 @@
 								onclick={() => (pickerIcon = icon)}
 								class="flex items-center justify-center rounded-lg p-2 transition-colors {pickerIcon ===
 								icon
-									? 'bg-primary/15 ring-primary ring-2'
+									? 'bg-primary/10 ring-primary ring-2'
 									: 'bg-surface-raised hover:bg-border'}"
 								aria-label={icon}
 								title={icon}
 							>
-								<Avatar {icon} color={auth.user?.avatar_color ?? 'forest'} name="" size="sm" />
+								<Avatar {icon} color={auth.user?.avatar_color ?? 'sky'} name="" size="sm" />
 							</button>
 						{/each}
 					</div>

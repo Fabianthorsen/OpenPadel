@@ -68,7 +68,7 @@
 			class={cn(
 				'min-w-0 flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors',
 				'bg-surface text-text-primary border-border border',
-				'data-[state=checked]:bg-primary data-[state=checked]:text-white',
+				'data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary',
 				'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none',
 				'disabled:cursor-not-allowed disabled:opacity-40'
 			)}

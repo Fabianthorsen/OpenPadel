@@ -21,17 +21,23 @@
 		badge?: Snippet;
 	} = $props();
 
+	// Colours are auto-assigned (not user-picked) and reference the avatar-* theme
+	// tokens — no hardcoded hex. Legacy greens `forest`/`teal` map to indigo/cyan
+	// so nothing reads green on the cobalt theme.
+	// Every stored colour key maps onto the monochrome cobalt scale — avatars are
+	// shades of the brand blue, never a separate hue.
 	const colorMap: Record<string, string> = {
-		forest: 'bg-[#2d5a1a] text-white',
-		sky: 'bg-[#0ea5e9] text-white',
-		orange: 'bg-[#f97316] text-white',
-		coral: 'bg-[#f43f5e] text-white',
-		purple: 'bg-[#8b5cf6] text-white',
-		teal: 'bg-[#14b8a6] text-white',
-		gold: 'bg-[#eab308] text-white',
-		slate: 'bg-[#64748b] text-white',
-		rose: 'bg-[#ec4899] text-white',
-		charcoal: 'bg-[#374151] text-white',
+		sky: 'bg-avatar-azure text-white',
+		orange: 'bg-avatar-cobalt text-white',
+		coral: 'bg-avatar-navy text-white',
+		gold: 'bg-avatar-steel text-white',
+		slate: 'bg-avatar-slate text-white',
+		rose: 'bg-avatar-midnight text-white',
+		charcoal: 'bg-avatar-navy text-white',
+		// legacy keys
+		forest: 'bg-avatar-steel text-white',
+		teal: 'bg-avatar-azure text-white',
+		purple: 'bg-avatar-slate text-white',
 		white: 'bg-white/20 text-white'
 	};
 
@@ -42,7 +48,7 @@
 		xl: { circle: 'size-20', icon: 'size-10', text: 'text-2xl' }
 	};
 
-	const colorClass = $derived(colorMap[color] ?? 'bg-[#2d5a1a] text-white');
+	const colorClass = $derived(colorMap[color] ?? 'bg-primary text-white');
 	const s = $derived(sizeMap[size]);
 
 	const IconComponent = $derived(icon ? (icons as Record<string, any>)[icon] : null);

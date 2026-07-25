@@ -89,7 +89,7 @@
 					{#each ranked as e (e.user_id)}
 						{@const isRank1 = e.rank === 1}
 						<div
-							class="bg-surface flex items-center gap-3 rounded-2xl px-4 py-3.5"
+							class="bg-surface border-border flex items-center gap-3 rounded-2xl border px-4 py-3.5 shadow-sm"
 							aria-label="{e.rank}. {e.name}: form {formScore(e.form)}"
 						>
 							<span
@@ -140,7 +140,9 @@
 					</p>
 					<div class="space-y-0.5">
 						{#each provisional as p (p.user_id)}
-							<div class="bg-surface flex items-center gap-3 rounded-2xl px-4 py-3">
+							<div
+								class="bg-surface border-border flex items-center gap-3 rounded-2xl border px-4 py-3"
+							>
 								<span class="w-6"></span>
 								<div class="flex min-w-0 flex-1 items-center gap-2.5">
 									<Avatar icon={p.avatar_icon} color={p.avatar_color} name={p.name} size="sm" />

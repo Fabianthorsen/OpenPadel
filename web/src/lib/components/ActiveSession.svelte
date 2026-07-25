@@ -417,7 +417,7 @@
 							{@const p4 = playerById[match.team_b[1]]}
 
 							<Card
-								class={`overflow-hidden rounded-2xl border shadow-sm transition-colors ${match.live ? 'border-primary/50 bg-primary-muted/30' : 'border-border bg-surface'}`}
+								class={`overflow-hidden rounded-2xl border shadow-sm transition-colors ${match.live ? 'border-signal/50 bg-signal-muted/40' : 'border-border bg-surface'}`}
 							>
 								<!-- Header row: Court label + Status -->
 								<div class="border-border flex items-center justify-between border-b px-4 py-3">
@@ -432,9 +432,9 @@
 										</span>
 									{:else if match.live}
 										<span
-											class="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+											class="bg-signal-muted text-signal-strong inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
 										>
-											<span class="bg-primary inline-block h-2 w-2 animate-pulse rounded-full"
+											<span class="bg-signal inline-block h-2 w-2 animate-pulse rounded-full"
 											></span>
 											{$_('court_status_live')}
 										</span>
