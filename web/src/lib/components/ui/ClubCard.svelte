@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import { ChevronRight } from '@lucide/svelte';
 
 	let {
 		club,
@@ -12,12 +13,19 @@
 
 <button
 	{onclick}
-	class="bg-surface-raised hover:bg-border flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left transition-colors"
+	class="group hover:bg-surface-raised flex w-full items-center gap-3 rounded-xl py-2 pr-1 pl-2 text-left transition-colors"
 >
-	<Avatar color={club.avatar_color} name={club.name} size="sm" />
-	<div class="min-w-0 flex-1">
-		<p class="truncate text-sm font-semibold">{club.name}</p>
-		<p class="text-text-secondary text-xs">{club.roster_count} members • {club.my_role}</p>
+	<Avatar color={club.avatar_color} name={club.name} size="md" />
+	<div class="flex min-w-0 flex-1 flex-col gap-0.5">
+		<p class="text-text-primary truncate text-sm font-semibold">{club.name}</p>
+		<p class="text-text-secondary truncate text-xs">
+			{club.roster_count} members · {club.my_role}
+		</p>
 	</div>
-	<span class="text-text-secondary text-sm">→</span>
+	<span
+		class="text-text-disabled group-hover:text-primary shrink-0 transition-[color,transform] group-hover:translate-x-0.5"
+		aria-hidden="true"
+	>
+		<ChevronRight size={18} strokeWidth={2.25} />
+	</span>
 </button>

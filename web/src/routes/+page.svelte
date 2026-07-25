@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import JoinCodeInput from '$lib/components/ui/join-code-input/join-code-input.svelte';
+	import SessionRow from '$lib/components/ui/SessionRow.svelte';
 	import DividerOr from '$lib/components/DividerOr.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import { _ } from 'svelte-i18n';
@@ -76,23 +77,21 @@
 				<!-- Actions -->
 				<div class="space-y-4">
 					{#if rejoinSession}
-						<a
+						<SessionRow
 							href={rejoinHref}
-							class="bg-surface-raised hover:bg-border flex items-center gap-3 rounded-2xl px-4 py-3.5 transition-colors"
+							size="hero"
+							tone="surface"
+							eyebrow={$_('home_rejoin_label')}
+							title={rejoinSession.name || 'OpenPadel'}
 						>
-							<div
-								class="bg-primary-muted flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-							>
-								<div class="bg-primary h-2.5 w-2.5 animate-pulse rounded-full"></div>
-							</div>
-							<div class="min-w-0 flex-1">
-								<p class="text-text-disabled text-[11px] font-bold tracking-[0.1em] uppercase">
-									{$_('home_rejoin_label')}
-								</p>
-								<p class="truncate text-sm font-semibold">{rejoinSession.name || 'OpenPadel'}</p>
-							</div>
-							<span class="text-text-secondary text-sm">→</span>
-						</a>
+							{#snippet leading()}
+								<span
+									class="bg-primary-muted flex h-9 w-9 items-center justify-center rounded-full"
+								>
+									<span class="bg-primary h-2.5 w-2.5 animate-pulse rounded-full"></span>
+								</span>
+							{/snippet}
+						</SessionRow>
 					{/if}
 
 					{#if !auth.user}

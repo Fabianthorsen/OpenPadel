@@ -3,7 +3,7 @@
 	import { api } from '$lib/api/client';
 	import { auth } from '$lib/auth.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import ClubCard from '$lib/components/ClubCard.svelte';
+	import ClubCard from '$lib/components/ui/ClubCard.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
