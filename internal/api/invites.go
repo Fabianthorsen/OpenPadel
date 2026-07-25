@@ -35,7 +35,7 @@ func (h *Handler) sendInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.store.GetSession(sessionID)
+	sess, err := h.store.GetSession(sessionID)
 	if errors.Is(err, store.ErrNotFound) {
 		respondAPIError(w, ErrSessionNotFound)
 		return
@@ -43,6 +43,19 @@ func (h *Handler) sendInvite(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondAPIError(w, ErrServerError)
 		return
+	}
+
+	// A club event is a game for that Club — you may only invite its Members to it.
+	// (Non-club Sessions stay open to anyone.)
+	if sess.ClubID != "" {
+		if _, err := h.store.GetClubMember(sess.ClubID, body.ToUserID); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				respondAPIError(w, ErrInviteeNotClubMember)
+				return
+			}
+			respondAPIError(w, ErrServerError)
+			return
+		}
 	}
 
 	fromUser := userFromContext(r)

@@ -124,6 +124,59 @@ func TestSessionClubInvite_NonMemberRejected(t *testing.T) {
 	}
 }
 
+// TestSessionInvite_ClubEventMembersOnly enforces that a club event may only
+// invite Members of its Club: a member invite succeeds, a non-member is refused.
+func TestSessionInvite_ClubEventMembersOnly(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	aliceToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	bobToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	strangerToken := mustRegister(t, srv, "stranger@test.local", "Stranger", "password123")
+	bobID := userID(t, srv, bobToken)
+	strangerID := userID(t, srv, strangerToken)
+
+	clubID := mustCreateClub(t, srv, aliceToken, "Bouvet Padel")
+	joinClub(t, srv, aliceToken, bobToken, clubID)
+	sessionID, _ := mustCreateClubEvent(t, srv, aliceToken, clubID)
+
+	// Member Bob can be invited.
+	res := postReq(t, srv, "/api/sessions/"+sessionID+"/invites", map[string]any{"to_user_id": bobID}, aliceToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("invite member: expected 201, got %d", res.StatusCode)
+	}
+
+	// Non-member Stranger is refused.
+	res = postReq(t, srv, "/api/sessions/"+sessionID+"/invites", map[string]any{"to_user_id": strangerID}, aliceToken)
+	if res.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("invite non-member: expected 422, got %d", res.StatusCode)
+	}
+	var errBody struct {
+		Error string `json:"error"`
+	}
+	decodeBody(t, res, &errBody)
+	if errBody.Error != "invitee_not_club_member" {
+		t.Errorf("expected invitee_not_club_member, got %q", errBody.Error)
+	}
+}
+
+// TestSessionInvite_NonClubUnrestricted confirms an ordinary (non-club) Session
+// still invites anyone.
+func TestSessionInvite_NonClubUnrestricted(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	aliceToken := mustRegister(t, srv, "alice@test.local", "Alice", "password123")
+	bobToken := mustRegister(t, srv, "bob@test.local", "Bob", "password123")
+	bobID := userID(t, srv, bobToken)
+
+	sessionID, _ := mustCreateSession(t, srv, aliceToken)
+	res := postReq(t, srv, "/api/sessions/"+sessionID+"/invites", map[string]any{"to_user_id": bobID}, aliceToken)
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("invite on non-club session: expected 201, got %d", res.StatusCode)
+	}
+}
+
 // TestSessionClubInvite_RequiresAuth rejects an unauthenticated fan-out.
 func TestSessionClubInvite_RequiresAuth(t *testing.T) {
 	srv, s := newAPITestServer(t)

@@ -18,6 +18,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { SectionLabel } from '$lib/components/ui/section-label';
+	import { OrDivider } from '$lib/components/ui/or-divider';
 	import { PillToggleGroup, PillToggleItem } from '$lib/components/ui/pill-toggle-group';
 	const MAX_COURTS = 4;
 	import { Calendar } from '$lib/components/ui/calendar';
@@ -100,10 +101,11 @@
 	let playerSearchLoading = $state(false);
 	let playerSearchDebounce: ReturnType<typeof setTimeout>;
 	let sessionInvites = $state<App.Invite[]>([]);
-	// Clubs the admin belongs to, offered for one-tap "invite my whole club"
-	// fan-out (#128). Loaded only for a signed-in admin; guests never see this.
-	let myClubs = $state<App.ClubListItem[]>([]);
-	let invitingClub = $state<string | null>(null);
+	// For a club event, the invite surface is scoped to the owning Club: pick from
+	// its roster, or invite everyone at once (#128). Loaded for a signed-in admin.
+	let clubMembers = $state<App.ClubMember[]>([]);
+	let invitingAll = $state(false);
+	const isClubEvent = $derived(!!session.club_id);
 
 	// SessionConfig drawer state
 	let configDrawerOpen = $state(false);
@@ -260,13 +262,13 @@
 				.then((v) => {
 					sessionInvites = v;
 				});
-			if (auth.token) {
+			if (auth.token && session.club_id) {
 				api.clubs
-					.list(auth.token)
-					.catch(() => [])
-					.then((v) => {
-						myClubs = v;
-					});
+					.detail(auth.token, session.club_id)
+					.then((d) => {
+						clubMembers = d.members;
+					})
+					.catch(() => {});
 			}
 		}
 		if (stream) {
@@ -281,6 +283,19 @@
 	const joinedUserIds = $derived(new Set(session.players.map((p) => p.user_id).filter(Boolean)));
 	const pendingInvites = $derived(
 		sessionInvites.filter((inv) => !joinedUserIds.has(inv.to_user_id))
+	);
+
+	// Club-event invite list: the owning Club's members who aren't already in the
+	// Session or already invited, filtered by the search box. The admin themselves
+	// is dropped (they're the creator, already on the roster).
+	const invitedUserIds = $derived(new Set(sessionInvites.map((inv) => inv.to_user_id)));
+	const invitableClubMembers = $derived(
+		clubMembers.filter((m) => {
+			if (m.user_id === auth.user?.id) return false;
+			if (joinedUserIds.has(m.user_id) || invitedUserIds.has(m.user_id)) return false;
+			const q = playerSearch.trim().toLowerCase();
+			return q === '' || m.display_name.toLowerCase().includes(q);
+		})
 	);
 
 	function onPlayerSearchInput() {
@@ -308,28 +323,27 @@
 		sessionInvites = await api.invites.listForSession(session.id).catch(() => []);
 	}
 
-	// Fan a whole Club's roster out into Session invites in one tap (#128).
+	// Fan the owning Club's whole roster out into Session invites in one tap (#128).
 	// Members already in or already invited are skipped server-side, so a repeat
 	// tap is safe; the toast reports how many invites actually went out.
-	async function inviteClub(club: App.ClubListItem) {
-		if (!auth.token || invitingClub) return;
-		invitingClub = club.id;
+	async function inviteClubAll() {
+		if (!auth.token || !session.club_id || invitingAll) return;
+		invitingAll = true;
 		try {
-			const created = await api.invites.sendClub(session.id, club.id, auth.token);
+			const created = await api.invites.sendClub(session.id, session.club_id, auth.token);
 			sessionInvites = await api.invites.listForSession(session.id).catch(() => []);
+			const club = session.club_name ?? '';
 			if (created.length > 0) {
-				toast.success(
-					$_('lobby_invite_club_sent', { values: { count: created.length, club: club.name } })
-				);
+				toast.success($_('lobby_invite_club_sent', { values: { count: created.length, club } }));
 			} else {
-				toast.info($_('lobby_invite_club_none', { values: { club: club.name } }));
+				toast.info($_('lobby_invite_club_none', { values: { club } }));
 			}
 		} catch (e) {
 			toast.error(
 				e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error')
 			);
 		} finally {
-			invitingClub = null;
+			invitingAll = false;
 		}
 	}
 
@@ -710,11 +724,7 @@
 						>
 					</p>
 
-					<div class="flex items-center gap-3">
-						<div class="bg-border h-px flex-1"></div>
-						<span class="text-text-disabled text-xs">{$_('invite_or_guest')}</span>
-						<div class="bg-border h-px flex-1"></div>
-					</div>
+					<OrDivider label={$_('invite_or_guest')} />
 
 					<!-- Guest fallback: name + required skill level -->
 					<form
@@ -875,86 +885,111 @@
 		{#if isAdmin}
 			<div class="space-y-2">
 				<SectionLabel>{$_('lobby_invite_label')}</SectionLabel>
-				{#if myClubs.length > 0}
-					<!-- Invite a whole club at once (#128) — a fan-out over the roster,
-					     shown above the one-by-one search below. -->
-					<div class="space-y-1.5">
-						{#each myClubs as club (club.id)}
-							<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
-								<Avatar
-									icon={club.avatar_icon}
-									color={club.avatar_color}
-									name={club.name}
-									size="sm"
-									ring="ring-2 ring-primary/30"
-								/>
-								<div class="min-w-0 flex-1">
-									<p class="truncate text-sm font-semibold">{club.name}</p>
-									<p class="text-text-disabled truncate text-xs">
-										{$_('lobby_invite_club_members', { values: { count: club.roster_count } })}
-									</p>
-								</div>
-								<button
-									onclick={() => inviteClub(club)}
-									disabled={invitingClub !== null}
-									class="bg-primary flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-								>
-									<Users size={12} />
-									{invitingClub === club.id ? '…' : $_('lobby_invite_club_button')}
-								</button>
-							</div>
-						{/each}
-					</div>
-				{/if}
-				<div class="relative">
-					<div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
-						<Search size={15} class="text-text-disabled" />
-					</div>
-					<Input
-						bind:value={playerSearch}
-						oninput={onPlayerSearchInput}
-						placeholder={$_('lobby_add_player_placeholder')}
-						maxlength={32}
-						class="bg-surface-raised w-full rounded-2xl border-0 py-3 pr-4 pl-9 text-sm"
-					/>
-				</div>
-				{#if playerResults.length > 0}
-					<div class="space-y-1.5">
-						{#each playerResults as result}
-							<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
-								<Avatar
-									icon={result.avatar_icon}
-									color={result.avatar_color}
-									name={result.display_name}
-									size="sm"
-									ring="ring-2 ring-primary/30"
-								/>
-								<p class="flex-1 truncate text-sm font-semibold">{result.display_name}</p>
-								<button
-									onclick={() => inviteUser(result.id)}
-									class="bg-primary flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
-								>
-									<UserPlus size={12} /> Invite
-								</button>
-							</div>
-						{/each}
-					</div>
-				{/if}
-				{#if playerSearch.trim().length > 0 && !playerSearchLoading}
-					<div class="space-y-2">
-						<div class="space-y-1.5">
-							<SectionLabel>{$_('lobby_guest_rating_optional')}</SectionLabel>
-							<RatingPicker compact bind:value={guestAddRating} disabled={joining || isFull} />
+				{#if isClubEvent}
+					<!-- Club event: invite from the owning Club's roster, or invite the
+					     whole club at once. A club game is only open to its Members, so
+					     there's no free-text guest add here. -->
+					<div class="relative">
+						<div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
+							<Search size={15} class="text-text-disabled" />
 						</div>
-						<button
-							onclick={() => addGuest(playerSearch.trim())}
-							disabled={joining || isFull}
-							class="border-border text-text-secondary hover:border-primary hover:text-primary flex w-full items-center gap-3 rounded-2xl border border-dashed px-4 py-3 text-sm transition-colors disabled:opacity-50"
-						>
-							<UserPlus size={15} class="shrink-0" />
-							Add "{playerSearch.trim()}" as guest
-						</button>
+						<Input
+							bind:value={playerSearch}
+							placeholder={$_('lobby_invite_search_members')}
+							maxlength={32}
+							class="bg-surface-raised w-full rounded-2xl border-0 py-3 pr-4 pl-9 text-sm"
+						/>
 					</div>
+					{#if invitableClubMembers.length > 0}
+						<div class="space-y-1.5">
+							{#each invitableClubMembers as m (m.user_id)}
+								<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
+									<Avatar
+										icon={m.avatar_icon}
+										color={m.avatar_color}
+										name={m.display_name}
+										size="sm"
+										ring="ring-2 ring-primary/30"
+									/>
+									<p class="flex-1 truncate text-sm font-semibold">{m.display_name}</p>
+									<button
+										onclick={() => inviteUser(m.user_id)}
+										class="bg-primary flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
+									>
+										<UserPlus size={12} />
+										{$_('lobby_invite_button')}
+									</button>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<p class="text-text-disabled text-sm">{$_('lobby_invite_all_members_present')}</p>
+					{/if}
+
+					<OrDivider label={$_('lobby_invite_or')} />
+
+					<button
+						onclick={inviteClubAll}
+						disabled={invitingAll}
+						class="bg-primary flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+					>
+						<Users size={15} class="shrink-0" />
+						{invitingAll
+							? '…'
+							: $_('lobby_invite_all_club', { values: { club: session.club_name } })}
+					</button>
+				{:else}
+					<!-- Personal session: invite by contact search, or add a guest by name. -->
+					<div class="relative">
+						<div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
+							<Search size={15} class="text-text-disabled" />
+						</div>
+						<Input
+							bind:value={playerSearch}
+							oninput={onPlayerSearchInput}
+							placeholder={$_('lobby_add_player_placeholder')}
+							maxlength={32}
+							class="bg-surface-raised w-full rounded-2xl border-0 py-3 pr-4 pl-9 text-sm"
+						/>
+					</div>
+					{#if playerResults.length > 0}
+						<div class="space-y-1.5">
+							{#each playerResults as result}
+								<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
+									<Avatar
+										icon={result.avatar_icon}
+										color={result.avatar_color}
+										name={result.display_name}
+										size="sm"
+										ring="ring-2 ring-primary/30"
+									/>
+									<p class="flex-1 truncate text-sm font-semibold">{result.display_name}</p>
+									<button
+										onclick={() => inviteUser(result.id)}
+										class="bg-primary flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
+									>
+										<UserPlus size={12} /> Invite
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+					{#if playerSearch.trim().length > 0 && !playerSearchLoading}
+						<div class="space-y-2">
+							<div class="space-y-1.5">
+								<SectionLabel>{$_('lobby_guest_rating_optional')}</SectionLabel>
+								<RatingPicker compact bind:value={guestAddRating} disabled={joining || isFull} />
+							</div>
+							<button
+								onclick={() => addGuest(playerSearch.trim())}
+								disabled={joining || isFull}
+								class="border-border text-text-secondary hover:border-primary hover:text-primary flex w-full items-center gap-3 rounded-2xl border border-dashed px-4 py-3 text-sm transition-colors disabled:opacity-50"
+							>
+								<UserPlus size={15} class="shrink-0" />
+								Add "{playerSearch.trim()}" as guest
+							</button>
+						</div>
+					{/if}
 				{/if}
 			</div>
 		{/if}

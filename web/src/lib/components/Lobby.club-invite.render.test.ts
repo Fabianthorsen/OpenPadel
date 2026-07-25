@@ -5,26 +5,46 @@ import { init, register, waitLocale } from 'svelte-i18n';
 import Lobby from './Lobby.svelte';
 
 /**
- * Render tests for the "invite my whole club" fan-out on the Session invite
- * surface (#128).
+ * Render tests for the club-event invite surface (#128).
  *
- * A signed-in admin who belongs to Clubs sees an "Invite all" row per Club above
- * the one-by-one search. Tapping it fans the roster out into ordinary Session
- * invites via api.invites.sendClub. Guests and clubless admins never see the row.
+ * On a club event, an admin invites from the owning Club's roster — a row per
+ * invitable member — OR taps "Invite all of <Club>" to fan the whole roster out
+ * via api.invites.sendClub. Members already joined/invited, and the admin
+ * themselves, are filtered out. An ordinary (non-club) session shows none of this.
  */
 
-const { sendClub, clubsList } = vi.hoisted(() => ({
+const { sendClub, sendInvite, clubDetail } = vi.hoisted(() => ({
 	sendClub: vi.fn().mockResolvedValue([{ id: 'inv_1', to_user_id: 'u2' }]),
-	clubsList: vi.fn().mockResolvedValue([
-		{
-			id: 'club_1',
-			name: 'Bouvet Padel',
-			avatar_icon: 'star',
-			avatar_color: '#3d7a24',
-			my_role: 'admin',
-			roster_count: 5
-		}
-	])
+	sendInvite: vi.fn().mockResolvedValue({ id: 'inv_2', to_user_id: 'u2' }),
+	clubDetail: vi.fn().mockResolvedValue({
+		club: { id: 'club_1', name: 'Bouvet Padel' },
+		members: [
+			{
+				user_id: 'u1',
+				display_name: 'Alice',
+				role: 'admin',
+				avatar_icon: 'Star',
+				avatar_color: 'forest'
+			},
+			{
+				user_id: 'u2',
+				display_name: 'Bob',
+				role: 'member',
+				avatar_icon: 'Cat',
+				avatar_color: 'forest'
+			},
+			{
+				user_id: 'u3',
+				display_name: 'Carol',
+				role: 'member',
+				avatar_icon: 'Dog',
+				avatar_color: 'forest'
+			}
+		],
+		is_admin: true,
+		my_role: 'admin',
+		roster_count: 3
+	})
 }));
 
 vi.mock('$lib/auth.svelte', () => ({
@@ -36,8 +56,12 @@ vi.mock('$lib/api/client', async (importOriginal) => {
 	return {
 		ApiError: actual.ApiError,
 		api: {
-			invites: { listForSession: vi.fn().mockResolvedValue([]), sendClub },
-			clubs: { list: clubsList },
+			invites: {
+				listForSession: vi.fn().mockResolvedValue([]),
+				send: sendInvite,
+				sendClub
+			},
+			clubs: { detail: clubDetail },
 			sessions: { update: vi.fn().mockResolvedValue({}), start: vi.fn(), cancel: vi.fn() },
 			players: { join: vi.fn(), remove: vi.fn() },
 			contacts: { search: vi.fn().mockResolvedValue([]) }
@@ -54,7 +78,8 @@ beforeAll(async () => {
 beforeEach(() => {
 	localStorage.clear();
 	sendClub.mockClear();
-	clubsList.mockClear();
+	sendInvite.mockClear();
+	clubDetail.mockClear();
 });
 
 function makeSession(overrides?: Partial<App.Session>): App.Session {
@@ -73,37 +98,50 @@ function makeSession(overrides?: Partial<App.Session>): App.Session {
 	};
 }
 
+const clubEvent = (over?: Partial<App.Session>) =>
+	makeSession({ club_id: 'club_1', club_name: 'Bouvet Padel', ...over });
+
 function makeProps(session: App.Session, isAdmin: boolean) {
 	return { session, isAdmin, onRefresh: () => {}, onStarted: () => {} };
 }
 
-describe('Lobby — invite a whole club (admin)', () => {
-	it('renders an Invite all row per club with roster size', async () => {
-		render(Lobby, makeProps(makeSession(), true));
+describe('Lobby — club-event invite surface (admin)', () => {
+	it('lists invitable club members (dropping the admin themselves)', async () => {
+		render(Lobby, makeProps(clubEvent(), true));
 
-		expect(await screen.findByText('Bouvet Padel')).toBeInTheDocument();
-		expect(screen.getByText('5 members')).toBeInTheDocument();
-		expect(screen.getByRole('button', { name: /invite all/i })).toBeInTheDocument();
+		// Bob and Carol are invitable; Alice (the signed-in admin) is filtered out.
+		expect(await screen.findByText('Bob')).toBeInTheDocument();
+		expect(screen.getByText('Carol')).toBeInTheDocument();
+		expect(screen.queryByText('Alice')).not.toBeInTheDocument();
 	});
 
-	it('fans the roster out via api.invites.sendClub when tapped', async () => {
+	it('invites a single member via api.invites.send', async () => {
 		const user = userEvent.setup();
-		render(Lobby, makeProps(makeSession(), true));
+		render(Lobby, makeProps(clubEvent(), true));
 
-		const btn = await screen.findByRole('button', { name: /invite all/i });
+		await screen.findByText('Bob');
+		// The Invite button in Bob's row.
+		const bobRow = screen.getByText('Bob').closest('div')!;
+		await user.click(bobRow.querySelector('button')!);
+
+		await waitFor(() => expect(sendInvite).toHaveBeenCalledWith('ABCD', 'u2', 'admin-token'));
+	});
+
+	it('fans the whole roster out via api.invites.sendClub', async () => {
+		const user = userEvent.setup();
+		render(Lobby, makeProps(clubEvent(), true));
+
+		const btn = await screen.findByRole('button', { name: /invite all of bouvet padel/i });
 		await user.click(btn);
 
-		await waitFor(() => {
-			expect(sendClub).toHaveBeenCalledWith('ABCD', 'club_1', 'admin-token');
-		});
+		await waitFor(() => expect(sendClub).toHaveBeenCalledWith('ABCD', 'club_1', 'admin-token'));
 	});
 
-	it('does not load or show clubs for a non-admin', async () => {
-		render(Lobby, makeProps(makeSession({ creator_player_id: undefined }), false));
+	it('shows none of the club invite surface for an ordinary session', async () => {
+		render(Lobby, makeProps(makeSession(), true));
 
-		// Give any (guarded) load a chance to run, then assert it did not.
 		await Promise.resolve();
-		expect(clubsList).not.toHaveBeenCalled();
-		expect(screen.queryByRole('button', { name: /invite all/i })).not.toBeInTheDocument();
+		expect(clubDetail).not.toHaveBeenCalled();
+		expect(screen.queryByRole('button', { name: /invite all of/i })).not.toBeInTheDocument();
 	});
 });

@@ -40,6 +40,7 @@ var (
 	ErrInvalidResetLink     = APIError{"invalid_reset_link", http.StatusBadRequest}
 	ErrLastAdmin            = APIError{"last_admin", http.StatusUnprocessableEntity}
 	ErrCreatorCannotLeave   = APIError{"creator_cannot_leave", http.StatusUnprocessableEntity}
+	ErrInviteeNotClubMember = APIError{"invitee_not_club_member", http.StatusUnprocessableEntity}
 
 	ErrNotAuthenticated       = APIError{"not_authenticated", http.StatusUnauthorized}
 	ErrInvalidToken           = APIError{"invalid_token", http.StatusUnauthorized}
