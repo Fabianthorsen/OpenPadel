@@ -8,6 +8,7 @@
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import JoinCodeInput from '$lib/components/ui/join-code-input/join-code-input.svelte';
 	import SessionRow from '$lib/components/ui/SessionRow.svelte';
+	import { getResumeSessionId, clearResumeSession } from '$lib/resumeSession';
 	import DividerOr from '$lib/components/DividerOr.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import { _ } from 'svelte-i18n';
@@ -17,7 +18,7 @@
 	let rejoinHref = $state('');
 
 	async function loadRejoin() {
-		const lastId = localStorage.getItem('last_session_id');
+		const lastId = getResumeSessionId();
 		if (!lastId) {
 			rejoinSession = null;
 			return;
@@ -32,7 +33,7 @@
 				rejoinSession = null;
 			}
 		} catch {
-			localStorage.removeItem('last_session_id');
+			clearResumeSession();
 			rejoinSession = null;
 		}
 	}
