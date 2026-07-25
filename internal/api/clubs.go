@@ -120,7 +120,9 @@ func (h *Handler) getMyClubs(w http.ResponseWriter, r *http.Request) {
 		RosterCount int    `json:"roster_count"`
 	}
 
-	var result []ClubListItem
+	// Non-nil so an empty roster serialises to `[]`, not JSON `null` — clients
+	// read `.length` on this directly.
+	result := []ClubListItem{}
 	for _, club := range clubs {
 		member, err := h.store.GetClubMember(club.ID, user.ID)
 		if err != nil {

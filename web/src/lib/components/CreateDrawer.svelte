@@ -40,7 +40,9 @@
 			api.clubs
 				.list(auth.token)
 				.then((v) => {
-					myClubs = v;
+					// The endpoint returns JSON `null` (Go nil slice) for a user with no
+					// clubs; coalesce so `myClubs.length` in the template never hits null.
+					myClubs = v ?? [];
 				})
 				.catch(() => {});
 		}

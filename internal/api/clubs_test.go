@@ -1,8 +1,10 @@
 package api_test
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -112,6 +114,31 @@ func TestGetMyClubs(t *testing.T) {
 
 	if len(bobClubs) != 0 {
 		t.Errorf("expected 0 clubs for Bob, got %d", len(bobClubs))
+	}
+}
+
+// TestGetMyClubs_EmptyIsArrayNotNull guards a production-only crash: a nil Go
+// slice marshals to JSON `null`, and the CreateDrawer club picker reads
+// `.length` on the response directly, so `null` threw inside Svelte's reactive
+// flush and froze the page. A user with no clubs must get `[]`, not `null`.
+func TestGetMyClubs_EmptyIsArrayNotNull(t *testing.T) {
+	srv, s := newAPITestServer(t)
+	defer func() { _ = s.Close() }()
+
+	token := mustRegister(t, srv, "nomeless@test.local", "Nora", "password123")
+
+	res := getReq(t, srv, "/api/clubs", token)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.StatusCode)
+	}
+
+	defer func() { _ = res.Body.Close() }()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatalf("read body: %v", err)
+	}
+	if got := strings.TrimSpace(string(body)); got != "[]" {
+		t.Errorf("expected empty club list to serialise as [], got %q", got)
 	}
 }
 
