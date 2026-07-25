@@ -21,10 +21,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 
+	"github.com/fabianthorsen/openpadel/internal/domain"
+	"github.com/fabianthorsen/openpadel/internal/pairing/americano"
 	"github.com/fabianthorsen/openpadel/internal/store"
 )
 
@@ -118,6 +122,10 @@ func main() {
 		}
 	}
 
+	if err := ensureHistory(s, ids); err != nil {
+		log.Fatalf("seed history: %v", err)
+	}
+
 	fmt.Print(summary())
 }
 
@@ -188,6 +196,94 @@ func findClubByName(s *store.Store, adminID, name string) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+// historyLineups are the four-player rosters for the seeded past tournaments —
+// varied overlapping subsets so several users accrue history with different
+// finishing ranks. Each is one Americano on one court (exactly 4 players).
+var historyLineups = [][]string{
+	{"alice", "bob", "carol", "dave"},
+	{"erik", "fiona", "grace", "henry"},
+	{"alice", "erik", "carol", "grace"},
+	{"bob", "dave", "fiona", "henry"},
+	{"alice", "fiona", "bob", "grace"},
+}
+
+// ensureHistory plays out a handful of completed tournaments so seeded users have
+// non-empty history and career stats to look at. It drives the real store paths
+// (pairing → save rounds → start → score every match → complete), so the
+// leaderboard and placement stats compute exactly as in production. Idempotent:
+// if the first user already has history, it assumes the set is present and skips.
+func ensureHistory(s *store.Store, ids map[string]string) error {
+	hist, err := s.GetTournamentHistory(ids["alice"])
+	if err != nil {
+		return err
+	}
+	if len(hist) > 0 {
+		fmt.Println("history: already present, skipping")
+		return nil
+	}
+
+	for i, lineup := range historyLineups {
+		if err := seedTournament(s, ids, lineup); err != nil {
+			return fmt.Errorf("tournament %d: %w", i+1, err)
+		}
+	}
+	fmt.Printf("history: seeded %d completed tournaments\n", len(historyLineups))
+	return nil
+}
+
+// seedTournament runs one Americano to completion with random scores.
+func seedTournament(s *store.Store, ids map[string]string, lineup []string) error {
+	const points = 24
+	sess, err := s.CreateSession(domain.SessionInput{
+		Courts:   1,
+		Points:   points,
+		GameMode: domain.ModeAmericano,
+	}, ids[lineup[0]])
+	if err != nil {
+		return err
+	}
+
+	players := make([]domain.Player, 0, len(lineup))
+	for _, key := range lineup {
+		p, err := s.CreatePlayer(sess.ID, titleCase(key), ids[key], false)
+		if err != nil {
+			return err
+		}
+		players = append(players, *p)
+	}
+
+	totalRounds := americano.TotalRounds(len(players), 1)
+	if err := s.SaveRounds(sess.ID, americano.GenerateRounds(players, 1, totalRounds)); err != nil {
+		return err
+	}
+	if err := s.StartSession(sess.ID, totalRounds, nil); err != nil {
+		return err
+	}
+
+	rounds, err := s.GetRounds(sess.ID)
+	if err != nil {
+		return err
+	}
+	for _, rd := range rounds {
+		for _, m := range rd.Matches {
+			a := rand.IntN(points + 1) // random split summing to points
+			if _, err := s.UpdateScore(m.ID, a, points-a); err != nil {
+				return err
+			}
+		}
+	}
+	return s.CompleteSession(sess.ID, false)
+}
+
+// titleCase upper-cases the first letter of a handle ("alice" -> "Alice"),
+// matching the seeded display names.
+func titleCase(k string) string {
+	if k == "" {
+		return k
+	}
+	return strings.ToUpper(k[:1]) + k[1:]
 }
 
 func summary() string {
