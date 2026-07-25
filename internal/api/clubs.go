@@ -212,6 +212,25 @@ func (h *Handler) getClubEvents(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, events)
 }
 
+// getClubLeaderboard returns the Club's current-form leaderboard — the ranked
+// board plus the provisional "not yet ranked" list. Members only, like the rest
+// of the Club home. Recomputed on every read (no materialized state), so a
+// newly scored Match shows up on the next call.
+func (h *Handler) getClubLeaderboard(w http.ResponseWriter, r *http.Request) {
+	clubID := chi.URLParam(r, "id")
+	if !h.requireClubMember(w, r, clubID) {
+		return
+	}
+
+	board, err := h.store.GetClubLeaderboard(clubID)
+	if err != nil {
+		slog.Error("getClubLeaderboard", "err", err)
+		respondAPIError(w, ErrServerError)
+		return
+	}
+	respond(w, http.StatusOK, board)
+}
+
 // previewClubJoin returns a no-auth preview of a Club behind a join link so a
 // visitor can see what they're joining before logging in. An unknown code 404s.
 // The join_code is deliberately not echoed back — the caller already has it.

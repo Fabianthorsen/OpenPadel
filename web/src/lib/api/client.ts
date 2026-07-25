@@ -273,6 +273,8 @@ export const api = {
 			request<App.ClubDetail>('GET', `/clubs/${clubId}`, undefined, token),
 		events: (token: string, clubId: string) =>
 			request<App.UpcomingEntry[]>('GET', `/clubs/${clubId}/events`, undefined, token),
+		leaderboard: (token: string, clubId: string) =>
+			request<App.ClubLeaderboard>('GET', `/clubs/${clubId}/leaderboard`, undefined, token),
 		joinPreview: (joinCode: string) =>
 			request<App.ClubJoinPreview>('GET', `/clubs/join/${joinCode}`),
 		join: (token: string, joinCode: string) =>

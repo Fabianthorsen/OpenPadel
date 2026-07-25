@@ -316,6 +316,65 @@ func (s *Store) GetClubEvents(clubID string) ([]domain.UpcomingEntry, error) {
 	return events, nil
 }
 
+// GetClubLeaderboard selects the Club's qualifying games and ranks them via the
+// pure domain function. Qualifying rows are: this Club's completed ('done')
+// Sessions, scored Matches only (score_a IS NOT NULL), within the rolling window
+// by COALESCE(scheduled_at, created_at). Restricting to done Sessions keeps the
+// board's game counts reconciled with career stats (which are also done-only) —
+// a live event contributes once it's finished. One row is emitted per registered member
+// per Match, from that member's perspective (team vs opponent points); Guests
+// (players.user_id NULL) fall out at the users join, so they contribute
+// partner/opponent points to the team totals but never a leaderboard row of
+// their own. Nothing is materialized — the board recomputes on every read, so a
+// newly scored Match shows up on the next call.
+func (s *Store) GetClubLeaderboard(clubID string) (domain.ClubLeaderboard, error) {
+	cutoff := time.Now().UTC().Add(-domain.ClubLeaderboardWindow).Format(time.RFC3339)
+	rows, err := s.db.Query(`
+		SELECT
+			pl.user_id,
+			u.display_name,
+			u.avatar_icon,
+			u.avatar_color,
+			CASE WHEN pl.id IN (m.p1, m.p2) THEN m.score_a ELSE m.score_b END AS team_points,
+			CASE WHEN pl.id IN (m.p1, m.p2) THEN m.score_b ELSE m.score_a END AS opp_points,
+			s.points AS points_target,
+			COALESCE(s.scheduled_at, s.created_at) AS played_at
+		FROM matches m
+		JOIN rounds r ON r.id = m.round_id
+		JOIN sessions s ON s.id = r.session_id
+		JOIN players pl ON pl.id IN (m.p1, m.p2, m.p3, m.p4)
+		JOIN users u ON u.id = pl.user_id
+		WHERE s.club_id = ?
+		  AND s.status = 'done'
+		  AND m.score_a IS NOT NULL
+		  AND COALESCE(s.scheduled_at, s.created_at) >= ?`,
+		clubID, cutoff,
+	)
+	if err != nil {
+		return domain.ClubLeaderboard{}, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var games []domain.ClubGame
+	for rows.Next() {
+		var g domain.ClubGame
+		var playedAt string
+		if err := rows.Scan(
+			&g.UserID, &g.Name, &g.AvatarIcon, &g.AvatarColor,
+			&g.TeamPoints, &g.OppPoints, &g.PointsTarget, &playedAt,
+		); err != nil {
+			return domain.ClubLeaderboard{}, err
+		}
+		g.PlayedAt = parseTime(playedAt)
+		games = append(games, g)
+	}
+	if err := rows.Err(); err != nil {
+		return domain.ClubLeaderboard{}, err
+	}
+
+	return domain.RankClubLeaderboard(games), nil
+}
+
 func (s *Store) getClubByID(clubID string) (*domain.Club, error) {
 	row, err := s.queries.GetClub(context.Background(), clubID)
 	if err != nil {

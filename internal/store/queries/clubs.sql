@@ -56,9 +56,12 @@ UPDATE club_members SET role = ? WHERE club_id = ? AND user_id = ?;
 SELECT COUNT(*) FROM club_members WHERE club_id = ? AND role = 'admin';
 
 -- name: GetClubEvents :many
+-- Returns the raw session name (empty when unset); the client fills the display
+-- fallback ("<Club> <Mode>") via sessionName(), so an unnamed club event never
+-- shows the generic "OpenPadel" default.
 SELECT
     s.id,
-    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
+    s.name,
     s.status,
     s.game_mode,
     s.courts,

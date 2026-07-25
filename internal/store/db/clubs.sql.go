@@ -119,7 +119,7 @@ func (q *Queries) GetClubByJoinCode(ctx context.Context, joinCode string) (Club,
 const getClubEvents = `-- name: GetClubEvents :many
 SELECT
     s.id,
-    CAST(COALESCE(NULLIF(s.name, ''), 'OpenPadel') AS TEXT) AS name,
+    s.name,
     s.status,
     s.game_mode,
     s.courts,
@@ -142,6 +142,9 @@ type GetClubEventsRow struct {
 	ScheduledAt sql.NullString
 }
 
+// Returns the raw session name (empty when unset); the client fills the display
+// fallback ("<Club> <Mode>") via sessionName(), so an unnamed club event never
+// shows the generic "OpenPadel" default.
 func (q *Queries) GetClubEvents(ctx context.Context, clubID sql.NullString) ([]GetClubEventsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getClubEvents, clubID)
 	if err != nil {
