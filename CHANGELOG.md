@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.21.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.20.0...v1.21.0) (2026-07-25)
+
+
+### Features
+
+* clubs foundation (ticket [#123](https://github.com/Fabianthorsen/OpenPadel/issues/123)) - create, list, view ([#130](https://github.com/Fabianthorsen/OpenPadel/issues/130)) ([f714db3](https://github.com/Fabianthorsen/OpenPadel/commit/f714db3b5a3744052b9ce9b7ddd874c534d73d69))
+* **clubs:** bulk "invite my whole club" + club-event polish ([#253](https://github.com/Fabianthorsen/OpenPadel/issues/253)) ([41bc3a9](https://github.com/Fabianthorsen/OpenPadel/commit/41bc3a9aec937d903e039645d68c91a157b3c131))
+* **clubs:** club events — create, discover & notify ([#127](https://github.com/Fabianthorsen/OpenPadel/issues/127)) ([#251](https://github.com/Fabianthorsen/OpenPadel/issues/251)) ([9bfd93c](https://github.com/Fabianthorsen/OpenPadel/commit/9bfd93c6b941faabd7b59efc69fd1269d7d88f84))
+* **clubs:** club invites — invite a User, accept/decline ([#125](https://github.com/Fabianthorsen/OpenPadel/issues/125)) ([#248](https://github.com/Fabianthorsen/OpenPadel/issues/248)) ([3550fe0](https://github.com/Fabianthorsen/OpenPadel/commit/3550fe01c3eca1c76ce5bc07c8b86c429c49a8c1))
+* **clubs:** club leaderboard — current-form ranking ([#129](https://github.com/Fabianthorsen/OpenPadel/issues/129)) ([#254](https://github.com/Fabianthorsen/OpenPadel/issues/254)) ([368b09e](https://github.com/Fabianthorsen/OpenPadel/commit/368b09e7adfbc07c51f0b92f7f57f5a3a022a426))
+* **clubs:** join by link/code with rotatable invite ([#124](https://github.com/Fabianthorsen/OpenPadel/issues/124)) ([#247](https://github.com/Fabianthorsen/OpenPadel/issues/247)) ([023f479](https://github.com/Fabianthorsen/OpenPadel/commit/023f47990afc8b020d2c69ffb263898c20f47bad))
+* **clubs:** manage roster & club — edit, promote/demote, remove, delete ([#126](https://github.com/Fabianthorsen/OpenPadel/issues/126)) ([#250](https://github.com/Fabianthorsen/OpenPadel/issues/250)) ([183052c](https://github.com/Fabianthorsen/OpenPadel/commit/183052cd58e88e356ab77eaa03a4444777fad3f3))
+
 ## [1.20.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.19.0...v1.20.0) (2026-07-24)
 
 
