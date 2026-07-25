@@ -37,6 +37,7 @@
 		getPlayerToken,
 		clearPlayerSession
 	} from '$lib/playerSession';
+	import { setResumeSession } from '$lib/resumeSession';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { goto } from '$app/navigation';
@@ -479,7 +480,7 @@
 			);
 			if (!isAdmin) {
 				savePlayerSession(session.id, player);
-				localStorage.setItem('last_session_id', session.id);
+				setResumeSession(session.id, auth.user?.id ?? null);
 			}
 			toast.success($_('lobby_player_joined'));
 			joinName = '';

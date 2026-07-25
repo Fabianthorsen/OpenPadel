@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { api } from '$lib/api/client';
+import { clearAccountResumeSession } from '$lib/resumeSession';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -65,6 +66,9 @@ function createAuthStore() {
 			await api.auth.logout(token).catch(() => {});
 			localStorage.removeItem(TOKEN_KEY);
 		}
+		// A logged-out device must not carry a registered user's session context:
+		// forget any account-owned resume pointer so it stops being resumable (#252).
+		clearAccountResumeSession();
 		token = null;
 		user = null;
 	}

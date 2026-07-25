@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { api, ApiError } from '$lib/api/client';
 	import { savePlayerSession } from '$lib/playerSession';
+	import { setResumeSession } from '$lib/resumeSession';
 	import { auth } from '$lib/auth.svelte';
 	import { _ } from 'svelte-i18n';
 	import { translateApiError } from '$lib/i18n/errors';
@@ -100,7 +101,7 @@
 				adminToken
 			);
 			savePlayerSession(session.id, player);
-			localStorage.setItem('last_session_id', session.id);
+			setResumeSession(session.id, auth.user.id);
 			open = false;
 			goto(`/s/${session.id}?token=${adminToken}`);
 		} catch (e) {
