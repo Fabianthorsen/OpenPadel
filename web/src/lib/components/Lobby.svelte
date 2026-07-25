@@ -65,20 +65,22 @@
 	} = $props();
 
 	const isDev = import.meta.env.DEV;
-	const devNames = [
-		'Alice',
-		'Bob',
-		'Carlos',
-		'Diana',
-		'Erik',
-		'Fiona',
-		'Gio',
-		'Hanna',
-		'Ivan',
-		'Julia',
-		'Karl',
-		'Lena'
+	// Dev "fill lobby" pools. seedAccounts mirror the registered users created by
+	// `make seed` (backend cmd/seed) — filling logs in as each to add a real
+	// account-linked Player. guestNames are pure guests (no account). The fill
+	// interleaves the two so the roster is a genuine mix, not guests-only.
+	const seedPassword = 'password123';
+	const seedAccounts = [
+		{ email: 'alice@openpadel.local', name: 'Alice' },
+		{ email: 'bob@openpadel.local', name: 'Bob' },
+		{ email: 'carol@openpadel.local', name: 'Carol' },
+		{ email: 'dave@openpadel.local', name: 'Dave' },
+		{ email: 'erik@openpadel.local', name: 'Erik' },
+		{ email: 'fiona@openpadel.local', name: 'Fiona' },
+		{ email: 'grace@openpadel.local', name: 'Grace' },
+		{ email: 'henry@openpadel.local', name: 'Henry' }
 	];
+	const guestNames = ['Ola', 'Kari', 'Nils', 'Ingrid', 'Sven', 'Astrid', 'Lars', 'Sofie'];
 
 	let copied = $state(false);
 	let starting = $state(false);
@@ -477,26 +479,60 @@
 		}
 	}
 
+	// Add a seeded registered user as an account-linked Player. Logs in as them
+	// (they all share seedPassword) purely to mint a token for the join call —
+	// this does not touch the current admin's auth session. Their rating comes
+	// from their account. Falls back to a guest join if the account isn't seeded
+	// yet (run `make seed`).
+	async function joinAsAccount(acct: { email: string; name: string }) {
+		try {
+			const { token } = await api.auth.login(acct.email, seedPassword);
+			await api.players.join(session.id, acct.name, token);
+		} catch {
+			await joinAsGuest(acct.name);
+		}
+	}
+
+	// Add a pure guest (no account) with a random 1–5 rating so the balancer has
+	// real spread to work with.
+	async function joinAsGuest(name: string) {
+		const rating = 1 + Math.floor(Math.random() * 5);
+		await api.players.join(session.id, name, undefined, undefined, rating).catch(() => {});
+	}
+
 	async function seedPlayers() {
 		seeding = true;
-		const existing = new Set(activePlayers.map((p) => p.name));
-		// Fill to a random roster size that fits the court count: courts×4 up to
-		// courts×4+3 (1 court → 4–7, 2 courts → 8–11), each with a random 1–5 rating
-		// so the balancer has real spread to work with.
-		const min = session.courts * 4;
-		const target = min + Math.floor(Math.random() * 4);
-		const wanted = Math.max(0, target - activePlayers.length);
-		const names: string[] = [];
-		for (let i = 0; names.length < wanted && i < 100; i++) {
-			const name = devNames[i] ?? `Player ${i + 1}`;
-			if (!existing.has(name)) names.push(name);
+		try {
+			const existing = new Set(activePlayers.map((p) => p.name));
+			// Fill to a random roster size that fits the court count: courts×4 up to
+			// courts×4+3 (1 court → 4–7, 2 courts → 8–11).
+			const min = session.courts * 4;
+			const target = min + Math.floor(Math.random() * 4);
+			const wanted = Math.max(0, target - activePlayers.length);
+
+			const accounts = seedAccounts.filter((a) => !existing.has(a.name));
+			const guests = guestNames.filter((n) => !existing.has(n));
+
+			// Interleave registered accounts and guests so the roster is a genuine
+			// mix; fall back to whichever pool still has entries, then to generated
+			// guest names if both run dry.
+			let ai = 0;
+			let gi = 0;
+			for (let n = 0; n < wanted; n++) {
+				if (n % 2 === 0 && ai < accounts.length) {
+					await joinAsAccount(accounts[ai++]);
+				} else if (gi < guests.length) {
+					await joinAsGuest(guests[gi++]);
+				} else if (ai < accounts.length) {
+					await joinAsAccount(accounts[ai++]);
+				} else {
+					await joinAsGuest(`Player ${activePlayers.length + n + 1}`);
+				}
+			}
+		} finally {
+			seeding = false;
+			onRefresh();
 		}
-		for (const name of names) {
-			const rating = 1 + Math.floor(Math.random() * 5);
-			await api.players.join(session.id, name, undefined, undefined, rating).catch(() => {});
-		}
-		seeding = false;
-		onRefresh();
 	}
 
 	async function cancel() {
