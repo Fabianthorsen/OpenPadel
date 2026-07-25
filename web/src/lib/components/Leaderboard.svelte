@@ -339,38 +339,39 @@
 				</div>
 			</div>
 
-			<!-- Standings rows: rank · avatar+name · points (calm, no colors) -->
-			<div class="space-y-0.5">
+			<!-- Standings: one grouped surface, hairline rows. rank · name · W·D·L · points.
+			     Calm & glanceable — leader marked in primary, no colored rows (#172). -->
+			<div
+				class="bg-surface border-border divide-border/70 divide-y overflow-hidden rounded-2xl border shadow-sm"
+			>
 				{#each leaderboard.standings as s (s.player_id)}
 					{@const isRank1 = s.rank === 1}
+					{@const losses = Math.max(0, (s.games_played ?? 0) - (s.wins ?? 0) - (s.draws ?? 0))}
 					<div
-						class="bg-surface border-border/60 flex items-center gap-3 rounded-2xl border px-4 py-3.5 shadow-sm"
+						class="flex items-center gap-3 px-3.5 py-3"
 						aria-live="polite"
-						aria-label="{s.rank}. {s.name}: {s.points} points"
+						aria-label="{s.rank}. {s.name}: {s.points} points, {s.wins ?? 0} won, {s.draws ??
+							0} drawn, {losses} lost"
 					>
-						<!-- Rank number: rank 1 lit amber, others disabled -->
+						<!-- Rank: leader in primary, others disabled -->
 						<span
-							class="w-6 text-sm font-[800] tabular-nums {isRank1
-								? 'text-text-primary'
+							class="w-5 shrink-0 text-center text-sm font-[800] tabular-nums {isRank1
+								? 'text-primary'
 								: 'text-text-disabled'}"
 						>
 							{s.rank}
 						</span>
 
-						<!-- Avatar + name: rank 1 emphasised, others neutral -->
+						<!-- Avatar + name -->
 						<div class="flex min-w-0 flex-1 items-center gap-2.5">
 							<Avatar
 								icon={s.avatar_icon}
 								color={s.avatar_color}
 								name={s.name}
 								size="sm"
-								ring="ring-2 ring-primary/30"
+								ring="ring-2 ring-primary/20"
 							/>
-							<span
-								class="truncate text-sm {isRank1
-									? 'text-text-primary font-bold'
-									: 'text-text-primary font-semibold'}"
-							>
+							<span class="text-text-primary min-w-0 truncate text-sm font-semibold">
 								{shortName(s.name)}
 							</span>
 							{#if ratings[s.player_id] !== undefined}
@@ -378,10 +379,22 @@
 							{/if}
 						</div>
 
+						<!-- W·D·L record (once a game is in) -->
+						{#if (s.games_played ?? 0) > 0}
+							<span
+								class="text-text-secondary shrink-0 text-xs font-semibold tabular-nums"
+								aria-hidden="true"
+							>
+								<span class="text-text-primary">{s.wins ?? 0}</span><span class="text-text-disabled"
+									>·</span
+								>{s.draws ?? 0}<span class="text-text-disabled">·{losses}</span>
+							</span>
+						{/if}
+
 						<!-- Points: the ranking metric, on its own glazed tile -->
 						<span
-							class="tile min-w-[2.25rem] rounded-md px-2 py-1 text-center text-base font-[800] {isRank1
-								? 'ring-primary/60 ring-2'
+							class="tile min-w-[2.25rem] shrink-0 rounded-md px-2 py-1 text-center text-base font-[800] {isRank1
+								? 'ring-primary/50 ring-2'
 								: ''}">{s.points}</span
 						>
 					</div>

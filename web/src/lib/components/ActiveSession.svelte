@@ -619,6 +619,7 @@
 					sessionName={sessionName(session)}
 					{stream}
 					ratings={playerRatings}
+					inSheet
 				/>
 			</div>
 		</Sheet.Content>
