@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.21.0...v1.22.0) (2026-07-25)
+
+
+### Features
+
+* **web:** adopt Cobalt Mono theme, shared session rows, leaderboard revamp ([#257](https://github.com/Fabianthorsen/OpenPadel/issues/257)) ([03d5458](https://github.com/Fabianthorsen/OpenPadel/commit/03d5458cdd80ad7fa25cadbc5bfa926b82352d69))
+* **web:** two-family typography, session terminology, and profile hardening ([#255](https://github.com/Fabianthorsen/OpenPadel/issues/255)) ([c6464fd](https://github.com/Fabianthorsen/OpenPadel/commit/c6464fd21bab3f391affe089cb4fa7ef05e020cc))
+
 ## [1.21.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.20.0...v1.21.0) (2026-07-25)
 
 
