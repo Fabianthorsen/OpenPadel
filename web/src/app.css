@@ -1,8 +1,14 @@
-@import '@fontsource/inter/400.css';
-@import '@fontsource/inter/500.css';
-@import '@fontsource/inter/600.css';
-@import '@fontsource/inter/700.css';
-@import '@fontsource/inter/800.css';
+/* UI face — Geist Sans (working screens, body, data) */
+@import '@fontsource/geist-sans/400.css';
+@import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-sans/600.css';
+@import '@fontsource/geist-sans/700.css';
+@import '@fontsource/geist-sans/800.css';
+
+/* Display face — Schibsted Grotesk (wordmark + celebratory finale only) */
+@import '@fontsource/schibsted-grotesk/600.css';
+@import '@fontsource/schibsted-grotesk/700.css';
+@import '@fontsource/schibsted-grotesk/800.css';
 
 @import 'tailwindcss';
 
@@ -74,8 +80,10 @@
 	--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 	--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 
-	/* Font */
-	--font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+	/* Fonts — Geist Sans for UI/body/data; Schibsted Grotesk for the
+	   wordmark and celebratory finale only (use the `font-display` utility). */
+	--font-sans: 'Geist Sans', system-ui, -apple-system, sans-serif;
+	--font-display: 'Schibsted Grotesk', 'Geist Sans', system-ui, sans-serif;
 
 	/* Animations */
 	--animate-shake: shake 0.4s ease;

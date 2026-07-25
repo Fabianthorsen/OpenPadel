@@ -87,10 +87,21 @@ No gradients. Shadows are subtle and reserved (see *What this is not*).
 
 ## Typography
 
+**Two families, two registers** (self-hosted via `@fontsource`, no Google Fonts request):
+
 ```
-Font: Inter — loaded via @fontsource/inter (400–800), no Google Fonts request.
-      --font-sans: 'Inter', system-ui, …
+UI / body / data   Geist Sans          --font-sans     (400–800)  — all working screens
+Display            Schibsted Grotesk   --font-display  (600–800)  — wordmark + finale only
 ```
+
+- **Geist Sans** (`--font-sans`) is the default face for everything: body, labels, and all
+  numeric/data (scores, standings) — it has clean tabular figures. Use `font-variant-numeric:
+  tabular-nums` on scores as before.
+- **Schibsted Grotesk** (`--font-display`) is the celebratory display face. Reach for it via the
+  `font-display` utility, and **only** on: the **OpenPadel wordmark** (Home, Auth) and the
+  **Session-complete finale** (finale title + podium names). It is a Nordic grotesk chosen to match
+  the product's origin. Do **not** put it on working-screen titles, page headers, or score numerals —
+  those stay Geist. Expressive == celebratory-only still holds.
 
 There are **no font-size/weight tokens yet** — the app scatters arbitrary values (`text-[28px]`,
 `font-[800]`). Target scale to tokenize (add as `@theme` tokens when a page first touches type):
