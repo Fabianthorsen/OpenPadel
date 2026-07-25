@@ -224,6 +224,14 @@ export const api = {
 				{ to_user_id: toUserId },
 				token
 			),
+		// Fan a whole Club's roster out into ordinary Session invites in one call.
+		sendClub: (sessionId: string, clubId: string, token: string) =>
+			request<App.Invite[]>(
+				'POST',
+				`/sessions/${sessionId}/invites/club`,
+				{ club_id: clubId },
+				token
+			),
 		accept: (inviteId: string, token: string) =>
 			request<App.Player>('POST', `/invites/${inviteId}/accept`, undefined, token),
 		decline: (inviteId: string, token: string) =>

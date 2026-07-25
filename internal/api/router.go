@@ -141,6 +141,7 @@ func NewRouter(s *store.Store, emailClient *email.Client, appURL, vapidPrivate, 
 			r.With(h.requireAuth).Post("/leave", h.leaveSession)
 			r.Get("/invites", h.getSessionInvites)
 			r.With(h.requireAuth).Post("/invites", h.sendInvite)
+			r.With(h.requireAuth).Post("/invites/club", h.sendClubInvites)
 			r.Delete("/players/{playerID}", h.deactivatePlayer)
 			r.Patch("/players/{playerID}/rating", h.updatePlayerRating)
 			r.Get("/rounds", h.getRounds)

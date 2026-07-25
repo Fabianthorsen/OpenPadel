@@ -5,6 +5,7 @@
 	import { auth } from '$lib/auth.svelte';
 	import { api } from '$lib/api/client';
 	import { clearPlayerSession } from '$lib/playerSession';
+	import { sessionName } from '$lib/utils';
 	import { _ } from 'svelte-i18n';
 	import { CalendarDays, Radio, UserPlus, X, Search, Check, Settings } from '@lucide/svelte';
 	import Footer from '$lib/components/Footer.svelte';
@@ -598,7 +599,7 @@
 									</div>
 									<div class="min-w-0 flex-1">
 										<div class="flex items-center gap-2">
-											<p class="truncate text-sm font-semibold">{t.name}</p>
+											<p class="truncate text-sm font-semibold">{sessionName(t)}</p>
 											{#if t.status === 'playing'}
 												<span
 													class="bg-primary/15 text-primary shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase"
@@ -650,7 +651,7 @@
 									{ordinal(t.rank)}
 								</div>
 								<div class="min-w-0 flex-1">
-									<p class="truncate text-sm font-semibold">{t.name}</p>
+									<p class="truncate text-sm font-semibold">{sessionName(t)}</p>
 									<p class="text-text-secondary text-xs">
 										{formatDate(t.played_at)} · {t.points} pts
 										{#if t.ended_early}

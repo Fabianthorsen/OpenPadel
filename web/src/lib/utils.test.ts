@@ -53,6 +53,19 @@ describe('sessionName', () => {
 	it('returns americano default when no name and no mode', () => {
 		expect(sessionName({})).toBe('OpenPadel Americano');
 	});
+
+	it('falls back to a club-tied name for a club event', () => {
+		expect(sessionName({ club_name: 'Bouvet Padel', game_mode: 'americano' })).toBe(
+			'Bouvet Padel Americano'
+		);
+		expect(sessionName({ club_name: 'Bouvet Padel', game_mode: 'mexicano' })).toBe(
+			'Bouvet Padel Mexicano'
+		);
+	});
+
+	it('prefers an explicit name over the club fallback', () => {
+		expect(sessionName({ name: 'Friday Night', club_name: 'Bouvet Padel' })).toBe('Friday Night');
+	});
 });
 
 describe('initials', () => {

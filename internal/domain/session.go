@@ -119,19 +119,22 @@ type MatchResult struct {
 }
 
 type TournamentHistoryEntry struct {
-	SessionID   string `json:"session_id"`
-	Name        string `json:"name"`
-	Status      string `json:"status"`
-	PlayedAt    string `json:"played_at"`
-	Rank        int    `json:"rank"`
-	Points      int    `json:"points"`
-	GamesPlayed int    `json:"games_played"`
-	EndedEarly  bool   `json:"ended_early"`
+	SessionID   string   `json:"session_id"`
+	Name        string   `json:"name"`
+	ClubName    string   `json:"club_name,omitempty"`
+	GameMode    GameMode `json:"game_mode,omitempty"`
+	Status      string   `json:"status"`
+	PlayedAt    string   `json:"played_at"`
+	Rank        int      `json:"rank"`
+	Points      int      `json:"points"`
+	GamesPlayed int      `json:"games_played"`
+	EndedEarly  bool     `json:"ended_early"`
 }
 
 type UpcomingEntry struct {
 	SessionID   string     `json:"session_id"`
 	Name        string     `json:"name"`
+	ClubName    string     `json:"club_name,omitempty"`
 	Status      string     `json:"status"`
 	GameMode    GameMode   `json:"game_mode"`
 	Courts      int        `json:"courts"`

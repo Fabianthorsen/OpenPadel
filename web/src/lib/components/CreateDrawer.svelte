@@ -9,6 +9,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { SegmentedControl, type SegmentedOption } from '$lib/components/ui/segmented-control';
 	import * as Drawer from '$lib/components/ui/drawer';
+	import { Select, type SelectOption } from '$lib/components/ui/select';
 	import { Users } from '@lucide/svelte';
 
 	let {
@@ -20,6 +21,48 @@
 	let name = $state('');
 	let creating = $state(false);
 	let error = $state('');
+
+	// Second creation flow: from the generic "New Tournament" button (no preset
+	// club), a member can optionally attach the game to one of their clubs, making
+	// it a club event. A preset club (from the club page) always wins and hides
+	// the picker.
+	let myClubs = $state<App.ClubListItem[]>([]);
+	let clubsLoaded = $state(false);
+	let selectedClubId = $state('');
+
+	// Load the caller's clubs the first time the drawer opens for a personal
+	// creation. api.clubs.list only returns clubs they're a member of, which is
+	// exactly what the create endpoint will accept as club_id.
+	$effect(() => {
+		if (open && !club && auth.token && !clubsLoaded) {
+			clubsLoaded = true;
+			api.clubs
+				.list(auth.token)
+				.then((v) => {
+					myClubs = v;
+				})
+				.catch(() => {});
+		}
+	});
+
+	// Dropdown options for the club picker: a "none" default (personal game) first,
+	// then each club the caller belongs to, with its avatar.
+	const clubOptions = $derived<SelectOption[]>([
+		{ value: '', label: $_('create_attach_club_none') },
+		...myClubs.map((c) => ({
+			value: c.id,
+			label: c.name,
+			icon: c.avatar_icon,
+			color: c.avatar_color
+		}))
+	]);
+
+	// The club the new session will belong to: a preset always wins, else the
+	// picked club, else none (personal).
+	const effectiveClubId = $derived(club?.id ?? selectedClubId);
+	const effectiveClubName = $derived(
+		club?.name ?? myClubs.find((c) => c.id === selectedClubId)?.name ?? ''
+	);
 
 	const modeOptions: SegmentedOption[] = [
 		{ value: 'americano', label: 'Americano' },
@@ -44,7 +87,7 @@
 					game_mode: gameMode,
 					name: name.trim(),
 					...defaults,
-					...(club ? { club_id: club.id } : {})
+					...(effectiveClubId ? { club_id: effectiveClubId } : {})
 				},
 				auth.token ?? undefined
 			);
@@ -84,14 +127,28 @@
 		</Drawer.Header>
 
 		<div class="flex-1 space-y-6 overflow-y-auto px-6 pb-8">
-			{#if club}
-				<!-- Club preset: this game will be owned by the Club and the whole roster
-				     is told about it automatically — no personal invites needed. -->
-				<div class="bg-primary/10 text-primary flex items-center gap-2 rounded-2xl px-4 py-3">
-					<Users size={16} class="shrink-0" />
-					<p class="text-sm font-semibold">
-						{$_('create_club_event_banner', { values: { club: club.name } })}
+			{#if effectiveClubId}
+				<!-- Owned by a Club (preset or picked): the whole roster is told about it
+				     automatically — a small green notice, not a full callout. -->
+				<p class="text-primary flex items-center gap-1.5 text-xs font-medium">
+					<Users size={13} class="shrink-0" />
+					<span>{$_('create_club_event_banner', { values: { club: effectiveClubName } })}</span>
+				</p>
+			{/if}
+
+			{#if !club && myClubs.length > 0}
+				<!-- Optional: attach this game to one of the caller's clubs, turning it
+				     into a club event. Default is a personal game. Hidden when opened
+				     from a club page (club preset) or when the caller has no clubs. -->
+				<div class="space-y-2.5">
+					<p class="text-text-disabled text-[11px] font-semibold tracking-[0.1em] uppercase">
+						{$_('create_attach_club_label')}
 					</p>
+					<Select
+						options={clubOptions}
+						bind:value={selectedClubId}
+						ariaLabel={$_('create_attach_club_label')}
+					/>
 				</div>
 			{/if}
 
@@ -126,7 +183,7 @@
 			{/if}
 
 			<Button onclick={create} disabled={creating} size="cta" variant="default">
-				{#if creating}{$_('create_button_loading')}{:else if club}{$_(
+				{#if creating}{$_('create_button_loading')}{:else if effectiveClubId}{$_(
 						'create_club_event_button'
 					)}{:else}{$_('create_button')}{/if}
 			</Button>

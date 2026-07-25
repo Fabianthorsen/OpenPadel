@@ -133,6 +133,15 @@ func (h *Handler) deactivatePlayer(w http.ResponseWriter, r *http.Request) {
 		respondAPIError(w, ErrAdminRequired)
 		return
 	}
+	// The creator's own Player is the roster's anchor to its admin (admin ≠ roster
+	// membership here, but the creator holds the AdminToken). Removing it — whether
+	// the creator self-removes or an admin removes them — would leave a session
+	// nobody on the roster administers, so it's refused; cancel the session
+	// instead. CreatorPlayerID is set only once the creator joins as a Player.
+	if sess.CreatorPlayerID != "" && playerID == sess.CreatorPlayerID {
+		respondAPIError(w, ErrCreatorCannotLeave)
+		return
+	}
 	if sess.Status != domain.StatusLobby {
 		respondAPIError(w, ErrSessionAlreadyStarted)
 		return
@@ -185,6 +194,12 @@ func (h *Handler) leaveSession(w http.ResponseWriter, r *http.Request) {
 	}
 	if playerID == "" {
 		respondAPIError(w, ErrPlayerNotFound)
+		return
+	}
+	// The creator can't leave their own session's roster — they administer it (see
+	// deactivatePlayer). They'd cancel the session instead.
+	if sess.CreatorPlayerID != "" && playerID == sess.CreatorPlayerID {
+		respondAPIError(w, ErrCreatorCannotLeave)
 		return
 	}
 

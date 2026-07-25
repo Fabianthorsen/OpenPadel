@@ -1,4 +1,4 @@
-.PHONY: dev build fmt lint lint/go lint/web test setup db/reset db/migrate/status db/migrate/up db/migrate/down
+.PHONY: dev build fmt lint lint/go lint/web test setup seed db/reset db/migrate/status db/migrate/up db/migrate/down
 
 # Go binary output
 BIN := bin/openpadel
@@ -42,6 +42,10 @@ test:
 ## Tidy Go deps
 tidy:
 	go mod tidy
+
+## Seed the dev DB with known test users + clubs (idempotent, additive)
+seed:
+	go run ./cmd/seed
 
 ## Clear all game data (sessions, rounds, matches, players) — keeps users & auth
 db/reset:

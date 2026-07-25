@@ -101,7 +101,11 @@ type Querier interface {
 	// user has at least one fully-scored Match in the Session, so placement can
 	// ignore ended-early Sessions the user never actually finished a game in; the
 	// finishing rank itself is resolved from the leaderboard in Go.
+	// name is returned raw (may be empty); the display fallback (club-aware) lives
+	// in the frontend sessionName() so there is a single source of truth.
 	GetTournamentHistorySessions(ctx context.Context, userID sql.NullString) ([]GetTournamentHistorySessionsRow, error)
+	// name is returned raw (may be empty); the club-aware display fallback lives in
+	// the frontend sessionName().
 	GetUpcomingTournaments(ctx context.Context, userID sql.NullString) ([]GetUpcomingTournamentsRow, error)
 	GetUserAvatarByUserID(ctx context.Context, id string) (GetUserAvatarByUserIDRow, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)

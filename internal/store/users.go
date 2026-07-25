@@ -426,6 +426,8 @@ func (s *Store) rankedTournaments(userID string) ([]rankedTournament, error) {
 			entry: domain.TournamentHistoryEntry{
 				SessionID:  sess.ID,
 				Name:       sess.Name,
+				ClubName:   sess.ClubName,
+				GameMode:   domain.GameMode(sess.GameMode),
 				Status:     sess.Status,
 				PlayedAt:   sess.CreatedAt,
 				EndedEarly: sess.EndedEarly == 1,
@@ -471,6 +473,7 @@ func (s *Store) GetUpcomingTournaments(userID string) ([]domain.UpcomingEntry, e
 		e := domain.UpcomingEntry{
 			SessionID:   row.ID,
 			Name:        row.Name,
+			ClubName:    row.ClubName,
 			Status:      row.Status,
 			GameMode:    domain.GameMode(row.GameMode),
 			Courts:      int(row.Courts),
