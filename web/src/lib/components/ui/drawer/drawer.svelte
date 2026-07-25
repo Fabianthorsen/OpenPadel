@@ -25,8 +25,13 @@
 
 <script lang="ts">
 	import { Dialog as DialogPrimitive } from 'bits-ui';
+	import { guardBodyLock } from '$lib/overlayGuard.svelte';
 
 	let { open = $bindable(false), onOpenChange, children, ...restProps }: DrawerProps = $props();
+
+	// Safety net for the bits-ui body-scroll-lock leak that can freeze the page
+	// after the drawer closes. See $lib/overlayGuard.
+	guardBodyLock(() => open);
 </script>
 
 <DialogPrimitive.Root bind:open {onOpenChange} {...restProps}>
