@@ -98,6 +98,10 @@
 	let playerSearchLoading = $state(false);
 	let playerSearchDebounce: ReturnType<typeof setTimeout>;
 	let sessionInvites = $state<App.Invite[]>([]);
+	// Clubs the admin belongs to, offered for one-tap "invite my whole club"
+	// fan-out (#128). Loaded only for a signed-in admin; guests never see this.
+	let myClubs = $state<App.ClubListItem[]>([]);
+	let invitingClub = $state<string | null>(null);
 
 	// SessionConfig drawer state
 	let configDrawerOpen = $state(false);
@@ -254,6 +258,14 @@
 				.then((v) => {
 					sessionInvites = v;
 				});
+			if (auth.token) {
+				api.clubs
+					.list(auth.token)
+					.catch(() => [])
+					.then((v) => {
+						myClubs = v;
+					});
+			}
 		}
 		if (stream) {
 			return stream.onEvent('session_updated', async () => {
@@ -292,6 +304,31 @@
 		playerSearch = '';
 		playerResults = [];
 		sessionInvites = await api.invites.listForSession(session.id).catch(() => []);
+	}
+
+	// Fan a whole Club's roster out into Session invites in one tap (#128).
+	// Members already in or already invited are skipped server-side, so a repeat
+	// tap is safe; the toast reports how many invites actually went out.
+	async function inviteClub(club: App.ClubListItem) {
+		if (!auth.token || invitingClub) return;
+		invitingClub = club.id;
+		try {
+			const created = await api.invites.sendClub(session.id, club.id, auth.token);
+			sessionInvites = await api.invites.listForSession(session.id).catch(() => []);
+			if (created.length > 0) {
+				toast.success(
+					$_('lobby_invite_club_sent', { values: { count: created.length, club: club.name } })
+				);
+			} else {
+				toast.info($_('lobby_invite_club_none', { values: { club: club.name } }));
+			}
+		} catch (e) {
+			toast.error(
+				e instanceof ApiError ? translateApiError(e.message) : translateApiError('server_error')
+			);
+		} finally {
+			invitingClub = null;
+		}
 	}
 
 	// Optional level the admin picks when adding a guest by hand (#211). Blank
@@ -802,6 +839,37 @@
 		{#if isAdmin}
 			<div class="space-y-2">
 				<SectionLabel>{$_('lobby_invite_label')}</SectionLabel>
+				{#if myClubs.length > 0}
+					<!-- Invite a whole club at once (#128) — a fan-out over the roster,
+					     shown above the one-by-one search below. -->
+					<div class="space-y-1.5">
+						{#each myClubs as club (club.id)}
+							<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
+								<Avatar
+									icon={club.avatar_icon}
+									color={club.avatar_color}
+									name={club.name}
+									size="sm"
+									ring="ring-2 ring-primary/30"
+								/>
+								<div class="min-w-0 flex-1">
+									<p class="truncate text-sm font-semibold">{club.name}</p>
+									<p class="text-text-disabled truncate text-xs">
+										{$_('lobby_invite_club_members', { values: { count: club.roster_count } })}
+									</p>
+								</div>
+								<button
+									onclick={() => inviteClub(club)}
+									disabled={invitingClub !== null}
+									class="bg-primary flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+								>
+									<Users size={12} />
+									{invitingClub === club.id ? '…' : $_('lobby_invite_club_button')}
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
 				<div class="relative">
 					<div class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
 						<Search size={15} class="text-text-disabled" />

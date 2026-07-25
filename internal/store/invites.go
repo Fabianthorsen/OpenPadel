@@ -47,6 +47,48 @@ func (s *Store) CreateInvite(sessionID, fromUserID, toUserID string) (*domain.In
 	return s.getInviteByID(id)
 }
 
+// CreateSessionInvitesForClub fans a Club's roster out into ordinary Session
+// invites — one per Member, each identical in shape to a targeted invite, so
+// accepting one creates a Player exactly as today. It is a fan-out, not a new
+// invite type. The operation is idempotent and tolerant: the caller
+// (fromUserID), Members already joined to the Session, and Members already
+// holding a pending invite are skipped rather than erroring, so a repeat
+// fan-out is safe. A previously declined Member is re-invited (reset to
+// pending) by the underlying CreateInvite. Returns the invites actually created.
+func (s *Store) CreateSessionInvitesForClub(sessionID, fromUserID, clubID string) ([]domain.Invite, error) {
+	members, err := s.GetClubMembers(clubID)
+	if err != nil {
+		return nil, err
+	}
+
+	sess, err := s.GetSession(sessionID)
+	if err != nil {
+		return nil, err
+	}
+	joined := make(map[string]bool, len(sess.Players))
+	for _, p := range sess.Players {
+		if p.UserID != "" {
+			joined[p.UserID] = true
+		}
+	}
+
+	created := []domain.Invite{}
+	for _, m := range members {
+		if m.UserID == fromUserID || joined[m.UserID] {
+			continue
+		}
+		inv, err := s.CreateInvite(sessionID, fromUserID, m.UserID)
+		if errors.Is(err, ErrAlreadyInvited) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		created = append(created, *inv)
+	}
+	return created, nil
+}
+
 // GetPendingInvites returns all pending invites for a user, newest first.
 func (s *Store) GetPendingInvites(toUserID string) ([]domain.Invite, error) {
 	rows, err := s.queries.GetInvitesByUserID(context.Background(), toUserID)
