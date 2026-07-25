@@ -513,3 +513,69 @@ func TestDeactivatePlayer_SessionAlreadyStarted(t *testing.T) {
 	}
 	res.Body.Close()
 }
+
+// The creator administers the session (they hold the AdminToken), so they can't
+// leave their own roster and orphan it — they must cancel instead. Joining as the
+// creator crowns their CreatorPlayer, which the guard keys on.
+func TestLeaveSession_CreatorBlocked(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+	sessID, _ := mustCreateSession(t, srv, token) // Alice is the creator
+	mustJoinSession(t, srv, sessID, "Alice", token)
+
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/leave", nil, token)
+	if res.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("creator leave: expected 422, got %d", res.StatusCode)
+	}
+	var errBody struct {
+		Error string `json:"error"`
+	}
+	decodeBody(t, res, &errBody)
+	if errBody.Error != "creator_cannot_leave" {
+		t.Errorf("expected creator_cannot_leave, got %q", errBody.Error)
+	}
+	if got := countActivePlayers(t, srv, sessID); got != 1 {
+		t.Errorf("expected creator still on roster, got %d active", got)
+	}
+}
+
+// The creator's Player can't be removed even by an admin token — same roster-
+// integrity guard, from the admin-initiated removal path.
+func TestDeactivatePlayer_CreatorBlocked(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	token := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+	sessID, adminToken := mustCreateSession(t, srv, token)
+	playerID := mustJoinSession(t, srv, sessID, "Alice", token)
+
+	res := deleteReq(t, srv, "/api/sessions/"+sessID+"/players/"+playerID, adminToken)
+	if res.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("remove creator: expected 422, got %d", res.StatusCode)
+	}
+	var errBody struct {
+		Error string `json:"error"`
+	}
+	decodeBody(t, res, &errBody)
+	if errBody.Error != "creator_cannot_leave" {
+		t.Errorf("expected creator_cannot_leave, got %q", errBody.Error)
+	}
+}
+
+// A non-creator player can still leave a creator-owned session normally — the
+// guard is scoped to the creator's own Player, not the whole roster.
+func TestLeaveSession_NonCreatorStillLeaves(t *testing.T) {
+	srv, _ := newAPITestServer(t)
+	aliceToken := mustRegister(t, srv, "alice@example.com", "Alice", "password123")
+	bobToken := mustRegister(t, srv, "bob@example.com", "Bob", "password123")
+	sessID, _ := mustCreateSession(t, srv, aliceToken)
+	mustJoinSession(t, srv, sessID, "Alice", aliceToken) // creator
+	mustJoinSession(t, srv, sessID, "Bob", bobToken)     // regular member
+
+	res := postReq(t, srv, "/api/sessions/"+sessID+"/leave", nil, bobToken)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("non-creator leave: expected 200, got %d", res.StatusCode)
+	}
+	_ = res.Body.Close()
+	if got := countActivePlayers(t, srv, sessID); got != 1 {
+		t.Errorf("expected only creator left on roster, got %d active", got)
+	}
+}

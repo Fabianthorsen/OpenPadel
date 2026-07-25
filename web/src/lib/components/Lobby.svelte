@@ -1122,7 +1122,9 @@
 				<div class="bg-surface-raised rounded-2xl px-4 py-3 text-center">
 					<p class="text-text-secondary text-sm">{$_('lobby_waiting_admin')}</p>
 				</div>
-				{#if alreadyJoined}
+				{#if alreadyJoined && !session.is_creator}
+					<!-- The creator can't leave their own session's roster — they administer
+					     it, so leaving would orphan it. They cancel the session instead. -->
 					<button
 						onclick={() => (showLeaveDialog = true)}
 						disabled={leavingSession}

@@ -39,6 +39,7 @@ var (
 	ErrScoresInvalidSum     = APIError{"scores_invalid_sum", http.StatusBadRequest}
 	ErrInvalidResetLink     = APIError{"invalid_reset_link", http.StatusBadRequest}
 	ErrLastAdmin            = APIError{"last_admin", http.StatusUnprocessableEntity}
+	ErrCreatorCannotLeave   = APIError{"creator_cannot_leave", http.StatusUnprocessableEntity}
 
 	ErrNotAuthenticated       = APIError{"not_authenticated", http.StatusUnauthorized}
 	ErrInvalidToken           = APIError{"invalid_token", http.StatusUnauthorized}

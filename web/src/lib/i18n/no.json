@@ -411,6 +411,7 @@
 	"api_error_not_club_member": "Du er ikke medlem av denne klubben",
 	"api_error_club_not_found": "Klubb ikke funnet",
 	"api_error_last_admin": "En klubb må ha minst én admin — gjør et annet medlem til admin først",
+	"api_error_creator_cannot_leave": "Som oppretter kan du ikke forlate din egen turnering — avlys den i stedet",
 	"api_error_rating_not_editable": "Du kan bare endre nivået til gjester du har lagt til",
 	"api_error_name_required": "Navn er påkrevd",
 	"api_error_name_taken": "Det navnet er allerede tatt",
