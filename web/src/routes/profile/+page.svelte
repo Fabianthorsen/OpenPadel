@@ -9,6 +9,8 @@
 	import { _ } from 'svelte-i18n';
 	import { CalendarDays, Radio, UserPlus, X, Search, Check, Settings } from '@lucide/svelte';
 	import Footer from '$lib/components/Footer.svelte';
+	import DividerOr from '$lib/components/DividerOr.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import CreateDrawer from '$lib/components/CreateDrawer.svelte';
 	import CreateClubDrawer from '$lib/components/CreateClubDrawer.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -225,7 +227,7 @@
 			showHistory = tournaments.length > 0;
 		} catch (err) {
 			console.error('Failed to load profile data:', err);
-			toast.error('Failed to load profile');
+			toast.error($_('profile_load_error'));
 		} finally {
 			loading = false;
 		}
@@ -241,7 +243,7 @@
 		} catch (err) {
 			console.error('Failed to load clubs:', err);
 			clubs = [];
-			toast.error('Failed to load clubs');
+			toast.error($_('profile_clubs_load_error'));
 		} finally {
 			clubsLoading = false;
 		}
@@ -318,13 +320,15 @@
 			color: auth.user?.avatar_color ?? 'forest',
 			name: auth.user?.display_name ?? ''
 		}}
-		subtitle={memberSince ? `Member since ${memberSince}` : undefined}
+		subtitle={memberSince
+			? $_('profile_member_since', { values: { date: memberSince } })
+			: undefined}
 	>
 		{#snippet action()}
 			<a
 				href="/profile/settings"
 				class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
-				aria-label="Settings"
+				aria-label={$_('settings_title')}
 			>
 				<Settings size={24} />
 			</a>
@@ -334,23 +338,28 @@
 	<!-- Pending invites -->
 	{#if invites.length > 0}
 		<div class="space-y-2">
-			<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase">Invites</p>
-			{#each invites as invite}
+			<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase">
+				{$_('profile_invites_label')}
+			</p>
+			{#each invites as invite (invite.id)}
 				<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3.5">
 					<div class="min-w-0 flex-1">
 						<p class="truncate text-sm font-semibold">{invite.session_name}</p>
-						<p class="text-text-secondary text-xs">From {invite.from_display_name}</p>
+						<p class="text-text-secondary text-xs">
+							{$_('profile_invite_from', { values: { name: invite.from_display_name } })}
+						</p>
 					</div>
 					<button
 						onclick={() => acceptInvite(invite.id, invite.session_id)}
 						class="bg-primary flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
 					>
-						<Check size={12} /> Accept
+						<Check size={12} />
+						{$_('profile_invite_accept')}
 					</button>
 					<button
 						onclick={() => declineInvite(invite.id)}
 						class="bg-surface text-text-disabled hover:text-destructive border-border flex items-center justify-center rounded-full border p-1.5 transition-colors"
-						aria-label="Decline"
+						aria-label={$_('profile_invite_decline')}
 					>
 						<X size={14} />
 					</button>
@@ -363,9 +372,9 @@
 	{#if clubInvites.length > 0}
 		<div class="space-y-2">
 			<p class="text-text-secondary text-[11px] font-bold tracking-[0.1em] uppercase">
-				Club invites
+				{$_('profile_club_invites_label')}
 			</p>
-			{#each clubInvites as invite}
+			{#each clubInvites as invite (invite.id)}
 				<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3.5">
 					<Avatar
 						icon={invite.club_avatar_icon}
@@ -375,18 +384,21 @@
 					/>
 					<div class="min-w-0 flex-1">
 						<p class="truncate text-sm font-semibold">{invite.club_name}</p>
-						<p class="text-text-secondary text-xs">From {invite.inviter_display_name}</p>
+						<p class="text-text-secondary text-xs">
+							{$_('profile_invite_from', { values: { name: invite.inviter_display_name } })}
+						</p>
 					</div>
 					<button
 						onclick={() => acceptClubInvite(invite.id)}
 						class="bg-primary flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white"
 					>
-						<Check size={12} /> Join
+						<Check size={12} />
+						{$_('lobby_join_button')}
 					</button>
 					<button
 						onclick={() => declineClubInvite(invite.id)}
 						class="bg-surface text-text-disabled hover:text-destructive border-border flex items-center justify-center rounded-full border p-1.5 transition-colors"
-						aria-label="Decline"
+						aria-label={$_('profile_invite_decline')}
 					>
 						<X size={14} />
 					</button>
@@ -397,17 +409,10 @@
 
 	<!-- New tournament + join code -->
 	<div class="space-y-3">
-		<button
-			onclick={() => (showCreateDrawer = true)}
-			class="bg-primary block w-full rounded-2xl px-4 py-4 text-center text-[15px] font-semibold text-white"
-		>
+		<Button size="cta" onclick={() => (showCreateDrawer = true)}>
 			{$_('profile_new_tournament')}
-		</button>
-		<div class="flex items-center gap-3">
-			<div class="bg-border h-px flex-1"></div>
-			<span class="text-text-disabled text-xs">{$_('home_join_code_divider')}</span>
-			<div class="bg-border h-px flex-1"></div>
-		</div>
+		</Button>
+		<DividerOr label={$_('home_join_code_divider')} />
 		<JoinCodeInput bind:value={joinCode} onComplete={joinByCode} />
 	</div>
 
@@ -476,11 +481,12 @@
 					{#if contactSearch.length >= 2}
 						<div class="space-y-2">
 							<p class="text-text-secondary px-1 text-xs font-semibold">
-								Search results {#if searchResults.length > 0}({searchResults.length}){/if}
+								{$_('profile_contacts_search_results')}
+								{#if searchResults.length > 0}({searchResults.length}){/if}
 							</p>
 							{#if searchResults.length > 0}
 								<div class="space-y-1.5">
-									{#each searchResults as result}
+									{#each searchResults as result (result.id)}
 										<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
 											<Avatar icon="" color="forest" name={result.display_name} size="sm" />
 											<p class="flex-1 truncate text-sm font-semibold">{result.display_name}</p>
@@ -492,7 +498,7 @@
 															display_name: result.display_name
 														} as App.Contact)}
 													class="text-text-disabled hover:text-destructive transition-colors"
-													aria-label="Remove contact"
+													aria-label={$_('profile_contact_remove')}
 												>
 													<X size={16} />
 												</button>
@@ -500,7 +506,7 @@
 												<button
 													onclick={() => addContact(result.id)}
 													class="text-primary"
-													aria-label="Add contact"
+													aria-label={$_('profile_contact_add')}
 												>
 													<UserPlus size={16} />
 												</button>
@@ -520,21 +526,19 @@
 					{:else if contacts.length > 0}
 						<div class="space-y-2">
 							{#if contactSearch.length >= 2}
-								<p class="text-text-secondary px-1 text-xs font-semibold">Your contacts</p>
+								<p class="text-text-secondary px-1 text-xs font-semibold">
+									{$_('profile_contacts_your_contacts')}
+								</p>
 							{/if}
 							<div class="space-y-1.5">
-								{#each contacts as contact}
+								{#each contacts as contact (contact.user_id)}
 									<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
-										<div
-											class="bg-primary-muted text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-[800]"
-										>
-											{contact.display_name[0].toUpperCase()}
-										</div>
+										<Avatar icon="" color="forest" name={contact.display_name} size="sm" />
 										<p class="flex-1 truncate text-sm font-semibold">{contact.display_name}</p>
 										<button
 											onclick={() => handleDeleteContact(contact)}
 											class="text-text-disabled hover:text-destructive transition-colors"
-											aria-label="Remove contact"
+											aria-label={$_('profile_contact_remove')}
 										>
 											<X size={16} />
 										</button>
@@ -550,11 +554,12 @@
 		<!-- Delete contact confirmation -->
 		<ConfirmDialog
 			open={showContactDeleteConfirm}
-			title="Delete Contact?"
-			description="Remove {contactToDelete?.display_name ||
-				'this contact'} from your contacts. This action cannot be undone."
-			confirmLabel="Delete"
-			cancelLabel="Cancel"
+			title={$_('profile_contact_delete_title')}
+			description={$_('profile_contact_delete_desc', {
+				values: { name: contactToDelete?.display_name || $_('profile_contact_fallback') }
+			})}
+			confirmLabel={$_('profile_contact_delete_confirm')}
+			cancelLabel={$_('lobby_rating_cancel')}
 			destructive={true}
 			onconfirm={confirmDeleteContact}
 			oncancel={() => (showContactDeleteConfirm = false)}
@@ -603,13 +608,15 @@
 											{#if t.status === 'playing'}
 												<span
 													class="bg-primary/15 text-primary shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase"
-													>Live</span
+													>{$_('leaderboard_live')}</span
 												>
 											{/if}
 										</div>
 										<p class="text-text-secondary text-xs">
 											{t.player_count}
-											{$_('profile_upcoming_players')} · Americano
+											{$_('profile_upcoming_players')} · {t.game_mode === 'mexicano'
+												? $_('stats_mode_mexicano')
+												: $_('stats_mode_americano')}
 										</p>
 									</div>
 								</a>
@@ -653,7 +660,8 @@
 								<div class="min-w-0 flex-1">
 									<p class="truncate text-sm font-semibold">{sessionName(t)}</p>
 									<p class="text-text-secondary text-xs">
-										{formatDate(t.played_at)} · {t.points} pts
+										{formatDate(t.played_at)} · {t.points}
+										{$_('profile_pts')}
 										{#if t.ended_early}
 											· <span class="text-text-disabled">{$_('profile_ended_early')}</span>
 										{/if}
@@ -669,15 +677,15 @@
 	{/if}
 
 	{#if auth.user}
-		<Section title={`Clubs (${clubs.length})`} bind:open={showClubs}>
+		<Section title={`${$_('profile_clubs_label')} (${clubs.length})`} bind:open={showClubs}>
 			{#snippet children()}
 				{#if clubsLoading}
 					<div class="flex items-center justify-center py-8">
-						<Spinner label="Loading clubs..." />
+						<Spinner label={$_('profile_clubs_loading')} />
 					</div>
 				{:else if clubs.length > 0}
 					<div class="space-y-2">
-						{#each clubs as club}
+						{#each clubs as club (club.id)}
 							<ClubCard {club} onclick={() => goto(`/clubs/${club.id}`)} />
 						{/each}
 					</div>
@@ -686,7 +694,7 @@
 					onclick={() => (showCreateClubDrawer = true)}
 					class="text-primary hover:text-primary-hover w-full rounded-2xl px-4 py-3.5 text-sm font-semibold transition-colors"
 				>
-					+ Create Club
+					+ {$_('profile_create_club')}
 				</button>
 			{/snippet}
 		</Section>
