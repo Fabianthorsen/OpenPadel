@@ -182,32 +182,12 @@ func (s *Store) UpdateClubJoinCode(clubID string) (string, error) {
 	return newCode, nil
 }
 
-// DeleteClub hard-deletes a Club and unwinds its dependents in one transaction.
-// FK actions are not enforced on our SQLite connection, so the cascade is done
-// explicitly here rather than left to ON DELETE clauses: past Sessions are
-// detached (club_id set NULL) so they survive as ordinary Sessions, while
-// membership and invite rows are removed with the Club.
+// DeleteClub hard-deletes a Club and lets the database unwind its dependents via
+// the declared ON DELETE actions (now that FK enforcement is on, see #249):
+// club_members and club_invites CASCADE away, while past Sessions are detached
+// (sessions.club_id ON DELETE SET NULL) so they survive as ordinary Sessions.
 func (s *Store) DeleteClub(clubID string) error {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	if _, err := tx.Exec("UPDATE sessions SET club_id = NULL WHERE club_id = ?", clubID); err != nil {
-		return err
-	}
-	if _, err := tx.Exec("DELETE FROM club_invites WHERE club_id = ?", clubID); err != nil {
-		return err
-	}
-	if _, err := tx.Exec("DELETE FROM club_members WHERE club_id = ?", clubID); err != nil {
-		return err
-	}
-	if _, err := tx.Exec("DELETE FROM clubs WHERE id = ?", clubID); err != nil {
-		return err
-	}
-
-	return tx.Commit()
+	return s.queries.DeleteClub(context.Background(), clubID)
 }
 
 func (s *Store) JoinClub(clubID, userID string) error {
