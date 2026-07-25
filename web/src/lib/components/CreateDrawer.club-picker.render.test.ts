@@ -82,6 +82,34 @@ describe('CreateDrawer — optional club picker', () => {
 		expect(screen.getByRole('button', { name: /invite link/i })).toBeInTheDocument();
 	});
 
+	it('survives a null club-list response without crashing', async () => {
+		// A user with no clubs gets JSON `null` from the endpoint (Go nil slice).
+		// Assigned raw, `myClubs.length` threw inside Svelte's reactive flush and
+		// froze the whole page. That throw lands in an async effect after render,
+		// so catch it on the window rather than via a failed DOM assertion.
+		// Svelte reports a throw inside an async effect as an unhandled promise
+		// rejection, which surfaces on `process` (not the jsdom window).
+		const errors: unknown[] = [];
+		const onRejection = (reason: unknown) => errors.push(reason);
+		process.on('unhandledRejection', onRejection);
+
+		try {
+			clubsList.mockResolvedValueOnce(null as unknown as App.ClubListItem[]);
+			render(CreateDrawer, { open: true });
+
+			// Let the awaited clubs.list resolve, its reactive flush run, and Node
+			// promote any still-unhandled rejection (deferred to a macrotask).
+			await screen.findByRole('button', { name: /invite link/i });
+			await new Promise((r) => setImmediate(r));
+
+			expect(errors).toEqual([]);
+			// No clubs → the attach-to-a-club picker stays hidden.
+			expect(screen.queryByLabelText(/attach to a club/i)).not.toBeInTheDocument();
+		} finally {
+			process.off('unhandledRejection', onRejection);
+		}
+	});
+
 	it('exposes a labelled listbox trigger that opens', async () => {
 		const u = user();
 		render(CreateDrawer, { open: true });
