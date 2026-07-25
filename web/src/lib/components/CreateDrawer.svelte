@@ -117,13 +117,11 @@
 		<div class="flex-1 space-y-6 overflow-y-auto px-6 pb-8">
 			{#if effectiveClubId}
 				<!-- Owned by a Club (preset or picked): the whole roster is told about it
-				     automatically — no personal invites needed. -->
-				<div class="bg-primary/10 text-primary flex items-center gap-2 rounded-2xl px-4 py-3">
-					<Users size={16} class="shrink-0" />
-					<p class="text-sm font-semibold">
-						{$_('create_club_event_banner', { values: { club: effectiveClubName } })}
-					</p>
-				</div>
+				     automatically — a small green notice, not a full callout. -->
+				<p class="text-primary flex items-center gap-1.5 text-xs font-medium">
+					<Users size={13} class="shrink-0" />
+					<span>{$_('create_club_event_banner', { values: { club: effectiveClubName } })}</span>
+				</p>
 			{/if}
 
 			{#if !club && myClubs.length > 0}
