@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import MemberRow from '$lib/components/ui/MemberRow.svelte';
+	import SessionRow from '$lib/components/ui/SessionRow.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { Section } from '$lib/components/ui/section';
 	import { Spinner } from '$lib/components/ui/spinner';
@@ -276,49 +277,48 @@
 			</div>
 
 			{#if nextEvent}
-				<a
+				<SessionRow
 					href={`/s/${nextEvent.session_id}`}
-					class="bg-primary-muted hover:bg-primary/15 block rounded-2xl p-4 transition-colors"
+					size="hero"
+					tone="muted"
+					eyebrow={nextEvent.status === 'playing' ? 'Live now' : 'Next up'}
+					title={eventName(nextEvent)}
 				>
-					<div class="flex items-center gap-2">
-						<span class="text-primary text-[11px] font-bold tracking-[0.1em] uppercase">
-							{nextEvent.status === 'playing' ? 'Live now' : 'Next up'}
-						</span>
-						{#if nextEvent.status === 'playing'}
-							<Radio size={14} class="text-primary" />
-						{/if}
-					</div>
-					<p class="text-text-primary mt-1 truncate text-base font-[800]">{eventName(nextEvent)}</p>
-					<p class="text-text-secondary mt-0.5 text-xs">
+					{#snippet badge()}
+						{#if nextEvent.status === 'playing'}<Radio size={14} class="text-primary" />{/if}
+					{/snippet}
+					{#snippet meta()}
 						{nextEvent.player_count}
 						players
 						{#if nextEvent.scheduled_at}· {formatEventTime(nextEvent.scheduled_at)}{/if}
-					</p>
-				</a>
+					{/snippet}
+				</SessionRow>
 
 				{#if laterEvents.length > 0}
-					<!-- Below the hero, events collapse to compact single-line rows: a small
-					     status dot, the name, then meta (players · time) right-aligned. -->
-					<div class="divide-border bg-surface-raised divide-y overflow-hidden rounded-2xl">
+					<!-- Below the hero, later events use the shared compact SessionRow. -->
+					<div class="space-y-0.5">
 						{#each laterEvents as ev}
-							<a
-								href={`/s/${ev.session_id}`}
-								class="hover:bg-border flex items-center gap-3 px-4 py-2.5 transition-colors"
-							>
-								{#if ev.status === 'playing'}
-									<Radio size={14} class="text-primary shrink-0" />
-								{:else}
-									<CalendarDays size={14} class="text-text-disabled shrink-0" />
-								{/if}
-								<p class="text-text-primary min-w-0 flex-1 truncate text-sm font-semibold">
-									{eventName(ev)}
-								</p>
-								<span class="text-text-secondary flex shrink-0 items-center gap-1 text-xs">
-									<Users size={12} class="text-text-disabled" />
-									{ev.player_count}
-									{#if ev.scheduled_at}· {formatEventTime(ev.scheduled_at)}{/if}
-								</span>
-							</a>
+							<SessionRow href={`/s/${ev.session_id}`} title={eventName(ev)}>
+								{#snippet leading()}
+									<span
+										class="flex h-9 w-9 items-center justify-center rounded-lg {ev.status ===
+										'playing'
+											? 'bg-primary/15 text-primary'
+											: 'bg-primary-muted text-primary'}"
+									>
+										{#if ev.status === 'playing'}<Radio size={18} />{:else}<CalendarDays
+												size={18}
+											/>{/if}
+									</span>
+								{/snippet}
+								{#snippet meta()}
+									<span class="inline-flex items-center gap-1">
+										<Users size={12} class="text-text-disabled" />
+										{ev.player_count}
+										{#if ev.scheduled_at}· {formatEventTime(ev.scheduled_at)}{/if}
+									</span>
+								{/snippet}
+							</SessionRow>
 						{/each}
 					</div>
 				{/if}

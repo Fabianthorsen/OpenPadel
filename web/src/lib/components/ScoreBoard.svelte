@@ -52,9 +52,9 @@
 			</span>
 		{:else if live}
 			<span
-				class="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+				class="bg-signal-muted text-signal-strong inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
 			>
-				<span class="bg-primary inline-block h-2 w-2 animate-pulse rounded-full"></span>
+				<span class="bg-signal inline-block h-2 w-2 animate-pulse rounded-full"></span>
 				{$_('court_status_live')}
 			</span>
 		{:else}
@@ -94,6 +94,7 @@
 					opponentScore={teamB.score}
 					scored={false}
 					size="lg"
+					tile
 					interactive
 					label="Set Team A score"
 					onTap={() => onScoreTap('a')}
@@ -106,7 +107,7 @@
 				/>
 			</div>
 		{:else}
-			<TeamScore score={teamA.score} opponentScore={teamB.score} {scored} size="lg" />
+			<TeamScore score={teamA.score} opponentScore={teamB.score} {scored} size="lg" tile />
 		{/if}
 	</div>
 
@@ -127,6 +128,7 @@
 					opponentScore={teamA.score}
 					scored={false}
 					size="lg"
+					tile
 					interactive
 					label="Set Team B score"
 					onTap={() => onScoreTap('b')}
@@ -139,7 +141,7 @@
 				/>
 			</div>
 		{:else}
-			<TeamScore score={teamB.score} opponentScore={teamA.score} {scored} size="lg" />
+			<TeamScore score={teamB.score} opponentScore={teamA.score} {scored} size="lg" tile />
 		{/if}
 		<p class="text-[15px] font-semibold">{teamB.name}</p>
 		<div class="flex justify-center">

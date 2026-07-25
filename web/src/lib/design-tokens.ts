@@ -13,6 +13,17 @@ export const tokens = {
 		primaryMuted: 'var(--color-primary-muted)',
 		primaryForeground: 'var(--color-primary-foreground)',
 
+		signal: 'var(--color-signal)',
+		signalStrong: 'var(--color-signal-strong)',
+		signalMuted: 'var(--color-signal-muted)',
+		signalForeground: 'var(--color-signal-foreground)',
+
+		tile: 'var(--color-tile)',
+		tileForeground: 'var(--color-tile-foreground)',
+		tileBorder: 'var(--color-tile-border)',
+		tileCobalt: 'var(--color-tile-cobalt)',
+		tileCobaltForeground: 'var(--color-tile-cobalt-foreground)',
+
 		textPrimary: 'var(--color-text-primary)',
 		textSecondary: 'var(--color-text-secondary)',
 		textDisabled: 'var(--color-text-disabled)',
@@ -27,6 +38,13 @@ export const tokens = {
 		medalGold: 'var(--color-medal-gold)',
 		medalSilver: 'var(--color-medal-silver)',
 		medalBronze: 'var(--color-medal-bronze)',
+
+		avatarCobalt: 'var(--color-avatar-cobalt)',
+		avatarAzure: 'var(--color-avatar-azure)',
+		avatarNavy: 'var(--color-avatar-navy)',
+		avatarSteel: 'var(--color-avatar-steel)',
+		avatarSlate: 'var(--color-avatar-slate)',
+		avatarMidnight: 'var(--color-avatar-midnight)',
 
 		foreground: 'var(--color-foreground)',
 		card: 'var(--color-card)',

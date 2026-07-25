@@ -11,7 +11,7 @@ describe('ClubCard (render)', () => {
 
 	it('renders the roster count and role', () => {
 		render(Fixture);
-		expect(screen.getByText('18 members • admin')).toBeInTheDocument();
+		expect(screen.getByText('18 members · admin')).toBeInTheDocument();
 	});
 
 	it('falls back to initials when no avatar icon is set', () => {

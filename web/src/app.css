@@ -13,32 +13,61 @@
 @import 'tailwindcss';
 
 @theme {
-	/* Surfaces */
-	--color-background: #edeee8;
-	--color-surface: #f4f4f0;
-	--color-surface-raised: #e3e3dc;
-	--color-border: #d2d2cb;
-	--color-border-strong: #b2b2aa;
+	/* ── Cobalt Mono (quiet) ──
+	   Near-monochrome: quiet cool-grey neutrals do ~90% of the work, and ONE
+	   vivid cobalt (#0F62FE) lands only where it should be a statement — the
+	   primary action, the selected choice, the live pulse, rank-1, the join code,
+	   focus. No second blue, no ambient blue tint in the chrome. Scores and points
+	   read as near-black on neutral tiles; the join code is the one solid-cobalt
+	   moment. Light mode only. Type stays Geist + Schibsted. Every colour is a
+	   token — no component hardcodes a hex. See DESIGN.md. */
 
-	/* Primary — dark forest green */
-	--color-primary: #2d5a1a;
-	--color-primary-hover: #234d13;
-	--color-primary-muted: #e2ede0;
-	--color-primary-foreground: #ffffff;
+	/* Surfaces — quiet, faintly-cool neutral greys (tinted, not blue). */
+	--color-background: #f8f8fa;
+	--color-surface: #ffffff;
+	--color-surface-raised: #f0f0f2;
+	--color-border: #e4e4e8;
+	--color-border-strong: #cbcbd2;
 
-	/* Text */
-	--color-text-primary: #1a1a16;
-	--color-text-secondary: #68685e;
-	--color-text-disabled: #aeaea4;
+	/* Primary — cobalt #0F62FE, the ONE statement colour. Used sparingly and at
+	   full strength: primary buttons, the "chosen" selected state, live, rank-1,
+	   focus ring, links. Muted is the pale tint for selected/active backgrounds. */
+	--color-primary: #0f62fe;
+	--color-primary-hover: #0b4fd1;
+	--color-primary-muted: #e6eefd;
+	--color-primary-foreground: #f3f4f6;
 
-	/* Semantic */
-	--color-positive: #2d5a1a;
-	--color-destructive: #c0392b;
-	--color-destructive-foreground: #ffffff;
+	/* Signal — the SAME cobalt (one blue, not two), for "live / now": the playing
+	   pulse + LIVE chip and the active-court tint. Distinguished from static
+	   cobalt chrome by the pulse, not a different hue. */
+	--color-signal: #0f62fe;
+	--color-signal-strong: #0b4fd1;
+	--color-signal-muted: #e6eefd;
+	--color-signal-foreground: #ffffff;
 
-	/* Warning — "time expired" and similar; use instead of raw amber-* (#170) */
-	--color-warning: #b45309;
-	--color-warning-muted: #f7e6d2;
+	/* Tile — a quiet neutral cell for scores, join code, standings points: near-
+	   black ink on a soft grey glaze. The `.tile-cobalt` modifier is the single
+	   solid-cobalt statement, reserved for the join code. */
+	--color-tile: #f1f1f4;
+	--color-tile-foreground: #0d0d12;
+	--color-tile-border: #e4e4e8;
+	--color-tile-cobalt: #0f62fe;
+	--color-tile-cobalt-foreground: #ffffff;
+
+	/* Text — near-black, quiet neutral greys beneath (no blue cast) */
+	--color-text-primary: #0d0d12;
+	--color-text-secondary: #66666e;
+	--color-text-disabled: #a1a1a9;
+
+	/* Semantic — positive/win reads cobalt (good = brand), loss reads red. No green. */
+	--color-positive: #0f62fe;
+	--color-destructive: #ef4444;
+	--color-destructive-foreground: #f8fafc;
+
+	/* Warning — "time expired" and similar; a functional amber, distinct from the
+	   violet live signal and the red destructive. */
+	--color-warning: #f59e0b;
+	--color-warning-muted: #fef3c7;
 
 	/* Celebratory medal palette — Session complete finale only (#174).
 	   Accents only (rings/bars/badges), not body text. */
@@ -46,20 +75,31 @@
 	--color-medal-silver: #a7abb0;
 	--color-medal-bronze: #b67a44;
 
-	/* shadcn-svelte tokens (resolved hex values) */
-	--color-foreground: #1a1a16;
-	--color-card: #f4f4f0;
-	--color-card-foreground: #1a1a16;
-	--color-popover: #f4f4f0;
-	--color-popover-foreground: #1a1a16;
-	--color-secondary: #e3e3dc;
-	--color-secondary-foreground: #1a1a16;
-	--color-muted: #e3e3dc;
-	--color-muted-foreground: #68685e;
-	--color-accent: #e2ede0;
-	--color-accent-foreground: #2d5a1a;
-	--color-input: #d2d2cb;
-	--color-ring: #2d5a1a;
+	/* Avatar identity palette — auto-assigned (users don't pick it). A monochrome
+	   cobalt scale: mostly quiet blue-greys with the brand cobalt as one shade, so
+	   avatars stay distinguishable without adding non-cobalt colour. Referenced via
+	   bg-avatar-* so no component hardcodes a hex. */
+	--color-avatar-cobalt: #0f62fe;
+	--color-avatar-azure: #3f6fb5;
+	--color-avatar-navy: #223a63;
+	--color-avatar-steel: #566a89;
+	--color-avatar-slate: #45526a;
+	--color-avatar-midnight: #2a3550;
+
+	/* shadcn-svelte tokens (resolved from the cobalt-mono theme) */
+	--color-foreground: #0d0d12;
+	--color-card: #ffffff;
+	--color-card-foreground: #0d0d12;
+	--color-popover: #ffffff;
+	--color-popover-foreground: #0d0d12;
+	--color-secondary: #eeeef1;
+	--color-secondary-foreground: #0d0d12;
+	--color-muted: #f0f0f2;
+	--color-muted-foreground: #66666e;
+	--color-accent: #ededf0;
+	--color-accent-foreground: #0f62fe;
+	--color-input: #e4e4e8;
+	--color-ring: #0f62fe;
 
 	/* Radius */
 	--radius: 0.75rem;
@@ -75,10 +115,12 @@
 	--spacing-3: 0.75rem;
 	--spacing-4: 1rem;
 
-	/* Shadows */
-	--shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-	--shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-	--shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+	/* Shadows — from the cobalt-mono theme (offset-y 4px, blur 15px, black at
+	   ~0.15). A soft-but-present drop that lifts white cards off the near-white
+	   ground; sm is lighter for resting rows, lg deeper for drawers/finale. */
+	--shadow-sm: 0 1px 2px rgb(13 13 18 / 0.06), 0 2px 6px rgb(13 13 18 / 0.06);
+	--shadow-md: 0 4px 15px rgb(13 13 18 / 0.12);
+	--shadow-lg: 0 10px 28px rgb(13 13 18 / 0.16);
 
 	/* Fonts — Geist Sans for UI/body/data; Schibsted Grotesk for the
 	   wordmark and celebratory finale only (use the `font-display` utility). */
@@ -178,6 +220,32 @@ textarea,
 	h3 {
 		letter-spacing: -0.02em;
 		line-height: 1.1;
+	}
+}
+
+/* Glazed azulejo tile — a ceramic cell for values worth setting in stone:
+   scores, the join code, standings points. Default is a white glaze with cobalt
+   ink; `.tile-cobalt` flips to a cobalt glaze with white numerals. The inset
+   highlight is the glaze catching light. */
+@layer components {
+	.tile {
+		position: relative;
+		background-color: var(--color-tile);
+		color: var(--color-tile-foreground);
+		border: 1px solid var(--color-tile-border);
+		font-variant-numeric: tabular-nums;
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.65),
+			var(--shadow-sm);
+	}
+
+	.tile-cobalt {
+		background-color: var(--color-tile-cobalt);
+		color: var(--color-tile-cobalt-foreground);
+		border-color: color-mix(in srgb, var(--color-tile-cobalt) 65%, #000);
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.28),
+			var(--shadow-sm);
 	}
 }
 

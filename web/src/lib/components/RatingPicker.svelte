@@ -48,7 +48,7 @@
 					{disabled}
 					onclick={() => (value = level)}
 					class="flex h-11 flex-1 items-center justify-center rounded-2xl text-sm font-bold transition-colors disabled:opacity-50 {selected
-						? 'bg-primary text-white'
+						? 'bg-primary text-primary-foreground'
 						: 'bg-surface-raised text-text-secondary hover:bg-surface-raised/70'} {isCurrent
 						? 'outline-primary/60 outline-2 outline-offset-2 outline-dashed'
 						: ''}"
@@ -86,7 +86,7 @@
 			>
 				<span
 					class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold {selected
-						? 'bg-primary text-white'
+						? 'bg-primary text-primary-foreground'
 						: 'bg-surface text-text-secondary'}"
 				>
 					{level}

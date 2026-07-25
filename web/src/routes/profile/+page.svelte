@@ -7,7 +7,16 @@
 	import { clearPlayerSession } from '$lib/playerSession';
 	import { sessionName } from '$lib/utils';
 	import { _ } from 'svelte-i18n';
-	import { CalendarDays, Radio, UserPlus, X, Search, Check, Settings } from '@lucide/svelte';
+	import {
+		CalendarDays,
+		Radio,
+		UserPlus,
+		X,
+		Search,
+		Check,
+		Settings,
+		ChevronRight
+	} from '@lucide/svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import DividerOr from '$lib/components/DividerOr.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -16,6 +25,7 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import RatingGate from '$lib/components/RatingGate.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import SessionRow from '$lib/components/ui/SessionRow.svelte';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import ClubCard from '$lib/components/ui/ClubCard.svelte';
 	import { Section } from '$lib/components/ui/section';
@@ -317,7 +327,7 @@
 		title={auth.user?.display_name ?? ''}
 		avatar={{
 			icon: auth.user?.avatar_icon ?? '',
-			color: auth.user?.avatar_color ?? 'forest',
+			color: auth.user?.avatar_color ?? 'sky',
 			name: auth.user?.display_name ?? ''
 		}}
 		subtitle={memberSince
@@ -342,7 +352,9 @@
 				{$_('profile_invites_label')}
 			</p>
 			{#each invites as invite (invite.id)}
-				<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3.5">
+				<div
+					class="bg-surface-raised border-border flex items-center gap-3 rounded-2xl border px-4 py-3.5"
+				>
 					<div class="min-w-0 flex-1">
 						<p class="truncate text-sm font-semibold">{invite.session_name}</p>
 						<p class="text-text-secondary text-xs">
@@ -375,7 +387,9 @@
 				{$_('profile_club_invites_label')}
 			</p>
 			{#each clubInvites as invite (invite.id)}
-				<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3.5">
+				<div
+					class="bg-surface-raised border-border flex items-center gap-3 rounded-2xl border px-4 py-3.5"
+				>
 					<Avatar
 						icon={invite.club_avatar_icon}
 						color={invite.club_avatar_color}
@@ -427,15 +441,21 @@
 		<Section title={$_('profile_stats_section')} bind:open={showStats}>
 			{#snippet children()}
 				<div class="grid grid-cols-3 gap-3">
-					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-3 py-5">
-						<p class="text-primary text-3xl leading-none font-[800] tabular-nums">{pointWinPct}</p>
+					<div
+						class="bg-surface-raised border-border flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-5"
+					>
+						<p class="text-text-primary text-3xl leading-none font-[800] tabular-nums">
+							{pointWinPct}
+						</p>
 						<p
 							class="text-text-disabled text-center text-[11px] font-bold tracking-[0.1em] uppercase"
 						>
 							{$_('profile_point_win_pct')}
 						</p>
 					</div>
-					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-3 py-5">
+					<div
+						class="bg-surface-raised border-border flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-5"
+					>
 						<p class="text-3xl leading-none font-[800] tabular-nums">{winRate}</p>
 						<p
 							class="text-text-disabled text-center text-[11px] font-bold tracking-[0.1em] uppercase"
@@ -443,7 +463,9 @@
 							{$_('profile_win_rate')}
 						</p>
 					</div>
-					<div class="bg-surface-raised flex flex-col items-center gap-1.5 rounded-2xl px-3 py-5">
+					<div
+						class="bg-surface-raised border-border flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-5"
+					>
 						<p class="text-3xl leading-none font-[800] tabular-nums">{s.games}</p>
 						<p
 							class="text-text-disabled text-center text-[11px] font-bold tracking-[0.1em] uppercase"
@@ -473,7 +495,7 @@
 							placeholder={$_('profile_contacts_search_placeholder')}
 							bind:value={contactSearch}
 							oninput={onContactSearchInput}
-							class="bg-surface-raised focus:ring-primary w-full rounded-xl py-2.5 pr-4 pl-9 text-sm transition-shadow outline-none focus:ring-2"
+							class="bg-surface-raised border-border focus:ring-primary w-full rounded-xl border py-2.5 pr-4 pl-9 text-sm transition-shadow outline-none focus:ring-2"
 						/>
 					</div>
 
@@ -487,8 +509,10 @@
 							{#if searchResults.length > 0}
 								<div class="space-y-1.5">
 									{#each searchResults as result (result.id)}
-										<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
-											<Avatar icon="" color="forest" name={result.display_name} size="sm" />
+										<div
+											class="bg-surface-raised border-border flex items-center gap-3 rounded-2xl border px-4 py-3"
+										>
+											<Avatar icon="" color="sky" name={result.display_name} size="sm" />
 											<p class="flex-1 truncate text-sm font-semibold">{result.display_name}</p>
 											{#if result.is_contact}
 												<button
@@ -532,8 +556,10 @@
 							{/if}
 							<div class="space-y-1.5">
 								{#each contacts as contact (contact.user_id)}
-									<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
-										<Avatar icon="" color="forest" name={contact.display_name} size="sm" />
+									<div
+										class="bg-surface-raised border-border flex items-center gap-3 rounded-2xl border px-4 py-3"
+									>
+										<Avatar icon="" color="sky" name={contact.display_name} size="sm" />
 										<p class="flex-1 truncate text-sm font-semibold">{contact.display_name}</p>
 										<button
 											onclick={() => handleDeleteContact(contact)}
@@ -585,15 +611,10 @@
 				{:else}
 					<ExpandableList items={upcoming} showCount={5}>
 						{#snippet itemContent(t)}
-							<div
-								class="bg-surface-raised hover:bg-border flex items-center gap-2 rounded-2xl pr-2 transition-colors"
-							>
-								<a
-									href={sessionHref(t.session_id)}
-									class="flex min-w-0 flex-1 items-center gap-4 py-3.5 pl-4"
-								>
-									<div
-										class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {t.status ===
+							<SessionRow href={sessionHref(t.session_id)} title={sessionName(t)}>
+								{#snippet leading()}
+									<span
+										class="flex h-9 w-9 items-center justify-center rounded-lg {t.status ===
 										'playing'
 											? 'bg-primary/15 text-primary'
 											: 'bg-primary-muted text-primary'}"
@@ -601,38 +622,45 @@
 										{#if t.status === 'playing'}<Radio size={18} />{:else}<CalendarDays
 												size={18}
 											/>{/if}
-									</div>
-									<div class="min-w-0 flex-1">
-										<div class="flex items-center gap-2">
-											<p class="truncate text-sm font-semibold">{sessionName(t)}</p>
-											{#if t.status === 'playing'}
-												<span
-													class="bg-primary/15 text-primary shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase"
-													>{$_('leaderboard_live')}</span
-												>
-											{/if}
-										</div>
-										<p class="text-text-secondary text-xs">
-											{t.player_count}
-											{$_('profile_upcoming_players')} · {t.game_mode === 'mexicano'
-												? $_('stats_mode_mexicano')
-												: $_('stats_mode_americano')}
-										</p>
-									</div>
-								</a>
-								{#if t.status === 'lobby'}
-									<button
-										onclick={() => (leaveTarget = t)}
-										disabled={leaving}
-										class="text-text-disabled hover:text-destructive shrink-0 p-2 transition-colors disabled:opacity-40"
-										aria-label={$_('lobby_leave')}
-									>
-										<X size={16} />
-									</button>
-								{:else}
-									<span class="text-text-secondary pr-2 text-sm">→</span>
-								{/if}
-							</div>
+									</span>
+								{/snippet}
+								{#snippet badge()}
+									{#if t.status === 'playing'}
+										<span
+											class="text-primary flex shrink-0 items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase"
+										>
+											<span class="bg-primary h-1.5 w-1.5 animate-pulse rounded-full"></span>{$_(
+												'leaderboard_live'
+											)}
+										</span>
+									{/if}
+								{/snippet}
+								{#snippet meta()}
+									{t.player_count}
+									{$_('profile_upcoming_players')} · {t.game_mode === 'mexicano'
+										? $_('stats_mode_mexicano')
+										: $_('stats_mode_americano')}
+								{/snippet}
+								{#snippet trailing()}
+									{#if t.status === 'lobby'}
+										<button
+											onclick={() => (leaveTarget = t)}
+											disabled={leaving}
+											class="text-text-disabled hover:text-destructive shrink-0 p-1.5 transition-colors disabled:opacity-40"
+											aria-label={$_('lobby_leave')}
+										>
+											<X size={16} />
+										</button>
+									{:else}
+										<span
+											class="text-text-disabled group-hover:text-primary shrink-0 pr-1 transition-[color,transform] group-hover:translate-x-0.5"
+											aria-hidden="true"
+										>
+											<ChevronRight size={18} strokeWidth={2.25} />
+										</span>
+									{/if}
+								{/snippet}
+							</SessionRow>
 						{/snippet}
 					</ExpandableList>
 				{/if}
@@ -647,28 +675,25 @@
 				{:else}
 					<ExpandableList items={tournaments} showCount={5}>
 						{#snippet itemContent(t)}
-							<a
-								href="/s/{t.session_id}"
-								class="bg-surface-raised hover:bg-border flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-colors"
-							>
-								<div
-									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-[800]
-                    {t.rank === 1 ? 'bg-primary text-white' : 'bg-border text-text-secondary'}"
-								>
-									{ordinal(t.rank)}
-								</div>
-								<div class="min-w-0 flex-1">
-									<p class="truncate text-sm font-semibold">{sessionName(t)}</p>
-									<p class="text-text-secondary text-xs">
-										{formatDate(t.played_at)} · {t.points}
-										{$_('profile_pts')}
-										{#if t.ended_early}
-											· <span class="text-text-disabled">{$_('profile_ended_early')}</span>
-										{/if}
-									</p>
-								</div>
-								<span class="text-text-secondary text-sm">→</span>
-							</a>
+							<SessionRow href="/s/{t.session_id}" title={sessionName(t)}>
+								{#snippet leading()}
+									<span
+										class="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-[800] {t.rank ===
+										1
+											? 'bg-primary text-primary-foreground'
+											: 'bg-surface-raised text-text-secondary'}"
+									>
+										{ordinal(t.rank)}
+									</span>
+								{/snippet}
+								{#snippet meta()}
+									{formatDate(t.played_at)} · {t.points}
+									{$_('profile_pts')}
+									{#if t.ended_early}
+										· <span class="text-text-disabled">{$_('profile_ended_early')}</span>
+									{/if}
+								{/snippet}
+							</SessionRow>
 						{/snippet}
 					</ExpandableList>
 				{/if}
