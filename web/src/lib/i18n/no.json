@@ -244,6 +244,8 @@
 	"profile_history_empty": "Det ser ikke ut til at du har spilt noen økter ennå.",
 	"profile_ended_early": "Avsluttet tidlig",
 	"profile_history_games": "kamper",
+	"expandable_more": "{count} flere",
+	"expandable_less": "Vis mindre",
 	"profile_stats_section": "Statistikk",
 	"profile_see_all_stats": "Se all statistikk →",
 	"stats_page_title": "Karrierestatistikk",

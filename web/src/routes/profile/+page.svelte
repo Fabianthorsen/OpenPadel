@@ -314,6 +314,19 @@
 		});
 	}
 
+	// A scheduled session's kick-off, shown on its Upcoming row. Mirrors the
+	// weekday + date + time format the Lobby uses so the same session reads the
+	// same way in both places.
+	function formatSchedule(iso: string) {
+		return new Date(iso).toLocaleString(undefined, {
+			weekday: 'short',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
 	function ordinal(n: number) {
 		const s = ['th', 'st', 'nd', 'rd'];
 		const v = n % 100;
@@ -607,17 +620,14 @@
 		<Section title={$_('profile_upcoming_label')} bind:open={showUpcoming}>
 			{#snippet children()}
 				{#if upcoming.length === 0}
-					<p class="text-text-disabled py-1 text-sm">{$_('profile_upcoming_empty')}</p>
+					<p class="text-text-secondary py-2 text-sm">{$_('profile_upcoming_empty')}</p>
 				{:else}
 					<ExpandableList items={upcoming} showCount={5}>
 						{#snippet itemContent(t)}
 							<SessionRow href={sessionHref(t.session_id)} title={sessionName(t)}>
 								{#snippet leading()}
 									<span
-										class="flex h-9 w-9 items-center justify-center rounded-lg {t.status ===
-										'playing'
-											? 'bg-primary/15 text-primary'
-											: 'bg-primary-muted text-primary'}"
+										class="bg-primary-muted text-primary flex h-9 w-9 items-center justify-center rounded-lg"
 									>
 										{#if t.status === 'playing'}<Radio size={18} />{:else}<CalendarDays
 												size={18}
@@ -636,10 +646,17 @@
 									{/if}
 								{/snippet}
 								{#snippet meta()}
-									{t.player_count}
-									{$_('profile_upcoming_players')} · {t.game_mode === 'mexicano'
-										? $_('stats_mode_mexicano')
-										: $_('stats_mode_americano')}
+									{#if t.status === 'playing'}
+										{t.player_count}
+										{$_('profile_upcoming_players')} · {t.game_mode === 'mexicano'
+											? $_('stats_mode_mexicano')
+											: $_('stats_mode_americano')}
+									{:else}
+										{t.scheduled_at
+											? formatSchedule(t.scheduled_at)
+											: $_('profile_upcoming_unscheduled')} · {t.player_count}
+										{$_('profile_upcoming_players')}
+									{/if}
 								{/snippet}
 								{#snippet trailing()}
 									{#if t.status === 'lobby'}
@@ -671,7 +688,7 @@
 		<Section title={$_('profile_history_label')} bind:open={showHistory}>
 			{#snippet children()}
 				{#if tournaments.length === 0}
-					<p class="text-text-disabled py-2 text-sm">{$_('profile_history_empty')}</p>
+					<p class="text-text-secondary py-2 text-sm">{$_('profile_history_empty')}</p>
 				{:else}
 					<ExpandableList items={tournaments} showCount={5}>
 						{#snippet itemContent(t)}

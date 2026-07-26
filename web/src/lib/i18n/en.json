@@ -244,6 +244,8 @@
 	"profile_history_empty": "It doesn't look like you have played any sessions yet.",
 	"profile_ended_early": "Ended early",
 	"profile_history_games": "games",
+	"expandable_more": "{count} more",
+	"expandable_less": "Show less",
 	"profile_stats_section": "Stats",
 	"profile_see_all_stats": "See all stats →",
 	"stats_page_title": "Career stats",
