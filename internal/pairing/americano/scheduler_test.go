@@ -546,6 +546,158 @@ func roundMatchupList(r domain.Round) [][4]string {
 	return list
 }
 
+// TestGenerateNextRound_1CourtBenchVarietyIsOptimal is the #274 guard. On 1 court
+// the court-assignment step has no freedom, so opponent variety can only come from
+// which player is benched and how the four active players are paired. This test
+// proves the scheduler picks the lexicographic optimum — partnerRepeats → matchupCount
+// → recency — over *every fair bench choice and every pairing*. Optimality is the
+// exact statement of "a recurring pair faces a fresh opponent whenever a fair bench
+// choice allows it": if a fresher round were reachable at no greater partner-repeat
+// cost, the optimum would take it. Holds for every random tie-break, so no seeding.
+func TestGenerateNextRound_1CourtBenchVarietyIsOptimal(t *testing.T) {
+	for _, players := range []int{5, 6} {
+		history := GenerateRounds(makePlayers(players), 1, 1)
+		for len(history) < 24 {
+			pc, ms, benchTotal, lastBench := replayState(history)
+			roundNum := len(history) + 1
+			canBench := eligibleBench(makePlayers(players), lastBench, roundNum)
+
+			want := brute1CourtOptimum(makePlayers(players), canBench, benchTotal, pc, ms)
+
+			nr := GenerateNextRound(history, makePlayers(players), 1)
+			m := nr.Matches[0]
+			got := courtKey3(m.TeamA, m.TeamB, pc, ms)
+
+			if lessKey(want, got) { // got strictly worse than the achievable optimum
+				t.Fatalf("%dp/1c round %d: scheduler key %v is worse than optimum %v",
+					players, roundNum, got, want)
+			}
+			history = append(history, *nr)
+		}
+	}
+}
+
+// TestGenerateNextRound_BenchStaysFair verifies #274's hard constraint: variety-aware
+// bench selection never sacrifices fairness. Over a long unlimited session the bench
+// counts stay within 1 of each other, and no one benched last round is benched again.
+func TestGenerateNextRound_BenchStaysFair(t *testing.T) {
+	cases := []struct{ players, courts int }{{5, 1}, {6, 1}, {9, 2}, {11, 2}}
+	for _, tc := range cases {
+		history := simulateUnlimited(t, makePlayers(tc.players), tc.courts, 30)
+		benchCount := map[string]int{}
+		for i, r := range history {
+			if i > 0 {
+				prev := map[string]bool{}
+				for _, id := range history[i-1].Bench {
+					prev[id] = true
+				}
+				for _, id := range r.Bench {
+					if prev[id] {
+						t.Errorf("%dp/%dc round %d: %s benched two rounds running", tc.players, tc.courts, r.Number, id)
+					}
+				}
+			}
+			for _, id := range r.Bench {
+				benchCount[id]++
+			}
+		}
+		mn, mx := 1<<30, -1
+		for _, p := range makePlayers(tc.players) {
+			c := benchCount[p.ID]
+			if c < mn {
+				mn = c
+			}
+			if c > mx {
+				mx = c
+			}
+		}
+		if mx-mn > 1 {
+			t.Errorf("%dp/%dc: bench counts uneven (spread %d..%d)", tc.players, tc.courts, mn, mx)
+		}
+	}
+}
+
+// replayState rebuilds the scheduler's history-derived state the way GenerateNextRound
+// does, for use as an independent oracle in tests.
+func replayState(history []domain.Round) (pc map[[2]string]int, ms map[[4]string]matchupStat, benchTotal, lastBench map[string]int) {
+	pc = map[[2]string]int{}
+	ms = map[[4]string]matchupStat{}
+	benchTotal = map[string]int{}
+	lastBench = map[string]int{}
+	for _, r := range history {
+		for _, id := range r.Bench {
+			benchTotal[id]++
+			lastBench[id] = r.Number
+		}
+		for _, m := range r.Matches {
+			pc[pairKey(m.TeamA[0], m.TeamA[1])]++
+			pc[pairKey(m.TeamB[0], m.TeamB[1])]++
+			mk := matchupKey(m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1])
+			st := ms[mk]
+			st.count++
+			st.lastRound = r.Number
+			ms[mk] = st
+		}
+	}
+	return pc, ms, benchTotal, lastBench
+}
+
+// eligibleBench returns the players allowed to be benched this round (everyone not
+// benched in the immediately preceding round).
+func eligibleBench(players []domain.Player, lastBench map[string]int, roundNum int) []string {
+	var canBench []string
+	for _, p := range players {
+		if lastBench[p.ID] != roundNum-1 {
+			canBench = append(canBench, p.ID)
+		}
+	}
+	return canBench
+}
+
+// brute1CourtOptimum returns the best achievable partnerRepeats → matchupCount →
+// recency key over every fair bench choice and every pairing of the four remaining
+// players, for a single-court round.
+func brute1CourtOptimum(players []domain.Player, canBench []string, benchTotal map[string]int, pc map[[2]string]int, ms map[[4]string]matchupStat) [3]int {
+	benchSize := len(players) - 4 // single court
+	best := [3]int{1 << 30, 0, 0}
+	for _, cand := range fairBenchChoices(canBench, benchTotal, benchSize) {
+		benched := map[string]bool{}
+		for _, id := range cand {
+			benched[id] = true
+		}
+		var act []string
+		for _, p := range players {
+			if !benched[p.ID] {
+				act = append(act, p.ID)
+			}
+		}
+		splits := [3][2][2]string{
+			{{act[0], act[1]}, {act[2], act[3]}},
+			{{act[0], act[2]}, {act[1], act[3]}},
+			{{act[0], act[3]}, {act[1], act[2]}},
+		}
+		for _, s := range splits {
+			if k := courtKey3(s[0], s[1], pc, ms); lessKey(k, best) {
+				best = k
+			}
+		}
+	}
+	return best
+}
+
+// courtKey3 is the partnerRepeats → matchupCount → recency key for a single court,
+// the test-side mirror of the scheduler's objective (rating omitted: tests here use
+// an unrated field, so the rating term is zero).
+func courtKey3(a, b [2]string, pc map[[2]string]int, ms map[[4]string]matchupStat) [3]int {
+	k := [3]int{pc[pairKey(a[0], a[1])] + pc[pairKey(b[0], b[1])], 0, 0}
+	st := ms[matchupKey(a[0], a[1], b[0], b[1])]
+	k[1] = st.count
+	if st.count > 0 {
+		k[2] = st.lastRound
+	}
+	return k
+}
+
 // TestGenerateNextRound verifies streaming generation of single rounds.
 // Generates rounds 1..N via batch, then generates round N+1 via streaming and verifies constraints.
 func TestGenerateNextRound(t *testing.T) {

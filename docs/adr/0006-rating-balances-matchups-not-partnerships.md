@@ -149,6 +149,34 @@ The unlimited guarantee is *local*: because the partner step fixes a round's pai
 assignment, "use every distinct Match-up before repeating" holds over the groupings reachable from
 those pairs, not over all conceivable Match-ups.
 
+### Amendment (2026-07): Bench selection is Match-up-aware on low-freedom courts (#274)
+
+The court-assignment step can only vary *who faces whom* when there is more than one court. On **1
+court** the four active Players form the single possible Match-up, so the variety objective above is
+inert — a recurring partnership kept meeting the same opponent even in unlimited mode. The lever
+there is not the court step but **which Players sit out**: rotating the Bench changes the active
+pool and therefore the opponent a recurring pair faces.
+
+**Amended decision:** in unlimited mode, **Bench selection becomes Match-up-aware**. Bench
+*fairness stays a hard constraint* — the must-play rule (benched last Round ⇒ plays this Round) and
+even Bench counts are enforced first, exactly as before; nobody ever sits out more to gain variety.
+Among the **equally-fair** Bench choices, the scheduler picks the one whose resulting Round is
+freshest, ranking whole Rounds lexicographically `partnerRepeats → matchupCount → matchupRecency →
+ratingGap`. Partner repeats stay strictly above variety, so the everyone-partners-everyone invariant
+is untouched.
+
+To make this effective on 1 court, low-freedom fields (**≤2 courts**) also drop the two-step
+partner-then-court search in favour of a **joint search over partners and opponents together** —
+otherwise the partner step would fix a repeat pairing before the freedomless court step could react.
+Larger fields keep the cheaper two-step search, where regrouping pairs across courts already
+supplies the variety and the joint search would be too costly.
+
+**Consequence:** on a single court the scheduler now provably returns the lexicographic-optimum
+Round over all fair Bench choices, so a recurring pair gets a fresh opponent whenever fairness and
+partner-repeat priority allow one. Any remaining repeat is forced by those higher-priority
+constraints (a small, unavoidable warm-up effect with very few Players), not a scheduling miss.
+Still unlimited Americano only; Mexicano and the limited/upfront path are untouched.
+
 ## Consequences
 
 - **Rating is a lobby concern; finalize before Start.** Fixed-mode Americano pre-generates all
