@@ -101,6 +101,82 @@ Gender / mixed-doubles composition was considered alongside this and **deferred 
 own design pass — it is a partner-step constraint (it *does* eliminate same-gender partnerships)
 and needs a balanced-lobby rule, so it does not belong bundled with this change.
 
+## Amendment (2026-07): Match-up variety, and mode-dependent priority
+
+The original decision made rating **primary** at the court-assignment step and pairwise
+co-occurrence a mere tie-breaker. That is correct for a **limited** tournament (a fixed, small
+number of Rounds) where every *individual* Match should be competitive *now* — there aren't
+enough Rounds for unfairness to average out.
+
+It is the wrong priority for **Unlimited Rounds** Americano. There, once every partnership has
+occurred (partner-repeat counts saturate to a flat objective), the court-assignment search
+returns the deterministic first-found grouping every cycle — so the *identical* Match-ups recur.
+Rating being primary makes this worse: with a set field the balanced groupings are a small set,
+so the same balanced Match-ups repeat. Players' actual complaint is not "unbalanced" but "we keep
+facing the same pair."
+
+**Insight:** maximal Match-up variety is itself a fairness mechanism. Because the partner step is
+rating-agnostic, teams already vary in strength Round to Round; adding opponent variety makes each
+Player face a representative spread of opponents, so skill imbalance **averages out cumulatively**
+over a long session — without balancing any single Match. Variety carries fairness precisely in
+the mode (Unlimited) that has enough Rounds for averaging to work; per-Match rating balance carries
+it in the mode (limited) that does not.
+
+**Amended decision:** the court-assignment step scores the same two signals — **Match-up variety**
+and **rating gap** — in a **lexicographic key whose priority depends on the mode**:
+
+- **Unlimited:** `matchupCount → matchupRecency → ratingGap → random`
+  (variety first: use every distinct Match-up before any repeat; when forced to repeat, reuse the
+  stalest; only then prefer the more balanced; random breaks true ties so Rounds aren't identical.)
+- **Limited:** `ratingGap → matchupCount → matchupRecency → random`
+  (rating first, preserving this ADR's original intent; the old pairwise `coOccurrence` tie-breaker
+  is to be **replaced** by the strictly-better Match-up-tuple signal — no behaviour regression, better
+  variety among equally-balanced groupings.)
+
+The pairwise `coOccurrence` term is retired in favour of the four-Player **Match-up** tuple
+(`matchupKey`), which targets the exact opposition Players care about (`A+B vs C+D`) rather than
+individual co-occurrence (`A` shares a court with `C`). Rating stays **self-cancelling**: an
+unrated/all-median field has zero rating gaps, so both orderings collapse to variety-only.
+
+**Scope of the amendment:** Unlimited Americano only for the priority flip (issue #271); Limited
+Americano gets just the tie-breaker upgrade (issue #272, not yet implemented — the limited path
+still scores pairwise `coOccurrence` until then); Mexicano is untouched (its teams are derived from
+Standings, not chosen by a court-assignment search, so there is no grouping freedom to vary). The
+`random` final key only fires on genuine ties, so existing deterministic rating tests are
+unaffected; new variety behaviour is covered by property-based tests.
+
+The unlimited guarantee is *local*: because the partner step fixes a round's pairs before court
+assignment, "use every distinct Match-up before repeating" holds over the groupings reachable from
+those pairs, not over all conceivable Match-ups.
+
+### Amendment (2026-07): Bench selection is Match-up-aware on low-freedom courts (#274)
+
+The court-assignment step can only vary *who faces whom* when there is more than one court. On **1
+court** the four active Players form the single possible Match-up, so the variety objective above is
+inert — a recurring partnership kept meeting the same opponent even in unlimited mode. The lever
+there is not the court step but **which Players sit out**: rotating the Bench changes the active
+pool and therefore the opponent a recurring pair faces.
+
+**Amended decision:** in unlimited mode, **Bench selection becomes Match-up-aware**. Bench
+*fairness stays a hard constraint* — the must-play rule (benched last Round ⇒ plays this Round) and
+even Bench counts are enforced first, exactly as before; nobody ever sits out more to gain variety.
+Among the **equally-fair** Bench choices, the scheduler picks the one whose resulting Round is
+freshest, ranking whole Rounds lexicographically `partnerRepeats → matchupCount → matchupRecency →
+ratingGap`. Partner repeats stay strictly above variety, so the everyone-partners-everyone invariant
+is untouched.
+
+To make this effective on 1 court, low-freedom fields (**≤2 courts**) also drop the two-step
+partner-then-court search in favour of a **joint search over partners and opponents together** —
+otherwise the partner step would fix a repeat pairing before the freedomless court step could react.
+Larger fields keep the cheaper two-step search, where regrouping pairs across courts already
+supplies the variety and the joint search would be too costly.
+
+**Consequence:** on a single court the scheduler now provably returns the lexicographic-optimum
+Round over all fair Bench choices, so a recurring pair gets a fresh opponent whenever fairness and
+partner-repeat priority allow one. Any remaining repeat is forced by those higher-priority
+constraints (a small, unavoidable warm-up effect with very few Players), not a scheduling miss.
+Still unlimited Americano only; Mexicano and the limited/upfront path are untouched.
+
 ## Consequences
 
 - **Rating is a lobby concern; finalize before Start.** Fixed-mode Americano pre-generates all

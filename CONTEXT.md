@@ -49,6 +49,10 @@ Players sitting out a given Round. Rotation guarantees a Player benched in Round
 **Match**:
 One court's game within a Round — two teams of two Players, an optional final Score, and an optional in-progress Live score.
 
+**Match-up**:
+The specific *opposition* in a Match: one pair versus another, `{A+B vs C+D}`, treated as a single unordered four-Player unit (both teams sorted, teams interchangeable). Distinct from a **partnership** (the two Players on one team). Match-up variety is a first-class scheduler goal in **Unlimited Rounds** Americano: partnerships may recur freely, but a recurring pair should meet a *fresh opposing pair* — the scheduler minimises Match-up recurrence (count, then recency) so `A+B` don't keep facing `C+D`, using both court assignment and (on low-freedom court counts) fair Bench rotation. Requires ≥5 Players to have any freedom (with exactly 4 and no Bench, the one Match-up is forced). See `docs/adr/0006-rating-balances-matchups-not-partnerships.md`.
+_Avoid_: pairing (that's the partnership), fixture
+
 **Standing / Leaderboard**:
 The ranked, live-updating view of a Session's Players by points — public, no auth required to view.
 _Avoid_: Ranking, scoreboard
