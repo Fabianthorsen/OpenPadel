@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.23.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.22.2...v1.23.0) (2026-07-26)
+
+
+### Features
+
+* **web:** stats hero, profile polish, scheduling fix, and bilingual clubs ([#270](https://github.com/Fabianthorsen/OpenPadel/issues/270)) ([ef46403](https://github.com/Fabianthorsen/OpenPadel/commit/ef46403c24dc22fc598086c03433efe0619548ca))
+
+
+### Chores
+
+* **docs:** consolidate and prune project docs ([f2a9bf4](https://github.com/Fabianthorsen/OpenPadel/commit/f2a9bf4ee29c21dbd885a03ec12ff31154990dae))
+
 ## [1.22.2](https://github.com/Fabianthorsen/OpenPadel/compare/v1.22.1...v1.22.2) (2026-07-25)
 
 
