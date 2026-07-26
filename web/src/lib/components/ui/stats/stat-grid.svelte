@@ -20,12 +20,17 @@
 	} = $props();
 </script>
 
-<div data-slot="stat-grid" class="grid grid-cols-3 gap-3">
+<!-- Two columns, not three: the composite W–D–L Record can reach ten glyphs
+     (e.g. 128–44–102), which overflows a third-width tile even at the container's
+     max width. Two columns keep every value on one line at full size on the
+     narrowest supported phone, and lay the six metrics out as a clean 3×2. -->
+<div data-slot="stat-grid" class="grid grid-cols-2 gap-3">
 	{#each metrics as metric (metric.id)}
 		<StatTile
 			value={formatStat(metric.format, metric.accessor(stats), stats)}
 			label={$_(metric.label)}
 			accent={metric.id === 'point_win_pct'}
+			compact={metric.format === 'record'}
 		/>
 	{/each}
 </div>
