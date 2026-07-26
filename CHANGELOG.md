@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.24.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.23.0...v1.24.0) (2026-07-26)
+
+
+### Features
+
+* **pairing:** match-up tie-breaker for limited Americano ([#272](https://github.com/Fabianthorsen/OpenPadel/issues/272)) ([#277](https://github.com/Fabianthorsen/OpenPadel/issues/277)) ([922b449](https://github.com/Fabianthorsen/OpenPadel/commit/922b44943932e28ae316bbc0895eb8ed2fa3f166))
+* **pairing:** match-up variety for unlimited Americano ([#275](https://github.com/Fabianthorsen/OpenPadel/issues/275)) ([1bd8817](https://github.com/Fabianthorsen/OpenPadel/commit/1bd88173946a85da1bc86b353c9351863737b0a8))
+
 ## [1.23.0](https://github.com/Fabianthorsen/OpenPadel/compare/v1.22.2...v1.23.0) (2026-07-26)
 
 
