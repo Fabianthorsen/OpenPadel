@@ -8,16 +8,6 @@ import (
 	"github.com/fabianthorsen/openpadel/internal/domain"
 )
 
-// ratingWeight (W) blends skill balance into the court-assignment score:
-// score = ratingGap·W + coOccurrence. It is tuned large enough that the rating
-// gap usually dominates the grouping choice, while co-occurrence still breaks
-// near-ties (groupings with an equal rating gap). Team rating totals span 2–10,
-// so a court's rating gap is 0–8; co-occurrence deltas between candidate
-// groupings are small single/low-double-digit integers, so W=100 makes any
-// difference in rating gap outweigh co-occurrence, which then acts as the
-// tiebreaker. See ADR 0006.
-const ratingWeight = 100
-
 // buildRatingMap builds an id→rating lookup from the players, normalising any
 // out-of-range value (including the zero value of an unrated player) to the
 // neutral median. This is what makes the feature self-cancelling: an all-unrated
@@ -46,9 +36,13 @@ func GenerateRounds(players []domain.Player, courts, totalRounds int) []domain.R
 	lastBenchedRound := make(map[string]int) // 0 = never benched
 	benchTotal := make(map[string]int)
 
-	// Full history — not just the previous round.
+	// Full history — not just the previous round. Limited/upfront Americano keeps
+	// rating primary (ADR 0006) but breaks equally-balanced groupings by Match-up-
+	// tuple recency, so it tracks the full four-player match-up (count + last round)
+	// rather than pairwise co-occurrence — the same tuple state the unlimited path
+	// uses, consumed rating-first (see courtBalanceKey). #272.
 	partnerCount := map[[2]string]int{}
-	courtShareCount := map[[2]string]int{}
+	matchups := map[[4]string]matchupStat{}
 
 	rounds := make([]domain.Round, totalRounds)
 
@@ -96,20 +90,20 @@ func GenerateRounds(players []domain.Player, courts, totalRounds int) []domain.R
 			benchTotal[id]++
 		}
 
-		matches := assignCourts(active, partnerCount, courtShareCount, rating)
+		matches := assignCourts(active, partnerCount, matchups, rating)
 		shuffleTeamSides(matches)
 		shuffleCourtNumbers(matches)
 
 		for _, m := range matches {
 			partnerCount[pairKey(m.TeamA[0], m.TeamA[1])]++
 			partnerCount[pairKey(m.TeamB[0], m.TeamB[1])]++
-			// Track all 6 pairwise co-occurrences on this court.
-			players := []string{m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]}
-			for i := 0; i < len(players); i++ {
-				for j := i + 1; j < len(players); j++ {
-					courtShareCount[pairKey(players[i], players[j])]++
-				}
-			}
+			// Track the four-player match-up: how often it has occurred and the
+			// round it last occurred, for the recency tie-breaker.
+			mk := matchupKey(m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1])
+			st := matchups[mk]
+			st.count++
+			st.lastRound = roundNum
+			matchups[mk] = st
 		}
 
 		benchIDs := make([]string, len(bench))
@@ -307,86 +301,16 @@ func bestPartnerMatching(players []string, partnerCount map[[2]string]int) [][2]
 	return best
 }
 
-// bestCourtAssignment groups the given partner pairs into courts, minimising a
-// weighted blend of the per-court rating gap and court co-occurrence:
-//
-//	score = ratingGap·W + coOccurrence
-//
-// where ratingGap = |teamA_total − teamB_total| pairs a strong team against
-// another strong team (and weak against weak), and co-occurrence (how often any
-// two players have shared a court) breaks ties. With an all-median (or unrated)
-// field every rating gap is zero, so this reduces exactly to the previous
-// co-occurrence-only objective. See ADR 0006.
-// Number of groupings: for 4 pairs→3, 6 pairs→15, 8 pairs→105.
-func bestCourtAssignment(pairs [][2]string, courtShareCount map[[2]string]int, rating map[string]int) []domain.Match {
-	numPairs := len(pairs)
-	courts := numPairs / 2
-	usedPair := make([]bool, numPairs)
-	scratch := make([]domain.Match, courts)
-	best := make([]domain.Match, courts)
-	bestScore := int(^uint(0) >> 1)
-
-	var bt func(courtIdx, score int)
-	bt = func(courtIdx, score int) {
-		if score >= bestScore {
-			return
-		}
-		if courtIdx == courts {
-			bestScore = score
-			copy(best, scratch)
-			return
-		}
-		// Fix the first unused pair as TeamA of this court.
-		first := -1
-		for i := range pairs {
-			if !usedPair[i] {
-				first = i
-				break
-			}
-		}
-		usedPair[first] = true
-		for second := first + 1; second < numPairs; second++ {
-			if !usedPair[second] {
-				usedPair[second] = true
-				// Score: rating gap between the two teams (weighted) plus the
-				// sum of pairwise co-occurrences for all 6 pairs on this court.
-				players := []string{pairs[first][0], pairs[first][1], pairs[second][0], pairs[second][1]}
-				courtScore := 0
-				for i := 0; i < 4; i++ {
-					for j := i + 1; j < 4; j++ {
-						courtScore += courtShareCount[pairKey(players[i], players[j])]
-					}
-				}
-				teamATotal := rating[pairs[first][0]] + rating[pairs[first][1]]
-				teamBTotal := rating[pairs[second][0]] + rating[pairs[second][1]]
-				ratingGap := teamATotal - teamBTotal
-				if ratingGap < 0 {
-					ratingGap = -ratingGap
-				}
-				courtScore += ratingGap * ratingWeight
-				scratch[courtIdx] = domain.Match{
-					ID:    shortID(),
-					Court: courtIdx + 1,
-					TeamA: [2]string{pairs[first][0], pairs[first][1]},
-					TeamB: [2]string{pairs[second][0], pairs[second][1]},
-				}
-				bt(courtIdx+1, score+courtScore)
-				usedPair[second] = false
-			}
-		}
-		usedPair[first] = false
-	}
-
-	bt(0, 0)
-	return best
-}
-
-// assignCourts finds the optimal assignment of active players to courts using
-// exact backtracking search: first minimise partner repeats (primary constraint),
-// then minimise court co-occurrence (secondary). Guaranteed optimal for up to 16 players.
-func assignCourts(active []string, partnerCount map[[2]string]int, courtShareCount map[[2]string]int, rating map[string]int) []domain.Match {
+// assignCourts finds the optimal assignment of active players to courts for the
+// limited/upfront path using exact backtracking: first minimise partner repeats
+// (primary constraint), then group those pairs across courts rating-first —
+// ratingGap → matchupCount → matchupRecency → random (courtBalanceKey). Guaranteed
+// optimal for up to 16 players. See ADR 0006.
+func assignCourts(active []string, partnerCount map[[2]string]int, matchups map[[4]string]matchupStat, rating map[string]int) []domain.Match {
 	pairs := bestPartnerMatching(active, partnerCount)
-	return bestCourtAssignment(pairs, courtShareCount, rating)
+	return bestCourtAssignment(pairs, func(a, b [2]string) [3]int {
+		return courtBalanceKey(a, b, matchups, rating)
+	})
 }
 
 // assignCourtsVariety is the unlimited-mode counterpart of assignCourts, assigning
@@ -404,7 +328,9 @@ func assignCourtsVariety(active []string, partnerCount map[[2]string]int, matchu
 		return bestJointRoundVariety(active, partnerCount, matchups, rating)
 	}
 	pairs := bestPartnerMatching(active, partnerCount)
-	return bestCourtAssignmentVariety(pairs, matchups, rating)
+	return bestCourtAssignment(pairs, func(a, b [2]string) [3]int {
+		return courtVarietyKey(a, b, matchups, rating)
+	})
 }
 
 // bestJointRoundVariety chooses a whole round — partners *and* opponents together —
@@ -615,24 +541,18 @@ func shuffleStrings(s []string) {
 	}
 }
 
-// bestCourtAssignmentVariety groups the given partner pairs into courts with a
-// variety-first lexicographic objective, minimised over the whole round:
-//
-//	key = (matchupCount, recency, ratingGap)
-//
-// where, per court:
-//   - matchupCount = how many times this exact {teamA vs teamB} match-up has
-//     occurred → use every distinct match-up before repeating any;
-//   - recency = the round number this match-up last occurred (0 if never), so
-//     when a repeat is unavoidable the *stalest* match-up is reused first;
-//   - ratingGap = |teamA_total − teamB_total|, the ADR 0006 balance term, demoted
-//     here to a final tie-breaker (self-cancelling when the field is unrated).
-//
-// All three components are non-negative, so their per-round sums are monotonic in
-// the number of courts placed and the lexicographic prune below is exact. Genuine
-// ties are broken randomly by shuffling the pair order before the search, so equal
-// rounds are never emitted identically. See ADR 0006 amendment.
-func bestCourtAssignmentVariety(pairs [][2]string, matchups map[[4]string]matchupStat, rating map[string]int) []domain.Match {
+// bestCourtAssignment groups the given partner pairs into courts, minimising a
+// lexicographic [3]int key summed over the round's courts. keyFn supplies the
+// per-court key, and its component order is the single knob that serves both
+// Americano modes from one search: the limited/upfront path passes courtBalanceKey
+// (ratingGap → matchupCount → matchupRecency), the unlimited path passes
+// courtVarietyKey (matchupCount → matchupRecency → ratingGap). All key components
+// are non-negative, so their per-round sums are monotonic in the number of courts
+// placed and the lexicographic prune below is exact. pairs is shuffled first so
+// genuine ties resolve randomly rather than by backtracking order, and equal
+// rounds are never emitted identically. Number of groupings: 4 pairs→3, 6→15,
+// 8→105. See ADR 0006 and its amendment.
+func bestCourtAssignment(pairs [][2]string, keyFn func(a, b [2]string) [3]int) []domain.Match {
 	shufflePairs(pairs)
 
 	numPairs := len(pairs)
@@ -674,8 +594,7 @@ func bestCourtAssignmentVariety(pairs [][2]string, matchups map[[4]string]matchu
 				TeamA: [2]string{pairs[first][0], pairs[first][1]},
 				TeamB: [2]string{pairs[second][0], pairs[second][1]},
 			}
-			key := courtVarietyKey(pairs[first], pairs[second], matchups, rating)
-			bt(courtIdx+1, addKey(score, key))
+			bt(courtIdx+1, addKey(score, keyFn(pairs[first], pairs[second])))
 			usedPair[second] = false
 		}
 		usedPair[first] = false
@@ -685,21 +604,49 @@ func bestCourtAssignmentVariety(pairs [][2]string, matchups map[[4]string]matchu
 	return best
 }
 
-// courtVarietyKey scores a single court under the variety-first objective. recency
-// is the round number the match-up last occurred (smaller = staler = preferred);
-// it is 0 for a never-seen match-up, which is irrelevant there because count is 0
-// and dominates. All components are non-negative.
-func courtVarietyKey(a, b [2]string, matchups map[[4]string]matchupStat, rating map[string]int) [3]int {
+// courtScoreComponents returns the three raw court signals both Americano modes
+// score on:
+//   - ratingGap = |teamA_total − teamB_total|, the ADR 0006 balance term; zero on
+//     an unrated/all-median field, which is what makes rating self-cancelling;
+//   - matchupCount = how often this exact four-player match-up has occurred → use
+//     every distinct match-up before repeating any;
+//   - matchupRecency = the round the match-up last occurred (0 if never, harmless
+//     since count leads it in both orderings), so a forced repeat reuses the
+//     *stalest* match-up first.
+//
+// The modes consume these in different lexicographic orders — see courtBalanceKey
+// (rating-first) and courtVarietyKey (variety-first).
+func courtScoreComponents(a, b [2]string, matchups map[[4]string]matchupStat, rating map[string]int) (ratingGap, matchupCount, matchupRecency int) {
 	st := matchups[matchupKey(a[0], a[1], b[0], b[1])]
-	recency := 0
+	matchupCount = st.count
 	if st.count > 0 {
-		recency = st.lastRound
+		matchupRecency = st.lastRound
 	}
 	gap := (rating[a[0]] + rating[a[1]]) - (rating[b[0]] + rating[b[1]])
 	if gap < 0 {
 		gap = -gap
 	}
-	return [3]int{st.count, recency, gap}
+	return gap, matchupCount, matchupRecency
+}
+
+// courtBalanceKey orders the shared court signals rating-first — ratingGap →
+// matchupCount → matchupRecency — for limited (fixed-round) Americano, where ADR
+// 0006 keeps every individual Match competitive: skill balance stays primary and
+// Match-up-tuple recency is the tie-breaker among equally-balanced groupings
+// (upgraded from pairwise co-occurrence — #272). Genuine ties fall through to the
+// random pair-order shuffle in bestCourtAssignment.
+func courtBalanceKey(a, b [2]string, matchups map[[4]string]matchupStat, rating map[string]int) [3]int {
+	gap, count, recency := courtScoreComponents(a, b, matchups, rating)
+	return [3]int{gap, count, recency}
+}
+
+// courtVarietyKey orders the shared court signals variety-first — matchupCount →
+// matchupRecency → ratingGap — for unlimited Americano, where opponent variety
+// leads and rating is demoted to a self-cancelling final tie-breaker. See ADR
+// 0006 amendment.
+func courtVarietyKey(a, b [2]string, matchups map[[4]string]matchupStat, rating map[string]int) [3]int {
+	gap, count, recency := courtScoreComponents(a, b, matchups, rating)
+	return [3]int{count, recency, gap}
 }
 
 // lessKey reports whether a is lexicographically smaller than b.

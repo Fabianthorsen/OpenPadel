@@ -139,8 +139,9 @@ individual co-occurrence (`A` shares a court with `C`). Rating stays **self-canc
 unrated/all-median field has zero rating gaps, so both orderings collapse to variety-only.
 
 **Scope of the amendment:** Unlimited Americano only for the priority flip (issue #271); Limited
-Americano gets just the tie-breaker upgrade (issue #272, not yet implemented — the limited path
-still scores pairwise `coOccurrence` until then); Mexicano is untouched (its teams are derived from
+Americano gets just the tie-breaker upgrade (issue #272 — the limited path now scores the Match-up
+tuple rating-first, `ratingGap → matchupCount → matchupRecency → random`, and the pairwise
+`coOccurrence` term is retired); Mexicano is untouched (its teams are derived from
 Standings, not chosen by a court-assignment search, so there is no grouping freedom to vary). The
 `random` final key only fires on genuine ties, so existing deterministic rating tests are
 unaffected; new variety behaviour is covered by property-based tests.
