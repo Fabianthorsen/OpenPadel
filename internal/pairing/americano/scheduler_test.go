@@ -89,63 +89,84 @@ func TestGenerateRounds_RatingGroupsSimilarStrength(t *testing.T) {
 	}
 }
 
+// roundTotalGap sums the |teamA − teamB| rating gap over a round's courts, using
+// the given rating map for measurement.
+func roundTotalGap(r domain.Round, rating map[string]int) int {
+	total := 0
+	for _, m := range r.Matches {
+		g := (rating[m.TeamA[0]] + rating[m.TeamA[1]]) - (rating[m.TeamB[0]] + rating[m.TeamB[1]])
+		if g < 0 {
+			g = -g
+		}
+		total += g
+	}
+	return total
+}
+
 // TestGenerateRounds_UnratedTreatedAsMedian verifies the normalisation that makes
-// the feature self-cancelling: a field mixing unrated (zero-value) players with
-// explicit-median players produces the same groupings as an all-median field,
-// so median-filled players never look like the weakest and skew the balance.
+// the feature self-cancelling: an unrated (zero-value) player must balance as the
+// median, never as the weakest. Both fields draw the same pairs each round
+// (bestPartnerMatching ignores ratings), and ratingGap is the primary court key, so
+// the *minimal total rating gap achieved per round* is invariant to the random
+// tie-break — that is what we compare, on a non-uniform field so a mis-normalised
+// unrated player (treated as 0) would provably raise some round's gap.
 func TestGenerateRounds_UnratedTreatedAsMedian(t *testing.T) {
-	unrated := makeRatedPlayers(0, 0, 0, 0, 3, 3, 3, 3) // 0 = unrated, must behave as 3
-	allMedian := makeRatedPlayers(3, 3, 3, 3, 3, 3, 3, 3)
+	unrated := makeRatedPlayers(0, 0, 5, 5, 1, 1, 3, 3)  // 0 = unrated, must behave as 3
+	explicit := makeRatedPlayers(3, 3, 5, 5, 1, 1, 3, 3) // same field, medians spelt out
 
-	// Same courts/rounds; groupings must match round-for-round.
+	// Measure both runs on the same normalised map (all ratings valid ⇒ identity).
+	rating := map[string]int{}
+	for _, p := range explicit {
+		rating[p.ID] = p.Rating
+	}
+
 	rUnrated := GenerateRounds(unrated, 2, 7)
-	rMedian := GenerateRounds(allMedian, 2, 7)
+	rExplicit := GenerateRounds(explicit, 2, 7)
 
-	if len(rUnrated) != len(rMedian) {
-		t.Fatalf("round count mismatch: %d vs %d", len(rUnrated), len(rMedian))
+	if len(rUnrated) != len(rExplicit) {
+		t.Fatalf("round count mismatch: %d vs %d", len(rUnrated), len(rExplicit))
 	}
 	for i := range rUnrated {
-		gu := groupingSet(rUnrated[i])
-		gm := groupingSet(rMedian[i])
-		if len(gu) != len(gm) {
-			t.Fatalf("round %d grouping count mismatch", i+1)
-		}
-		for k := range gm {
-			if !gu[k] {
-				t.Errorf("round %d: unrated field grouping differs from all-median (%s missing)", i+1, k)
-			}
+		gu := roundTotalGap(rUnrated[i], rating)
+		ge := roundTotalGap(rExplicit[i], rating)
+		if gu != ge {
+			t.Errorf("round %d: unrated field total rating gap %d != explicit-median %d (unrated not normalised)",
+				i+1, gu, ge)
 		}
 	}
 }
 
-// TestBestCourtAssignment_MedianReproducesCoOccurrenceOnly is the regression guard
-// for "an all-median field reproduces today's schedule." It drives the court-
-// assignment step directly with a co-occurrence map that has a unique optimum, and
-// asserts that an all-median rating map produces the exact same grouping as the
-// pre-rating objective. The pre-rating objective is recovered by an empty rating
-// map: every team total is 0, so every rating gap is 0 and the score reduces to
-// pure co-occurrence — the algorithm as it was before this change.
-func TestBestCourtAssignment_MedianReproducesCoOccurrenceOnly(t *testing.T) {
+// TestBestCourtAssignment_MedianReproducesUnratedGrouping is the regression guard
+// for "an all-median field reproduces the unrated schedule" under the limited path's
+// rating-first key (courtBalanceKey). It drives the court-assignment step directly
+// with a match-up history that has a unique freshest grouping, and asserts that an
+// all-median rating map produces the exact same grouping as an empty (unrated) map.
+// Both make every rating gap zero, so the key's leading term vanishes and the choice
+// falls through to Match-up-tuple recency — the self-cancelling property of rating.
+func TestBestCourtAssignment_MedianReproducesUnratedGrouping(t *testing.T) {
 	pairs := [][2]string{{"a", "b"}, {"c", "d"}, {"e", "f"}, {"g", "h"}}
 
-	// Make the grouping {a,b,e,f} | {c,d,g,h} the unique co-occurrence optimum:
-	//   - pairing a,b with c,d is costly (a,c high) → rules out {a,b,c,d}
-	//   - pairing a,b with g,h is costly (a,g high) → rules out {a,b,g,h}
-	// leaving a,b with e,f (cost 0) as the only cheap choice.
-	coOcc := map[[2]string]int{
-		pairKey("a", "c"): 5,
-		pairKey("a", "g"): 5,
+	// Make {a,b,e,f} | {c,d,g,h} the unique freshest grouping: both other groupings
+	// reuse an already-played match-up involving pair {a,b}, while this one uses two
+	// never-seen match-ups (matchupCount 0).
+	matchups := map[[4]string]matchupStat{
+		matchupKey("a", "b", "c", "d"): {count: 1, lastRound: 1},
+		matchupKey("a", "b", "g", "h"): {count: 1, lastRound: 1},
 	}
 
-	// Pre-rating objective: empty map ⇒ all team totals 0 ⇒ gaps 0 ⇒ co-occurrence only.
-	preRating := bestCourtAssignment(pairs, coOcc, map[string]int{})
+	unrated := map[string]int{} // empty ⇒ all team totals 0 ⇒ gaps 0
+	preRating := bestCourtAssignment(pairs, func(a, b [2]string) [3]int {
+		return courtBalanceKey(a, b, matchups, unrated)
+	})
 
 	// All-median field: every player rated 3 ⇒ team totals 6 ⇒ gaps 0.
 	median := map[string]int{}
 	for _, id := range []string{"a", "b", "c", "d", "e", "f", "g", "h"} {
 		median[id] = 3
 	}
-	withMedian := bestCourtAssignment(pairs, coOcc, median)
+	withMedian := bestCourtAssignment(pairs, func(a, b [2]string) [3]int {
+		return courtBalanceKey(a, b, matchups, median)
+	})
 
 	preSet := matchGroupingSet(preRating)
 	medSet := matchGroupingSet(withMedian)
@@ -154,13 +175,13 @@ func TestBestCourtAssignment_MedianReproducesCoOccurrenceOnly(t *testing.T) {
 	}
 	for k := range preSet {
 		if !medSet[k] {
-			t.Errorf("all-median grouping differs from pre-rating co-occurrence-only: %s missing", k)
+			t.Errorf("all-median grouping differs from unrated: %s missing", k)
 		}
 	}
 
-	// Sanity: the shared optimum really is the co-occurrence-minimal grouping.
+	// Sanity: the shared optimum really is the match-up-freshest grouping.
 	if !medSet["a,b|e,f"] {
-		t.Errorf("expected co-occurrence optimum {a,b}|{e,f}, got %v", medSet)
+		t.Errorf("expected freshest grouping {a,b}|{e,f}, got %v", medSet)
 	}
 }
 
@@ -305,10 +326,13 @@ func TestGenerateRounds_CourtAssignment(t *testing.T) {
 	}
 }
 
-// TestGenerateRounds_CourtCoOccurrenceSpread verifies that no pair of players
-// shares a court disproportionately more than the average. This catches the old
-// bug where the same 4 players would be stuck on one court, shuffling internally.
-func TestGenerateRounds_CourtCoOccurrenceSpread(t *testing.T) {
+// TestGenerateRounds_MatchupSpread verifies that no full four-player match-up
+// recurs disproportionately more than the average — the Match-up-tuple recency
+// tie-breaker (#272) spreads opposition among equally-balanced groupings, so on an
+// unrated field (every rating gap zero) distinct match-ups are used before any
+// repeats. This is the limited path's counterpart to the old co-occurrence-spread
+// guard, retargeted to the tuple the scheduler now optimises.
+func TestGenerateRounds_MatchupSpread(t *testing.T) {
 	cases := []struct {
 		players, courts, totalRounds int
 	}{
@@ -319,38 +343,27 @@ func TestGenerateRounds_CourtCoOccurrenceSpread(t *testing.T) {
 		players := makePlayers(tc.players)
 		rounds := GenerateRounds(players, tc.courts, tc.totalRounds)
 
-		// Count how many times each pair shares a court.
-		coOccurrence := map[[2]string]int{}
+		// Count how many times each full match-up tuple {A+B vs C+D} recurs.
+		matchupCount := map[[4]string]int{}
 		for _, r := range rounds {
 			for _, m := range r.Matches {
-				ids := []string{m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]}
-				for i := 0; i < len(ids); i++ {
-					for j := i + 1; j < len(ids); j++ {
-						key := [2]string{ids[i], ids[j]}
-						if key[0] > key[1] {
-							key[0], key[1] = key[1], key[0]
-						}
-						coOccurrence[key]++
-					}
-				}
+				matchupCount[matchupKey(m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1])]++
 			}
 		}
 
-		// Calculate max allowed: with perfect spread, each pair meets
-		// ceil(totalRounds * 6 / C(N,2)) times per court slot.
-		// We allow up to 2x the average to account for constraints.
-		totalCoOccurrences := 0
-		for _, v := range coOccurrence {
-			totalCoOccurrences += v
+		// Allow up to 2x the average recurrence to account for hard constraints
+		// (partner minimisation and bench fairness lead the key).
+		total := 0
+		for _, v := range matchupCount {
+			total += v
 		}
-		numPairs := len(coOccurrence)
-		avg := float64(totalCoOccurrences) / float64(numPairs)
+		avg := float64(total) / float64(len(matchupCount))
 		maxAllowed := int(avg*2) + 1
 
-		for pair, count := range coOccurrence {
+		for mk, count := range matchupCount {
 			if count > maxAllowed {
-				t.Errorf("%d players, %d courts: pair (%s, %s) shared a court %d times (avg %.1f, max allowed %d)",
-					tc.players, tc.courts, pair[0], pair[1], count, avg, maxAllowed)
+				t.Errorf("%d players, %d courts: match-up %v occurred %d times (avg %.1f, max allowed %d)",
+					tc.players, tc.courts, mk, count, avg, maxAllowed)
 			}
 		}
 	}
