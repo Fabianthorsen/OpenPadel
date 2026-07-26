@@ -1,6 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
+import { init, register, waitLocale } from 'svelte-i18n';
 import MemberRow from './MemberRow.svelte';
+
+// The role label renders through svelte-i18n, so the store needs a locale before
+// the component mounts.
+beforeAll(async () => {
+	register('en', () => import('../../i18n/en.json'));
+	init({ fallbackLocale: 'en', initialLocale: 'en' });
+	await waitLocale('en');
+});
 
 const member: App.ClubMember = {
 	user_id: 'u1',
@@ -17,9 +26,9 @@ describe('MemberRow (render)', () => {
 		expect(screen.getByText('Ada Lovelace')).toBeInTheDocument();
 	});
 
-	it('renders the member role', () => {
+	it('renders the translated member role', () => {
 		render(MemberRow, { member });
-		expect(screen.getByText('admin')).toBeInTheDocument();
+		expect(screen.getByText('Admin')).toBeInTheDocument();
 	});
 
 	it('falls back to initials when no avatar icon is set', () => {
