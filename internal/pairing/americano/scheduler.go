@@ -145,8 +145,7 @@ func GenerateNextRound(previousRounds []domain.Round, players []domain.Player, c
 	lastBenchedRound := make(map[string]int)
 	benchTotal := make(map[string]int)
 	partnerCount := map[[2]string]int{}
-	matchupCount := map[[4]string]int{}
-	matchupLastRound := map[[4]string]int{}
+	matchups := map[[4]string]matchupStat{}
 
 	for _, prevRound := range previousRounds {
 		// Track bench
@@ -160,8 +159,10 @@ func GenerateNextRound(previousRounds []domain.Round, players []domain.Player, c
 			partnerCount[pairKey(m.TeamA[0], m.TeamA[1])]++
 			partnerCount[pairKey(m.TeamB[0], m.TeamB[1])]++
 			mk := matchupKey(m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1])
-			matchupCount[mk]++
-			matchupLastRound[mk] = prevRound.Number
+			st := matchups[mk]
+			st.count++
+			st.lastRound = prevRound.Number
+			matchups[mk] = st
 		}
 	}
 
@@ -204,7 +205,7 @@ func GenerateNextRound(previousRounds []domain.Round, players []domain.Player, c
 		active = append([]string{}, ids...)
 	}
 
-	matches := assignCourtsVariety(active, partnerCount, matchupCount, matchupLastRound, rating)
+	matches := assignCourtsVariety(active, partnerCount, matchups, rating)
 	shuffleTeamSides(matches)
 	shuffleCourtNumbers(matches)
 
@@ -371,9 +372,17 @@ func assignCourts(active []string, partnerCount map[[2]string]int, courtShareCou
 // the same partner step (minimise partner repeats) but assigns courts with the
 // variety-first objective (see bestCourtAssignmentVariety and the ADR 0006
 // amendment): partnerships may recur, but a recurring pair meets a fresh opponent.
-func assignCourtsVariety(active []string, partnerCount map[[2]string]int, matchupCount, matchupLastRound map[[4]string]int, rating map[string]int) []domain.Match {
+func assignCourtsVariety(active []string, partnerCount map[[2]string]int, matchups map[[4]string]matchupStat, rating map[string]int) []domain.Match {
 	pairs := bestPartnerMatching(active, partnerCount)
-	return bestCourtAssignmentVariety(pairs, matchupCount, matchupLastRound, rating)
+	return bestCourtAssignmentVariety(pairs, matchups, rating)
+}
+
+// matchupStat is the per-match-up history the variety objective reads: how many
+// times the match-up has occurred and the round it last occurred. lastRound is
+// only meaningful when count > 0.
+type matchupStat struct {
+	count     int
+	lastRound int
 }
 
 // bestCourtAssignmentVariety groups the given partner pairs into courts with a
@@ -393,7 +402,7 @@ func assignCourtsVariety(active []string, partnerCount map[[2]string]int, matchu
 // the number of courts placed and the lexicographic prune below is exact. Genuine
 // ties are broken randomly by shuffling the pair order before the search, so equal
 // rounds are never emitted identically. See ADR 0006 amendment.
-func bestCourtAssignmentVariety(pairs [][2]string, matchupCount, matchupLastRound map[[4]string]int, rating map[string]int) []domain.Match {
+func bestCourtAssignmentVariety(pairs [][2]string, matchups map[[4]string]matchupStat, rating map[string]int) []domain.Match {
 	shufflePairs(pairs)
 
 	numPairs := len(pairs)
@@ -435,7 +444,7 @@ func bestCourtAssignmentVariety(pairs [][2]string, matchupCount, matchupLastRoun
 				TeamA: [2]string{pairs[first][0], pairs[first][1]},
 				TeamB: [2]string{pairs[second][0], pairs[second][1]},
 			}
-			key := courtVarietyKey(pairs[first], pairs[second], matchupCount, matchupLastRound, rating)
+			key := courtVarietyKey(pairs[first], pairs[second], matchups, rating)
 			bt(courtIdx+1, addKey(score, key))
 			usedPair[second] = false
 		}
@@ -450,18 +459,17 @@ func bestCourtAssignmentVariety(pairs [][2]string, matchupCount, matchupLastRoun
 // is the round number the match-up last occurred (smaller = staler = preferred);
 // it is 0 for a never-seen match-up, which is irrelevant there because count is 0
 // and dominates. All components are non-negative.
-func courtVarietyKey(a, b [2]string, matchupCount, matchupLastRound map[[4]string]int, rating map[string]int) [3]int {
-	mk := matchupKey(a[0], a[1], b[0], b[1])
-	count := matchupCount[mk]
+func courtVarietyKey(a, b [2]string, matchups map[[4]string]matchupStat, rating map[string]int) [3]int {
+	st := matchups[matchupKey(a[0], a[1], b[0], b[1])]
 	recency := 0
-	if count > 0 {
-		recency = matchupLastRound[mk]
+	if st.count > 0 {
+		recency = st.lastRound
 	}
 	gap := (rating[a[0]] + rating[a[1]]) - (rating[b[0]] + rating[b[1]])
 	if gap < 0 {
 		gap = -gap
 	}
-	return [3]int{count, recency, gap}
+	return [3]int{st.count, recency, gap}
 }
 
 // lessKey reports whether a is lexicographically smaller than b.

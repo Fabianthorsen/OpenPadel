@@ -449,6 +449,86 @@ func TestGenerateNextRound_NoConsecutiveMatchupRepeat(t *testing.T) {
 	}
 }
 
+// TestGenerateNextRound_NoRepeatUntilExhausted verifies the achievable form of
+// #271's "no Match-up repeats until all distinct tuples are exhausted": because
+// the partner step fixes a round's pairs before court assignment, the guarantee
+// is *local* — a round reuses a Match-up only when every grouping of that round's
+// own pairs already contains a seen Match-up (no all-fresh grouping exists). This
+// is exactly what the count-primary objective enforces (an all-fresh grouping has
+// score sum 0, the global minimum, so it is always chosen when it exists).
+func TestGenerateNextRound_NoRepeatUntilExhausted(t *testing.T) {
+	cases := []struct{ players, courts int }{{8, 2}, {12, 3}}
+	for _, tc := range cases {
+		history := simulateUnlimited(t, makePlayers(tc.players), tc.courts, 24)
+		seen := map[[4]string]bool{} // Match-ups seen strictly before the current round
+		for _, r := range history {
+			pairs := roundPairs(r)
+			roundRepeats := false
+			for _, mk := range roundMatchupList(r) {
+				if seen[mk] {
+					roundRepeats = true
+					break
+				}
+			}
+			if roundRepeats && hasAllFreshGrouping(pairs, seen) {
+				t.Errorf("%dp/%dc round %d reused a Match-up though an all-fresh grouping of its pairs existed",
+					tc.players, tc.courts, r.Number)
+			}
+			for _, mk := range roundMatchupList(r) {
+				seen[mk] = true
+			}
+		}
+	}
+}
+
+// roundPairs returns the partnerships (as pairs) that played in a round.
+func roundPairs(r domain.Round) [][2]string {
+	pairs := make([][2]string, 0, len(r.Matches)*2)
+	for _, m := range r.Matches {
+		pairs = append(pairs, m.TeamA, m.TeamB)
+	}
+	return pairs
+}
+
+// hasAllFreshGrouping reports whether the pairs can be grouped into courts such
+// that no resulting Match-up tuple is in seen. It enumerates every grouping the
+// court-assignment search itself considers.
+func hasAllFreshGrouping(pairs [][2]string, seen map[[4]string]bool) bool {
+	used := make([]bool, len(pairs))
+	var rec func() bool
+	rec = func() bool {
+		first := -1
+		for i := range pairs {
+			if !used[i] {
+				first = i
+				break
+			}
+		}
+		if first == -1 {
+			return true // all pairs placed, none hit a seen Match-up
+		}
+		used[first] = true
+		defer func() { used[first] = false }()
+		for second := first + 1; second < len(pairs); second++ {
+			if used[second] {
+				continue
+			}
+			mk := matchupKey(pairs[first][0], pairs[first][1], pairs[second][0], pairs[second][1])
+			if seen[mk] {
+				continue
+			}
+			used[second] = true
+			if rec() {
+				used[second] = false
+				return true
+			}
+			used[second] = false
+		}
+		return false
+	}
+	return rec()
+}
+
 // roundMatchups returns the set of canonical Match-up tuples in a round.
 func roundMatchups(r domain.Round) map[[4]string]bool {
 	set := map[[4]string]bool{}

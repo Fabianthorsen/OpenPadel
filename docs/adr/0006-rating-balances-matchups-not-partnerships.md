@@ -130,7 +130,7 @@ and **rating gap** — in a **lexicographic key whose priority depends on the mo
   stalest; only then prefer the more balanced; random breaks true ties so Rounds aren't identical.)
 - **Limited:** `ratingGap → matchupCount → matchupRecency → random`
   (rating first, preserving this ADR's original intent; the old pairwise `coOccurrence` tie-breaker
-  is **replaced** by the strictly-better Match-up-tuple signal — no behaviour regression, better
+  is to be **replaced** by the strictly-better Match-up-tuple signal — no behaviour regression, better
   variety among equally-balanced groupings.)
 
 The pairwise `coOccurrence` term is retired in favour of the four-Player **Match-up** tuple
@@ -138,11 +138,16 @@ The pairwise `coOccurrence` term is retired in favour of the four-Player **Match
 individual co-occurrence (`A` shares a court with `C`). Rating stays **self-cancelling**: an
 unrated/all-median field has zero rating gaps, so both orderings collapse to variety-only.
 
-**Scope of the amendment:** Unlimited Americano only for the priority flip; Limited Americano gets
-just the tie-breaker upgrade; Mexicano is untouched (its teams are derived from Standings, not
-chosen by a court-assignment search, so there is no grouping freedom to vary). The `random` final
-key only fires on genuine ties, so existing deterministic rating tests are unaffected; new variety
-behaviour is covered by property-based tests.
+**Scope of the amendment:** Unlimited Americano only for the priority flip (issue #271); Limited
+Americano gets just the tie-breaker upgrade (issue #272, not yet implemented — the limited path
+still scores pairwise `coOccurrence` until then); Mexicano is untouched (its teams are derived from
+Standings, not chosen by a court-assignment search, so there is no grouping freedom to vary). The
+`random` final key only fires on genuine ties, so existing deterministic rating tests are
+unaffected; new variety behaviour is covered by property-based tests.
+
+The unlimited guarantee is *local*: because the partner step fixes a round's pairs before court
+assignment, "use every distinct Match-up before repeating" holds over the groupings reachable from
+those pairs, not over all conceivable Match-ups.
 
 ## Consequences
 
