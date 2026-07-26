@@ -138,11 +138,15 @@ func GenerateNextRound(previousRounds []domain.Round, players []domain.Player, c
 
 	benchSize := len(ids) - courts*4
 
-	// Rebuild state from history
+	// Rebuild state from history. Unlimited mode optimises for match-up variety
+	// (see ADR 0006 amendment), so it tracks the full four-player match-up tuple —
+	// how often it has occurred and the round it last occurred — rather than the
+	// pairwise co-occurrence the limited/upfront path uses.
 	lastBenchedRound := make(map[string]int)
 	benchTotal := make(map[string]int)
 	partnerCount := map[[2]string]int{}
-	courtShareCount := map[[2]string]int{}
+	matchupCount := map[[4]string]int{}
+	matchupLastRound := map[[4]string]int{}
 
 	for _, prevRound := range previousRounds {
 		// Track bench
@@ -151,17 +155,13 @@ func GenerateNextRound(previousRounds []domain.Round, players []domain.Player, c
 			benchTotal[id]++
 		}
 
-		// Track partner and court co-occurrence
+		// Track partner repeats and match-up recurrence/recency.
 		for _, m := range prevRound.Matches {
 			partnerCount[pairKey(m.TeamA[0], m.TeamA[1])]++
 			partnerCount[pairKey(m.TeamB[0], m.TeamB[1])]++
-			// All 6 pairwise co-occurrences on this court
-			matchPlayers := []string{m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]}
-			for i := 0; i < len(matchPlayers); i++ {
-				for j := i + 1; j < len(matchPlayers); j++ {
-					courtShareCount[pairKey(matchPlayers[i], matchPlayers[j])]++
-				}
-			}
+			mk := matchupKey(m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1])
+			matchupCount[mk]++
+			matchupLastRound[mk] = prevRound.Number
 		}
 	}
 
@@ -204,7 +204,7 @@ func GenerateNextRound(previousRounds []domain.Round, players []domain.Player, c
 		active = append([]string{}, ids...)
 	}
 
-	matches := assignCourts(active, partnerCount, courtShareCount, rating)
+	matches := assignCourtsVariety(active, partnerCount, matchupCount, matchupLastRound, rating)
 	shuffleTeamSides(matches)
 	shuffleCourtNumbers(matches)
 
@@ -225,6 +225,20 @@ func pairKey(a, b string) [2]string {
 		return [2]string{b, a}
 	}
 	return [2]string{a, b}
+}
+
+// matchupKey returns a canonical key for a court match-up — the full four-player
+// opposition {A+B vs C+D}. Each team's two ids are sorted, and the two teams are
+// then sorted against each other, so {A+B vs C+D} == {C+D vs A+B}. This is the
+// unit the unlimited scheduler keeps fresh (see ADR 0006 amendment): partnerships
+// may recur, but a recurring pair should meet a different opposing pair.
+func matchupKey(a0, a1, b0, b1 string) [4]string {
+	pa := pairKey(a0, a1)
+	pb := pairKey(b0, b1)
+	if pa[0] > pb[0] || (pa[0] == pb[0] && pa[1] > pb[1]) {
+		pa, pb = pb, pa
+	}
+	return [4]string{pa[0], pa[1], pb[0], pb[1]}
 }
 
 // bestPartnerMatching finds the partner pairing of players that minimises total
@@ -351,6 +365,128 @@ func bestCourtAssignment(pairs [][2]string, courtShareCount map[[2]string]int, r
 func assignCourts(active []string, partnerCount map[[2]string]int, courtShareCount map[[2]string]int, rating map[string]int) []domain.Match {
 	pairs := bestPartnerMatching(active, partnerCount)
 	return bestCourtAssignment(pairs, courtShareCount, rating)
+}
+
+// assignCourtsVariety is the unlimited-mode counterpart of assignCourts. It keeps
+// the same partner step (minimise partner repeats) but assigns courts with the
+// variety-first objective (see bestCourtAssignmentVariety and the ADR 0006
+// amendment): partnerships may recur, but a recurring pair meets a fresh opponent.
+func assignCourtsVariety(active []string, partnerCount map[[2]string]int, matchupCount, matchupLastRound map[[4]string]int, rating map[string]int) []domain.Match {
+	pairs := bestPartnerMatching(active, partnerCount)
+	return bestCourtAssignmentVariety(pairs, matchupCount, matchupLastRound, rating)
+}
+
+// bestCourtAssignmentVariety groups the given partner pairs into courts with a
+// variety-first lexicographic objective, minimised over the whole round:
+//
+//	key = (matchupCount, recency, ratingGap)
+//
+// where, per court:
+//   - matchupCount = how many times this exact {teamA vs teamB} match-up has
+//     occurred → use every distinct match-up before repeating any;
+//   - recency = the round number this match-up last occurred (0 if never), so
+//     when a repeat is unavoidable the *stalest* match-up is reused first;
+//   - ratingGap = |teamA_total − teamB_total|, the ADR 0006 balance term, demoted
+//     here to a final tie-breaker (self-cancelling when the field is unrated).
+//
+// All three components are non-negative, so their per-round sums are monotonic in
+// the number of courts placed and the lexicographic prune below is exact. Genuine
+// ties are broken randomly by shuffling the pair order before the search, so equal
+// rounds are never emitted identically. See ADR 0006 amendment.
+func bestCourtAssignmentVariety(pairs [][2]string, matchupCount, matchupLastRound map[[4]string]int, rating map[string]int) []domain.Match {
+	shufflePairs(pairs)
+
+	numPairs := len(pairs)
+	courts := numPairs / 2
+	usedPair := make([]bool, numPairs)
+	scratch := make([]domain.Match, courts)
+	best := make([]domain.Match, courts)
+	var bestScore [3]int
+	haveBest := false
+
+	var bt func(courtIdx int, score [3]int)
+	bt = func(courtIdx int, score [3]int) {
+		if haveBest && !lessKey(score, bestScore) {
+			return // prune: partial score already ≥ best (all components monotonic)
+		}
+		if courtIdx == courts {
+			bestScore = score
+			haveBest = true
+			copy(best, scratch)
+			return
+		}
+		// Fix the first unused pair as TeamA of this court.
+		first := -1
+		for i := range pairs {
+			if !usedPair[i] {
+				first = i
+				break
+			}
+		}
+		usedPair[first] = true
+		for second := first + 1; second < numPairs; second++ {
+			if usedPair[second] {
+				continue
+			}
+			usedPair[second] = true
+			scratch[courtIdx] = domain.Match{
+				ID:    shortID(),
+				Court: courtIdx + 1,
+				TeamA: [2]string{pairs[first][0], pairs[first][1]},
+				TeamB: [2]string{pairs[second][0], pairs[second][1]},
+			}
+			key := courtVarietyKey(pairs[first], pairs[second], matchupCount, matchupLastRound, rating)
+			bt(courtIdx+1, addKey(score, key))
+			usedPair[second] = false
+		}
+		usedPair[first] = false
+	}
+
+	bt(0, [3]int{})
+	return best
+}
+
+// courtVarietyKey scores a single court under the variety-first objective. recency
+// is the round number the match-up last occurred (smaller = staler = preferred);
+// it is 0 for a never-seen match-up, which is irrelevant there because count is 0
+// and dominates. All components are non-negative.
+func courtVarietyKey(a, b [2]string, matchupCount, matchupLastRound map[[4]string]int, rating map[string]int) [3]int {
+	mk := matchupKey(a[0], a[1], b[0], b[1])
+	count := matchupCount[mk]
+	recency := 0
+	if count > 0 {
+		recency = matchupLastRound[mk]
+	}
+	gap := (rating[a[0]] + rating[a[1]]) - (rating[b[0]] + rating[b[1]])
+	if gap < 0 {
+		gap = -gap
+	}
+	return [3]int{count, recency, gap}
+}
+
+// lessKey reports whether a is lexicographically smaller than b.
+func lessKey(a, b [3]int) bool {
+	for i := range a {
+		if a[i] != b[i] {
+			return a[i] < b[i]
+		}
+	}
+	return false
+}
+
+// addKey sums two lexicographic keys component-wise.
+func addKey(a, b [3]int) [3]int {
+	return [3]int{a[0] + b[0], a[1] + b[1], a[2] + b[2]}
+}
+
+// shufflePairs randomises the order of pairs in place (Fisher-Yates) so that the
+// variety search, which fixes the first unused pair first, returns a random choice
+// among equally-optimal groupings rather than a deterministic one.
+func shufflePairs(pairs [][2]string) {
+	for i := len(pairs) - 1; i > 0; i-- {
+		j, _ := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		pairs[i], pairs[j.Int64()] = pairs[j.Int64()], pairs[i]
+	}
 }
 
 // TotalRounds returns the correct number of rounds for a fair Americano tournament.

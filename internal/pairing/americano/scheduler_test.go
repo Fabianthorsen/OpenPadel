@@ -377,6 +377,95 @@ func TestGenerateRounds_MatchHasFourDistinctPlayers(t *testing.T) {
 	}
 }
 
+// simulateUnlimited plays an unlimited Americano session the way the service does:
+// round 1 comes from GenerateRounds(…, 1) (empty history), every later round from
+// GenerateNextRound over the accumulated history.
+func simulateUnlimited(t *testing.T, players []domain.Player, courts, rounds int) []domain.Round {
+	t.Helper()
+	history := GenerateRounds(players, courts, 1)
+	for len(history) < rounds {
+		nr := GenerateNextRound(history, players, courts)
+		if nr == nil {
+			t.Fatalf("GenerateNextRound returned nil at round %d", len(history)+1)
+		}
+		history = append(history, *nr)
+	}
+	return history
+}
+
+// partnershipOpponents maps each partnership in a round to the partnership it
+// faced, keyed by canonical sorted-pair string. Both directions are recorded.
+func partnershipOpponents(r domain.Round) map[string]string {
+	m := map[string]string{}
+	for _, match := range r.Matches {
+		a := sortedPair(match.TeamA)
+		b := sortedPair(match.TeamB)
+		m[a] = b
+		m[b] = a
+	}
+	return m
+}
+
+// TestGenerateNextRound_RecurringPairFacesFreshOpponent is the core guard for
+// #271: when a partnership recurs, it must face a *different* opposing pair than
+// it faced in its previous occurrence. The old objective went flat once partner
+// counts saturated and replayed identical rounds, so a recurring pair kept facing
+// the same opponent. Must hold for every random tie-break, so no seeding.
+func TestGenerateNextRound_RecurringPairFacesFreshOpponent(t *testing.T) {
+	cases := []struct{ players, courts int }{{8, 2}, {9, 2}}
+	for _, tc := range cases {
+		history := simulateUnlimited(t, makePlayers(tc.players), tc.courts, 18)
+		prevOpponent := map[string]string{}
+		prevRound := map[string]int{}
+		for _, r := range history {
+			for pair, opp := range partnershipOpponents(r) {
+				if last, seen := prevOpponent[pair]; seen && last == opp {
+					t.Errorf("%dp/%dc: partnership %s faced the same opponent %s in round %d and its previous occurrence (round %d)",
+						tc.players, tc.courts, pair, opp, r.Number, prevRound[pair])
+				}
+				prevOpponent[pair] = opp
+				prevRound[pair] = r.Number
+			}
+		}
+	}
+}
+
+// TestGenerateNextRound_NoConsecutiveMatchupRepeat verifies a Match-up tuple never
+// recurs in the immediately following round when an alternative grouping exists
+// (it always does for ≥2 courts). Acceptance criterion for #271.
+func TestGenerateNextRound_NoConsecutiveMatchupRepeat(t *testing.T) {
+	cases := []struct{ players, courts int }{{8, 2}, {12, 3}}
+	for _, tc := range cases {
+		history := simulateUnlimited(t, makePlayers(tc.players), tc.courts, 18)
+		for i := 1; i < len(history); i++ {
+			prev := roundMatchups(history[i-1])
+			for _, mk := range roundMatchupList(history[i]) {
+				if prev[mk] {
+					t.Errorf("%dp/%dc: match-up %v recurred in consecutive rounds %d→%d",
+						tc.players, tc.courts, mk, history[i-1].Number, history[i].Number)
+				}
+			}
+		}
+	}
+}
+
+// roundMatchups returns the set of canonical Match-up tuples in a round.
+func roundMatchups(r domain.Round) map[[4]string]bool {
+	set := map[[4]string]bool{}
+	for _, mk := range roundMatchupList(r) {
+		set[mk] = true
+	}
+	return set
+}
+
+func roundMatchupList(r domain.Round) [][4]string {
+	list := make([][4]string, 0, len(r.Matches))
+	for _, m := range r.Matches {
+		list = append(list, matchupKey(m.TeamA[0], m.TeamA[1], m.TeamB[0], m.TeamB[1]))
+	}
+	return list
+}
+
 // TestGenerateNextRound verifies streaming generation of single rounds.
 // Generates rounds 1..N via batch, then generates round N+1 via streaming and verifies constraints.
 func TestGenerateNextRound(t *testing.T) {
