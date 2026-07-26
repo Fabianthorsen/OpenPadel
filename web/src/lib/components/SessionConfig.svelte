@@ -162,6 +162,10 @@
 		}
 		calendarDate = today(getLocalTimeZone());
 		timeSlot = calculateNextHourSlot();
+		// Persist the default schedule immediately. Without this, enabling the
+		// toggle and accepting the prefilled date/time never writes scheduled_at —
+		// it only saved once the user nudged a stepper or reselected a date.
+		await commitScheduleTime();
 	}
 
 	async function commitScheduleTime() {

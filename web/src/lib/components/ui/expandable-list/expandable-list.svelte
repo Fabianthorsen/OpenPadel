@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { _ } from 'svelte-i18n';
 	import { ChevronDown } from '@lucide/svelte';
 	import { cn } from '$lib/utils.js';
 
@@ -48,7 +49,7 @@
 			onclick={() => (expanded = true)}
 			class="text-primary hover:text-primary-hover flex w-full items-center justify-center gap-2 py-2 text-sm font-semibold transition-colors"
 		>
-			<span>{hiddenCount} more</span>
+			<span>{$_('expandable_more', { values: { count: hiddenCount } })}</span>
 			<ChevronDown size={16} class="transition-transform" />
 		</button>
 	{:else if hasMore && expanded}
@@ -56,7 +57,7 @@
 			onclick={() => (expanded = false)}
 			class="text-primary hover:text-primary-hover flex w-full items-center justify-center gap-2 py-2 text-sm font-semibold transition-colors"
 		>
-			<span>Show less</span>
+			<span>{$_('expandable_less')}</span>
 			<ChevronDown size={16} class="rotate-180 transition-transform" />
 		</button>
 	{/if}

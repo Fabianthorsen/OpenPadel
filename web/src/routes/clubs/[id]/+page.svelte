@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api/client';
 	import { auth } from '$lib/auth.svelte';
+	import { _ } from 'svelte-i18n';
 	import { Button } from '$lib/components/ui/button';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import MemberRow from '$lib/components/ui/MemberRow.svelte';
@@ -90,9 +91,9 @@
 			rotating = true;
 			const { join_code } = await api.clubs.rotateJoinCode(auth.token, club.club.id);
 			club.club.join_code = join_code;
-			toast.success('Invite link reset — the old link no longer works');
+			toast.success($_('club_link_reset_success'));
 		} catch {
-			toast.error('Could not reset the invite link');
+			toast.error($_('club_link_reset_error'));
 		} finally {
 			rotating = false;
 		}
@@ -136,7 +137,7 @@
 		try {
 			await api.clubs.invites.send(auth.token, club.club.id, userId);
 			invitedIds = new Set(invitedIds).add(userId);
-			toast.success('Invite sent');
+			toast.success($_('club_invite_sent'));
 		} catch (e) {
 			toast.error(
 				e instanceof Error ? translateApiError(e.message) : translateApiError('server_error')
@@ -157,11 +158,11 @@
 			club = await api.clubs.detail(auth.token, id);
 		} catch (err: any) {
 			if (err.status === 403) {
-				error = 'You are not a member of this club';
+				error = translateApiError('not_club_member');
 			} else if (err.status === 404) {
-				error = 'Club not found';
+				error = translateApiError('club_not_found');
 			} else {
-				error = 'Failed to load club';
+				error = $_('club_load_error');
 			}
 			toast.error(error);
 		} finally {
@@ -238,7 +239,9 @@
 			<div class="space-y-2">
 				<p class="text-destructive text-center text-sm font-semibold">{error}</p>
 			</div>
-			<Button onclick={() => goto('/profile')} variant="default" size="cta">Back to Profile</Button>
+			<Button onclick={() => goto('/profile')} variant="default" size="cta"
+				>{$_('club_back_to_profile')}</Button
+			>
 		</div>
 	{:else if club}
 		<!-- Header -->
@@ -246,14 +249,16 @@
 			title={club.club.name}
 			backHref="/profile"
 			avatar={{ icon: club.club.avatar_icon, color: club.club.avatar_color, name: club.club.name }}
-			subtitle={`${club.roster_count} ${club.roster_count === 1 ? 'member' : 'members'}`}
+			subtitle={`${club.roster_count} ${
+				club.roster_count === 1 ? $_('club_member') : $_('club_members')
+			}`}
 		>
 			{#snippet action()}
 				{#if isAdmin}
 					<button
 						onclick={() => (adminDrawerOpen = true)}
 						class="text-text-secondary hover:text-text-primary flex-shrink-0 transition-colors"
-						aria-label="Manage club"
+						aria-label={$_('club_manage')}
 					>
 						<Settings size={22} />
 					</button>
@@ -269,10 +274,10 @@
 		     soonest game so it's the first thing a member sees. -->
 		<section class="space-y-3">
 			<div class="flex items-center justify-between">
-				<h2 class="text-text-primary text-sm font-[800]">Club games</h2>
+				<h2 class="text-text-primary text-sm font-[800]">{$_('club_games')}</h2>
 				<Button onclick={() => (createOpen = true)} size="sm" variant="default">
 					<Plus size={16} />
-					Schedule
+					{$_('club_schedule')}
 				</Button>
 			</div>
 
@@ -281,7 +286,7 @@
 					href={`/s/${nextEvent.session_id}`}
 					size="hero"
 					tone="muted"
-					eyebrow={nextEvent.status === 'playing' ? 'Live now' : 'Next up'}
+					eyebrow={nextEvent.status === 'playing' ? $_('club_live_now') : $_('club_next_up')}
 					title={eventName(nextEvent)}
 				>
 					{#snippet badge()}
@@ -289,7 +294,7 @@
 					{/snippet}
 					{#snippet meta()}
 						{nextEvent.player_count}
-						players
+						{$_('profile_upcoming_players')}
 						{#if nextEvent.scheduled_at}· {formatEventTime(nextEvent.scheduled_at)}{/if}
 					{/snippet}
 				</SessionRow>
@@ -301,10 +306,7 @@
 							<SessionRow href={`/s/${ev.session_id}`} title={eventName(ev)}>
 								{#snippet leading()}
 									<span
-										class="flex h-9 w-9 items-center justify-center rounded-lg {ev.status ===
-										'playing'
-											? 'bg-primary/15 text-primary'
-											: 'bg-primary-muted text-primary'}"
+										class="bg-primary-muted text-primary flex h-9 w-9 items-center justify-center rounded-lg"
 									>
 										{#if ev.status === 'playing'}<Radio size={18} />{:else}<CalendarDays
 												size={18}
@@ -324,9 +326,7 @@
 				{/if}
 			{:else}
 				<div class="bg-surface-raised rounded-2xl px-4 py-6 text-center">
-					<p class="text-text-secondary text-sm">
-						No upcoming games. Schedule one — the whole club will be notified.
-					</p>
+					<p class="text-text-secondary text-sm">{$_('club_no_games')}</p>
 				</div>
 			{/if}
 		</section>
@@ -337,12 +337,12 @@
 			<a href={`/clubs/${clubId}/leaderboard`} class="group flex items-center justify-between">
 				<h2 class="text-text-primary flex items-center gap-1.5 text-sm font-[800]">
 					<Trophy size={15} class="text-primary" />
-					Leaderboard
+					{$_('club_leaderboard')}
 				</h2>
 				<span
 					class="text-text-secondary group-hover:text-text-primary flex items-center gap-0.5 text-xs transition-colors"
 				>
-					View all
+					{$_('club_view_all')}
 					<ChevronRight size={14} />
 				</span>
 			</a>
@@ -382,8 +382,9 @@
 					class="bg-surface-raised hover:bg-border block rounded-2xl px-4 py-6 text-center transition-colors"
 				>
 					<p class="text-text-secondary text-sm">
-						Play club games to build the leaderboard — members rank once they've played {leaderboard?.min_games ??
-							5}.
+						{$_('club_leaderboard_empty', {
+							values: { count: leaderboard?.min_games ?? 5 }
+						})}
 					</p>
 				</a>
 			{/if}
@@ -393,7 +394,7 @@
 		     them to the roster). Falling back below the "or" divider is the shareable
 		     join link, styled distinctly from a Session join link: any member can share
 		     it, only admins can reset (rotate) it. -->
-		<Section title="Invite members" collapsible={false}>
+		<Section title={$_('club_invite_members')} collapsible={false}>
 			{#snippet children()}
 				<div class="space-y-4">
 					<div class="space-y-3">
@@ -403,7 +404,7 @@
 							</div>
 							<input
 								type="text"
-								placeholder="Search people by name"
+								placeholder={$_('club_invite_search_placeholder')}
 								bind:value={inviteSearch}
 								oninput={onInviteSearchInput}
 								class="bg-surface-raised focus:ring-primary w-full rounded-xl py-2.5 pr-4 pl-9 text-sm transition-shadow outline-none focus:ring-2"
@@ -423,16 +424,19 @@
 											/>
 											<p class="flex-1 truncate text-sm font-semibold">{result.display_name}</p>
 											{#if memberIds.has(result.id)}
-												<span class="text-text-disabled text-xs">Member</span>
+												<span class="text-text-disabled text-xs">{$_('club_member_badge')}</span>
 											{:else if invitedIds.has(result.id)}
 												<span class="text-primary flex items-center gap-1 text-xs font-semibold">
-													<Check size={14} /> Invited
+													<Check size={14} />
+													{$_('club_invited')}
 												</span>
 											{:else}
 												<button
 													onclick={() => inviteUser(result.id)}
 													class="text-primary"
-													aria-label="Invite {result.display_name}"
+													aria-label={$_('club_invite_person', {
+														values: { name: result.display_name }
+													})}
 												>
 													<UserPlus size={16} />
 												</button>
@@ -441,7 +445,7 @@
 									{/each}
 								</div>
 							{:else if !inviteSearching}
-								<p class="text-text-disabled py-1 text-sm">No people found</p>
+								<p class="text-text-secondary py-1 text-sm">{$_('club_no_people')}</p>
 							{/if}
 						{/if}
 					</div>
@@ -449,7 +453,7 @@
 					<!-- or -->
 					<div class="flex items-center gap-3">
 						<div class="bg-border h-px flex-1"></div>
-						<span class="text-text-disabled text-xs">or share a link</span>
+						<span class="text-text-disabled text-xs">{$_('club_or_share_link')}</span>
 						<div class="bg-border h-px flex-1"></div>
 					</div>
 
@@ -459,7 +463,7 @@
 							<button
 								onclick={copyInviteLink}
 								class="text-primary hover:text-primary-hover shrink-0 p-1"
-								aria-label="Copy invite link"
+								aria-label={$_('club_copy_link')}
 							>
 								{#if linkCopied}
 									<Check size={16} />
@@ -472,16 +476,16 @@
 									onclick={rotateLink}
 									disabled={rotating}
 									class="text-text-secondary hover:text-text-primary shrink-0 p-1 disabled:opacity-50"
-									aria-label="Reset invite link"
-									title="Reset link — revokes the old one"
+									aria-label={$_('club_reset_link')}
+									title={$_('club_reset_link_title')}
 								>
 									<RefreshCw size={15} class={rotating ? 'animate-spin' : ''} />
 								</button>
 							{/if}
 						</div>
 						<p class="text-text-disabled text-xs">
-							Anyone with this link can join.{#if isAdmin}
-								Reset it to revoke the old link.{/if}
+							{$_('club_link_hint')}{#if isAdmin}
+								{$_('club_link_hint_admin')}{/if}
 						</p>
 					</div>
 				</div>
@@ -489,16 +493,19 @@
 		</Section>
 
 		<!-- Members Section -->
-		<Section title={`Members (${club.roster_count})`} collapsible={false}>
+		<Section
+			title={$_('club_members_count', { values: { count: club.roster_count } })}
+			collapsible={false}
+		>
 			{#snippet children()}
 				{#if members.length > 0}
 					<div class="space-y-2">
-						{#each members as member}
+						{#each members as member (member.user_id)}
 							<MemberRow {member} />
 						{/each}
 					</div>
 				{:else}
-					<p class="text-text-disabled py-1 text-sm">No members yet</p>
+					<p class="text-text-secondary py-1 text-sm">{$_('club_no_members')}</p>
 				{/if}
 			{/snippet}
 		</Section>

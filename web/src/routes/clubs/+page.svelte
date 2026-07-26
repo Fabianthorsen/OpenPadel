@@ -2,8 +2,11 @@
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api/client';
 	import { auth } from '$lib/auth.svelte';
+	import { _ } from 'svelte-i18n';
 	import { Button } from '$lib/components/ui/button';
 	import ClubCard from '$lib/components/ui/ClubCard.svelte';
+	import PageHeader from '$lib/components/ui/PageHeader.svelte';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import Footer from '$lib/components/Footer.svelte';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
@@ -21,7 +24,8 @@
 			loading = true;
 			clubs = await api.clubs.list(auth.token);
 		} catch (err) {
-			toast.error('Failed to load clubs');
+			console.error('Failed to load clubs:', err);
+			toast.error($_('profile_clubs_load_error'));
 			clubs = [];
 		} finally {
 			loading = false;
@@ -33,30 +37,25 @@
 	});
 </script>
 
-<div class="flex h-screen flex-col">
-	<div class="flex-1 overflow-y-auto pb-20">
-		<div class="mx-auto max-w-2xl p-6">
-			<div class="mb-6 flex items-center justify-between">
-				<h1 class="text-2xl font-bold">My Clubs</h1>
-				<Button onclick={() => goto('/')}>←</Button>
-			</div>
+<main class="pt-safe-page mx-auto max-w-[480px] space-y-8 px-6 pb-10">
+	<PageHeader title={$_('clubs_title')} backHref="/" />
 
-			{#if loading}
-				<p class="text-center text-slate-500">Loading clubs...</p>
-			{:else if clubs.length === 0}
-				<div class="py-12 text-center">
-					<p class="mb-4 text-slate-500">No clubs yet. Create one to get started!</p>
-					<Button onclick={() => goto('/')}>Create a Club</Button>
-				</div>
-			{:else}
-				<div class="space-y-3">
-					{#each clubs as club}
-						<ClubCard {club} onclick={() => goto(`/clubs/${club.id}`)} />
-					{/each}
-				</div>
-			{/if}
+	{#if loading}
+		<div class="flex justify-center py-12">
+			<Spinner label={$_('profile_clubs_loading')} />
 		</div>
-	</div>
+	{:else if clubs.length === 0}
+		<div class="space-y-4 py-8 text-center">
+			<p class="text-text-secondary text-sm">{$_('clubs_empty')}</p>
+			<Button onclick={() => goto('/')}>{$_('profile_create_club')}</Button>
+		</div>
+	{:else}
+		<div class="space-y-2">
+			{#each clubs as club (club.id)}
+				<ClubCard {club} onclick={() => goto(`/clubs/${club.id}`)} />
+			{/each}
+		</div>
+	{/if}
 
 	<Footer />
-</div>
+</main>

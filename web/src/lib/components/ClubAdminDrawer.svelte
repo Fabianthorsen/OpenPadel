@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth.svelte';
+	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { Button } from '$lib/components/ui/button';
@@ -49,7 +50,7 @@
 
 	async function saveEdits() {
 		if (!auth.token || !name.trim()) {
-			toast.error('Club name is required');
+			toast.error($_('create_club_name_required'));
 			return;
 		}
 		saving = true;
@@ -60,7 +61,7 @@
 				avatar_icon: club.club.avatar_icon,
 				avatar_color: club.club.avatar_color
 			});
-			toast.success('Club updated');
+			toast.success($_('club_admin_updated'));
 			await onchanged();
 		} catch (e) {
 			toast.error(errMsg(e));
@@ -87,7 +88,7 @@
 		busyUserId = userId;
 		try {
 			await api.clubs.removeMember(auth.token, club.club.id, userId);
-			toast.success('Member removed');
+			toast.success($_('club_admin_member_removed'));
 			await onchanged();
 		} catch (e) {
 			toast.error(errMsg(e));
@@ -101,7 +102,7 @@
 		showDeleteConfirm = false;
 		try {
 			await api.clubs.remove(auth.token, club.club.id);
-			toast.success('Club deleted');
+			toast.success($_('club_admin_deleted'));
 			open = false;
 			ondeleted();
 		} catch (e) {
@@ -119,14 +120,12 @@
 		>
 			<div class="flex items-start justify-between gap-3">
 				<div class="space-y-2">
-					<Drawer.Title>Manage club</Drawer.Title>
-					<Drawer.Description
-						>Edit details, manage the roster, or delete the club.</Drawer.Description
-					>
+					<Drawer.Title>{$_('club_manage')}</Drawer.Title>
+					<Drawer.Description>{$_('club_admin_desc')}</Drawer.Description>
 				</div>
 				<Drawer.Close
 					class="text-text-secondary hover:text-text-primary -mt-1 shrink-0"
-					aria-label="Close"
+					aria-label={$_('club_admin_close')}
 				>
 					<X size={22} />
 				</Drawer.Close>
@@ -135,19 +134,19 @@
 			<!-- Edit details -->
 			<div class="space-y-4">
 				<div class="space-y-2.5">
-					<SectionLabel>Club name</SectionLabel>
+					<SectionLabel>{$_('create_club_name_label')}</SectionLabel>
 					<Input
 						bind:value={name}
-						placeholder="e.g., Bouvet Padel"
+						placeholder={$_('create_club_name_placeholder')}
 						disabled={saving}
 						class="bg-surface-raised rounded-2xl border-0 px-4 py-3.5 text-sm"
 					/>
 				</div>
 				<div class="space-y-2.5">
-					<SectionLabel>Description</SectionLabel>
+					<SectionLabel>{$_('create_club_description_label')}</SectionLabel>
 					<Textarea
 						bind:value={description}
-						placeholder="Optional description"
+						placeholder={$_('create_club_description_placeholder')}
 						rows="3"
 						disabled={saving}
 						class="bg-surface-raised w-full resize-none rounded-2xl border-0 px-4 py-3.5 text-sm"
@@ -158,13 +157,14 @@
 					disabled={saving || !name.trim()}
 					class="bg-primary hover:bg-primary-hover h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white"
 				>
-					{saving ? 'Saving...' : 'Save changes'}
+					{saving ? $_('club_admin_saving') : $_('club_admin_save')}
 				</Button>
 			</div>
 
 			<!-- Manage roster -->
 			<div class="space-y-3">
-				<SectionLabel>Roster ({members.length})</SectionLabel>
+				<SectionLabel>{$_('club_admin_roster', { values: { count: members.length } })}</SectionLabel
+				>
 				<div class="space-y-2">
 					{#each members as member (member.user_id)}
 						<div class="bg-surface-raised flex items-center gap-3 rounded-2xl px-4 py-3">
@@ -174,10 +174,10 @@
 									{member.display_name}{#if member.user_id === myId}<span
 											class="text-text-disabled font-normal"
 										>
-											(you)</span
+											{$_('club_admin_you')}</span
 										>{/if}
 								</p>
-								<p class="text-text-secondary text-xs capitalize">{member.role}</p>
+								<p class="text-text-secondary text-xs">{$_(`club_role_${member.role}`)}</p>
 							</div>
 
 							{#if member.role === 'admin'}
@@ -185,8 +185,8 @@
 									onclick={() => setRole(member.user_id, 'member')}
 									disabled={busyUserId !== null}
 									class="text-text-secondary hover:text-text-primary shrink-0 p-1.5 disabled:opacity-40"
-									aria-label="Demote {member.display_name} to member"
-									title="Demote to member"
+									aria-label={$_('club_admin_demote', { values: { name: member.display_name } })}
+									title={$_('club_admin_demote_title')}
 								>
 									<ShieldMinus size={17} />
 								</button>
@@ -195,8 +195,8 @@
 									onclick={() => setRole(member.user_id, 'admin')}
 									disabled={busyUserId !== null}
 									class="text-text-secondary hover:text-primary shrink-0 p-1.5 disabled:opacity-40"
-									aria-label="Promote {member.display_name} to admin"
-									title="Promote to admin"
+									aria-label={$_('club_admin_promote', { values: { name: member.display_name } })}
+									title={$_('club_admin_promote_title')}
 								>
 									<ShieldPlus size={17} />
 								</button>
@@ -205,8 +205,8 @@
 								onclick={() => removeMember(member.user_id)}
 								disabled={busyUserId !== null}
 								class="text-text-secondary hover:text-destructive shrink-0 p-1.5 disabled:opacity-40"
-								aria-label="Remove {member.display_name} from club"
-								title="Remove from club"
+								aria-label={$_('club_admin_remove', { values: { name: member.display_name } })}
+								title={$_('club_admin_remove_title')}
 							>
 								<UserMinus size={17} />
 							</button>
@@ -221,25 +221,23 @@
 					onclick={() => (showDeleteConfirm = true)}
 					class="text-destructive hover:bg-destructive/10 w-full rounded-2xl px-4 py-3.5 text-sm font-semibold transition-colors"
 				>
-					Delete club
+					{$_('club_admin_delete')}
 				</button>
-				<p class="text-text-disabled text-center text-xs">
-					Deleting is permanent. Past games are kept but no longer linked to a club.
-				</p>
+				<p class="text-text-disabled text-center text-xs">{$_('club_admin_delete_hint')}</p>
 			</div>
 
 			<Drawer.Close
 				class="text-text-secondary hover:text-text-primary w-full text-center text-sm transition-colors"
 			>
-				Done
+				{$_('club_admin_done')}
 			</Drawer.Close>
 
 			<ConfirmDialog
 				open={showDeleteConfirm}
-				title="Delete this club?"
-				description="The roster and pending invites are removed. Past games survive as ordinary sessions. This can't be undone."
-				confirmLabel="Delete club"
-				cancelLabel="Keep club"
+				title={$_('club_admin_delete_confirm_title')}
+				description={$_('club_admin_delete_confirm_desc')}
+				confirmLabel={$_('club_admin_delete')}
+				cancelLabel={$_('club_admin_delete_keep')}
 				destructive
 				onconfirm={deleteClub}
 				oncancel={() => (showDeleteConfirm = false)}

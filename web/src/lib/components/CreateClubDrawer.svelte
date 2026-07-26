@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { api, ApiError } from '$lib/api/client';
 	import { auth } from '$lib/auth.svelte';
+	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { translateApiError } from '$lib/i18n/errors';
 	import { Button } from '$lib/components/ui/button';
@@ -20,7 +21,7 @@
 
 	async function create() {
 		if (!name.trim()) {
-			toast.error('Club name is required');
+			toast.error($_('create_club_name_required'));
 			return;
 		}
 
@@ -32,13 +33,13 @@
 				avatar_icon: 'Star',
 				avatar_color: 'sky'
 			});
-			toast.success(`Club "${club.name}" created!`);
+			toast.success($_('create_club_created', { values: { name: club.name } }));
 			open = false;
 			name = '';
 			description = '';
 			goto(`/clubs/${club.id}`);
 		} catch (e) {
-			const msg = e instanceof ApiError ? translateApiError(e.message) : 'Failed to create club';
+			const msg = e instanceof ApiError ? translateApiError(e.message) : $_('create_club_error');
 			toast.error(msg);
 		} finally {
 			creating = false;
@@ -78,19 +79,17 @@
 	<Drawer.Content>
 		<div class="pb-safe-page mx-auto w-full max-w-sm space-y-6 px-6 py-6">
 			<div class="space-y-2">
-				<Drawer.Title>Create a Club</Drawer.Title>
-				<Drawer.Description>
-					Start a new club to organize games and build your community.
-				</Drawer.Description>
+				<Drawer.Title>{$_('create_club_title')}</Drawer.Title>
+				<Drawer.Description>{$_('create_club_desc')}</Drawer.Description>
 			</div>
 
 			<div class="space-y-4" data-form-group>
 				<!-- Club Name -->
 				<div class="space-y-2.5">
-					<SectionLabel>Club Name</SectionLabel>
+					<SectionLabel>{$_('create_club_name_label')}</SectionLabel>
 					<Input
 						bind:value={name}
-						placeholder="e.g., Bouvet Padel"
+						placeholder={$_('create_club_name_placeholder')}
 						onkeydown={handleKeydown}
 						onfocus={(e) => disableOtherInputs(e.target as HTMLElement)}
 						onblur={enableOtherInputs}
@@ -101,10 +100,10 @@
 
 				<!-- Description -->
 				<div class="space-y-2.5">
-					<SectionLabel>Description</SectionLabel>
+					<SectionLabel>{$_('create_club_description_label')}</SectionLabel>
 					<Textarea
 						bind:value={description}
-						placeholder="Optional description"
+						placeholder={$_('create_club_description_placeholder')}
 						rows="3"
 						onfocus={(e) => disableOtherInputs(e.target as HTMLElement)}
 						onblur={enableOtherInputs}
@@ -120,23 +119,23 @@
 					disabled={creating || !name.trim()}
 					class="bg-primary hover:bg-primary-hover h-auto w-full rounded-2xl px-4 py-4 text-[15px] font-semibold text-white"
 				>
-					{creating ? 'Creating...' : 'Create Club'}
+					{creating ? $_('create_club_creating') : $_('create_club_submit')}
 				</Button>
 				<button
 					onclick={() => (showCancelConfirm = true)}
 					disabled={creating}
 					class="text-text-secondary hover:text-text-primary w-full text-center text-sm transition-colors disabled:opacity-50"
 				>
-					Cancel
+					{$_('create_club_cancel')}
 				</button>
 			</div>
 
 			<ConfirmDialog
 				open={showCancelConfirm}
-				title="Discard changes?"
-				description="You'll lose your club details."
-				confirmLabel="Discard"
-				cancelLabel="Keep editing"
+				title={$_('create_club_discard_title')}
+				description={$_('create_club_discard_desc')}
+				confirmLabel={$_('create_club_discard_confirm')}
+				cancelLabel={$_('create_club_discard_keep')}
 				onconfirm={() => {
 					open = false;
 					name = '';

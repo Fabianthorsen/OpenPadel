@@ -1,7 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
+import { init, register, waitLocale } from 'svelte-i18n';
 import ExpandableListTest from './expandable-list.fixture.svelte';
+
+// The "more"/"less" buttons render through svelte-i18n, so the store must have a
+// locale before these mount — otherwise `$_` emits the raw key and the
+// name-based queries below miss.
+beforeAll(async () => {
+	register('en', () => import('../../../i18n/en.json'));
+	init({ fallbackLocale: 'en', initialLocale: 'en' });
+	await waitLocale('en');
+});
 
 describe('ExpandableList', () => {
 	it('shows initial items and hides excess', () => {

@@ -103,10 +103,12 @@
 		     across game modes (ADR 0007). -->
 		<section class="space-y-3">
 			<SectionLabel>{$_('stats_summary_title')}</SectionLabel>
-			<div class="grid grid-cols-3 gap-3">
-				<StatTile value={pointWinPct} label={$_('profile_point_win_pct')} accent />
-				<StatTile value={winRate} label={$_('profile_win_rate')} />
-				<StatTile value={games} label={$_('profile_games')} />
+			<div class="space-y-3">
+				<StatTile value={pointWinPct} label={$_('profile_point_win_pct')} accent hero />
+				<div class="grid grid-cols-2 gap-3">
+					<StatTile value={winRate} label={$_('profile_win_rate')} />
+					<StatTile value={games} label={$_('profile_games')} />
+				</div>
 			</div>
 		</section>
 

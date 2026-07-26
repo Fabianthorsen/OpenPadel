@@ -2,6 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api/client';
 	import { auth } from '$lib/auth.svelte';
+	import { _ } from 'svelte-i18n';
+	import { translateApiError } from '$lib/i18n/errors';
 	import { Button } from '$lib/components/ui/button';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -32,11 +34,11 @@
 			]);
 		} catch (err: any) {
 			if (err.status === 403) {
-				error = 'You are not a member of this club';
+				error = translateApiError('not_club_member');
 			} else if (err.status === 404) {
-				error = 'Club not found';
+				error = translateApiError('club_not_found');
 			} else {
-				error = 'Failed to load leaderboard';
+				error = $_('club_leaderboard_load_error');
 			}
 			toast.error(error);
 		} finally {
@@ -61,25 +63,24 @@
 	{:else if error}
 		<div class="space-y-6 py-12">
 			<p class="text-destructive text-center text-sm font-semibold">{error}</p>
-			<Button onclick={() => goto('/profile')} variant="default" size="cta">Back to Profile</Button>
+			<Button onclick={() => goto('/profile')} variant="default" size="cta"
+				>{$_('club_back_to_profile')}</Button
+			>
 		</div>
 	{:else if club && board}
 		<PageHeader
-			title="Leaderboard"
+			title={$_('club_leaderboard')}
 			backHref={`/clubs/${clubId}`}
 			avatar={{ icon: club.club.avatar_icon, color: club.club.avatar_color, name: club.club.name }}
 			subtitle={club.club.name}
 		>
-			<p class="text-text-secondary text-sm leading-relaxed">
-				Ranked by current form — your average points margin per game over the last 90 days.
-			</p>
+			<p class="text-text-secondary text-sm leading-relaxed">{$_('club_leaderboard_subtitle')}</p>
 		</PageHeader>
 
 		{#if ranked.length === 0 && provisional.length === 0}
 			<div class="bg-surface-raised rounded-2xl px-4 py-8 text-center">
 				<p class="text-text-secondary text-sm">
-					No games yet. Play a club game and the leaderboard fills in — members rank once they've
-					played {board.min_games}.
+					{$_('club_leaderboard_page_empty', { values: { count: board.min_games } })}
 				</p>
 			</div>
 		{:else}
@@ -90,7 +91,9 @@
 						{@const isRank1 = e.rank === 1}
 						<div
 							class="bg-surface border-border flex items-center gap-3 rounded-2xl border px-4 py-3.5 shadow-sm"
-							aria-label="{e.rank}. {e.name}: form {formScore(e.form)}"
+							aria-label={$_('club_leaderboard_rank_aria', {
+								values: { rank: e.rank, name: e.name, form: formScore(e.form) }
+							})}
 						>
 							<span
 								class="w-6 text-sm font-[800] tabular-nums {isRank1
@@ -116,11 +119,11 @@
 										{shortName(e.name)}
 									</span>
 									<span class="flex items-center gap-1 text-[11px] font-bold tabular-nums">
-										<span class="text-primary">{e.wins}W</span>
+										<span class="text-primary">{e.wins}{$_('stat_wins_abbr')}</span>
 										<span class="text-text-disabled">·</span>
-										<span class="text-text-disabled">{e.draws}D</span>
+										<span class="text-text-disabled">{e.draws}{$_('stat_draws_abbr')}</span>
 										<span class="text-text-disabled">·</span>
-										<span class="text-destructive">{e.losses}L</span>
+										<span class="text-destructive">{e.losses}{$_('stat_losses_abbr')}</span>
 									</span>
 								</div>
 							</div>
@@ -136,7 +139,7 @@
 			{#if provisional.length > 0}
 				<section class="space-y-2">
 					<p class="text-text-disabled px-1 text-[11px] font-bold tracking-[0.1em] uppercase">
-						Not yet ranked
+						{$_('club_leaderboard_provisional')}
 					</p>
 					<div class="space-y-0.5">
 						{#each provisional as p (p.user_id)}
@@ -151,7 +154,7 @@
 									</span>
 								</div>
 								<span class="text-text-disabled text-xs font-semibold">
-									{p.games_to_go} more to rank
+									{$_('club_leaderboard_games_to_go', { values: { count: p.games_to_go } })}
 								</span>
 							</div>
 						{/each}

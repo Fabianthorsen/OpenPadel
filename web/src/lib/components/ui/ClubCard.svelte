@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { _ } from 'svelte-i18n';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { ChevronRight } from '@lucide/svelte';
 
@@ -19,7 +20,10 @@
 	<div class="flex min-w-0 flex-1 flex-col gap-0.5">
 		<p class="text-text-primary truncate text-sm font-semibold">{club.name}</p>
 		<p class="text-text-secondary truncate text-xs">
-			{club.roster_count} members · {club.my_role}
+			{club.roster_count}
+			{club.roster_count === 1 ? $_('club_member') : $_('club_members')} · {$_(
+				`club_role_${club.my_role}`
+			)}
 		</p>
 	</div>
 	<span
