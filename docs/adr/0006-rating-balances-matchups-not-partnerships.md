@@ -101,6 +101,49 @@ Gender / mixed-doubles composition was considered alongside this and **deferred 
 own design pass — it is a partner-step constraint (it *does* eliminate same-gender partnerships)
 and needs a balanced-lobby rule, so it does not belong bundled with this change.
 
+## Amendment (2026-07): Match-up variety, and mode-dependent priority
+
+The original decision made rating **primary** at the court-assignment step and pairwise
+co-occurrence a mere tie-breaker. That is correct for a **limited** tournament (a fixed, small
+number of Rounds) where every *individual* Match should be competitive *now* — there aren't
+enough Rounds for unfairness to average out.
+
+It is the wrong priority for **Unlimited Rounds** Americano. There, once every partnership has
+occurred (partner-repeat counts saturate to a flat objective), the court-assignment search
+returns the deterministic first-found grouping every cycle — so the *identical* Match-ups recur.
+Rating being primary makes this worse: with a set field the balanced groupings are a small set,
+so the same balanced Match-ups repeat. Players' actual complaint is not "unbalanced" but "we keep
+facing the same pair."
+
+**Insight:** maximal Match-up variety is itself a fairness mechanism. Because the partner step is
+rating-agnostic, teams already vary in strength Round to Round; adding opponent variety makes each
+Player face a representative spread of opponents, so skill imbalance **averages out cumulatively**
+over a long session — without balancing any single Match. Variety carries fairness precisely in
+the mode (Unlimited) that has enough Rounds for averaging to work; per-Match rating balance carries
+it in the mode (limited) that does not.
+
+**Amended decision:** the court-assignment step scores the same two signals — **Match-up variety**
+and **rating gap** — in a **lexicographic key whose priority depends on the mode**:
+
+- **Unlimited:** `matchupCount → matchupRecency → ratingGap → random`
+  (variety first: use every distinct Match-up before any repeat; when forced to repeat, reuse the
+  stalest; only then prefer the more balanced; random breaks true ties so Rounds aren't identical.)
+- **Limited:** `ratingGap → matchupCount → matchupRecency → random`
+  (rating first, preserving this ADR's original intent; the old pairwise `coOccurrence` tie-breaker
+  is **replaced** by the strictly-better Match-up-tuple signal — no behaviour regression, better
+  variety among equally-balanced groupings.)
+
+The pairwise `coOccurrence` term is retired in favour of the four-Player **Match-up** tuple
+(`matchupKey`), which targets the exact opposition Players care about (`A+B vs C+D`) rather than
+individual co-occurrence (`A` shares a court with `C`). Rating stays **self-cancelling**: an
+unrated/all-median field has zero rating gaps, so both orderings collapse to variety-only.
+
+**Scope of the amendment:** Unlimited Americano only for the priority flip; Limited Americano gets
+just the tie-breaker upgrade; Mexicano is untouched (its teams are derived from Standings, not
+chosen by a court-assignment search, so there is no grouping freedom to vary). The `random` final
+key only fires on genuine ties, so existing deterministic rating tests are unaffected; new variety
+behaviour is covered by property-based tests.
+
 ## Consequences
 
 - **Rating is a lobby concern; finalize before Start.** Fixed-mode Americano pre-generates all
